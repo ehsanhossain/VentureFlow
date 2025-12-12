@@ -59,7 +59,7 @@ const FinancialDetails: React.FC = () => {
         }));
 
         setCurrencyOptions(formatted);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         showAlert({ type: "error", message: "Error fetching currencies" });
       }
@@ -100,7 +100,7 @@ const FinancialDetails: React.FC = () => {
         const response = await api.get(`/api/buyer/${id}`);
         setFinancialPrefData(response.data.data.financial_details);
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to fetch company data" });
       }
@@ -146,7 +146,7 @@ const FinancialDetails: React.FC = () => {
     // The original code line 163: setValue('relatedCountry', ...). This would effectively be an error in TS if strictly typed, 
     // but maybe it ignores it or I missed it. 
     // I will try to preserve exact behavior but fix the "any".
-    
+
     // Actually, to be safe against the 'any' error, I will just apply the specific fixes.
 
 
@@ -296,7 +296,7 @@ const FinancialDetails: React.FC = () => {
         },
       });
 
-   
+
 
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
@@ -391,7 +391,7 @@ const FinancialDetails: React.FC = () => {
         },
       });
 
-     
+
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
     } catch (error) {
@@ -484,7 +484,7 @@ const FinancialDetails: React.FC = () => {
         },
       });
 
-    
+
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
       navigate('/buyer-portal');
@@ -544,7 +544,7 @@ const FinancialDetails: React.FC = () => {
               <div className="flex row-auto ml-[130px] mt-[25px] ">
                 <button
                   className="text-[#064771] text-sm font-medium leading-[19.29px] underline"
-                  onClick={() => navigate('/currency/add')}
+                  onClick={() => navigate('/settings/currency/add')}
                   type="button"
                 >
                   Register Currency Here

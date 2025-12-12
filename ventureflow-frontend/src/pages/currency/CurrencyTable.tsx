@@ -20,7 +20,8 @@ import { showAlert } from '../../components/Alert';
 
 const breadcrumbLinks = [
   { label: 'Home', url: '/', isCurrentPage: false },
-  { label: 'Currency Management', url: '', isCurrentPage: true },
+  { label: 'Settings', url: '/settings', isCurrentPage: false },
+  { label: 'Currency', url: '', isCurrentPage: true },
 ];
 
 type Currency = {
@@ -170,7 +171,7 @@ const CurrencyTable = (): JSX.Element => {
     );
 
     if (!confirmDelete) {
- 
+
       return false;
     }
 
@@ -284,7 +285,7 @@ const CurrencyTable = (): JSX.Element => {
           </div>
           <button
             className="flex items-center gap-1.5 py-1.5 px-3 bg-[#064771] rounded-full h-[34px]"
-            onClick={() => navigate('/currency/add')}
+            onClick={() => navigate('/settings/currency/add')}
           >
             <svg
               className="w-5 h-5"
@@ -481,9 +482,8 @@ const CurrencyTable = (): JSX.Element => {
                   <TableHead
                     key={key}
                     onClick={() => handleSort(key)}
-                    className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${
-                      idx === 0 ? 'border-l first:rounded-l-lg' : ''
-                    } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
+                    className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                      } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
                   >
                     <div className="flex items-center justify-center gap-2">
                       {label}
@@ -653,7 +653,7 @@ const CurrencyTable = (): JSX.Element => {
                       >
                         <button
                           className="flex font-poppins items-center justify-center gap-1 border border-[#0C5577] text-[#0C5577] rounded-full px-4 py-[2px] text-base font-medium hover:bg-[#f8fafc] transition-colors"
-                          onClick={() => navigate(`/currencies/edit/${currency.id}`)}
+                          onClick={() => navigate(`/settings/currency/edit/${currency.id}`)}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"

@@ -139,7 +139,12 @@ const ProfileDropdown: React.FC = () => {
             <span
               className="text-[#30313D] text-[15.1793212890625px] font-sf font-medium"
               onClick={() => {
-                navigate('/profile');
+                if (employee?.id) {
+                  navigate(`/employee/details/${employee.id}`);
+                  setIsOpen(false);
+                } else {
+                  showAlert({ type: "error", message: "Employee profile not found" });
+                }
               }}
               style={{ cursor: "pointer" }}
             >

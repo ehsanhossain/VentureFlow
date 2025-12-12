@@ -54,7 +54,7 @@ const FinancialDetails: React.FC = () => {
       try {
         const response = await api.get(`/api/seller/${id}`);
         setFinancialData(response.data.data.financial_details);
-      
+
       } catch {
         showAlert({ type: 'error', message: 'Failed to fetch financial data' });
       }
@@ -210,7 +210,7 @@ const FinancialDetails: React.FC = () => {
 
       const response = await api.post('/api/seller/financial-details', payload);
 
-   
+
 
       if (response.data?.data) {
         localStorage.setItem('seller_id', response.data.data);
@@ -344,7 +344,7 @@ const FinancialDetails: React.FC = () => {
               <div className="flex row-auto ml-[130px] mt-[25px] ">
                 <button
                   className="text-[#064771] text-sm font-medium leading-[19.29px] underline"
-                  onClick={() => navigate('/currency/add')}
+                  onClick={() => navigate('/settings/currency/add')}
                   type="button"
                 >
                   Register Currency Here

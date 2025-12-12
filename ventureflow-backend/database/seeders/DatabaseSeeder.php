@@ -28,6 +28,17 @@ class DatabaseSeeder extends Seeder
 
         $this->call(RolesTableSeeder::class);
         $admin->assignRole('System Admin');
+        
+        // Create staff user for testing
+        $staff = User::firstOrCreate(
+            ['email' => 'staff@ventureflow.com'],
+            [
+                'name' => 'Staff User',
+                'email' => 'staff@ventureflow.com',
+                'password' => Hash::make('staff123'),
+            ]
+        );
+        $staff->assignRole('Staff');
 
         $this->call(CountrySeeder::class);
         // $this->call(EmployeeSeeder::class);

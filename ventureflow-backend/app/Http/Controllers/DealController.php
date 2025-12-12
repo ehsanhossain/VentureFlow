@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\DealStatusNotification;
 
 class DealController extends Controller
 {
@@ -135,6 +138,16 @@ class DealController extends Controller
             'changed_by_user_id' => Auth::id(),
         ]);
 
+        // Notify Admins and PIC
+        try {
+            $recipients = User::role('System Admin')->get();
+            if ($deal->pic_user_id) {
+                $recipients = $recipients->push(User::find($deal->pic_user_id));
+            }
+            $recipients = $recipients->unique('id');
+            Notification::send($recipients, new DealStatusNotification($deal, 'created'));
+        } catch (\Exception $e) { /* Ignore */ }
+
         return response()->json([
             'message' => 'Deal created successfully',
             'deal' => $deal->load(['buyer.companyOverview', 'seller.companyOverview', 'pic']),
@@ -209,6 +222,16 @@ class DealController extends Controller
                 'to_stage' => $toStage,
                 'changed_by_user_id' => Auth::id(),
             ]);
+
+            // Notify Admins and PIC
+            try {
+                $recipients = User::role('System Admin')->get();
+                if ($deal->pic_user_id) {
+                    $recipients = $recipients->push(User::find($deal->pic_user_id));
+                }
+                $recipients = $recipients->unique('id');
+                Notification::send($recipients, new DealStatusNotification($deal, 'stage_changed'));
+            } catch (\Exception $e) { /* Ignore */ }
         }
 
         return response()->json([

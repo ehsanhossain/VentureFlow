@@ -22,7 +22,10 @@ use App\Http\Controllers\IndustryController;
 use App\Http\Controllers\RoleController;
 use App\Models\Employee;
 
+use App\Http\Controllers\NotificationController;
+
 Route::post('/login', [AuthController::class, 'login']);
+
 
 // API
 Route::get('/deals/seller', [ApiController::class, 'getSellerDealInfo']);
@@ -134,4 +137,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/deals/dashboard', [\App\Http\Controllers\DealController::class, 'dashboard']);
     Route::patch('/deals/{deal}/stage', [\App\Http\Controllers\DealController::class, 'updateStage']);
     Route::apiResource('deals', \App\Http\Controllers\DealController::class);
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });

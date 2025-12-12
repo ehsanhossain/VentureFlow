@@ -13,6 +13,10 @@ use App\Models\Buyer;
 use App\Models\SellersPartnershipDetail;
 use App\Models\FileFolder;
 use Carbon\Carbon;
+use App\Models\User; // Notification recipient
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewRegistrationNotification;
+
 class SellerController extends Controller
 {
     /**
@@ -307,6 +311,16 @@ class SellerController extends Controller
             $seller->seller_id = $request->input('dealroomId');
             $seller->status = $request->input('is_draft') ?? '1'; // Default to 'active' if not provided
             $seller->save();
+
+            // Notify System Admins if it's a new seller
+            if (!$request->seller_id) {
+                try {
+                    $admins = User::role('System Admin')->get();
+                    Notification::send($admins, new NewRegistrationNotification('Seller', $overview->reg_name ?? 'New Seller', $seller->id));
+                } catch (\Exception $e) {
+                    Log::error('Notification failed: ' . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'message' => 'Seller company overview saved successfully.',

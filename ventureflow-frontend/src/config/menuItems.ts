@@ -5,10 +5,7 @@ import {
   BuyerPartnerIcon,
   ProspectsIcon,
   CatalystIcon,
-  MatchIcon,
   EmployeeIcon,
-  CountryIcon,
-  IndustryIcon,
   CurrencyIcon,
   SettingsIcon,
 } from "../assets/icons";
@@ -26,7 +23,7 @@ export const menuItems: MenuItem[] = [
   { icon: DashboardIcon, label: "Dashboard", path: "/" },
   {
     icon: ProspectsIcon,
-    label: "Prospects",
+    label: "Companies",
     path: "/prospects",
     subItems: [
       { label: "Seller Register", path: "/seller-portal/add", icon: SellerIcon },
@@ -35,10 +32,13 @@ export const menuItems: MenuItem[] = [
   },
   { icon: CatalystIcon, label: "Deal Pipeline", path: "/deal-pipeline" },
   { icon: BuyerPartnerIcon, label: "Partner", path: "/partner-portal" },
-  { icon: MatchIcon, label: "Valuation", path: "/match" },
   { icon: EmployeeIcon, label: "Employee", path: "/employee", roles: ['System Admin'] },
-  { icon: CountryIcon, label: "Country Book", path: "/country" },
-  { icon: IndustryIcon, label: "Industry Book", path: "/industry" },
-  { icon: CurrencyIcon, label: "Currency", path: "/currency" },
-  { icon: SettingsIcon, label: "Settings", path: "/settings" },
+  {
+    icon: SettingsIcon,
+    label: "Settings",
+    path: "/settings",
+    subItems: [
+      { label: "Currency", path: "/settings/currency", icon: CurrencyIcon },
+    ],
+  },
 ];

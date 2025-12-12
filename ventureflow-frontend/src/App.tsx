@@ -6,6 +6,7 @@ import AppRoutes from "./routes/AppRoutes";
 import "@fontsource/poppins/500.css";
 import "@fontsource/roboto";
 import { AuthProvider } from "./routes/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 
 function App() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -35,12 +36,14 @@ function App() {
   return (
     <AuthProvider>
       <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-        <Content
-          sidebarExpanded={sidebarExpanded}
-          setSidebarExpanded={setSidebarExpanded}
-          mobileMenuOpen={mobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-        />
+        <NotificationProvider>
+          <Content
+            sidebarExpanded={sidebarExpanded}
+            setSidebarExpanded={setSidebarExpanded}
+            mobileMenuOpen={mobileMenuOpen}
+            toggleMobileMenu={toggleMobileMenu}
+          />
+        </NotificationProvider>
       </Router>
     </AuthProvider>
   );

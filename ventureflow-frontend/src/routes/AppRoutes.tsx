@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import CreateEmployee from "../pages/employee/create/CreateEmployee";
+import NotificationsPage from "../pages/notifications/NotificationsPage";
 import Login from "../pages/auth/Login";
 import CurrencyTable from "../pages/currency/CurrencyTable";
 import IndexEmployee from "../pages/employee/IndexEmployee";
@@ -164,30 +165,6 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/currency"
-        element={
-          <ProtectedRoute>
-            <CurrencyTable />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/currency/add"
-        element={
-          <ProtectedRoute>
-            <Register />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/currencies/edit/:id"
-        element={
-          <ProtectedRoute>
-            <Register />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/partner-portal"
         element={
           <ProtectedRoute>
@@ -226,12 +203,24 @@ const AppRoutes = () => {
             <Settings />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="currency" element={<CurrencyTable />} />
+        <Route path="currency/add" element={<Register />} />
+        <Route path="currency/edit/:id" element={<Register />} />
+      </Route>
       <Route
         path="/profile"
         element={
           <ProtectedRoute>
             <CreateEmployee />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

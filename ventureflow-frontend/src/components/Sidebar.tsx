@@ -70,7 +70,12 @@ export function Sidebar({
 
               if (hasSubItems) {
                 return (
-                  <div key={index} className="w-full">
+                  <div
+                    key={index}
+                    className="w-full relative"
+                    onMouseEnter={() => !sidebarExpanded && setExpandedMenu(item.label)}
+                    onMouseLeave={() => !sidebarExpanded && setExpandedMenu(null)}
+                  >
                     {/* Parent menu item */}
                     <div
                       className={`
@@ -83,7 +88,7 @@ export function Sidebar({
                     >
                       {/* Clickable icon+label that navigates to path */}
                       <Link
-                        to={item.path || "/prospects"}
+                        to={item.path || "/"}
                         className={`
                           flex items-center flex-1 cursor-pointer
                           ${!sidebarExpanded && isActive
@@ -116,20 +121,22 @@ export function Sidebar({
                       </Link>
 
                       {/* Chevron toggle for submenu - separate clickable area */}
-                      <button
-                        onClick={() => toggleMenu(item.label)}
-                        className={`
+                      {sidebarExpanded && (
+                        <button
+                          onClick={() => toggleMenu(item.label)}
+                          className={`
                           p-1 rounded hover:bg-gray-200 transition-colors cursor-pointer
                           ${sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                         `}
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                        />
-                      </button>
+                        >
+                          <ChevronDown
+                            className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                      )}
                     </div>
 
-                    {/* Sub-items - shown when expanded */}
+                    {/* Sub-items - shown when expanded (Standard Sidebar) */}
                     {sidebarExpanded && isExpanded && (
                       <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
                         {item.subItems?.map((subItem, subIndex) => (
@@ -150,6 +157,31 @@ export function Sidebar({
                             {subItem.label}
                           </Link>
                         ))}
+                      </div>
+                    )}
+
+                    {/* Floating Submenu for Collapsed Sidebar */}
+                    {!sidebarExpanded && expandedMenu === item.label && (
+                      <div
+                        className="absolute left-full top-0 ml-1 pl-1 z-50 min-w-[200px]"
+                        onMouseEnter={() => setExpandedMenu(item.label)}
+                        onMouseLeave={() => !sidebarExpanded && setExpandedMenu(null)}
+                      >
+                        <div className="bg-white border shadow-lg rounded-lg py-2 w-full">
+                          <div className="px-4 py-2 text-sm font-semibold text-gray-900 border-b bg-gray-50">
+                            {item.label}
+                          </div>
+                          {item.subItems?.map((subItem, subIndex) => (
+                            <Link
+                              key={subIndex}
+                              to={subItem.path}
+                              className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#064771] transition-colors"
+                            >
+                              {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                              {subItem.label}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

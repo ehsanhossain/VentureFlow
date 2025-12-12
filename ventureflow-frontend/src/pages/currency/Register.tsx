@@ -10,7 +10,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 const breadcrumbLinks = [
   { label: 'Home', url: '/', isCurrentPage: false },
-  { label: 'Currency Management', url: '', isCurrentPage: false },
+  { label: 'Settings', url: '/settings', isCurrentPage: false },
+  { label: 'Currency', url: '/settings/currency', isCurrentPage: false },
   { label: 'Register', url: '', isCurrentPage: true },
 ];
 
@@ -383,15 +384,13 @@ const Register: React.FC = () => {
                       <div>
                         <div className="flex">
                           <div
-                            className={`flex justify-center items-center py-[13px] px-[27px] border-solid border-[#CBD5E1] border-[0.5px] rounded-tl-[5px] rounded-bl-[5px] w-[100px] h-[40px] relative ${
-                              selectedOption === 'api' ? 'bg-[#D7EBFF]' : 'bg-[#FFFFFF]'
-                            }`}
+                            className={`flex justify-center items-center py-[13px] px-[27px] border-solid border-[#CBD5E1] border-[0.5px] rounded-tl-[5px] rounded-bl-[5px] w-[100px] h-[40px] relative ${selectedOption === 'api' ? 'bg-[#D7EBFF]' : 'bg-[#FFFFFF]'
+                              }`}
                             onClick={() => setSelectedOption('api')}
                           >
                             <span
-                              className={`text-${
-                                selectedOption === 'api' ? '#30313D' : '#727272'
-                              } text-center font-semibold leading-[20.25px]`}
+                              className={`text-${selectedOption === 'api' ? '#30313D' : '#727272'
+                                } text-center font-semibold leading-[20.25px]`}
                             >
                               API
                             </span>
@@ -404,15 +403,13 @@ const Register: React.FC = () => {
                           </div>
 
                           <div
-                            className={`flex justify-center items-center py-[13px] px-[27px] border-solid border-[#CBD5E1] border-[0.5px] rounded-tr-[5px] rounded-br-[5px] w-[99px] h-[40px] relative ${
-                              selectedOption === 'manual' ? 'bg-[#D7EBFF]' : 'bg-[#FFFFFF]'
-                            }`}
+                            className={`flex justify-center items-center py-[13px] px-[27px] border-solid border-[#CBD5E1] border-[0.5px] rounded-tr-[5px] rounded-br-[5px] w-[99px] h-[40px] relative ${selectedOption === 'manual' ? 'bg-[#D7EBFF]' : 'bg-[#FFFFFF]'
+                              }`}
                             onClick={() => setSelectedOption('manual')}
                           >
                             <span
-                              className={`text-${
-                                selectedOption === 'manual' ? '#30313D' : '#727272'
-                              } text-center font-semibold leading-[20.25px]`}
+                              className={`text-${selectedOption === 'manual' ? '#30313D' : '#727272'
+                                } text-center font-semibold leading-[20.25px]`}
                             >
                               Manual
                             </span>
@@ -653,8 +650,9 @@ const Register: React.FC = () => {
                     </ul>
                   </div>
                   <div className="flex justify-start items-center flex-row gap-5 fixed bottom-4 right-4">
+
                     <button
-                      onClick={() => navigate('/currency')}
+                      onClick={() => navigate('/settings/currency')}
                       className="flex justify-center items-center gap-2 py-1.5 px-2 bg-[#FFF6F7] border border-[#DF272A] rounded-full w-[100px] h-[34px]"
                     >
                       <svg

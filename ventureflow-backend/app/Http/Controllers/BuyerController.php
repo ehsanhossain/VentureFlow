@@ -15,6 +15,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use DB;
 use Carbon\Carbon;
+use App\Models\User;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewRegistrationNotification;
 
 
 class BuyerController extends Controller
@@ -300,6 +303,14 @@ class BuyerController extends Controller
                     'image' => $data['profile_picture'] ?? null,
                     'company_overview_id' => $overview->id,
                 ]);
+
+                 // Notify System Admins
+                 try {
+                    $admins = User::role('System Admin')->get();
+                    Notification::send($admins, new NewRegistrationNotification('Buyer', $overview->reg_name ?? 'New Buyer', $buyer->id));
+                } catch (\Exception $e) {
+                    Log::error('Notification failed: ' . $e->getMessage());
+                }
             }
 
             return response()->json([
