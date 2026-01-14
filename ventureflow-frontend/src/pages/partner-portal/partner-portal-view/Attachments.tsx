@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import FileView from '../../../components/FileView';
 import { showAlert } from '../../../components/Alert';
 import html2pdf from 'html2pdf.js';
+import { useTranslation } from 'react-i18next';
 
 interface ApiFile {
   id: string;
@@ -26,6 +27,7 @@ interface AttachmentFile {
 }
 
 const Attachments: React.FC = () => {
+  const { t } = useTranslation();
   const { id: paramId } = useParams();
   const id = paramId || localStorage.getItem('seller_id');
 
@@ -67,9 +69,9 @@ const Attachments: React.FC = () => {
   };
 
   const handleDownloadPDF = async () => {
-    const element = document.querySelector('.pdf-container');
+    const element = document.querySelector<HTMLElement>('.pdf-container');
     if (!element) {
-      showAlert({ type: "error", message: "No element with class .pdf-container found" });
+      showAlert({ type: "error", message: t('settings.partners.error.pdfElementNotFound') });
       return;
     }
     await document.fonts.ready;
@@ -91,7 +93,7 @@ const Attachments: React.FC = () => {
       },
     };
 
-    
+
     html2pdf().set(options).from(element).save();
   };
 
@@ -99,19 +101,19 @@ const Attachments: React.FC = () => {
 
   const handleCopyLinkExample = (linkId: string) => {
     const fullUrl = `${baseURL}/partner-portal/view/${linkId}`;
-   
+
 
     navigator.clipboard
       .writeText(fullUrl)
       .then(() => {
         showAlert({
           type: 'success',
-          message: 'Link copied to clipboard',
+          message: t('settings.partners.success.linkCopied'),
         });
-  
+
       })
       .catch(() => {
-        showAlert({ type: "error", message: "Failed to copy link" });
+        showAlert({ type: "error", message: t('settings.partners.error.copyLinkFailed') });
       });
   };
 
@@ -122,12 +124,12 @@ const Attachments: React.FC = () => {
         const data = await res.json();
         setCompanyInfo(data);
       } catch {
-        showAlert({ type: "error", message: "Error fetching company info" });
+        showAlert({ type: "error", message: t('settings.partners.error.fetchCompanyInfo') });
       }
     };
 
     fetchCompanyInfo();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     api
@@ -135,8 +137,8 @@ const Attachments: React.FC = () => {
       .then((res) => {
         setCountries(res.data);
       })
-      .catch(() => showAlert({ type: "error", message: "Failed to fetch countries" }));
-  }, []);
+      .catch(() => showAlert({ type: "error", message: t('settings.partners.error.fetchCountries') }));
+  }, [t]);
 
   const getCountryById = useCallback((countryId: number) => countries.find((c) => c.id === countryId), [countries]);
 
@@ -144,7 +146,7 @@ const Attachments: React.FC = () => {
     if (!id || countries.length === 0) return;
     const fetchPartner = async () => {
       try {
-        const response = await api.get(`/api/partner/${id}`);
+        const response = await api.get(`/api/partners/${id}`);
         // setPartner(response.data);
 
         const rawCountryId = response.data.data.partner_overview?.hq_country;
@@ -159,13 +161,13 @@ const Attachments: React.FC = () => {
           origin_country: country?.name || '',
           origin_country_flag_svg: country?.svg_icon_url || '',
           status:
-            Number(response.data.data.partnership_structure?.status) === 1 ? 'Active' : 'Inactive',
+            Number(response.data.data.partnership_structure?.status) === 1 ? t('settings.partners.active') : t('settings.partners.inactive'),
           partner_id: response.data.data.partner_id || '',
           updated_at: response.data.data.updated_at || '',
           image_url: response.data.data.partner_image || '',
         }));
       } catch {
-        showAlert({ type: "error", message: "Failed to fetch partner" });
+        showAlert({ type: "error", message: t('settings.partners.error.fetchPartner') });
       }
     };
 
@@ -176,7 +178,7 @@ const Attachments: React.FC = () => {
 
 
   const onFetchFilesCallback = useCallback(async () => {
-    
+
     try {
       const response = await api.get<{ data: ApiFile[] }>('/api/files', {
         params: {
@@ -189,14 +191,14 @@ const Attachments: React.FC = () => {
       setFiles(fetchedFiles);
       return fetchedFiles;
     } catch (error: unknown) {
-      showAlert({ type: "error", message: "Error in onFetchFilesCallback" });
+      showAlert({ type: "error", message: t('settings.partners.error.fetchFiles') });
       setFiles([]);
       throw error;
     }
-  }, [selectedFolderIdInParent]);
+  }, [selectedFolderIdInParent, t]);
 
   const fetchFoldersApi = async (): Promise<Folder[]> => {
- 
+
 
     try {
       const response = await api.get(`/api/partners/${id}/folders`);
@@ -206,12 +208,12 @@ const Attachments: React.FC = () => {
       if (!responseData.success || !Array.isArray(responseData.data)) {
         const apiErrorMessage =
           responseData.message || 'API returned success: false or data is not an array';
-        showAlert({ type: "error", message: "API indicated failure fetching folders" });
+        showAlert({ type: "error", message: t('settings.partners.error.fetchFolders') });
 
         throw new Error(apiErrorMessage);
       }
 
-  
+
 
       return responseData.data as Folder[];
     } catch (error: unknown) {
@@ -238,7 +240,7 @@ const Attachments: React.FC = () => {
   };
 
   const createFolderApi = async (name: string): Promise<Folder> => {
-  
+
     try {
       const partnerId = localStorage.getItem('partner_id');
       const response = await api.post('/api/folders', {
@@ -255,7 +257,7 @@ const Attachments: React.FC = () => {
         throw new Error(apiErrorMessage);
       }
 
-    
+
 
       return responseData.data as Folder;
     } catch (error: unknown) {
@@ -282,7 +284,7 @@ const Attachments: React.FC = () => {
   };
 
   const renameFolderApi = async (id: string, newName: string): Promise<Folder> => {
-  
+
     try {
       const response = await api.put(`/api/folders/${id}`, { name: newName });
 
@@ -294,7 +296,7 @@ const Attachments: React.FC = () => {
         throw new Error(apiErrorMessage);
       }
 
-  
+
 
       return responseData.data as Folder;
     } catch (error: unknown) {
@@ -333,7 +335,7 @@ const Attachments: React.FC = () => {
         throw new Error(apiErrorMessage);
       }
 
-      
+
       return;
     } catch (error: unknown) {
       showAlert({ type: "error", message: "Error during API call to delete folder" });
@@ -404,7 +406,7 @@ const Attachments: React.FC = () => {
   if (!paramId && !localStorage.getItem('seller_id')) {
     return (
       <div className="p-8 text-red-600 font-semibold flex justify-center items-center h-[200px]">
-        Error: No seller ID found. Please complete company overview.
+        {t('settings.partners.error.noSellerId')}
       </div>
     );
   }
@@ -449,7 +451,7 @@ const Attachments: React.FC = () => {
             <div className="flex justify-start items-start flex-col gap-[13px] w-[520px]">
               <div className="flex self-stretch justify-start items-center flex-row gap-[19px]">
                 <p className="text-[rgba(0,0,0,0.88)] text-2xl font-semibold leading-8">
-                  {companyInfo?.company_title || 'N/A'}
+                  {companyInfo?.company_title || t('common.na')}
                 </p>
                 <div className="flex justify-center items-center flex-row gap-2 py-1 px-2 bg-[#0C5577] rounded-[36px]">
                   <svg
@@ -459,13 +461,10 @@ const Attachments: React.FC = () => {
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path
-                      d="M8 4.5C8 6.70914 6.20914 8.5 4 8.5C1.79086 8.5 0 6.70914 0 4.5C0 2.29086 1.79086 0.5 4 0.5C6.20914 0.5 8 2.29086 8 4.5Z"
-                      fill="white"
-                    />
+                    <circle cx="4" cy="4.5" r="4" fill="white" />
                   </svg>
                   <span className="text-[#FFFFFF] text-xs font-medium leading-[1.4]">
-                    {companyInfo?.status || 'N/A'}
+                    {companyInfo?.status || t('common.na')}
                   </span>
                 </div>
               </div>
@@ -473,7 +472,7 @@ const Attachments: React.FC = () => {
               <div className="flex justify-start items-start flex-col gap-4 w-[344px]">
                 <div className="flex justify-start items-center flex-row gap-[17px]">
                   <div className="text-[#727272] text-sm font-medium leading-5">
-                    HQ / Origin Country
+                    {t('settings.partners.hqOrigin')}
                   </div>
                   <div className="flex justify-start items-center flex-row gap-[8.67px]">
                     {companyInfo?.origin_country_flag_svg ? (
@@ -484,19 +483,19 @@ const Attachments: React.FC = () => {
                       />
                     ) : (
                       <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
-                        n/a
+                        {t('common.na')}
                       </span>
                     )}
                     <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                      {companyInfo?.origin_country || 'N/A'}
+                      {companyInfo?.origin_country || t('common.na')}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex self-stretch justify-start items-center flex-row gap-[49px]">
-                  <div className="text-[#727272] text-sm font-medium leading-5">Company Type</div>
+                  <div className="text-[#727272] text-sm font-medium leading-5">{t('settings.partners.companyType')}</div>
                   <span className="text-[#30313D] text-sm font-semibold leading-5">
-                    {companyInfo?.company_type || 'N/A'}
+                    {companyInfo?.company_type || t('common.na')}
                   </span>
                 </div>
               </div>
@@ -504,10 +503,10 @@ const Attachments: React.FC = () => {
           </div>
         </div>
         <div className="flex justify-between items-end flex-col h-[40px] mt-[80px] mr-[50px]">
-          <span className="text-[#838383] text-sm font-medium leading-[18.86px]">Partner ID</span>
+          <span className="text-[#838383] text-sm font-medium leading-[18.86px]">{t('settings.partners.partnerID')}</span>
           <div className="flex justify-start items-end flex-row gap-2.5 w-[89px]">
             <span className="text-[#064771] text-sm font-semibold leading-[15px] text-nowrap mt-[-20px] ml-auto text-right block">
-              {companyInfo?.partner_id || 'N/A'}
+              {companyInfo?.partner_id || t('common.na')}
             </span>
           </div>
         </div>
@@ -605,21 +604,21 @@ const Attachments: React.FC = () => {
                         />
                       </svg>
                       <p className="text-[#FFFFFF] text-[28.646873474121094px] font-semibold leading-[30.69308090209961px]">
-                        {companyInfo?.partner_id || 'N/A'}
+                        {companyInfo?.partner_id || t('common.na')}
                       </p>
                     </div>
                     <div className="flex justify-start items-start flex-row gap-1.5">
                       <span className="text-[#AFAFAF] text-sm leading-[18.860000610351562px]">
-                        Last Release
+                        {t('settings.partners.lastRelease')}
                       </span>
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
-                          : 'N/A'}
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
+                          : t('common.na')}
                       </span>
                     </div>
                   </div>
@@ -661,7 +660,7 @@ const Attachments: React.FC = () => {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      <span className="text-[#064771] text-[12px] text-nowrap">Download PDF</span>
+                      <span className="text-[#064771] text-[12px] text-nowrap">{t('common.downloadPdf')}</span>
                     </button>
                     <button
                       className="flex justify-center items-center flex-row gap-[3.044971227645874px] py-[3.5524661540985107px] px-[5.647058963775635px] bg-[#FFFFFF] rounded-[35.16731643676758px] w-[82px] h-[24px]"
@@ -684,7 +683,7 @@ const Attachments: React.FC = () => {
                           fill="#064771"
                         />
                       </svg>
-                      <span className="text-[#064771] text-[12px] text-nowrap">Update</span>
+                      <span className="text-[#064771] text-[12px] text-nowrap">{t('common.update')}</span>
                     </button>
                   </div>
                 </div>
@@ -733,7 +732,7 @@ const Attachments: React.FC = () => {
                 />
               </svg>
 
-              <span className="text-[#FFF] ">Back</span>
+              <span className="text-[#FFF] ">{t('common.back')}</span>
             </button>
 
             <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px]"></div>

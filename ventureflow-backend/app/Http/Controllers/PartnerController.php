@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 use App\Models\PartnersPartnerOverview;
 use Illuminate\Support\Facades\Validator;
 use App\Models\PartnersPartnershipStructure;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash; 
+
 class PartnerController extends Controller
 {
 
@@ -31,7 +34,7 @@ class PartnerController extends Controller
             $statusValue = $status == 1 ? '1' : '0';
         }
 
-        $partners = Partner::with(['partnerOverview', 'partnershipStructure'])
+        $partners = Partner::with(['partnerOverview', 'partnershipStructure', 'user'])
             ->when($search, function ($query) use ($search) {
                 $query->whereHas('partnerOverview', function ($q) use ($search) {
                     $q->where('reg_name', 'like', "%{$search}%");
@@ -104,7 +107,86 @@ class PartnerController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'country' => 'required|string|size:2',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create User
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'must_change_password' => true,
+            ]);
+            
+            // Check if Role exists, if not create (Safety)
+            // Assuming Spatie roles table is populated or seeded. 
+            // We can try/catch this or assume 'partner' role exists.
+            // $user->assignRole('partner'); // This might throw if role doesn't exist.
+             try {
+                // Ensure 'partner' role exists in the 'roles' table. 
+                // Using DB directly to avoid dependency on Spatie Role model name
+                $roleExists = DB::table('roles')->where('name', 'partner')->exists();
+                if (!$roleExists) {
+                    DB::table('roles')->insert([
+                        'name' => 'partner',
+                        'guard_name' => 'web',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                $user->assignRole('partner');
+             } catch (\Exception $e) {
+                 Log::warning("Role assignment failed: " . $e->getMessage());
+             }
+
+            // Generate Partner ID
+            $prefix = strtoupper($request->country) . '-P-';
+            $lastPartner = Partner::where('partner_id', 'LIKE', $prefix . '%')
+                ->select('partner_id')
+                ->get()
+                ->map(function ($item) use ($prefix) {
+                    return (int) str_replace($prefix, '', $item->partner_id);
+                })
+                ->max();
+            $nextSeq = ($lastPartner ?? 0) + 1;
+            $partnerId = $prefix . str_pad($nextSeq, 3, '0', STR_PAD_LEFT);
+
+            // Find Country ID
+            $country = DB::table('countries')->where('alpha_2_code', $request->country)->first();
+            $countryId = $country ? $country->id : null;
+
+            // Create Overview (Minimal)
+            $overview = PartnersPartnerOverview::create([
+                'reg_name' => $request->name,
+                'hq_country' => $countryId,
+            ]);
+
+            // Create Partner
+            $partner = Partner::create([
+                'partner_id' => $partnerId,
+                'user_id' => $user->id,
+                'status' => 'active',
+                'partner_overview_id' => $overview->id,
+            ]);
+
+            DB::commit();
+            return response()->json(['message' => 'Partner created successfully', 'data' => $partner->load(['user', 'partnerOverview'])], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Partner creation failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create partner.', 'details' => $e->getMessage()], 500);
+        }
     }
 
     public function partnerOverviewsStore(Request $request)
@@ -298,9 +380,42 @@ class PartnerController extends Controller
      * Update the specified resource in storage.
      */
 
-    public function update(Request $request, Partner $partner)
+    public function update(Request $request, $id)
     {
-        //
+        $partner = Partner::findOrFail($id);
+        
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string',
+            'email' => 'required|email|unique:users,email,' . $partner->user_id,
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = User::findOrFail($partner->user_id);
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
+
+            if ($partner->partnerOverview) {
+                $partner->partnerOverview->update([
+                    'reg_name' => $request->name,
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Partner updated successfully',
+                'data' => $partner->load(['user', 'partnerOverview'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to update partner.'], 500);
+        }
     }
 
     public function destroy(Request $request)
@@ -321,8 +436,17 @@ class PartnerController extends Controller
             $deletedCount = 0;
 
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
+                $partners = Partner::whereIn('id', $idsToDelete)->get();
+                $userIds = $partners->pluck('user_id')->filter()->toArray();
+
                 FileFolder::whereIn('partner_id', $idsToDelete)->delete();
-                $deletedCount = Partner::destroy($idsToDelete);
+                
+                // Also delete related overviews and structures if possible, 
+                // but usually they might be linked to other things or have cascading delete.
+                // For now, let's delete Partner and User.
+                
+                $deletedCount = Partner::whereIn('id', $idsToDelete)->delete();
+                User::whereIn('id', $userIds)->delete();
             });
 
             if ($deletedCount > 0) {

@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 
-import Pagination from '../../../components/pagination';
+import Pagination from '../../../components/Pagination';
 import ArrowIcon from '../../../assets/svg/ArrowIcon';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,10 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/table/table';
+import { useTranslation } from 'react-i18next';
 
 const safeJsonParse = <T,>(value: unknown, fallback: T): T => {
   try {
-    if (typeof value !== 'string') return value;
+    if (typeof value !== 'string') return value as T;
     if (value === 'N/A' || value.trim() === '') return fallback;
     return JSON.parse(value);
   } catch {
@@ -37,39 +38,40 @@ type BuyerRow = {
   quickActions: string;
 };
 
-const tableHeaders: {
-  label: string;
-  key: keyof BuyerRow;
-  sortable: boolean;
-}[] = [
-  { label: 'No', key: 'no', sortable: false },
-  { label: 'Buyers Name', key: 'seller_name', sortable: true },
-  { label: 'Country Preference', key: 'country_pref', sortable: true },
-  { label: 'Industry Pref.', key: 'industry_pref', sortable: true },
-  { label: 'EBITDA Pref.', key: 'ebitda_pref', sortable: true },
-  { label: 'Investment Range', key: 'investment_range', sortable: true },
-  { label: 'Buyer Id', key: 'dealroom', sortable: false },
-  { label: 'Quick Actions', key: 'quickActions', sortable: false },
-];
-
 const SharedBuyers = (): JSX.Element => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
-  const [buyers, setBuyers] = useState<unknown[]>([]);
+  const [buyers, setBuyers] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  const [countries, setCountries] = useState([]);
+  const tableHeaders: {
+    label: string;
+    key: keyof BuyerRow;
+    sortable: boolean;
+  }[] = [
+      { label: t('common.no'), key: 'no', sortable: false },
+      { label: t('settings.partners.buyersName'), key: 'seller_name', sortable: true },
+      { label: t('settings.partners.countryPreference'), key: 'country_pref', sortable: true },
+      { label: t('settings.partners.industryPref'), key: 'industry_pref', sortable: true },
+      { label: t('settings.partners.ebitdaPref'), key: 'ebitda_pref', sortable: true },
+      { label: t('settings.partners.investmentRange'), key: 'investment_range', sortable: true },
+      { label: t('settings.partners.buyerId'), key: 'dealroom', sortable: false },
+      { label: t('common.quickActions'), key: 'quickActions', sortable: false },
+    ];
+
+  const [countries, setCountries] = useState<any[]>([]);
   useEffect(() => {
     api
       .get('/api/countries')
       .then((res) => {
         setCountries(res.data);
       })
-      .catch((_err) => showAlert({ type: "error", message: "Failed to fetch countries" }))
+      .catch((_err) => showAlert({ type: "error", message: t('settings.partners.error.fetchCountries') }))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
-  const getCountryById = (id: number) => countries.find((c) => c.id === id);
+  const getCountryById = (id: number | null) => id ? countries.find((c: any) => c.id === id) : null;
 
   const [sortConfig, setSortConfig] = useState<{
     key: keyof BuyerRow;
@@ -91,48 +93,48 @@ const SharedBuyers = (): JSX.Element => {
   }, [id]);
 
   const buyerData: BuyerRow[] = useMemo(() => {
-   
+
     if (!Array.isArray(buyers)) return [];
-    return buyers.map((buyer: Record<string, unknown>, index: number) => ({
+    return buyers.map((buyer: any, index: number) => ({
       no: String(index + 1).padStart(2, '0'),
-      buyer_id: buyer?.id || buyer?.buyer_id || 'N/A',
-      buyer_name: buyer?.company_overview?.reg_name || 'N/A',
+      buyer_id: buyer?.id || buyer?.buyer_id || t('common.na'),
+      seller_name: buyer?.company_overview?.reg_name || t('common.na'),
 
       hq: buyer?.target_preference?.target_countries
         ? buyer.target_preference.target_countries
-        : 'N/A',
+        : t('common.na'),
       countryFlag: '/default-flag.png',
-      country_pref: buyer?.target_preference?.preferred_country || 'N/A',
+      country_pref: buyer?.target_preference?.preferred_country || t('common.na'),
 
       industry_pref: (() => {
         const raw = buyer?.target_preference?.b_ind_prefs;
         const parsed = safeJsonParse(raw, []);
-        if (!Array.isArray(parsed) || parsed.length === 0) return 'N/A';
+        if (!Array.isArray(parsed) || parsed.length === 0) return t('common.na');
 
-        const joinedNames = parsed.map((item) => item.name).join(', ');
+        const joinedNames = parsed.map((item: any) => item.name).join(', ');
         return joinedNames.length > 50 ? joinedNames.substring(0, 20) + '...' : joinedNames;
       })(),
 
       ebitda_pref: (() => {
         const raw = buyer?.financial_details?.ebitda_multiple;
-        const parsed = safeJsonParse(raw, null);
+        const parsed = safeJsonParse<any>(raw, null);
         if (parsed && typeof parsed === 'object') {
-          return `${parsed.years || 'N/A'} - ${parsed.amount || 'N/A'}`;
+          return `${parsed.years || t('common.na')} - ${parsed.amount || t('common.na')}`;
         }
-        return 'N/A';
+        return t('common.na');
       })(),
 
       investment_range: buyer?.financial_details?.investment_budget
         ? (() => {
-            const { min, max } = JSON.parse(buyer.financial_details.investment_budget);
-            return `${min} - ${max}`;
-          })()
-        : 'N/A',
+          const { min, max } = JSON.parse(buyer.financial_details.investment_budget);
+          return `${min} - ${max}`;
+        })()
+        : t('common.na'),
 
-      dealroom: buyer?.buyer_id || 'N/A',
-      quickActions: buyer?.status || 'N/A',
+      dealroom: buyer?.buyer_id || t('common.na'),
+      quickActions: buyer?.status || t('common.na'),
     }));
-  }, [buyers]);
+  }, [buyers, t]);
 
   const sortedBuyerData = useMemo(() => {
     if (!sortConfig) return buyerData;
@@ -159,8 +161,8 @@ const SharedBuyers = (): JSX.Element => {
     );
   };
 
-  if (loading) return <p className="p-4">Loading shared buyers...</p>;
-  if (!buyerData.length) return <p className="p-4">No shared buyers found.</p>;
+  if (loading) return <p className="p-4">{t('common.loading')}</p>;
+  if (!buyerData.length) return <p className="p-4">{t('settings.partners.noSharedBuyers')}</p>;
 
   return (
     <div>
@@ -173,13 +175,10 @@ const SharedBuyers = (): JSX.Element => {
                   <TableHead
                     key={header.key}
                     onClick={() => header.sortable && handleSort(header.key)}
-                    className={`py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${
-                      idx === 0 ? 'border-l first:rounded-l-lg text-left' : 'text-center'
-                    } ${
-                      idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
-                    } bg-[#F9F9F9] whitespace-nowrap transition-colors ${
-                      header.sortable ? 'cursor-pointer hover:bg-[#d1d1d1]' : 'cursor-default'
-                    }`}
+                    className={`py-[10px] px-3 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg text-left' : 'text-center'
+                      } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
+                      } bg-[#F9F9F9] ${header.key === 'seller_name' || header.key === 'industry_pref' ? '' : 'whitespace-nowrap'} transition-colors ${header.sortable ? 'cursor-pointer hover:bg-[#d1d1d1]' : 'cursor-default'
+                      }`}
                   >
                     <div className={`flex items-center gap-2 justify-center`}>
                       {header.label}
@@ -190,59 +189,59 @@ const SharedBuyers = (): JSX.Element => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedBuyerData.map((buyer, index) => {
-                const hqData = safeJsonParse(buyer.hq, []);
+              {sortedBuyerData.map((buyer: any, index) => {
+                const hqData = safeJsonParse<any[]>(buyer.hq, []);
                 const countryId = Array.isArray(hqData) && hqData.length > 0 ? hqData[0].id : null;
                 const countryData = getCountryById(countryId);
 
                 return (
                   <TableRow key={index}>
-                    <TableCell className="py-[10px] px-6 font-semibold text-[#30313D] text-sm border-t border-b border-l border-[#E4E4E4] bg-white rounded-l-lg truncate whitespace-nowrap text-left">
+                    <TableCell className="py-[10px] px-3 font-semibold text-[#30313D] text-sm border-t border-b border-l border-[#E4E4E4] bg-white rounded-l-lg whitespace-nowrap text-left">
                       {buyer.no}
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 bg-white border-t border-b border-[#E4E4E4]">
-                      {buyer.buyer_name ?? 'N/A'}
+                    <TableCell className="text-center px-3 py-2 bg-white border-t border-b border-[#E4E4E4]">
+                      {buyer.seller_name ?? t('common.na')}
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 bg-white border-t border-b border-[#E4E4E4]">
+                    <TableCell className="text-center px-3 py-2 bg-white border-t border-b border-[#E4E4E4]">
                       <div className="flex items-center justify-center gap-2">
                         <div className="flex items-center gap-3">
                           {countryData?.svg_icon_url ? (
                             <img
                               src={countryData?.svg_icon_url}
                               alt="flag"
-                              className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
+                              className="w-[20px] h-[20px] rounded-full bg-gray-200 shrink-0"
                             />
                           ) : (
-                            <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
-                              n/a
+                            <span className="w-[20px] h-[20px] rounded-full bg-gray-200 text-gray-800 text-[8px] flex items-center justify-center shrink-0">
+                              {t('common.na')}
                             </span>
                           )}
-                          <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                            {countryData?.name ?? 'N/A'}
+                          <span className="text-[#30313D] text-xs font-semibold leading-tight">
+                            {countryData?.name ?? t('common.na')}
                           </span>
                         </div>
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 bg-white border-t border-b border-[#E4E4E4]">
-                      {buyer.industry_pref ?? 'N/A'}
+                    <TableCell className="text-center px-3 py-2 bg-white border-t border-b border-[#E4E4E4]">
+                      {buyer.industry_pref ?? t('common.na')}
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 bg-white border-t border-b border-[#E4E4E4]">
-                      {buyer.ebitda_pref ?? 'N/A'}
+                    <TableCell className="text-center px-3 py-2 bg-white border-t border-b border-[#E4E4E4]">
+                      <span className="whitespace-nowrap">{buyer.ebitda_pref ?? t('common.na')}</span>
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 bg-white border-t border-b border-[#E4E4E4]">
-                      {buyer.investment_range ?? 'N/A'}
+                    <TableCell className="text-center px-3 py-2 bg-white border-t border-b border-[#E4E4E4]">
+                      <span className="whitespace-nowrap">{buyer.investment_range ?? t('common.na')}</span>
                     </TableCell>
 
-                    <TableCell className="text-center px-6 py-2 text-[#064771] underline bg-white border-t border-b border-[#E4E4E4]">
-                      {buyer.dealroom ?? 'N/A'}
+                    <TableCell className="text-center px-3 py-2 text-[#064771] underline bg-white border-t border-b border-[#E4E4E4] whitespace-nowrap">
+                      {buyer.dealroom ?? t('common.na')}
                     </TableCell>
 
-                    <TableCell className="py-2 px-6 text-center border-t border-b border-r border-[#E4E4E4] bg-white rounded-r-lg whitespace-nowrap">
+                    <TableCell className="py-2 px-3 text-center border-t border-b border-r border-[#E4E4E4] bg-white rounded-r-lg whitespace-nowrap">
                       <div className="flex items-center justify-center gap-3">
                         <button
                           type="button"
@@ -261,7 +260,7 @@ const SharedBuyers = (): JSX.Element => {
                               fill="#064771"
                             />
                             <path
-                              d="M10.5009 3.76465C9.66326 3.76465 8.84441 4.01304 8.14792 4.47842C7.45143 4.9438 6.90858 5.60527 6.58802 6.37917C6.26746 7.15306 6.18359 8.00464 6.34701 8.82621C6.51043 9.64777 6.9138 10.4024 7.50612 10.9947C8.09843 11.5871 8.85309 11.9904 9.67466 12.1539C10.4962 12.3173 11.3478 12.2334 12.1217 11.9128C12.8956 11.5923 13.5571 11.0494 14.0224 10.3529C14.4878 9.65645 14.7362 8.8376 14.7362 7.99994C14.7349 6.87708 14.2882 5.8006 13.4942 5.00662C12.7003 4.21264 11.6238 3.76599 10.5009 3.76465ZM10.5009 10.5411C9.99832 10.5411 9.50701 10.3921 9.08912 10.1129C8.67122 9.83362 8.34552 9.43675 8.15318 8.97241C7.96084 8.50807 7.91052 7.99712 8.00857 7.50418C8.10662 7.01124 8.34865 6.55845 8.70404 6.20306C9.05943 5.84767 9.51222 5.60565 10.0052 5.50759C10.4981 5.40954 11.009 5.45987 11.4734 5.6522C11.9377 5.84454 12.3346 6.17025 12.6138 6.58814C12.8931 7.00603 13.0421 7.49734 13.0421 7.99994C13.0421 8.6739 12.7744 9.32026 12.2978 9.79682C11.8212 10.2734 11.1749 10.5411 10.5009 10.5411Z"
+                              d="M10.5009 3.76465C9.66326 3.76465 8.84441 4.01304 8.14792 4.47842C7.45143 4.9438 6.90858 5.60527 6.58802 6.37917C6.26746 7.15306 6.18359 8.00464 6.34701 8.82621C6.51043 9.64777 6.9138 10.4024 7.50612 10.9947C8.09843 11.5871 8.85309 11.9904 9.67466 12.1539C10.4962 12.3173 11.3478 12.2334 12.1217 11.9128C12.8956 11.5923 13.5571 11.0494 14.0224 10.3529C14.4878 9.65645 14.7362 8.8376 14.7362 7.99994C14.7349 6.87708 14.2882 5.8006 13.4942 5.00662C12.7003 4.21264 11.6238 3.76599 11.6238 3.76599C11.6238 3.76599 10.5009 3.76465 10.5009 3.76465ZM10.5009 10.5411C9.99832 10.5411 9.50701 10.3921 9.08912 10.1129C8.67122 9.83362 8.34552 9.43675 8.15318 8.97241C7.96084 8.50807 7.91052 7.99712 8.00857 7.50418C8.10662 7.01124 8.34865 6.55845 8.70404 6.20306C9.05943 5.84767 9.51222 5.60565 10.0052 5.50759C10.4981 5.40954 11.009 5.45987 11.4734 5.6522C11.9377 5.84454 12.3346 6.17025 12.6138 6.58814C12.8931 7.00603 13.0421 7.49734 13.0421 7.99994C13.0421 8.6739 12.7744 9.32026 12.2978 9.79682C11.8212 10.2734 11.1749 10.5411 10.5009 10.5411Z"
                               fill="#064771"
                             />
                           </svg>
@@ -275,7 +274,11 @@ const SharedBuyers = (): JSX.Element => {
           </Table>
         </div>
       </section>
-      <Pagination />
+      <Pagination
+        currentPage={1}
+        totalPages={1}
+        onPageChange={() => { }}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import {
@@ -11,6 +11,7 @@ import {
 } from '../../../components/table/table';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowIcon from '../icons/ArrowIcon';
+import { useTranslation } from 'react-i18next';
 
 type PartnerRow = {
   no: string;
@@ -23,20 +24,6 @@ type PartnerRow = {
   dealroom: string;
   quickActions: string;
 };
-
-const tableHeaders: {
-  label: string;
-  key: keyof PartnerRow;
-  sortable: boolean;
-}[] = [
-  { label: 'No', key: 'no', sortable: false },
-  { label: 'Sellers Name', key: 'seller_name', sortable: true },
-  { label: 'HQ/Origin', key: 'hq', sortable: true },
-  { label: 'Industry', key: 'industry', sortable: true },
-  { label: 'Share %', key: 'share', sortable: true },
-  { label: 'Seller Id', key: 'dealroom', sortable: false },
-  { label: 'Quick Actions', key: 'quickActions', sortable: false },
-];
 
 interface SharedSeller {
   id: number;
@@ -53,10 +40,25 @@ interface SharedSeller {
 }
 
 const SharedSellers = (): JSX.Element => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [sharedSellers, setSharedSellers] = useState<SharedSeller[]>([]);
   const navigate = useNavigate();
+
+  const tableHeaders: {
+    label: string;
+    key: keyof PartnerRow;
+    sortable: boolean;
+  }[] = [
+      { label: t('common.no'), key: 'no', sortable: false },
+      { label: t('settings.partners.sellersName'), key: 'seller_name', sortable: true },
+      { label: t('settings.partners.hqOrigin'), key: 'hq', sortable: true },
+      { label: t('settings.partners.industry'), key: 'industry', sortable: true },
+      { label: t('settings.partners.sharePercent'), key: 'share', sortable: true },
+      { label: t('settings.partners.sellerId'), key: 'dealroom', sortable: false },
+      { label: t('common.quickActions'), key: 'quickActions', sortable: false },
+    ];
 
   const [countries, setCountries] = useState<{ id: number; name: string; svg_icon_url: string }[]>([]);
   useEffect(() => {
@@ -65,9 +67,9 @@ const SharedSellers = (): JSX.Element => {
       .then((res) => {
         setCountries(res.data);
       })
-      .catch((_err) => showAlert({ type: "error", message: "Failed to fetch countries" }))
+      .catch((_err) => showAlert({ type: "error", message: t('settings.partners.error.fetchCountries') }))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   const getCountryById = (countryId: number) => countries.find((c) => c.id === countryId);
 
@@ -88,32 +90,32 @@ const SharedSellers = (): JSX.Element => {
   }, [id]);
 
   const partnerData: PartnerRow[] = useMemo(() => {
- 
+
     if (!Array.isArray(sharedSellers)) return [];
     return sharedSellers.map((s: SharedSeller, index) => {
-     
+
       const truncate = (text: string, limit = 20) =>
         text && text.length > limit ? text.slice(0, limit) + '...' : text;
 
       return {
         no: String(index + 1).padStart(2, '0'),
-        seller_id: s?.id?.toString() || s?.seller_id || 'N/A',
-        seller_name: truncate(s?.company_overview?.reg_name || 'N/A'),
+        seller_id: s?.id?.toString() || s?.seller_id || t('common.na'),
+        seller_name: truncate(s?.company_overview?.reg_name || t('common.na')),
         countryFlag: '/default-flag.png',
-        hq: s?.company_overview?.hq_country || 'N/A',
+        hq: s?.company_overview?.hq_country || t('common.na'),
         industry: s?.company_overview?.industry_ops
           ? truncate(
-              s?.company_overview?.industry_ops.map((industry) => industry.name).join(', ')
-            )
-          : 'N/A',
+            s?.company_overview?.industry_ops.map((industry) => industry.name).join(', ')
+          )
+          : t('common.na'),
         share: s?.financial_details?.maximum_investor_shareholding_percentage
           ? `${s.financial_details.maximum_investor_shareholding_percentage}`
-          : 'N/A',
-        dealroom: s?.seller_id || 'N/A',
-        quickActions: s?.status || 'N/A',
+          : t('common.na'),
+        dealroom: s?.seller_id || t('common.na'),
+        quickActions: s?.status || t('common.na'),
       };
     });
-  }, [sharedSellers]);
+  }, [sharedSellers, t]);
 
   const [sortConfig, setSortConfig] = useState<{
     key: keyof PartnerRow;
@@ -154,8 +156,8 @@ const SharedSellers = (): JSX.Element => {
     });
   };
 
-  if (loading) return <p>Loading shared sellers...</p>;
-  if (!partnerData.length) return <p>No shared sellers found.</p>;
+  if (loading) return <p>{t('common.loading')}</p>;
+  if (!partnerData.length) return <p>{t('settings.partners.noSharedSellers')}</p>;
 
   return (
     <div>
@@ -168,18 +170,14 @@ const SharedSellers = (): JSX.Element => {
                   <TableHead
                     key={header.key}
                     onClick={() => header.sortable && handleSort(header.key)}
-                    className={`py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${
-                      idx === 0 ? 'border-l first:rounded-l-lg text-left pl-6' : 'text-center'
-                    } ${
-                      idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
-                    } bg-[#F9F9F9] whitespace-nowrap transition-colors ${
-                      header.sortable ? 'cursor-pointer hover:bg-[#d1d1d1]' : 'cursor-default'
-                    }`}
+                    className={`py-[10px] px-3 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg text-left' : 'text-center'
+                      } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
+                      } bg-[#F9F9F9] ${header.key === 'seller_name' || header.key === 'industry' ? '' : 'whitespace-nowrap'} transition-colors ${header.sortable ? 'cursor-pointer hover:bg-[#d1d1d1]' : 'cursor-default'
+                      }`}
                   >
                     <div
-                      className={`flex items-center gap-2 ${
-                        idx === 0 ? 'justify-start' : 'justify-center'
-                      }`}
+                      className={`flex items-center gap-2 ${idx === 0 ? 'justify-start' : 'justify-center'
+                        }`}
                     >
                       {header.label}
                       {header.sortable && sortConfig?.key === header.key && <ArrowIcon />}
@@ -194,41 +192,41 @@ const SharedSellers = (): JSX.Element => {
 
                 return (
                   <TableRow key={index}>
-                    <TableCell className="py-[10px] px-6 font-semibold text-[#30313D] text-sm border-t border-b border-l border-[#E4E4E4] bg-white rounded-l-lg truncate whitespace-nowrap text-left">
+                    <TableCell className="py-[10px] px-3 font-semibold text-[#30313D] text-sm border-t border-b border-l border-[#E4E4E4] bg-white rounded-l-lg whitespace-nowrap text-left">
                       {partner.no}
                     </TableCell>
-                    <TableCell className="py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap">
+                    <TableCell className="py-[10px] px-3 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white">
                       {partner.seller_name}
                     </TableCell>
-                    <TableCell className="py-[10px] px-6 text-left font-medium text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap">
+                    <TableCell className="py-[10px] px-3 text-left font-medium text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white">
                       <div className="flex items-center justify-center gap-3">
                         {countryData?.svg_icon_url ? (
                           <img
                             src={countryData?.svg_icon_url}
                             alt="flag"
-                            className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
+                            className="w-[20px] h-[20px] rounded-full bg-gray-200 shrink-0"
                           />
                         ) : (
-                          <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
-                            n/a
+                          <span className="w-[20px] h-[20px] rounded-full bg-gray-200 text-gray-800 text-[8px] flex items-center justify-center shrink-0">
+                            {t('common.na')}
                           </span>
                         )}
-                        <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                          {countryData?.name ?? 'N/A'}
+                        <span className="text-[#30313D] text-xs font-semibold leading-tight">
+                          {countryData?.name ?? t('common.na')}
                         </span>
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap">
+                    <TableCell className="py-[10px] px-3 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white">
                       {partner.industry}
                     </TableCell>
-                    <TableCell className="py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap">
+                    <TableCell className="py-[10px] px-3 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white whitespace-nowrap">
                       {partner.share}
                     </TableCell>
-                    <TableCell className="py-[10px] px-6 text-center text-[#064771] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap underline">
+                    <TableCell className="py-[10px] px-3 text-center text-[#064771] text-sm border-t border-b border-[#E4E4E4] bg-white whitespace-nowrap underline">
                       {partner.dealroom}
                     </TableCell>
-                    <TableCell className="py-2 px-6 text-center border-t border-b border-r border-[#E4E4E4] bg-white rounded-r-lg whitespace-nowrap">
+                    <TableCell className="py-2 px-3 text-center border-t border-b border-r border-[#E4E4E4] bg-white rounded-r-lg whitespace-nowrap">
                       <div className="flex items-center justify-center gap-3">
                         <button
                           type="button"

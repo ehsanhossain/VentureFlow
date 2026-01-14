@@ -42,7 +42,7 @@ const EmployeeDetails: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<any>>(new Set());
   const handleExportData = () => {
-  
+
     alert('Exporting data... (Parent function)');
   };
 
@@ -58,7 +58,7 @@ const EmployeeDetails: React.FC = () => {
 
     if (success) {
       setSelectedEmployeeIds(new Set());
-     
+
     }
   };
 
@@ -96,8 +96,8 @@ const EmployeeDetails: React.FC = () => {
         setEmployee(data);
         // setCountry(data.country);
 
-   
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to fetch employee" });
       }
@@ -115,8 +115,8 @@ const EmployeeDetails: React.FC = () => {
         const data = response.data.data;
 
         setAssignedProjects(data);
-   
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to fetch projects" });
       }
@@ -133,7 +133,7 @@ const EmployeeDetails: React.FC = () => {
       } else {
         newSelectedIds.add(employeeId);
       }
-    
+
       return newSelectedIds;
     });
   };
@@ -144,10 +144,10 @@ const EmployeeDetails: React.FC = () => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDeleteData = async (selectedIdsArray: any[]) => {
- 
+
 
     if (!selectedIdsArray || selectedIdsArray.length === 0) {
-    
+
       alert('Please select items to delete.');
       return false;
     }
@@ -159,19 +159,19 @@ const EmployeeDetails: React.FC = () => {
 
     if (window.confirm(confirmMessage)) {
       try {
-      
+
         await api.delete(`/api/employee`, {
           data: { ids: selectedIdsArray },
         });
 
-      
+
         showAlert({
           type: 'success',
           message: `${selectedIdsArray.length} item(s) deleted successfully!`,
         });
         // fetchEmployees(); // Function not defined in this scope
         return true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({
           type: 'error',
@@ -305,9 +305,8 @@ const EmployeeDetails: React.FC = () => {
 
               <button
                 onClick={() => handleClick('employee')}
-                className={`relative flex items-center ${
-                  selectedButton === 'employee' ? 'text-[#064771] underline' : 'text-[#212121]'
-                } font-poppins text-[16px] font-semibold mt-[160px]`}
+                className={`relative flex items-center ${selectedButton === 'employee' ? 'text-[#064771] underline' : 'text-[#212121]'
+                  } font-poppins text-[16px] font-semibold mt-[160px]`}
               >
                 <p>Employee Details</p>
                 {selectedButton === 'employee' && (
@@ -317,9 +316,8 @@ const EmployeeDetails: React.FC = () => {
 
               <button
                 onClick={() => handleClick('projects')}
-                className={`relative flex items-center ${
-                  selectedButton === 'projects' ? 'text-[#064771] underline' : 'text-[#212121]'
-                } font-poppins text-[16px] font-semibold mt-8 mb-4`}
+                className={`relative flex items-center ${selectedButton === 'projects' ? 'text-[#064771] underline' : 'text-[#212121]'
+                  } font-poppins text-[16px] font-semibold mt-8 mb-4`}
               >
                 <p>Assigned Projects</p>
                 {selectedButton === 'projects' && (
@@ -388,7 +386,7 @@ const EmployeeDetails: React.FC = () => {
                     <div className="flex items-center gap-[80px]">
                       <p className="text-[#232323]">Date of Birth</p>
                       <div className="text-left">
-                        <p className="text-[#232323</div>] font-medium">
+                        <p className="text-[#232323] font-medium">
                           {employee?.dob ? new Date(employee.dob).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
@@ -662,13 +660,13 @@ const EmployeeDetails: React.FC = () => {
                       <p className="self-stretch text-[#000000] text-xs text-right leading-[24.000316619873047px] tracking-[-0.18px] text-nowrap">
                         {employee?.updated_at
                           ? new Date(employee.updated_at).toLocaleString('en-US', {
-                              month: '2-digit',
-                              day: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            })
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                          })
                           : 'N/A'}
                       </p>
                     </div>
@@ -744,11 +742,9 @@ const EmployeeDetails: React.FC = () => {
                         {tableHeaders.map((header, idx) => (
                           <TableHead
                             key={idx}
-                            className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${
-                              idx === 0 ? 'border-l first:rounded-l-lg' : ''
-                            } ${
-                              idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
-                            } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
+                            className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                              } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
+                              } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
                           >
                             <div className="flex items-center justify-center gap-2">
                               {header}

@@ -1236,7 +1236,7 @@ const AllSellers = ({
               const statusColors = {
                 Active: 'bg-green-700',
                 Completed: 'bg-green-700',
-                'Deal Closed': 'bg-blue-600',
+                'Deal Closed': 'bg-[#064771]',
                 'In Progress': 'bg-cyan-900',
                 Interested: 'bg-orange-500',
                 'On Hold': 'bg-yellow-400',
@@ -1395,7 +1395,7 @@ const AllSellers = ({
 
                                     {isOverflowing && !expanded && (
                                       <span
-                                        className="text-blue-700 font-semibold cursor-pointer"
+                                        className="text-[#053a5c] font-semibold cursor-pointer"
                                         onClick={() => setExpanded(true)}
                                       >
                                         See More
@@ -2134,3 +2134,4 @@ const AllSellers = ({
 };
 
 export default AllSellers;
+

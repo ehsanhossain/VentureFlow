@@ -4,6 +4,9 @@ import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { menuItems } from "../config/menuItems";
 import { Label } from "../assets/label";
 import { AuthContext } from "../routes/AuthContext";
+import { useTranslation } from "react-i18next";
+import Logo from "../assets/logo";
+import LogoIcon from "../assets/logo-icon";
 
 interface SidebarProps {
   sidebarExpanded: boolean;
@@ -22,6 +25,24 @@ export function Sidebar({
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userRole = (context?.user as any)?.role;
+  const { t } = useTranslation();
+
+  const getTranslationKey = (label: string) => {
+    const mapping: { [key: string]: string } = {
+      "Dashboard": "navigation.dashboard",
+      "Prospects": "navigation.companies",
+      "Seller Register": "navigation.sellerRegister",
+      "Buyer Register": "navigation.buyerRegister",
+      "Deal Pipeline": "navigation.dealPipeline",
+      "Employee": "navigation.employees",
+      "Settings": "navigation.settings",
+      "General": "navigation.general",
+      "Currency": "navigation.currency",
+      "Partner Management": "navigation.partnerManagement",
+      "Pipeline Workflow": "navigation.pipelineWorkflow"
+    };
+    return mapping[label] || label;
+  };
 
   const filteredMenuItems = menuItems.filter((item) => {
     if (!item.roles) return true;
@@ -38,7 +59,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-white border-r transition-all duration-300 z-30
+      className={`fixed left-0 top-0 h-screen bg-white border-r transition-all duration-300 z-50 overflow-x-hidden
         ${mobileMenuOpen
           ? "translate-x-0"
           : "-translate-x-full md:translate-x-0"
@@ -46,21 +67,38 @@ export function Sidebar({
         ${sidebarExpanded ? "w-64" : "w-16"}`}
     >
       <div className="relative h-full flex flex-col">
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-          className="p-2 hover:bg-gray-100 rounded-lg hidden md:block absolute -right-4 top-2 bg-white border shadow-sm z-50"
-        >
-          {sidebarExpanded ? (
-            <ChevronLeft className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-        </button>
+        {/* Logo Area */}
+        <div className="flex flex-col items-center border-b border-gray-100 flex-shrink-0 relative py-3 gap-2">
+          <Link to="/" className="text-[#064771] flex items-center justify-center transition-all duration-300 overflow-hidden">
+            {sidebarExpanded ? (
+              <div className="px-4 w-32 animate-in fade-in duration-300">
+                <Logo />
+              </div>
+            ) : (
+              <div className="w-5 animate-in zoom-in duration-300">
+                <LogoIcon />
+              </div>
+            )}
+          </Link>
+
+          {/* Sidebar Toggle Button (Under Logo) */}
+          <button
+            onClick={() => setSidebarExpanded(!sidebarExpanded)}
+            className="p-1 px-2 hover:bg-gray-100 rounded-md hidden md:flex items-center justify-center transition-all duration-300 text-gray-400 hover:text-[#064771]"
+          >
+            {sidebarExpanded ? (
+              <ChevronLeft className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </button>
+        </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 flex items-center justify-center overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
-          <div className="space-y-1 w-full px-2 py-2">
+        <nav
+          className={`flex-1 flex flex-col py-4 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-200 ${!sidebarExpanded && 'overflow-y-visible'}`}
+        >
+          <div className="space-y-1 w-full px-2">
             {filteredMenuItems.map((item, index) => {
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isActive =
@@ -72,51 +110,47 @@ export function Sidebar({
                 return (
                   <div
                     key={index}
-                    className="w-full relative"
+                    className="w-full relative group"
                     onMouseEnter={() => !sidebarExpanded && setExpandedMenu(item.label)}
                     onMouseLeave={() => !sidebarExpanded && setExpandedMenu(null)}
                   >
                     {/* Parent menu item */}
                     <div
                       className={`
-                        flex items-center rounded-lg transition-all w-full px-2
-                        ${sidebarExpanded && isActive
-                          ? "bg-gray-200 text-gray-900"
-                          : ""
+                        flex items-center rounded-lg transition-all w-full px-2 my-0.5
+                        ${isActive && sidebarExpanded
+                          ? "bg-blue-50 text-[#064771]"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }
                       `}
                     >
+                      {isActive && sidebarExpanded && (
+                        <div className="absolute left-0 w-1 h-6 bg-[#064771] rounded-r-full" />
+                      )}
+
                       {/* Clickable icon+label that navigates to path */}
                       <Link
                         to={item.path || "/"}
-                        className={`
-                          flex items-center flex-1 cursor-pointer
-                          ${!sidebarExpanded && isActive
-                            ? "bg-gray-200 text-gray-900"
-                            : ""
-                          }
-                        `}
+                        className="flex items-center flex-1 py-2 cursor-pointer outline-none"
                       >
-                        <div
-                          className={`
-                            p-2 rounded-lg transition-colors
-                            ${!isActive ? "text-gray-700 hover:bg-gray-100" : ""}
-                          `}
-                        >
-                          <item.icon className="w-6 h-6 shrink-0" />
+                        <div className={`
+                            flex items-center justify-center w-6 h-6 shrink-0 transition-colors
+                            ${!sidebarExpanded && isActive ? "text-[#064771]" : ""}
+                        `}>
+                          <item.icon className="w-5 h-5" strokeWidth={1.5} />
                         </div>
 
                         {/* Label - visible only when expanded */}
                         <span
                           className={`
-                            transition-all duration-300 text-sm font-medium whitespace-nowrap ml-2
+                            transition-all duration-300 text-sm font-medium whitespace-nowrap ml-3
                             ${sidebarExpanded
                               ? "opacity-100"
                               : "opacity-0 w-0 overflow-hidden"
                             }
                           `}
                         >
-                          <Label text={item.label} />
+                          <Label text={t(getTranslationKey(item.label))} />
                         </span>
                       </Link>
 
@@ -125,7 +159,7 @@ export function Sidebar({
                         <button
                           onClick={() => toggleMenu(item.label)}
                           className={`
-                          p-1 rounded hover:bg-gray-200 transition-colors cursor-pointer
+                          p-1 rounded hover:bg-gray-200/50 transition-colors cursor-pointer
                           ${sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                         `}
                         >
@@ -138,7 +172,7 @@ export function Sidebar({
 
                     {/* Sub-items - shown when expanded (Standard Sidebar) */}
                     {sidebarExpanded && isExpanded && (
-                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
+                      <div className="ml-9 mt-1 space-y-1 mb-2">
                         {item.subItems?.map((subItem, subIndex) => (
                           <Link
                             key={subIndex}
@@ -146,15 +180,12 @@ export function Sidebar({
                             className={`
                               flex items-center px-3 py-2 text-sm rounded-lg transition-colors
                               ${location.pathname === subItem.path
-                                ? "bg-gray-200 text-gray-900 font-medium"
-                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                ? "text-[#064771] font-medium bg-blue-50/50"
+                                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                               }
                             `}
                           >
-                            {subItem.icon && (
-                              <subItem.icon className="w-4 h-4 mr-2" />
-                            )}
-                            {subItem.label}
+                            {t(getTranslationKey(subItem.label))}
                           </Link>
                         ))}
                       </div>
@@ -163,22 +194,22 @@ export function Sidebar({
                     {/* Floating Submenu for Collapsed Sidebar */}
                     {!sidebarExpanded && expandedMenu === item.label && (
                       <div
-                        className="absolute left-full top-0 ml-1 pl-1 z-50 min-w-[200px]"
+                        className="absolute left-full top-0 ml-2 pl-2 z-50 min-w-[200px]"
                         onMouseEnter={() => setExpandedMenu(item.label)}
                         onMouseLeave={() => !sidebarExpanded && setExpandedMenu(null)}
                       >
-                        <div className="bg-white border shadow-lg rounded-lg py-2 w-full">
-                          <div className="px-4 py-2 text-sm font-semibold text-gray-900 border-b bg-gray-50">
-                            {item.label}
+                        <div className="bg-white border border-gray-100 shadow-xl rounded-lg py-2 w-full animate-in fade-in zoom-in-95 duration-150">
+                          <div className="px-4 py-2 text-sm font-semibold text-gray-900 border-b border-gray-50 bg-gray-50/50">
+                            {t(getTranslationKey(item.label))}
                           </div>
                           {item.subItems?.map((subItem, subIndex) => (
                             <Link
                               key={subIndex}
                               to={subItem.path}
-                              className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-[#064771] transition-colors"
+                              className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#064771] transition-colors"
                             >
-                              {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
-                              {subItem.label}
+                              {subItem.icon && <subItem.icon className="w-4 h-4 mr-2 opacity-70" />}
+                              {t(getTranslationKey(subItem.label))}
                             </Link>
                           ))}
                         </div>
@@ -188,44 +219,50 @@ export function Sidebar({
                 );
               }
 
+              // Simple Menu Item
               return (
-                <Link
-                  key={index}
-                  to={item.path || "/"}
-                  className={`
-                    flex items-center rounded-lg transition-all w-full px-2
-                    ${sidebarExpanded && isActive
-                      ? "bg-gray-200 text-gray-900"
-                      : ""
-                    }
-                  `}
-                >
-                  <div
-                    className={`
-                      p-2 rounded-lg transition-colors
-                      ${!sidebarExpanded && isActive
-                        ? "bg-gray-200 text-gray-900"
-                        : ""
-                      }
-                      ${!isActive ? "text-gray-700 hover:bg-gray-100" : ""}
-                    `}
-                  >
-                    <item.icon className="w-6 h-6 shrink-0" />
-                  </div>
+                <div key={index} className="w-full relative group">
+                  {/* Tooltip for collapsed state */}
+                  {!sidebarExpanded && (
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap">
+                      {t(getTranslationKey(item.label))}
+                    </div>
+                  )}
 
-                  {/* Label - visible only when expanded */}
-                  <span
+                  <Link
+                    to={item.path || "/"}
                     className={`
-                      transition-all duration-300 text-sm font-medium whitespace-nowrap ml-2
-                      ${sidebarExpanded
-                        ? "opacity-100"
-                        : "opacity-0 w-0 overflow-hidden"
+                        flex items-center rounded-lg transition-all w-full px-2 py-2 my-0.5 outline-none
+                        ${isActive
+                        ? sidebarExpanded ? "bg-blue-50 text-[#064771]" : "text-[#064771] bg-blue-50"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }
                     `}
                   >
-                    <Label text={item.label} />
-                  </span>
-                </Link>
+                    {isActive && sidebarExpanded && (
+                      <div className="absolute left-0 w-1 h-6 bg-[#064771] rounded-r-full" />
+                    )}
+
+                    <div
+                      className="flex items-center justify-center w-6 h-6 shrink-0"
+                    >
+                      <item.icon className="w-5 h-5" strokeWidth={1.5} />
+                    </div>
+
+                    {/* Label - visible only when expanded */}
+                    <span
+                      className={`
+                        transition-all duration-300 text-sm font-medium whitespace-nowrap ml-3
+                        ${sidebarExpanded
+                          ? "opacity-100"
+                          : "opacity-0 w-0 overflow-hidden"
+                        }
+                        `}
+                    >
+                      <Label text={t(getTranslationKey(item.label))} />
+                    </span>
+                  </Link>
+                </div>
               );
             })}
           </div>

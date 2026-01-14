@@ -5,6 +5,7 @@ import { showAlert } from '../../../components/Alert';
 interface CreateDealModalProps {
     onClose: () => void;
     onCreated: () => void;
+    defaultView?: 'buyer' | 'seller';
 }
 
 interface Buyer {
@@ -26,7 +27,7 @@ interface User {
     name: string;
 }
 
-const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
+const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDealModalProps) => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>([]);
@@ -165,13 +166,17 @@ const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
                     {[1, 2, 3].map((s) => (
                         <div key={s} className="flex items-center">
                             <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s ? 'bg-[#064771] text-white' : 'bg-gray-200 text-gray-500'
                                     }`}
                             >
                                 {s}
                             </div>
                             <span className={`ml-2 text-sm ${step >= s ? 'text-gray-900' : 'text-gray-500'}`}>
-                                {s === 1 ? 'Select Buyer' : s === 2 ? 'Select Seller' : 'Deal Details'}
+                                {s === 1
+                                    ? (defaultView === 'seller' ? 'Select Seller' : 'Select Buyer')
+                                    : s === 2
+                                        ? (defaultView === 'seller' ? 'Select Buyer' : 'Select Seller')
+                                        : 'Deal Details'}
                             </span>
                             {s < 3 && <div className="w-12 h-0.5 mx-4 bg-gray-200" />}
                         </div>
@@ -195,11 +200,11 @@ const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
                                         key={buyer.id}
                                         onClick={() => handleSelectBuyer(buyer)}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${selectedBuyer?.id === buyer.id
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : 'hover:bg-gray-50'
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'hover:bg-gray-50'
                                             }`}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
                                             {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
                                         </div>
                                         <span className="text-sm font-medium text-gray-900">
@@ -229,8 +234,8 @@ const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
                                         key={seller.id}
                                         onClick={() => handleSelectSeller(seller)}
                                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${selectedSeller?.id === seller.id
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'hover:bg-gray-50'
+                                            ? 'border-green-500 bg-green-50'
+                                            : 'hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
@@ -349,7 +354,7 @@ const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
                             }
                         }}
                         disabled={loading}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        className="px-6 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Creating...' : step < 3 ? 'Next' : 'Create Deal'}
                     </button>
@@ -360,3 +365,4 @@ const CreateDealModal = ({ onClose, onCreated }: CreateDealModalProps) => {
 };
 
 export default CreateDealModal;
+

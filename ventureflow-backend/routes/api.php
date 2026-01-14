@@ -21,6 +21,8 @@ use App\Http\Controllers\BuyerController;
 use App\Http\Controllers\IndustryController;
 use App\Http\Controllers\RoleController;
 use App\Models\Employee;
+use App\Http\Controllers\PipelineStageController;
+use App\Http\Controllers\SearchController;
 
 use App\Http\Controllers\NotificationController;
 
@@ -29,9 +31,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // API
 Route::get('/deals/seller', [ApiController::class, 'getSellerDealInfo']);
+Route::post('/ai/extract', [\App\Http\Controllers\AIController::class, 'extract']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/search', [SearchController::class, 'index']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/user/change-password', [AuthController::class, 'changePassword']);
 
     Route::get('/user', function (Request $request) {
         $user = $request->user();
@@ -85,12 +90,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     //Partners Routes
+    //Partners Routes
     Route::get('/partner/get-last-sequence', [PartnerController::class, 'getLastSequence']);
     Route::delete('/partners', [PartnerController::class, 'destroy']);
     Route::get('/partners/{partner}/shared-sellers', [PartnerController::class, 'sharedSellers']);
     Route::get('/partners/{partner}/shared-buyers', [PartnerController::class, 'sharedBuyers']);
-    Route::apiResource('partner', PartnerController::class);
-    Route::get('/partners/fetch', [PartnerController::class, 'fetchPartner']);
+    Route::get('/partners/fetch', [PartnerController::class, 'fetchPartner']); // Moved up
+    Route::apiResource('partners', PartnerController::class); // Changed to plural
     Route::post('/partner-overviews', [PartnerController::class, 'partnerOverviewsStore']);
     Route::get('/partner-overviews/{id}', [PartnerController::class, 'partnerOverviewShow']);
     Route::get('/partner-structure/{id}', [PartnerController::class, 'partnerStructureShow']);
@@ -143,4 +149,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    // Pipeline Stage Routes
+    Route::post('/pipeline-stages/bulk', [PipelineStageController::class, 'updateBulk']);
+    Route::get('/pipeline-stages', [PipelineStageController::class, 'index']);
+    Route::post('/pipeline-stages', [PipelineStageController::class, 'store']);
+    Route::patch('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'update']);
+    Route::delete('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'destroy']);
 });

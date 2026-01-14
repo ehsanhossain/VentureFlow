@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import api from "../../config/api";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../Alert";
+import { useTranslation } from "react-i18next";
 
 const BuyerPortal: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [totalCounts, setTotalCounts] = useState<{ buyers: number } | null>(null);
   const [monthlyCounts, setMonthlyCounts] = useState<{ buyers: number } | null>(null);
@@ -15,7 +17,7 @@ const BuyerPortal: React.FC = () => {
         const res = response.data;
         setTotalCounts(res.total);
         setMonthlyCounts(res.current_month);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_) {
         showAlert({ type: "error", message: "Failed to fetch seller/buyer data" });
       }
@@ -64,9 +66,11 @@ const BuyerPortal: React.FC = () => {
                 {monthlyCounts?.buyers ?? "-"}
               </div>
               <div className="text-[#727272] text-center text-sm font-medium">
-                Registered in{" "}
-                {new Date().toLocaleString("default", { month: "long" })}{" "}
-                {new Date().getFullYear()}
+                {t('dashboard.registeredIn', {
+                  month: new Date().toLocaleString(undefined, { month: "long" }),
+                  year: new Date().getFullYear(),
+                  defaultValue: `Registered in ${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`
+                })}
               </div>
             </div>
             <div className="w-px h-16 bg-[#30313D] hidden sm:block"></div>
@@ -75,7 +79,7 @@ const BuyerPortal: React.FC = () => {
                 {totalCounts?.buyers ?? "-"}
               </div>
               <div className="text-[#727272] text-center text-sm font-medium">
-                Total Registered
+                {t('dashboard.totalRegistered', 'Total Registered')}
               </div>
             </div>
           </div>
@@ -85,7 +89,7 @@ const BuyerPortal: React.FC = () => {
           onClick={() => navigate("/buyer-portal")}
         >
           <div className="text-[#064771] text-xl font-semibold underline">
-            Buyer Portal
+            {t('dashboard.buyerPortal', 'Buyer Portal')}
           </div>
           <svg
             width={25}

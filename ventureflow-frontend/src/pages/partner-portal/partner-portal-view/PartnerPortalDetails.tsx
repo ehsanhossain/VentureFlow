@@ -3,54 +3,24 @@ import { Tabs } from '../../../assets/tabs';
 import Breadcrumb from '../../../assets/breadcrumb';
 import LetterIcon from '../../../assets/svg/LetterIcon';
 import SharedSellersIcon from '../../../assets/svg/SharedSellersIcon';
-import SharedBuyersIcon from '../../../assets/svg/SharedBuyersIcon';
 import Attachment from '../../../assets/svg/Attachment';
 import PartnerOverview from './PartnerOverview';
 import SharedSellers from './SharedSellers';
 import SharedBuyers from './SharedBuyers';
 import Attachments from './Attachments';
+import PartnerAccess from './PartnerAccess';
 import { useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
 const PartnerOverviewTab = () => <PartnerOverview />;
 const SharedSellersTab = () => <SharedSellers />;
 const SharedBuyersTab = () => <SharedBuyers />;
 const AttachmentsTab = () => <Attachments />;
-
-const tabsData = [
-  {
-    id: 'partner-overview',
-    label: "Partner's Overview",
-    activeIcon: <LetterIcon isActive={true} />,
-    inactiveIcon: <LetterIcon isActive={false} />,
-  },
-  {
-    id: 'shared-sellers',
-    label: 'Shared Sellers',
-    activeIcon: <SharedSellersIcon isActive={true} />,
-    inactiveIcon: <SharedSellersIcon isActive={false} />,
-  },
-  {
-    id: 'shared-buyers',
-    label: 'Shared Buyers',
-    activeIcon: <SharedBuyersIcon isActive={true} />,
-    inactiveIcon: <SharedBuyersIcon isActive={false} />,
-  },
-  {
-    id: 'attachments',
-    label: 'Attachments',
-    activeIcon: <Attachment isActive={true} />,
-    inactiveIcon: <Attachment isActive={false} />,
-  },
-];
-
-const TabContentMap: Record<string, React.FC> = {
-  'partner-overview': PartnerOverviewTab,
-  'shared-sellers': SharedSellersTab,
-  'shared-buyers': SharedBuyersTab,
-  attachments: AttachmentsTab,
-};
+const PartnerAccessTab = () => <PartnerAccess />;
 
 interface PartnerData {
   partner_overview?: {
@@ -58,44 +28,87 @@ interface PartnerData {
   };
 }
 
+const TabContentMap: Record<string, React.FC> = {
+  'partner-overview': PartnerOverviewTab,
+  'shared-sellers': SharedSellersTab,
+  'shared-buyers': SharedBuyersTab,
+  'attachments': AttachmentsTab,
+  'partner-access': PartnerAccessTab,
+};
+
 const PartnerPortalDetails: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [partner, setPartner] = useState<PartnerData | null>(null);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>('partner-overview');
 
   useEffect(() => {
     const fetchPartner = async () => {
       try {
-        const response = await api.get(`/api/partner/${id}`);
+        const response = await api.get(`/api/partners/${id}`);
         const partnerData = response.data?.data || {};
         setPartner(partnerData);
       } catch {
-        showAlert({ type: "error", message: "Failed to fetch partner" });
+        showAlert({ type: "error", message: t('settings.partners.fetchError') });
       }
     };
 
     if (id) {
       fetchPartner();
     }
-  }, [id]);
+  }, [id, t]);
 
   const breadcrumbLinks = [
-    { label: 'Home', url: '/', isCurrentPage: false },
-    { label: 'Partner Portal', url: '/partner-portal', isCurrentPage: false },
+    { label: t('common.home'), url: '/', isCurrentPage: false },
+    { label: t('settings.title'), url: '/settings', isCurrentPage: false },
+    { label: t('settings.partners.title'), url: '/settings/partners', isCurrentPage: false },
     {
-      label: id ? partner?.partner_overview?.reg_name || 'Edit Partner' : 'Create a New Partner',
+      label: id ? partner?.partner_overview?.reg_name || t('common.details') : t('common.detailView'),
       url: '',
       isCurrentPage: true,
     },
   ];
 
-  const [activeTab, setActiveTab] = useState<string>('company-overview');
+  const tabsData = [
+    {
+      id: 'partner-overview',
+      label: t('settings.partners.tabs.overview'),
+      activeIcon: <LetterIcon isActive={true} />,
+      inactiveIcon: <LetterIcon isActive={false} />,
+    },
+    {
+      id: 'shared-sellers',
+      label: t('settings.partners.tabs.sharedSellers'),
+      activeIcon: <SharedSellersIcon isActive={true} />,
+      inactiveIcon: <SharedSellersIcon isActive={false} />,
+    },
+    {
+      id: 'shared-buyers',
+      label: t('settings.partners.tabs.sharedBuyers'),
+      activeIcon: <SharedSellersIcon isActive={true} />,
+      inactiveIcon: <SharedSellersIcon isActive={false} />,
+    },
+    {
+      id: 'attachments',
+      label: t('settings.partners.tabs.attachments'),
+      activeIcon: <Attachment isActive={true} />,
+      inactiveIcon: <Attachment isActive={false} />,
+    },
+    {
+      id: 'partner-access',
+      label: t('settings.partners.tabs.access'),
+      activeIcon: <Settings className="w-5 h-5 text-[#064771]" />,
+      inactiveIcon: <Settings className="w-5 h-5 text-gray-500" />,
+    },
+  ];
 
   const ActiveComponent = TabContentMap[activeTab] || PartnerOverviewTab;
-  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col w-full py-4 font-poppins">
-      <div className="flex flex-col w-full p-[25px]">
-        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Partner in Details </h1>
+      <div className="flex flex-col w-full px-[25px]">
+        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">{t('settings.partners.detailsTitle')}</h1>
         <div className="flex items-center gap-2.5 mb-6">
           <div className="flex items-center gap-1 py-1 px-3 rounded bg-[#064771]">
             <svg
@@ -122,10 +135,10 @@ const PartnerPortalDetails: React.FC = () => {
               />
             </svg>
             <button
-              onClick={() => navigate('/partner-portal')}
+              onClick={() => navigate('/settings/partners')}
               className="bg-transparent border-none p-0 cursor-pointer"
             >
-              <span className="text-white text-[.8125rem] font-semibold">Back</span>
+              <span className="text-white text-[.8125rem] font-semibold">{t('common.back')}</span>
             </button>
           </div>
           <Breadcrumb links={breadcrumbLinks} />

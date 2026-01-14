@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import Breadcrumb from '../../assets/breadcrumb';
 import ArrowIcon from '../../assets/svg/ArrowIcon';
-import { RefreshCwIcon } from 'lucide-react';
+import { RefreshCwIcon, MoreVertical, Globe, User } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import { useTranslation } from 'react-i18next';
 
 import {
   Table,
@@ -17,12 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { ActionButton } from '../../components/ActionButton';
 import clsx from 'clsx';
 import { showAlert } from '../../components/Alert';
-
-const breadcrumbLinks = [
-  { label: 'Home', url: '/', isCurrentPage: false },
-  { label: 'Settings', url: '/settings', isCurrentPage: false },
-  { label: 'Currency', url: '', isCurrentPage: true },
-];
 
 type Currency = {
   id: string | number;
@@ -51,15 +45,13 @@ interface ApiCurrency {
 }
 
 const CurrencyTable = (): JSX.Element => {
-  const tableHeaders: { label: string; key: keyof Currency }[] = [
-    { label: 'Currency Name ', key: 'name' },
-    { label: 'Currency Code', key: 'code' },
-    { label: 'Currency Sign', key: 'sign' },
-    { label: 'Country', key: 'country' },
-    { label: 'Dollar Unit', key: 'dollarUnit' },
-    { label: 'Exchange Rate', key: 'exchangeRate' },
-    { label: 'Source', key: 'source' },
-    { label: 'Last Updated', key: 'lastUpdated' },
+  const { t } = useTranslation();
+
+  const tableHeaders: { label: string; key: keyof Currency | 'actions' }[] = [
+    { label: t('settings.currency.name'), key: 'name' },
+    { label: t('settings.currency.country'), key: 'country' },
+    { label: t('settings.currency.exchangeRate'), key: 'exchangeRate' },
+    { label: t('settings.currency.lastUpdated'), key: 'lastUpdated' },
   ];
 
   const [currencyData, setCurrencyData] = useState<Currency[]>([]);
@@ -75,6 +67,7 @@ const CurrencyTable = (): JSX.Element => {
   const [totalPages, setTotalPages] = useState(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [openActionId, setOpenActionId] = useState<string | number | null>(null);
 
   const fetchCurrencyData = async (page = 1, query = '') => {
     try {
@@ -97,9 +90,9 @@ const CurrencyTable = (): JSX.Element => {
         sign: item.currency_sign ?? '',
         country: item.origin_country ?? '',
         countryFlag: item.flag || '/default-flag.png',
-        dollarUnit: '$1.0',
-        exchangeRate: `${item.currency_sign ?? ''}${item.exchange_rate ?? '0'}`,
-        source: item.source ?? '',
+        dollarUnit: '1 USD',
+        exchangeRate: item.exchange_rate ? parseFloat(item.exchange_rate).toFixed(2) : '0.00',
+        source: (item.source || '').toLowerCase(),
         lastUpdated: item.updated_at ? new Date(item.updated_at).toLocaleDateString() : '',
         modifyIcon: '/group-291491.png',
       }));
@@ -108,7 +101,7 @@ const CurrencyTable = (): JSX.Element => {
       setMeta(meta);
       setTotalPages(meta?.last_page || 1);
     } catch {
-      showAlert({ type: "error", message: "Failed to fetch currencies" });
+      showAlert({ type: "error", message: t('settings.currency.fetchError') });
     } finally {
       setLoading(false);
     }
@@ -146,7 +139,8 @@ const CurrencyTable = (): JSX.Element => {
     });
   }, [sortConfig, currencyData]);
 
-  const handleSort = (key: keyof Currency) => {
+  const handleSort = (key: keyof Currency | 'actions') => {
+    if (key === 'actions') return;
     setSortConfig((prev) =>
       prev?.key === key
         ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
@@ -167,7 +161,7 @@ const CurrencyTable = (): JSX.Element => {
     }
 
     const confirmDelete = window.confirm(
-      'Are you sure you want to delete the selected currencies?'
+      t('settings.currency.confirmDelete')
     );
 
     if (!confirmDelete) {
@@ -184,7 +178,7 @@ const CurrencyTable = (): JSX.Element => {
       fetchCurrencyData();
       return true;
     } catch {
-      showAlert({ type: "error", message: "Failed to delete currencies" });
+      showAlert({ type: "error", message: t('settings.currency.deleteError') });
       return false;
     }
   };
@@ -241,50 +235,15 @@ const CurrencyTable = (): JSX.Element => {
   const getCountryById = (id: number) => countries.find((c) => c.id === id);
 
   return (
-    <div className="bg-white">
+    <div className="bg-white flex flex-col h-[calc(100vh-64px)] overflow-hidden">
       <div className="flex flex-col gap-4 px-10 pt-[35px] w-full">
-        <div className="text-[#00081a] font-poppins text-[1.75rem] font-medium leading-normal">
-          Currency Management
-        </div>
-
         <div className="flex flex-wrap justify-between items-center gap-4 w-full">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              className="flex items-center gap-1 py-1 px-3 rounded bg-[#064771]"
-              onClick={() => navigate(-1)}
-            >
-              <svg
-                width={14}
-                height={11}
-                viewBox="0 0 14 11"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M3.66681 9.85943H9.28387C11.2247 9.85943 12.8003 8.2839 12.8003 6.34304C12.8003 4.40217 11.2247 2.82666 9.28387 2.82666H1.55469"
-                  stroke="white"
-                  strokeWidth="1.56031"
-                  strokeMiterlimit={10}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M3.17526 4.59629L1.38281 2.79245L3.17526 1"
-                  stroke="white"
-                  strokeWidth="1.56031"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span className="text-white text-[.8125rem] font-semibold">Back</span>
-            </button>
-
-            <div className="flex items-center">
-              <Breadcrumb links={breadcrumbLinks} />
-            </div>
+          <div className="text-[#00081a] font-poppins text-[1.75rem] font-medium leading-normal">
+            {t('settings.currency.management')}
           </div>
+
           <button
-            className="flex items-center gap-1.5 py-1.5 px-3 bg-[#064771] rounded-full h-[34px]"
+            className="flex items-center gap-1.5 py-2 px-4 bg-[#064771] rounded-lg hover:bg-[#053a5c] transition-colors h-[40px] shadow-sm"
             onClick={() => navigate('/settings/currency/add')}
           >
             <svg
@@ -298,19 +257,20 @@ const CurrencyTable = (): JSX.Element => {
                 fill="white"
               />
             </svg>
-            <span className="text-white text-sm font-medium font-poppins">Add Currency</span>
+            <span className="text-white text-sm font-medium font-poppins">{t('settings.currency.add')}</span>
           </button>
         </div>
       </div>
       <div className="flex justify-between items-center py-[25px] px-[20px] ml-4 mr-4 mt-5">
-        <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white border border-gray-500 rounded-md w-[358px] h-[35px]">
-          <div className="flex items-center gap-3">
+        <div className="flex justify-between items-center gap-3 py-2 px-3 bg-white border border-gray-500 rounded-md w-full max-w-[300px] h-[35px]">
+          <div className="flex items-center gap-3 w-full">
             <svg
               width="21"
               height="21"
               viewBox="0 0 21 21"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              className="shrink-0"
             >
               <path
                 d="M9.93309 16.0908C13.5356 16.0908 16.456 13.1704 16.456 9.56786C16.456 5.96534 13.5356 3.04492 9.93309 3.04492C6.33057 3.04492 3.41016 5.96534 3.41016 9.56786C3.41016 13.1704 6.33057 16.0908 9.93309 16.0908Z"
@@ -330,7 +290,7 @@ const CurrencyTable = (): JSX.Element => {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Search Here"
+              placeholder={t('common.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="text-gray-500 text-sm leading-normal font-poppins bg-transparent border-none outline-none"
@@ -394,18 +354,18 @@ const CurrencyTable = (): JSX.Element => {
           </div>
         </div>
 
-        <div className="flex justify-start items-center gap-4">
-          <span className="text-sm leading-5 font-poppins text-center">
-            <span className="text-gray-500">Showing</span>
+        <div className="flex justify-start items-center gap-2">
+          <span className="text-xs sm:text-sm leading-5 font-poppins text-center whitespace-nowrap">
+            <span className="text-gray-500">{t('common.showing')}</span>
             <span className="text-gray-800 font-poppins mx-1">{currencyData?.length ?? 0}</span>
-            <span className="text-gray-500">of</span>
+            <span className="text-gray-500">{t('common.of')}</span>
             <span className="text-gray-800 font-poppins mx-1">{meta?.total ?? 0}</span>
-            <span className="text-gray-500">Cases</span>
+            <span className="text-gray-500">{t('common.cases')}</span>
           </span>
 
-          <div className="flex items-center gap-4 h-8">
-            <div className="flex items-center gap-4 h-8">
-              <div className="flex items-center gap-4 h-9">
+          <div className="flex items-center gap-2 h-8">
+            <div className="flex items-center gap-2 h-8">
+              <div className="flex items-center gap-2 h-9">
                 <ActionButton
                   onExport={handleExportData}
                   onDelete={handleBulkDeleteClick}
@@ -446,7 +406,7 @@ const CurrencyTable = (): JSX.Element => {
                     />
                   </svg>
                   <span className="text-[#000000] text-sm font-medium leading-normal font-poppins">
-                    Sort By
+                    {t('common.sortBy')}
                   </span>
                 </div>
               </button>
@@ -467,14 +427,14 @@ const CurrencyTable = (): JSX.Element => {
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="text-gray-800 text-sm font-medium font-poppins">Filter</span>
+                <span className="text-gray-800 text-sm font-medium font-poppins">{t('common.filter')}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <section className="flex flex-col items-start gap-3.5 w-full px-8">
-        <div className="w-full">
+      <section className="flex-1 w-full px-4 overflow-auto">
+        <div className="min-w-full inline-block align-middle">
           <Table className="w-full border-separate border-spacing-y-[10px] font-poppins">
             <TableHeader>
               <TableRow>
@@ -482,8 +442,8 @@ const CurrencyTable = (): JSX.Element => {
                   <TableHead
                     key={key}
                     onClick={() => handleSort(key)}
-                    className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
-                      } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
+                    className={`cursor-pointer py-[10px] px-3 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                      } bg-[#F9F9F9] text-center hover:bg-[#d1d1d1] transition-colors`}
                   >
                     <div className="flex items-center justify-center gap-2">
                       {label}
@@ -491,10 +451,10 @@ const CurrencyTable = (): JSX.Element => {
                     </div>
                   </TableHead>
                 ))}
-                <TableHead className="py-[10px] px-6 text-center border-t border-b border-r border-[#E4E4E4] bg-[#F9F9F9] last:rounded-r-lg">
+                <TableHead className="py-[10px] px-3 text-center border-t border-b border-r border-[#E4E4E4] bg-[#F9F9F9] last:rounded-r-lg">
                   <button className="flex items-center justify-center gap-2 bg-[#064771] text-white rounded-full px-4 py-[5px] text-base font-medium hover:bg-[#053d61] transition-colors whitespace-nowrap">
                     <RefreshCwIcon className="w-[15px] h-[15px]" />
-                    Refresh
+                    {t('common.refresh')}
                   </button>
                 </TableHead>
               </TableRow>
@@ -504,7 +464,7 @@ const CurrencyTable = (): JSX.Element => {
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={`loading-${i}`} className="animate-pulse">
                     {Array.from({ length: 9 }).map((_, j) => (
-                      <TableCell key={j} className="py-[10px] px-6 bg-white">
+                      <TableCell key={j} className="py-[10px] px-3 bg-white">
                         <div className="h-4 rounded bg-blue-900/10 w-full"></div>
                       </TableCell>
                     ))}
@@ -513,6 +473,7 @@ const CurrencyTable = (): JSX.Element => {
               ) : sortedCurrencyData.length > 0 ? (
                 sortedCurrencyData.map((currency, idx) => {
                   const isSelected = selectedCurrencyIds.has(currency.id);
+                  const isActionsOpen = openActionId === currency.id;
 
                   const countryData = getCountryById(Number(currency.country));
 
@@ -520,14 +481,14 @@ const CurrencyTable = (): JSX.Element => {
                     <TableRow key={idx}>
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 font-semibold text-[#30313D] text-sm border-t border-b border-l truncate whitespace-nowrap rounded-l-lg',
+                          'py-[10px] px-3 font-semibold text-[#30313D] text-sm border-t border-b border-l min-w-[120px] rounded-l-lg',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
                           }
                         )}
                       >
-                        <div className="flex items-center gap-2 justify-start">
+                        <div className="flex items-center gap-2 justify-center group relative cursor-help" title={currency.name}>
                           {isComponentOpen && (
                             <input
                               type="checkbox"
@@ -537,23 +498,13 @@ const CurrencyTable = (): JSX.Element => {
                               onChange={() => handleCheckboxChange(currency.id)}
                             />
                           )}
-                          <span>{currency.name}</span>
+                          <span className="whitespace-nowrap">{currency.code} {currency.sign}</span>
                         </div>
                       </TableCell>
+
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 text-center font-medium text-[#30313D] text-sm border-t border-b border-[#E4E4E4] truncate whitespace-nowrap',
-                          {
-                            'bg-[#F5FBFF] border-[#064771]': isSelected,
-                            'bg-white border-[#E4E4E4]': !isSelected,
-                          }
-                        )}
-                      >
-                        {currency.code}
-                      </TableCell>
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap',
+                          'py-[10px] px-3 border-t border-b border-[#E4E4E4] bg-white text-center',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
@@ -561,125 +512,108 @@ const CurrencyTable = (): JSX.Element => {
                         )}
                       >
                         <div className="flex items-center justify-center gap-2">
-                          <span>{currency.sign}</span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 border-t border-b border-[#E4E4E4] bg-white truncate whitespace-nowrap',
-                          {
-                            'border-[#064771] bg-[#F5FBFF]': isSelected,
-                            'border-[#E4E4E4] bg-white': !isSelected,
-                          }
-                        )}
-                      >
-                        <div className="flex items-center justify-center gap-3">
-                          <div className="flex justify-start items-center flex-row gap-[8.67px]">
-                            {countryData?.svg_icon_url ? (
-                              <img
-                                src={countryData?.svg_icon_url}
-                                alt="flag"
-                                className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
-                              />
-                            ) : (
-                              <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
-                                n/a
-                              </span>
-                            )}
-                            <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                              {countryData?.name ?? 'N/A'}
-                            </span>
-                          </div>
-                        </div>
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] truncate whitespace-nowrap',
-                          {
-                            'bg-[#F5FBFF] border-[#064771]': isSelected,
-                            'bg-white border-[#E4E4E4]': !isSelected,
-                          }
-                        )}
-                      >
-                        {currency.dollarUnit}
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center font-semibold text-[#064771] text-sm border-t border-b border-[#E4E4E4] truncate whitespace-nowrap',
-                          {
-                            'bg-[#F5FBFF] border-[#064771]': isSelected,
-                            'bg-white border-[#E4E4E4]': !isSelected,
-                          }
-                        )}
-                      >
-                        {currency.exchangeRate}
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center font-semibold text-[#064771] text-sm border-t border-b border-[#E4E4E4] truncate whitespace-nowrap',
-                          {
-                            'bg-[#F5FBFF] border-[#064771]': isSelected,
-                            'bg-white border-[#E4E4E4]': !isSelected,
-                          }
-                        )}
-                      >
-                        {currency.source}
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] truncate whitespace-nowrap',
-                          {
-                            'bg-[#F5FBFF] border-[#064771]': isSelected,
-                            'bg-white border-[#E4E4E4]': !isSelected,
-                          }
-                        )}
-                      >
-                        {currency.lastUpdated}
-                      </TableCell>
-
-                      <TableCell
-                        className={clsx(
-                          'py-[10px] px-6 text-center border-t border-b border-r rounded-r-lg',
-                          {
-                            'border-[#064771] bg-[#F5FBFF]': isSelected,
-                            'border-[#E4E4E4] bg-white': !isSelected,
-                          }
-                        )}
-                      >
-                        <button
-                          className="flex font-poppins items-center justify-center gap-1 border border-[#0C5577] text-[#0C5577] rounded-full px-4 py-[2px] text-base font-medium hover:bg-[#f8fafc] transition-colors"
-                          onClick={() => navigate(`/settings/currency/edit/${currency.id}`)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="15"
-                            viewBox="0 0 16 15"
-                            fill="none"
-                          >
-                            <path
-                              d="M13.6062 4.86725L5.39712 13.0911C4.57966 13.91 2.15306 14.2893 1.61095 13.7462C1.06884 13.2032 1.43885 10.7722 2.25632 9.95326L10.474 1.72077C10.6766 1.49928 10.922 1.32123 11.1953 1.19736C11.4685 1.07348 11.764 1.00633 12.0638 1C12.3636 0.993685 12.6617 1.04829 12.9399 1.16053C13.2181 1.27278 13.4707 1.44036 13.6825 1.65311C13.8943 1.86586 14.0609 2.11939 14.1721 2.3984C14.2834 2.67742 14.3372 2.97611 14.33 3.27649C14.3229 3.57687 14.255 3.87272 14.1306 4.14611C14.0062 4.41951 13.8278 4.66484 13.6062 4.86725Z"
-                              stroke="#064771"
-                              strokeWidth="1.6"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                          {countryData?.svg_icon_url ? (
+                            <img
+                              src={countryData?.svg_icon_url}
+                              alt="flag"
+                              className="w-[20px] h-[20px] rounded-full bg-gray-200 shrink-0"
                             />
-                          </svg>
-                          Modify
-                        </button>
+                          ) : (
+                            <span className="w-[20px] h-[20px] rounded-full bg-gray-200 text-gray-800 text-[8px] flex items-center justify-center shrink-0">
+                              n/a
+                            </span>
+                          )}
+                          <span className="text-[#30313D] text-xs font-semibold whitespace-nowrap">
+                            {countryData?.name ?? 'N/A'}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell
+                        className={clsx(
+                          'py-[10px] px-3 text-center font-semibold text-[#064771] text-sm border-t border-b border-[#E4E4E4] whitespace-nowrap',
+                          {
+                            'bg-[#F5FBFF] border-[#064771]': isSelected,
+                            'bg-white border-[#E4E4E4]': !isSelected,
+                          }
+                        )}
+                      >
+                        1 USD = {currency.exchangeRate} {currency.sign}
+                      </TableCell>
+
+                      <TableCell
+                        className={clsx(
+                          'py-[10px] px-3 text-center text-[#30313D] text-sm border-t border-b border-[#E4E4E4] whitespace-nowrap',
+                          {
+                            'bg-[#F5FBFF] border-[#064771]': isSelected,
+                            'bg-white border-[#E4E4E4]': !isSelected,
+                          }
+                        )}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          {currency.source === 'api' ? (
+                            <Globe className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <User className="w-4 h-4 text-orange-500" />
+                          )}
+                          <span>{currency.lastUpdated}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell
+                        className={clsx(
+                          'py-[10px] px-3 text-center border-t border-b border-r rounded-r-lg relative',
+                          {
+                            'border-[#064771] bg-[#F5FBFF]': isSelected,
+                            'border-[#E4E4E4] bg-white': !isSelected,
+                          }
+                        )}
+                      >
+                        <div className="flex justify-center relative">
+                          <button
+                            onClick={() => setOpenActionId(isActionsOpen ? null : currency.id)}
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <MoreVertical className="w-5 h-5 text-gray-500" />
+                          </button>
+
+                          {isActionsOpen && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setOpenActionId(null)}
+                              ></div>
+                              <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20 flex flex-col py-1">
+                                <button
+                                  onClick={() => {
+                                    setOpenActionId(null);
+                                    navigate(`/settings/currency/edit/${currency.id}`);
+                                  }}
+                                  className="px-4 py-2 text-sm text-left hover:bg-gray-100 text-gray-700"
+                                >
+                                  {t('common.edit')}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionId(null);
+                                    handleDeleteData([currency.id]);
+                                  }}
+                                  className="px-4 py-2 text-sm text-left hover:bg-red-50 text-red-600"
+                                >
+                                  {t('common.delete')}
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-4 text-center text-sm text-gray-500">
-                    No currencies found.
+                  <TableCell colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                    {t('settings.currency.noCurrencies')}
                   </TableCell>
                 </TableRow>
               )}

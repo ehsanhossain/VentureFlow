@@ -15,6 +15,7 @@ import { showAlert } from '../../../components/Alert';
 import { TextArea } from '../../../components/textarea/TextArea';
 import { useNavigate } from 'react-router-dom';
 import { Industry, IndustryDropdown } from '../components/IndustryDropdown';
+import { AIImportModal } from '../../../components/AIImportModal';
 
 type FormValues = {
   companyName: string;
@@ -541,6 +542,71 @@ const CompanyOverview: React.FC = () => {
     }
   }, [companyData, countries, employees, id, setValue, replaceAddress, replaceShareholders]);
 
+  const [showAIModal, setShowAIModal] = useState(false);
+
+  const handleAIApply = (data: any) => {
+    // Basic Details
+    if (data.company_registered_name) setValue('companyName', data.company_registered_name);
+    if (data.company_type) setValue('companyType', data.company_type);
+
+    // Employee counts
+    if (data.employee_count) setValue('totalEmployeeCounts', String(data.employee_count));
+
+    // Contact Info
+    if (data.phone) setValue('companyPhoneNumber', data.phone);
+    if (data.email) setValue('companyEmail', data.email);
+
+    // Web links
+    if (data.website) setValue('websiteLink', data.website);
+    if (data.linkedin) setValue('linkedinLink', data.linkedin);
+    if (data.twitter) setValue('twitterLink', data.twitter);
+    if (data.facebook) setValue('facebookLink', data.facebook);
+    if (data.instagram) setValue('instagramLink', data.instagram);
+    if (data.youtube) setValue('youtubeLink', data.youtube);
+
+    // Contact Person
+    if (data.contact_person_name) setValue('sellerSideContactPersonName', data.contact_person_name);
+    if (data.contact_person_designation) setValue('designationAndPosition', data.contact_person_designation);
+    if (data.contact_person_email) setValue('emailAddress', data.contact_person_email);
+
+    if (data.contact_person_phone) {
+      setValue('contactPersons', [{ phoneNumber: data.contact_person_phone }]);
+    }
+
+    if (data.year_founded) {
+      const year = parseInt(data.year_founded);
+      if (!isNaN(year)) {
+        setValue('yearFounded', new Date(year, 0, 1));
+      }
+    }
+
+    if (Array.isArray(data.shareholders)) {
+      replaceShareholders(data.shareholders.map((name: string) => ({ name })));
+    } else if (data.shareholders && typeof data.shareholders === 'string') {
+      const names = data.shareholders.split(',').map((s: string) => ({ name: s.trim() }));
+      replaceShareholders(names);
+    }
+
+    if (data.headquarters_address) {
+      if (Array.isArray(data.headquarters_address)) {
+        replaceAddress(data.headquarters_address.map((addr: string) => ({ address: addr })));
+      } else {
+        replaceAddress([{ address: data.headquarters_address }]);
+      }
+    }
+
+    if (data.hq_country_name) {
+      const country = countries.find(c => c.name.toLowerCase() === data.hq_country_name.toLowerCase());
+      if (country) {
+        setValue('originCountry', country);
+      }
+    }
+
+    if (data.details) setValue('details', data.details);
+
+    showAlert({ type: 'success', message: 'Form populated from AI data!' });
+  };
+
   const onSubmit = async (data: FormValues) => {
 
     const formData = new FormData();
@@ -918,7 +984,19 @@ const CompanyOverview: React.FC = () => {
               <path d="M0 1H394" stroke="#BCC2C5" />
             </svg>
 
-            <Label text="Company Name" required />
+            <div className="flex justify-between items-center w-full max-w-[500px]">
+              <Label text="Company Name" required />
+              <button
+                type="button"
+                onClick={() => setShowAIModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-[#064771] rounded-full hover:bg-[#053a5c] transition-all shadow-md transform hover:scale-105"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                AI Auto-Fill
+              </button>
+            </div>
             <div className="flex items-center gap-3 p-[10px_20px_10px_20px]rounded-md w-full sm:w-80 md:w-96 lg:w-[500px]">
               <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
                 <Input {...register('companyName', {})} placeholder="Enter Company Name" />
@@ -2110,8 +2188,15 @@ const CompanyOverview: React.FC = () => {
           </div>
         </div>
       </div>
+      <AIImportModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onApply={handleAIApply}
+        type="seller"
+      />
     </form>
   );
 };
 
 export default CompanyOverview;
+

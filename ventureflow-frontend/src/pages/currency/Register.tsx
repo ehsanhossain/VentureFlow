@@ -7,12 +7,13 @@ import api from '../../config/api';
 import axios from 'axios';
 import { showAlert } from '../../components/Alert';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-const breadcrumbLinks = [
-  { label: 'Home', url: '/', isCurrentPage: false },
-  { label: 'Settings', url: '/settings', isCurrentPage: false },
-  { label: 'Currency', url: '/settings/currency', isCurrentPage: false },
-  { label: 'Register', url: '', isCurrentPage: true },
+const getBreadcrumbLinks = (t: any) => [
+  { label: t('common.home'), url: '/', isCurrentPage: false },
+  { label: t('settings.title'), url: '/settings', isCurrentPage: false },
+  { label: t('settings.currency.title'), url: '/settings/currency', isCurrentPage: false },
+  { label: t('common.register'), url: '', isCurrentPage: true },
 ];
 
 type FormValues = {
@@ -37,13 +38,15 @@ interface ApiCurrency {
 }
 
 const Register: React.FC = () => {
+  const { t } = useTranslation();
+  const breadcrumbLinks = getBreadcrumbLinks(t);
   const [selectedOption, setSelectedOption] = useState('api');
   const navigate = useNavigate();
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [apiRate, setApiRate] = useState<string>('Enter value equivalent to 1 USD');
+  const [apiRate, setApiRate] = useState<string>(t('settings.currency.ratePlaceholder', 'Enter value equivalent to 1 USD'));
 
   const { id } = useParams();
 
@@ -67,7 +70,7 @@ const Register: React.FC = () => {
         }));
         setCountries(formatted);
       } catch {
-        showAlert({ type: "error", message: "Failed to load countries." });
+        showAlert({ type: "error", message: t('settings.partners.error.fetchCountries') });
       } finally {
         setLoading(false);
       }
@@ -87,7 +90,7 @@ const Register: React.FC = () => {
         const response = await api.get(`/api/currencies/${id}`);
         setCurrencyData(response.data);
       } catch {
-        showAlert({ type: "error", message: "Error fetching currency data" });
+        showAlert({ type: "error", message: t('settings.currency.fetchError') });
       } finally {
         setLoading(false);
       }
@@ -138,12 +141,12 @@ const Register: React.FC = () => {
           setValue('exchangeRate', rate.toString());
         } else {
           setValue('exchangeRate', '');
-          setApiRate('Invalid currency code');
+          setApiRate(t('settings.currency.invalidCode', 'Invalid currency code'));
         }
       } catch {
-        showAlert({ type: "error", message: "Error fetching exchange rate" });
+        showAlert({ type: "error", message: t('settings.currency.fetchRateError', 'Error fetching exchange rate') });
         setValue('exchangeRate', '');
-        setApiRate('Error fetching rate');
+        setApiRate(t('settings.currency.fetchRateError', 'Error fetching rate'));
       }
     };
 
@@ -177,9 +180,10 @@ const Register: React.FC = () => {
       }
 
       showAlert({ type: 'success', message: response.data.message });
+      navigate('/settings/currency');
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Something went wrong.';
+        error instanceof Error ? error.message : t('common.errorOccurred', 'Something went wrong.');
       showAlert({
         type: 'error',
         message: errorMessage,
@@ -188,7 +192,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="h-full overflow-auto">
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <span className="animate-spin border-4 border-white border-t-transparent rounded-full w-5 h-5 mr-2"></span>
@@ -199,7 +203,7 @@ const Register: React.FC = () => {
             <div className="flex items-center gap-[13px] w-[1315px] ml-10 mt-4">
               <div className="flex flex-col flex-shrink-0 justify-center items-start gap-4 w-[682px]">
                 <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal]">
-                  Currency Management
+                  {t('settings.currency.management')}
                 </div>
                 <div className="flex items-center self-stretch">
                   <div className="flex items-center gap-2.5 w-[447px]">
@@ -232,7 +236,7 @@ const Register: React.FC = () => {
                           />
                         </svg>
                         <button>
-                          <span className="text-white text-[.8125rem] font-semibold">Back</span>
+                          <span className="text-white text-[.8125rem] font-semibold">{t('common.back', 'Back')}</span>
                         </button>
                       </div>
                     </button>
@@ -247,7 +251,7 @@ const Register: React.FC = () => {
             <div className="flex justify-start items-start flex-col gap-[33px] mt-10">
               <div className="flex justify-start items-start flex-col gap-4 w-[887px] mt-10 ml-10">
                 <p className="self-stretch text-[#0C5577] text-lg font-medium leading-5">
-                  Currency Details
+                  {t('settings.currency.details')}
                 </p>
                 <svg
                   width="880"
@@ -268,20 +272,20 @@ const Register: React.FC = () => {
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                        Currency Name
+                        {t('settings.currency.name')}
                       </span>
                     </div>
 
                     <Input
                       {...register('currencyName', {
-                        required: 'Currency Name is required',
+                        required: t('settings.currency.nameRequired', 'Currency Name is required'),
                       })}
-                      placeholder="Please write the currency name"
-                      error={!!errors.currencyCode}
+                      placeholder={t('settings.currency.namePlaceholder')}
+                      error={!!errors.currencyName}
                     />
-                    {errors.currencyCode && (
+                    {errors.currencyName && (
                       <span className="text-sm text-red-500 font-poppins mt-[-10px]">
-                        {errors.currencyCode.message}
+                        {errors.currencyName.message}
                       </span>
                     )}
                   </div>
@@ -291,15 +295,15 @@ const Register: React.FC = () => {
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                        Currency Code
+                        {t('settings.currency.code')}
                       </span>
                     </div>
 
                     <Input
                       {...register('currencyCode', {
-                        required: 'Currency Code is required',
+                        required: t('settings.currency.codeRequired', 'Currency Code is required'),
                       })}
-                      placeholder="e.g., ₺, TRY, THB (ISO 4217 standard)฿"
+                      placeholder={t('settings.currency.codePlaceholder')}
                       error={!!errors.currencyCode}
                     />
                     {errors.currencyCode && (
@@ -315,15 +319,15 @@ const Register: React.FC = () => {
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                        Currency Sign
+                        {t('settings.currency.sign')}
                       </span>
                     </div>
 
                     <Input
                       {...register('currencySign', {
-                        required: 'Currency Sign is required',
+                        required: t('settings.currency.signRequired', 'Currency Sign is required'),
                       })}
-                      placeholder="e.g., ₺, ฿"
+                      placeholder={t('settings.currency.signPlaceholder')}
                       error={!!errors.currencySign}
                     />
                     {errors.currencySign && (
@@ -339,7 +343,7 @@ const Register: React.FC = () => {
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                        Relevant Origin Country
+                        {t('settings.currency.country')}
                       </span>
                     </div>
                     <Controller
@@ -359,10 +363,10 @@ const Register: React.FC = () => {
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                        Dollar Unit
+                        {t('settings.currency.dollarUnit')}
                       </span>
                     </div>
-                    <Input placeholder="Dollar Unit" readOnly value="Default is set to 1.0 USD" />
+                    <Input placeholder={t('settings.currency.dollarUnit')} readOnly value={t('settings.currency.dollarUnitDefault', 'Default is set to 1.0 USD')} />
                   </div>
                 </div>
 
@@ -372,7 +376,7 @@ const Register: React.FC = () => {
                       <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                         <div className="flex justify-start items-center flex-row gap-[3px]">
                           <span className="text-[#30313D] font-medium leading-[19.2857px]">
-                            Exchange Rate Source
+                            {t('settings.currency.exchangeRateSource')}
                           </span>
                         </div>
                         <div
@@ -459,11 +463,11 @@ const Register: React.FC = () => {
                               <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                                 <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                                   <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                                    Manual Exchange Rate
+                                    {t('settings.currency.manualRate')}
                                   </span>
                                 </div>
                                 <Input
-                                  placeholder="Enter value equivalent to 1 USD"
+                                  placeholder={t('settings.currency.ratePlaceholder')}
                                   readOnly
                                   value={apiRate}
                                 />
@@ -542,14 +546,14 @@ const Register: React.FC = () => {
                               <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                                 <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                                   <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                                    Manual Exchange Rate
+                                    {t('settings.currency.manualRate')}
                                   </span>
                                 </div>
                                 <Input
                                   {...register('exchangeRate', {
-                                    required: 'Exchange Rate is required',
+                                    required: t('settings.currency.rateRequired', 'Exchange Rate is required'),
                                   })}
-                                  placeholder="Enter value equivalent to 1 USD"
+                                  placeholder={t('settings.currency.ratePlaceholder')}
                                   error={!!errors.exchangeRate}
                                 />
                                 {errors.exchangeRate && (
@@ -630,27 +634,17 @@ const Register: React.FC = () => {
                         fill="#DD7A01"
                       />
                     </svg>
-                    <span className="text-[#000000] text-lg font-medium">Hints</span>
+                    <span className="text-[#000000] text-lg font-medium">{t('settings.currency.hints')}</span>
                   </div>
 
                   <div className="w-[480px] p-4  rounded-md ">
                     <ul className="list-disc pl-5 text-[#30313D] text-sm">
-                      <li>
-                        Choose the <span className="font-semibold">&apos;API&apos;</span> option for
-                        automatic, real-time exchange rate updates.
-                      </li>
-                      <li>
-                        Select <span className="font-semibold">&apos;Manual&apos;</span> to input a custom
-                        exchange rate if needed for specific transactions.
-                      </li>
-                      <li>
-                        Ensure accuracy when manually entering rates to maintain consistent
-                        financial records.
-                      </li>
+                      <li>{t('settings.currency.hint1')}</li>
+                      <li>{t('settings.currency.hint2')}</li>
+                      <li>{t('settings.currency.hint3')}</li>
                     </ul>
                   </div>
                   <div className="flex justify-start items-center flex-row gap-5 fixed bottom-4 right-4">
-
                     <button
                       onClick={() => navigate('/settings/currency')}
                       className="flex justify-center items-center gap-2 py-1.5 px-2 bg-[#FFF6F7] border border-[#DF272A] rounded-full w-[100px] h-[34px]"
@@ -676,7 +670,7 @@ const Register: React.FC = () => {
                           strokeLinecap="round"
                         />
                       </svg>
-                      <span className="text-[#DF272A] font-medium">Cancel</span>
+                      <span className="text-[#DF272A] font-medium">{t('common.cancel')}</span>
                     </button>
 
                     <button
@@ -702,11 +696,11 @@ const Register: React.FC = () => {
                           </svg>
                           {id ? (
                             <span className="text-white text-center font-medium font-poppins ml-[4px]">
-                              Update
+                              {t('common.update')}
                             </span>
                           ) : (
                             <span className="text-white text-center font-medium font-poppins ml-[4px]">
-                              Create
+                              {t('common.create')}
                             </span>
                           )}
                         </>

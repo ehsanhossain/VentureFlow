@@ -148,7 +148,7 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
                   key={option.id}
                   onClick={() => handleOptionClick(option.id)}
                   className={`w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between group ${
-                    currentSort === option.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                    currentSort === option.id ? 'bg-blue-50 text-[#053a5c]' : 'text-gray-700'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -161,11 +161,11 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
                   {currentSort === option.id && (
                     <div className="flex items-center gap-2">
                       {currentSortDirection === 'asc' ? (
-                        <ArrowUp className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <ArrowUp className="w-4 h-4 text-[#064771] flex-shrink-0" />
                       ) : (
-                        <ArrowDown className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <ArrowDown className="w-4 h-4 text-[#064771] flex-shrink-0" />
                       )}
-                      <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <Check className="w-4 h-4 text-[#064771] flex-shrink-0" />
                     </div>
                   )}
                 </button>
@@ -179,3 +179,4 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
 };
 
 export default SortDropdown;
+

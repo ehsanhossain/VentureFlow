@@ -42,9 +42,14 @@ const Login = () => {
         setLoading(false);
         return;
       }
-      await login({ email, password, remember: rememberMe });
+      const res = await login({ email, password, remember: rememberMe }) as any;
 
       setLoading(false);
+
+      if (res.data.user.must_change_password) {
+        navigate('/change-password');
+        return;
+      }
 
       showAlert({ type: 'success', message: 'Login successful!' });
 
@@ -63,7 +68,7 @@ const Login = () => {
   return (
     <div className="flex min-h-screen w-screen flex-col md:flex-row overflow-hidden bg-white">
       <div className="flex flex-row flex-1 h-full overflow-hidden bg-white">
-      
+
 
         <div className="hidden md:flex flex-col md:w-2/3 w-full justify-center items-start bg-white overflow-hidden relative h-[97vh] pr-2 pl-[15px] pt-[20px] rounded-[20px]">
           <img
@@ -160,7 +165,7 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleLogin} className="flex flex-col w-full mt-10">
-          
+
             <label className="my-5 mb-1 font-poppins text-base font-normal text-[16px]">
               <span className="text-red-500 font-poppins">*</span> Email
             </label>
@@ -256,14 +261,12 @@ const Login = () => {
                   onChange={() => setRememberMe(!rememberMe)}
                 />
                 <div
-                  className={`w-8 h-5 rounded-full relative transition-all ${
-                    rememberMe ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
+                  className={`w-8 h-5 rounded-full relative transition-all ${rememberMe ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
                 >
                   <div
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-transform ${
-                      rememberMe ? 'translate-x-3.5' : 'translate-x-0'
-                    }`}
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-transform ${rememberMe ? 'translate-x-3.5' : 'translate-x-0'
+                      }`}
                   ></div>
                 </div>
 

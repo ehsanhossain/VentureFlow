@@ -5,24 +5,26 @@ import BuyerPortal from '../components/dashboard/BuyerPortal';
 import PartnerPortal from '../components/dashboard/PartnerPortal';
 import api from '../config/api';
 import { useEffect, useState } from 'react';
-
-const columns = [
-  { label: 'Projects', width: 'w-[350px]', sortable: true },
-  { label: 'Status', width: 'w-[100px]', sortable: true },
-];
+import { useTranslation } from 'react-i18next';
 
 interface DashboardRow {
   id: number;
-  type: string;
+  type: number;
   label: string;
-  image: string | null;
+  image: string | undefined;
   status: string;
   statusColor: string;
   textColor: string;
 }
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<DashboardRow[]>([]);
+
+  const columns = [
+    { label: t('dashboard.projects', 'Projects'), width: 'w-[350px]', sortable: true },
+    { label: t('dashboard.status', 'Status'), width: 'w-[100px]', sortable: true },
+  ];
 
   useEffect(() => {
     const fetchSellerBuyer = async () => {
@@ -32,7 +34,7 @@ const Dashboard = () => {
 
         const formattedRows: DashboardRow[] = res.map((item: { id: number; type: string; reg_name: string; image: string | null; status: string }) => ({
           id: item.id,
-          type: item.type,
+          type: item.type === 'seller' ? 1 : 2,
           label: item.reg_name,
           image: item.image || undefined,
           status: item.status || 'Unknown',
@@ -92,13 +94,13 @@ const Dashboard = () => {
   return (
     <div className="ml-7 mt-7">
       <h1 className="text-[28px] font-medium mb-6 text-[#30313D] leading-[33.214px] font-poppins">
-        Dashboard
+        {t('dashboard.title', 'Dashboard')}
       </h1>
 
       <div className="flex flex-col md:flex-row gap-6 overflow-x-hidden ">
         <div className="flex-1 min-w-[300px] max-w-full min-h-[400px] p-[12px_7px] md:w-[491px] md:h-[718px] bg-[#FBFBFB]">
           <p className="text-[22px] font-semibold mb-4 text-[#30313D] leading-[33.214px] font-poppins pb-[25px]">
-            Project Status
+            {t('dashboard.projectStatus', 'Project Status')}
           </p>
 
           <div className="overflow-y-auto max-h-[calc(718px-100px)] custom-scrollbar">

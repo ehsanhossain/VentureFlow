@@ -45,8 +45,8 @@ interface FormValues {
 }
 
 type IndexEmployeeProps = {
-  onApplyFilters: () => void;
-  onClearFilters: () => void;
+  onApplyFilters?: () => void;
+  onClearFilters?: () => void;
   initialState?: FilterState;
 };
 
@@ -74,8 +74,8 @@ interface Meta {
 }
 
 const IndexEmployee = ({
-  onApplyFilters,
-  onClearFilters,
+  onApplyFilters = () => { },
+  onClearFilters = () => { },
   initialState,
 }: IndexEmployeeProps): JSX.Element => {
   localStorage.removeItem('employee_id');
@@ -204,7 +204,7 @@ const IndexEmployee = ({
       registeredAfter = date.toISOString().split('T')[0];
     }
 
-    
+
 
     const appliedFilters: Record<string, string> = {
       country: formValues.HQCountry ?? '',
@@ -279,7 +279,7 @@ const IndexEmployee = ({
       const response = await api.get('/api/employees', {
         params: { page, search: query },
       });
-     
+
       setEmployees(response.data.data);
       setTotalPages(response.data.meta.last_page);
       setMeta(response.data.meta);
@@ -327,10 +327,10 @@ const IndexEmployee = ({
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<string | number>>(new Set());
 
   const handleDeleteData = async (selectedIdsArray: (string | number)[]) => {
-  
+
 
     if (!selectedIdsArray || selectedIdsArray.length === 0) {
-   
+
       alert('Please select items to delete.');
       return false;
     }
@@ -342,12 +342,12 @@ const IndexEmployee = ({
 
     if (window.confirm(confirmMessage)) {
       try {
-       
+
         await api.delete(`/api/employees`, {
           data: { ids: selectedIdsArray },
         });
 
-       
+
         showAlert({
           type: 'success',
           message: `${selectedIdsArray.length} item(s) deleted successfully!`,
@@ -362,12 +362,12 @@ const IndexEmployee = ({
         return false;
       }
     } else {
-     
+
       return false;
     }
   };
   const handleExportData = () => {
-   
+
     alert('Exporting data... (Parent function)');
   };
   const handleBulkDeleteClick = async () => {
@@ -382,7 +382,7 @@ const IndexEmployee = ({
 
     if (success) {
       setSelectedEmployeeIds(new Set());
-    
+
     }
   };
 
@@ -414,7 +414,7 @@ const IndexEmployee = ({
     const fetchCompanies = async () => {
       try {
         const { data } = await api.get('/api/companies');
-      
+
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const options: Option[] = data.data.map((company: any) => ({
@@ -1026,11 +1026,9 @@ const IndexEmployee = ({
                     <TableHead
                       key={idx}
                       onClick={() => key && handleSort(key)}
-                      className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${
-                        idx === 0 ? 'border-l first:rounded-l-lg' : ''
-                      } ${
-                        idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
-                      } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
+                      className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                        } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
+                        } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
                     >
                       <div className="flex items-center justify-center gap-2">
                         {header}
@@ -1083,9 +1081,8 @@ const IndexEmployee = ({
                             src={
                               employee?.image
                                 ? `${baseURL}/storage/${employee.image}`
-                                : `https://ui-avatars.com/api/?name=${
-                                    employee?.first_name ?? 'User'
-                                  }+${employee?.last_name ?? ''}&background=ccc&color=000&size=128`
+                                : `https://ui-avatars.com/api/?name=${employee?.first_name ?? 'User'
+                                }+${employee?.last_name ?? ''}&background=ccc&color=000&size=128`
                             }
                             alt={`${employee?.first_name ?? ''} ${employee?.last_name ?? ''}`}
                             className="w-[26px] h-[26px] rounded-full object-cover"

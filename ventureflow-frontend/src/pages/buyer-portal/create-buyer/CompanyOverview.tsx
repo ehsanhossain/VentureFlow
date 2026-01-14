@@ -129,8 +129,12 @@ const statusOptions = [
   { value: 'Drafts', label: 'Drafts' },
 ];
 
+import { AIImportModal } from '../../../components/AIImportModal';
+
 const CompanyOverview: React.FC = () => {
+  const [showAIModal, setShowAIModal] = useState(false);
   const baseURL = import.meta.env.VITE_API_BASE_URL;
+
   const setActiveTab = useTabStore((state) => state.setActiveTab);
   const navigate = useNavigate();
   const {
@@ -273,12 +277,12 @@ const CompanyOverview: React.FC = () => {
     }
 
     const selectedIds = selectedIndustries.map((ind) => ind.id);
-    
+
     const subs = industries
       .filter((ind) => selectedIds.includes(ind.id))
       .flatMap((ind) => ind.sub_industries || []);
 
- 
+
     const formattedSubs = subs.map((sub) => ({
       id: sub.id,
       name: sub.name,
@@ -306,7 +310,7 @@ const CompanyOverview: React.FC = () => {
       try {
         const response = await api.get(`/api/buyer/${id}`);
         setCompanyData(response.data.data);
-       
+
       } catch {
         showAlert({ type: "error", message: "Failed to fetch company data" });
       }
@@ -321,12 +325,12 @@ const CompanyOverview: React.FC = () => {
     }
 
     const generateDealroomId = async () => {
-          const countryAlpha = originCountry.alpha;
+      const countryAlpha = originCountry.alpha;
       try {
         const response = await api.get(`/api/buyer/get-last-sequence?country=${countryAlpha}`);
         const lastSequence = response.data.lastSequence;
 
-      
+
 
         if (typeof lastSequence !== 'number') {
           showAlert({ type: "error", message: "API Error: lastSequence was not a number" });
@@ -484,8 +488,57 @@ const CompanyOverview: React.FC = () => {
     replaceShareholders(companyData.company_overview.shareholder_name);
   }, [companyData, countries, setValue, employees, replaceAddress, replaceShareholders]);
 
+  const handleAIApply = (data: any) => {
+    if (data.company_registered_name) setValue('companyRegisteredName', data.company_registered_name);
+    if (data.company_type) setValue('companyType', data.company_type);
+    if (data.details) setValue('details', data.details);
+    if (data.website) setValue('websiteLink', data.website);
+    if (data.linkedin) setValue('linkedinLink', data.linkedin);
+    if (data.facebook) setValue('facebookLink', data.facebook);
+    if (data.twitter) setValue('twitterLink', data.twitter);
+    if (data.instagram) setValue('instagramLink', data.instagram);
+    if (data.youtube) setValue('youtubeLink', data.youtube);
+
+    // Company contact
+    if (data.email) setValue('companyEmail', data.email);
+    if (data.phone) setValue('companyPhoneNumber', data.phone);
+    if (data.employee_count) setValue('currentEmployeeCount', String(data.employee_count));
+
+    // Contact Person
+    if (data.contact_person_name) setValue('clientContactPersonName', data.contact_person_name);
+    if (data.contact_person_email) setValue('emailAddress', data.contact_person_email);
+    if (data.contact_person_designation) setValue('designationAndPosition', data.contact_person_designation);
+
+    if (data.contact_person_phone) {
+      // Assuming it's a string, wrap in array if needed or set first item
+      // Field is contactPersons: { phoneNumber: string }[]
+      setValue('contactPersons', [{ phoneNumber: data.contact_person_phone }]);
+    }
+
+    if (data.year_founded) {
+      const year = parseInt(data.year_founded);
+      if (!isNaN(year)) {
+        setValue('yearFounded', new Date(year, 0, 1));
+      }
+    }
+
+    if (Array.isArray(data.shareholders)) {
+      replaceShareholders(data.shareholders.map((name: string) => ({ name })));
+    }
+
+    if (data.headquarters_address) {
+      if (Array.isArray(data.headquarters_address)) {
+        replaceAddress(data.headquarters_address.map((addr: string) => ({ address: addr })));
+      } else {
+        replaceAddress([{ address: data.headquarters_address }]);
+      }
+    }
+
+    showAlert({ type: 'success', message: 'Form populated from AI data!' });
+  };
+
   const onSubmit = async (data: FormValues) => {
-    
+
     const formData = new FormData();
 
     const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
@@ -634,7 +687,7 @@ const CompanyOverview: React.FC = () => {
         },
       });
 
-  
+
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
       setActiveTab('target-preference');
@@ -671,7 +724,7 @@ const CompanyOverview: React.FC = () => {
   };
 
   const onDraft = async (data: FormValues) => {
-  
+
     const formData = new FormData();
 
     const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
@@ -822,7 +875,7 @@ const CompanyOverview: React.FC = () => {
         },
       });
 
-   
+
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
     } catch (error) {
@@ -858,7 +911,7 @@ const CompanyOverview: React.FC = () => {
   };
 
   const onDraftCancel = async (data: FormValues) => {
- 
+
     const formData = new FormData();
 
     const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
@@ -1008,7 +1061,7 @@ const CompanyOverview: React.FC = () => {
         },
       });
 
-    
+
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
       navigate('/buyer-portal');
@@ -1062,7 +1115,7 @@ const CompanyOverview: React.FC = () => {
   }));
 
   useEffect(() => {
-  
+
     if (companyData?.no_pic_needed !== undefined) {
       setValue('noPICNeeded', companyData.no_pic_needed);
     }
@@ -1086,7 +1139,19 @@ const CompanyOverview: React.FC = () => {
               <path d="M0 1H394" stroke="#BCC2C5" />
             </svg>
 
-            <Label text="Company Registered Name" required />
+            <div className="flex justify-between items-center w-full max-w-[500px]">
+              <Label text="Company Registered Name" required />
+              <button
+                type="button"
+                onClick={() => setShowAIModal(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-[#064771] rounded-full hover:bg-[#053a5c] transition-all shadow-md transform hover:scale-105"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                AI Auto-Fill
+              </button>
+            </div>
 
             <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
               <Input {...register('companyRegisteredName', {})} placeholder="Enter Company Name" />
@@ -1353,14 +1418,12 @@ const CompanyOverview: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => field.onChange(!field.value)}
-                      className={`relative w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
-                        field.value ? 'bg-green-600' : 'bg-gray-300'
-                      }`}
+                      className={`relative w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${field.value ? 'bg-green-600' : 'bg-gray-300'
+                        }`}
                     >
                       <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                          field.value ? 'translate-x-4' : 'translate-x-0'
-                        }`}
+                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${field.value ? 'translate-x-4' : 'translate-x-0'
+                          }`}
                       />
                     </button>
                   </div>
@@ -2105,8 +2168,15 @@ const CompanyOverview: React.FC = () => {
           </div>
         </div>
       </div>
+      <AIImportModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onApply={handleAIApply}
+        type="buyer"
+      />
     </form>
   );
 };
 
 export default CompanyOverview;
+

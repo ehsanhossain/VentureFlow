@@ -34,21 +34,6 @@ class Deal extends Model
         'target_close_date' => 'date',
     ];
 
-    // Stage definitions with progress percentages
-    public const STAGES = [
-        'K' => ['name' => 'Buyer Sourcing', 'progress' => 5],
-        'J' => ['name' => 'Onboarding', 'progress' => 10],
-        'I' => ['name' => 'Target Sourcing', 'progress' => 20],
-        'H' => ['name' => 'Interest Check', 'progress' => 30],
-        'G' => ['name' => 'NDA & IM Delivery', 'progress' => 40],
-        'F' => ['name' => 'Top Meeting & IOI', 'progress' => 50],
-        'E' => ['name' => 'LOI / Exclusivity', 'progress' => 65],
-        'D' => ['name' => 'Due Diligence', 'progress' => 80],
-        'C' => ['name' => 'SPA Negotiation', 'progress' => 90],
-        'B' => ['name' => 'Deal Closing', 'progress' => 95],
-        'A' => ['name' => 'Success', 'progress' => 100],
-    ];
-
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(Buyer::class, 'buyer_id');
@@ -79,13 +64,29 @@ class Deal extends Model
         return $this->hasMany(DealComment::class)->orderBy('created_at', 'desc');
     }
 
-    public function getStageName(): string
+    public function getStageName(?string $side = null): string
     {
-        return self::STAGES[$this->stage_code]['name'] ?? 'Unknown';
+        if (!$side) {
+            $side = $this->buyer_id ? 'buyer' : 'seller'; 
+        }
+
+        $stage = PipelineStage::where('pipeline_type', $side)
+                             ->where('code', $this->stage_code)
+                             ->first();
+
+        return $stage ? $stage->name : $this->stage_code;
     }
 
-    public function getStageProgress(): int
+    public function getStageProgress(?string $side = null): int
     {
-        return self::STAGES[$this->stage_code]['progress'] ?? 0;
+        if (!$side) {
+            $side = $this->buyer_id ? 'buyer' : 'seller';
+        }
+
+        $stage = PipelineStage::where('pipeline_type', $side)
+                             ->where('code', $this->stage_code)
+                             ->first();
+
+        return $stage ? $stage->progress : $this->progress_percent;
     }
 }

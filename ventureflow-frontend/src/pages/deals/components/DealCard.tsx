@@ -5,9 +5,10 @@ interface DealCardProps {
     deal: Deal;
     isDragging?: boolean;
     onClick?: () => void;
+    pipelineView?: 'buyer' | 'seller';
 }
 
-const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
+const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }: DealCardProps) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: deal.id,
     });
@@ -24,6 +25,7 @@ const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
         high: 'bg-red-100 text-red-700',
     };
 
+
     const formatValue = (value: number | null, currency: string) => {
         if (!value) return 'N/A';
         if (value >= 1000000) {
@@ -38,6 +40,12 @@ const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
     const buyerName = deal.buyer?.company_overview?.reg_name || 'Unknown Buyer';
     const sellerName = deal.seller?.company_overview?.reg_name || 'Unknown Seller';
 
+    // For buyer view: show buyer acquiring seller
+    // For seller view: show seller being acquired by buyer
+    const primaryEntity = pipelineView === 'buyer' ? buyerName : sellerName;
+    const secondaryEntity = pipelineView === 'buyer' ? sellerName : buyerName;
+    const relationLabel = pipelineView === 'buyer' ? 'Acquiring' : 'Being acquired by';
+
     return (
         <div
             ref={setNodeRef}
@@ -45,22 +53,36 @@ const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
             {...listeners}
             {...attributes}
             onClick={onClick}
-            className={`bg-white rounded-lg border shadow-sm p-4 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isDragging ? 'shadow-lg opacity-90 ring-2 ring-blue-400' : ''
+            className={`bg-white rounded-lg border shadow-sm p-4 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isDragging
+                ? pipelineView === 'buyer'
+                    ? 'shadow-lg opacity-90 ring-2 ring-blue-400'
+                    : 'shadow-lg opacity-90 ring-2 ring-green-400'
+                : ''
                 }`}
         >
-            {/* Buyer Info */}
+            {/* Primary Entity Info */}
             <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm">
-                    {buyerName.charAt(0).toUpperCase()}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${pipelineView === 'buyer'
+                    ? 'bg-blue-100 text-[#064771]'
+                    : 'bg-green-100 text-green-600'
+                    }`}>
+                    {primaryEntity.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{buyerName}</div>
+                    <div className="text-sm font-medium text-gray-900 truncate">{primaryEntity}</div>
                 </div>
+                {/* View indicator badge */}
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pipelineView === 'buyer'
+                    ? 'bg-blue-50 text-[#064771]'
+                    : 'bg-green-50 text-green-600'
+                    }`}>
+                    {pipelineView === 'buyer' ? 'B' : 'S'}
+                </span>
             </div>
 
-            {/* Acquiring label + Seller */}
+            {/* Relationship label + Secondary Entity */}
             <div className="text-xs text-gray-500 mb-2">
-                Acquiring <span className="font-medium text-gray-700">{sellerName}</span>
+                {relationLabel} <span className="font-medium text-gray-700">{secondaryEntity}</span>
             </div>
 
             {/* Deal Info */}
@@ -94,7 +116,8 @@ const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
                 </div>
                 <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                        className="h-full bg-blue-500 rounded-full transition-all"
+                        className={`h-full rounded-full transition-all ${pipelineView === 'buyer' ? 'bg-blue-500' : 'bg-green-500'
+                            }`}
                         style={{ width: `${deal.progress_percent}%` }}
                     />
                 </div>
@@ -125,3 +148,4 @@ const DealCard = ({ deal, isDragging = false, onClick }: DealCardProps) => {
 };
 
 export default DealCard;
+

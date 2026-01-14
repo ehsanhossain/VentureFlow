@@ -14,14 +14,14 @@ interface AlertProps {
 export const showAlert = ({ type, message }: AlertProps) => {
   MySwal.fire({
     toast: true,
-    position: "top-end",
+    position: "bottom-end",
     icon: type,
     title: message,
     showConfirmButton: false,
     timer: 3000,
     timerProgressBar: true,
     customClass: {
-      popup: "font-poppins", 
+      popup: "font-poppins",
     },
   });
 };

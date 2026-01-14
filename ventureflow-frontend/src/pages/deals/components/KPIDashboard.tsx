@@ -41,7 +41,7 @@ const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
             value: kpis?.velocity_score?.toFixed(1) || '0',
             subtitle: 'Stage transitions/deal',
             icon: (
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-[#064771]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
             ),
@@ -112,3 +112,4 @@ const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
 };
 
 export default KPIDashboard;
+

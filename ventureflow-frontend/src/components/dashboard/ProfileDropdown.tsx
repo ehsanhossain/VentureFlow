@@ -1,12 +1,14 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { AuthContext } from "../../routes/AuthContext";
 import api from "../../config/api";
 import { useNavigate } from "react-router-dom";
 import { showAlert } from "../Alert";
+import { useTranslation } from "react-i18next";
 
-interface User {
+interface UserData {
   name: string;
+  email?: string;
 }
 
 interface Employee {
@@ -15,6 +17,7 @@ interface Employee {
 }
 
 const ProfileDropdown: React.FC = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const context = useContext(AuthContext);
   if (!context) {
@@ -22,17 +25,14 @@ const ProfileDropdown: React.FC = () => {
   }
   const { logout } = context;
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const baseURL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -44,188 +44,102 @@ const ProfileDropdown: React.FC = () => {
     const fetchUser = async () => {
       try {
         const { data } = await api.get("/api/user");
-
-
         setUser(data.user);
         setEmployee(data.employee);
-
-        // const options: Option[] = data.data.map((team) => ({
-        //   label: team.name,
-        //   value: String(team.id),
-        // }));
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_) {
-        showAlert({ type: "error", message: "Failed to fetch teams" });
-
-        // showAlert({
-        //   type: "error",
-        //   message: "Failed to fetch active teams",
-        // });
+      } catch (error) {
+        console.error("Failed to fetch user data", error);
       }
     };
-
     fetchUser();
   }, []);
+
+  const profileImageUrl = employee && employee.image
+    ? `${baseURL}/storage/${employee.image}`
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=064771&color=fff`;
 
   return (
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 focus:outline-none"
+        className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-gray-50 transition-all duration-200 group focus:outline-none"
       >
-        <img
-          src={
-            employee && employee.image
-              ? `${baseURL}/storage/${employee.image}`
-              : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                user?.name || "User"
-              )}`
-          }
-          alt="Profile"
-          className="w-8 h-8 rounded-full"
-        />
-        <span className="text-white text-right font-medium font-poppins">
-          {user?.name || "User Name"}
-        </span>
-        <ChevronDown className="text-white w-4 h-4" />
+        <div className="relative">
+          <img
+            src={profileImageUrl}
+            alt="Profile"
+            className="w-9 h-9 rounded-lg object-cover ring-2 ring-transparent group-hover:ring-[#064771]/20 transition-all"
+          />
+          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+        </div>
+        <div className="hidden md:flex flex-col items-start leading-tight">
+          <span className="text-sm font-semibold text-gray-900 group-hover:text-[#064771] transition-colors">
+            {user?.name || t('profile.userName', 'User Name')}
+          </span>
+        </div>
+        <ChevronDown className={`text-gray-400 w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div
-          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50"
-          style={{
-            display: "flex",
-            width: "196px",
-            height: "208px",
-            padding: "18.553px 7.59px",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16.023px",
-            flexShrink: 0,
-            borderRadius: "0px 0px 8.433px 8.433px",
-            background: "#F7F7F7",
-          }}
-        >
-          <div className="flex justify-start items-center flex-row gap-[10.96284294128418px] w-full px-4 hover:bg-gray-100 cursor-pointer">
-            <svg
-              width="23"
-              height="23"
-              viewBox="0 0 23 23"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M11.8742 12.4613C11.8034 12.4512 11.7123 12.4512 11.6314 12.4613C9.85032 12.4006 8.43359 10.9434 8.43359 9.1522C8.43359 7.32057 9.91104 5.83301 11.7528 5.83301C13.5844 5.83301 15.072 7.32057 15.072 9.1522C15.0619 10.9434 13.6553 12.4006 11.8742 12.4613Z"
-                stroke="#30313D"
-                strokeWidth="1.68659"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+          {/* User Info Header */}
+          <div className="p-4 bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <img
+                src={profileImageUrl}
+                alt="Avatar"
+                className="w-12 h-12 rounded-xl object-cover shadow-sm bg-gray-100"
               />
-              <path
-                d="M18.5727 19.1403C16.7715 20.7898 14.3833 21.7916 11.7522 21.7916C9.12111 21.7916 6.73291 20.7898 4.93164 19.1403C5.03284 18.1891 5.64001 17.2581 6.72279 16.5295C9.49553 14.6878 14.0291 14.6878 16.7816 16.5295C17.8644 17.2581 18.4716 18.1891 18.5727 19.1403Z"
-                stroke="#30313D"
-                strokeWidth="1.68659"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M11.7523 21.7915C17.3411 21.7915 21.8718 17.2608 21.8718 11.672C21.8718 6.08314 17.3411 1.55249 11.7523 1.55249C6.16346 1.55249 1.63281 6.08314 1.63281 11.672C1.63281 17.2608 6.16346 21.7915 11.7523 21.7915Z"
-                stroke="#30313D"
-                strokeWidth="1.68659"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span
-              className="text-[#30313D] text-[15.1793212890625px] font-sf font-medium"
+              <div className="flex flex-col min-w-0">
+                <p className="text-sm font-bold text-gray-900 truncate">
+                  {user?.name || 'User Name'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.email || 'admin@ventureflow.io'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <div className="p-2">
+            <button
               onClick={() => {
                 if (employee?.id) {
                   navigate(`/employee/details/${employee.id}`);
                   setIsOpen(false);
                 } else {
-                  showAlert({ type: "error", message: "Employee profile not found" });
+                  showAlert({ type: "error", message: t('profile.profileNotFound') });
                 }
               }}
-              style={{ cursor: "pointer" }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded-xl transition-all group"
             >
-              My Profile
-            </span>
-          </div>
-          <div className="flex justify-start items-center flex-row gap-[10.96284294128418px] w-full px-4  hover:bg-gray-100 cursor-pointer">
-            <svg
-              width="21"
-              height="23"
-              viewBox="0 0 21 23"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M10.753 7.84094C10.0115 7.84094 9.28668 8.06083 8.67014 8.47279C8.05359 8.88475 7.57306 9.47028 7.28929 10.1553C7.00553 10.8404 6.93129 11.5942 7.07595 12.3215C7.22061 13.0488 7.57768 13.7168 8.102 14.2411C8.62633 14.7654 9.29436 15.1225 10.0216 15.2672C10.7489 15.4118 11.5027 15.3376 12.1878 15.0538C12.8728 14.7701 13.4584 14.2895 13.8703 13.673C14.2823 13.0564 14.5022 12.3316 14.5022 11.5901C14.5022 10.5957 14.1072 9.64214 13.4041 8.93904C12.701 8.23594 11.7474 7.84094 10.753 7.84094ZM10.753 13.4646C10.3823 13.4646 10.0199 13.3547 9.71159 13.1487C9.40332 12.9427 9.16305 12.65 9.02117 12.3074C8.87929 11.9649 8.84216 11.588 8.9145 11.2244C8.98683 10.8607 9.16536 10.5267 9.42752 10.2646C9.68969 10.0024 10.0237 9.82386 10.3873 9.75153C10.751 9.6792 11.1279 9.71632 11.4704 9.8582C11.8129 10.0001 12.1057 10.2404 12.3117 10.5486C12.5177 10.8569 12.6276 11.2193 12.6276 11.5901C12.6276 12.0872 12.4301 12.564 12.0786 12.9156C11.727 13.2671 11.2502 13.4646 10.753 13.4646Z"
-                fill="#30313D"
-              />
-              <path
-                d="M19.4635 13.3724L19.0473 13.1324C19.2347 12.1131 19.2347 11.0681 19.0473 10.0488L19.4635 9.80881C19.7835 9.62418 20.064 9.37833 20.289 9.08528C20.514 8.79224 20.6791 8.45775 20.7749 8.10091C20.8706 7.74406 20.8951 7.37186 20.847 7.00554C20.7989 6.63922 20.6791 6.28597 20.4945 5.96595C20.3099 5.64592 20.064 5.3654 19.771 5.14039C19.4779 4.91538 19.1434 4.75029 18.7866 4.65456C18.4297 4.55882 18.0575 4.5343 17.6912 4.58241C17.3249 4.63052 16.9716 4.7503 16.6516 4.93493L16.2345 5.17582C15.4468 4.50277 14.5415 3.98101 13.5642 3.6368V3.15597C13.5642 2.41022 13.268 1.69501 12.7406 1.16769C12.2133 0.640364 11.4981 0.344116 10.7524 0.344116C10.0066 0.344116 9.29141 0.640364 8.76408 1.16769C8.23676 1.69501 7.94051 2.41022 7.94051 3.15597V3.6368C6.96329 3.98225 6.0583 4.50528 5.27112 5.17956L4.85216 4.93681C4.20584 4.56393 3.43787 4.46308 2.7172 4.65643C1.99652 4.84978 1.38217 5.3215 1.00929 5.96782C0.63642 6.61414 0.535566 7.38211 0.728918 8.10278C0.92227 8.82346 1.39399 9.43781 2.04031 9.81069L2.45646 10.0506C2.26911 11.07 2.26911 12.1149 2.45646 13.1343L2.04031 13.3742C1.39399 13.7471 0.92227 14.3615 0.728918 15.0821C0.535566 15.8028 0.63642 16.5708 1.00929 17.2171C1.38217 17.8634 1.99652 18.3351 2.7172 18.5285C3.43787 18.7218 4.20584 18.621 4.85216 18.2481L5.26925 18.0072C6.05729 18.6804 6.9629 19.2021 7.94051 19.5463V20.0271C7.94051 20.7728 8.23676 21.488 8.76408 22.0154C9.29141 22.5427 10.0066 22.8389 10.7524 22.8389C11.4981 22.8389 12.2133 22.5427 12.7406 22.0154C13.268 21.488 13.5642 20.7728 13.5642 20.0271V19.5463C14.5414 19.2008 15.4464 18.6778 16.2336 18.0035L16.6526 18.2453C17.2989 18.6182 18.0668 18.719 18.7875 18.5257C19.5082 18.3323 20.1226 17.8606 20.4954 17.2143C20.8683 16.568 20.9692 15.8 20.7758 15.0793C20.5825 14.3587 20.1107 13.7443 19.4644 13.3714L19.4635 13.3724ZM17.0753 9.83318C17.3927 10.9833 17.3927 12.1979 17.0753 13.348C17.0199 13.5482 17.0325 13.7611 17.1112 13.9533C17.1899 14.1455 17.3303 14.3061 17.5102 14.4099L18.5262 14.9967C18.7416 15.121 18.8988 15.3257 18.9632 15.5659C19.0276 15.8061 18.994 16.0621 18.8697 16.2775C18.7454 16.4929 18.5406 16.6501 18.3005 16.7145C18.0603 16.7789 17.8043 16.7453 17.5889 16.621L16.571 16.0324C16.391 15.9281 16.1813 15.8867 15.9751 15.9147C15.769 15.9427 15.5779 16.0385 15.4322 16.187C14.598 17.0387 13.5469 17.6464 12.3926 17.9444C12.1911 17.9962 12.0126 18.1136 11.8852 18.278C11.7577 18.4425 11.6886 18.6446 11.6887 18.8527V20.0271C11.6887 20.2757 11.59 20.5141 11.4142 20.6898C11.2384 20.8656 11 20.9644 10.7514 20.9644C10.5028 20.9644 10.2644 20.8656 10.0887 20.6898C9.91289 20.5141 9.81414 20.2757 9.81414 20.0271V18.8536C9.81424 18.6456 9.74513 18.4434 9.61769 18.279C9.49025 18.1145 9.31172 17.9972 9.11024 17.9454C7.95583 17.6461 6.90512 17.0371 6.07157 16.1842C5.92584 16.0357 5.73483 15.9399 5.52865 15.9119C5.32246 15.8839 5.11282 15.9253 4.93277 16.0296L3.91675 16.6172C3.81011 16.6798 3.69217 16.7206 3.5697 16.7373C3.44723 16.7541 3.32265 16.7464 3.20315 16.7148C3.08365 16.6832 2.97158 16.6283 2.87338 16.5532C2.77519 16.4781 2.69282 16.3844 2.63102 16.2773C2.56921 16.1703 2.52919 16.0521 2.51326 15.9295C2.49733 15.8069 2.5058 15.6824 2.53818 15.5631C2.57057 15.4438 2.62623 15.3321 2.70197 15.2344C2.7777 15.1367 2.87201 15.055 2.97947 14.9939L3.99548 14.4071C4.17539 14.3033 4.31573 14.1427 4.39445 13.9505C4.47316 13.7583 4.4858 13.5454 4.43038 13.3452C4.11298 12.1951 4.11298 10.9805 4.43038 9.83037C4.48481 9.63062 4.47156 9.41846 4.39272 9.22703C4.31387 9.0356 4.17386 8.87566 3.99454 8.77217L2.97853 8.18543C2.76313 8.06114 2.60593 7.85638 2.54151 7.61618C2.47709 7.37598 2.51072 7.12003 2.63501 6.90464C2.75931 6.68924 2.96407 6.53204 3.20427 6.46762C3.44446 6.40319 3.70041 6.43683 3.91581 6.56112L4.9337 7.14974C5.11327 7.25426 5.32247 7.29615 5.52843 7.26883C5.7344 7.24152 5.92545 7.14654 6.07157 6.99883C6.90583 6.14716 7.95684 5.5395 9.11118 5.24143C9.31328 5.18947 9.49227 5.07154 9.61978 4.90635C9.74728 4.74115 9.81601 4.53813 9.81508 4.32945V3.15597C9.81508 2.90738 9.91383 2.66898 10.0896 2.49321C10.2654 2.31743 10.5038 2.21868 10.7524 2.21868C11.0009 2.21868 11.2393 2.31743 11.4151 2.49321C11.5909 2.66898 11.6896 2.90738 11.6896 3.15597V4.32945C11.6895 4.53749 11.7587 4.73965 11.8861 4.90408C12.0135 5.06851 12.1921 5.18587 12.3935 5.23768C13.5483 5.53681 14.5993 6.1458 15.4332 6.99883C15.5789 7.14736 15.7699 7.24318 15.9761 7.27118C16.1823 7.29918 16.3919 7.25777 16.572 7.15348L17.588 6.56581C17.6946 6.50329 17.8126 6.46249 17.935 6.44574C18.0575 6.429 18.1821 6.43664 18.3016 6.46824C18.4211 6.49983 18.5331 6.55475 18.6313 6.62984C18.7295 6.70492 18.8119 6.79869 18.8737 6.90573C18.9355 7.01278 18.9755 7.131 18.9915 7.25358C19.0074 7.37615 18.9989 7.50067 18.9665 7.61996C18.9342 7.73925 18.8785 7.85096 18.8028 7.94865C18.727 8.04634 18.6327 8.12809 18.5253 8.18918L17.5092 8.77592C17.3303 8.87969 17.1906 9.03975 17.1121 9.23116C17.0337 9.42257 17.0207 9.63363 17.0753 9.83318Z"
-                fill="#30313D"
-              />
-            </svg>
-            <span className="text-[#30313D] text-[15.1793212890625px] font-sf font-medium">
-              Settings
-            </span>
-          </div>
-          <div className="flex justify-start items-center flex-row gap-[10.96284294128418px] w-full px-4 hover:bg-gray-100 cursor-pointer">
-            <svg
-              width="23"
-              height="23"
-              viewBox="0 0 23 23"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M8.37918 9.26212C8.37918 8.59497 8.57702 7.9428 8.94766 7.38808C9.31832 6.83336 9.84516 6.40102 10.4616 6.1457C11.0778 5.8904 11.7561 5.8236 12.4105 5.95376C13.0648 6.0839 13.6659 6.40517 14.1375 6.87692C14.6093 7.34867 14.9306 7.94971 15.0608 8.60404C15.1909 9.25837 15.1241 9.93664 14.8687 10.553C14.6135 11.1693 14.1812 11.6962 13.6264 12.0668C13.0717 12.4375 12.4195 12.6353 11.7524 12.6353V13.7597M21.8719 11.5109C21.8719 17.0998 17.3413 21.6305 11.7524 21.6305C6.16349 21.6305 1.63281 17.0998 1.63281 11.5109C1.63281 5.92204 6.16349 1.39136 11.7524 1.39136C17.3413 1.39136 21.8719 5.92204 21.8719 11.5109Z"
-                stroke="#30313D"
-                strokeWidth="1.68659"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12.2025 18.4822C12.8235 18.4822 13.3269 17.9788 13.3269 17.3578C13.3269 16.7368 12.8235 16.2334 12.2025 16.2334C11.5815 16.2334 11.0781 16.7368 11.0781 17.3578C11.0781 17.9788 11.5815 18.4822 12.2025 18.4822Z"
-                fill="#30313D"
-              />
-            </svg>
-            <span className="text-[#30313D] text-[15.1793212890625px] font-sf font-medium">
-              Help & Support
-            </span>
-          </div>
-          <hr className="w-[160px] border-t-[0.5px] border-opacity-40 border-[color:var(--HRVC---Text-Black,#30313D)]" />
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
+                <User className="w-4 h-4" />
+              </div>
+              <span className="font-medium">{t('profile.myProfile', 'My Profile')}</span>
+            </button>
 
-          <div
-            className="flex justify-center items-center flex-col gap-[8.43295669555664px] py-[5.059773921966553px] px-[12.649434089660645px] bg-[#DC3545] rounded-[4.21647834777832px] w-[162px] h-[37px] cursor-pointer"
-            style={{ width: "162px" }}
-          >
-            <div
-              className="flex justify-center items-center flex-row gap-[10.96284294128418px]"
-              onClick={logout}
+            <button
+              onClick={() => { navigate('/settings'); setIsOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded-xl transition-all group"
             >
-              <svg
-                width="21"
-                height="21"
-                viewBox="0 0 21 21"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M10.6547 0.108765C11.1337 0.108765 11.5221 0.497112 11.5221 0.976154C11.5221 1.4552 11.1337 1.84354 10.6547 1.84354C6.02393 1.84354 2.26994 5.59754 2.26994 10.2283C2.26994 14.8591 6.02393 18.6131 10.6547 18.6131C11.1337 18.6131 11.5221 19.0014 11.5221 19.4805C11.5221 19.9595 11.1337 20.3479 10.6547 20.3479C5.06583 20.3479 0.535156 15.8172 0.535156 10.2283C0.535156 4.63944 5.06583 0.108765 10.6547 0.108765Z"
-                  fill="white"
-                />
-                <path
-                  d="M15.8243 7.37208C15.4856 7.03335 15.4856 6.48414 15.8243 6.14541C16.1631 5.80667 16.7122 5.80667 17.0509 6.14541L20.5205 9.615C20.8592 9.95375 20.8592 10.5029 20.5205 10.8416L17.0509 14.3112C16.7122 14.6499 16.1631 14.6499 15.8243 14.3112C15.4856 13.9724 15.4856 13.4233 15.8243 13.0846L17.8131 11.0957H8.342C7.86296 11.0957 7.47461 10.7073 7.47461 10.2283C7.47461 9.74927 7.86296 9.36091 8.342 9.36091H17.8131L15.8243 7.37208Z"
-                  fill="white"
-                />
-              </svg>
-              <span className="text-[#FFFFFF] text-[16.86591339111328px] font-sf font-semibold">
-                Logout
-              </span>
-            </div>
+              <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-500 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
+                <Settings className="w-4 h-4" />
+              </div>
+              <span className="font-medium">{t('profile.settings', 'Settings')}</span>
+            </button>
+          </div>
+
+          <div className="border-t border-gray-100 p-2 bg-gray-50/50">
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-red-100/50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all">
+                <LogOut className="w-4 h-4" />
+              </div>
+              <span className="font-bold">{t('profile.logout', 'Sign Out')}</span>
+            </button>
           </div>
         </div>
       )}

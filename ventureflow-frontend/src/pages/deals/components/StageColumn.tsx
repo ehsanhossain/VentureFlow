@@ -7,9 +7,10 @@ interface StageColumnProps {
     name: string;
     deals: Deal[];
     onDealClick?: (deal: Deal) => void;
+    pipelineView?: 'buyer' | 'seller';
 }
 
-const StageColumn = ({ code, name, deals, onDealClick }: StageColumnProps) => {
+const StageColumn = ({ code, name, deals, onDealClick, pipelineView = 'buyer' }: StageColumnProps) => {
     const { setNodeRef, isOver } = useDroppable({
         id: code,
     });
@@ -17,12 +18,20 @@ const StageColumn = ({ code, name, deals, onDealClick }: StageColumnProps) => {
     return (
         <div className="flex flex-col w-72 shrink-0">
             {/* Column Header */}
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-100 rounded-t-lg border border-gray-200">
+            <div className={`flex items-center justify-between px-3 py-2 rounded-t-lg border ${pipelineView === 'buyer'
+                ? 'bg-blue-50 border-blue-200'
+                : 'bg-green-50 border-green-200'
+                }`}>
                 <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800">{code}</span>
-                    <span className="text-sm text-gray-600 truncate">{name}</span>
+                    <span className={`font-semibold ${pipelineView === 'buyer' ? 'text-blue-800' : 'text-green-800'
+                        }`}>{code}</span>
+                    <span className={`text-sm truncate ${pipelineView === 'buyer' ? 'text-[#064771]' : 'text-green-600'
+                        }`}>{name}</span>
                 </div>
-                <span className="px-2 py-0.5 bg-white rounded text-xs font-medium text-gray-600">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${pipelineView === 'buyer'
+                    ? 'bg-blue-100 text-[#053a5c]'
+                    : 'bg-green-100 text-green-700'
+                    }`}>
                     {deals.length}
                 </span>
             </div>
@@ -30,7 +39,11 @@ const StageColumn = ({ code, name, deals, onDealClick }: StageColumnProps) => {
             {/* Droppable Area */}
             <div
                 ref={setNodeRef}
-                className={`flex-1 p-2 space-y-3 bg-gray-50 border border-t-0 border-gray-200 rounded-b-lg min-h-[200px] transition-colors ${isOver ? 'bg-blue-50 border-blue-200' : ''
+                className={`flex-1 p-2 space-y-3 border border-t-0 rounded-b-lg min-h-[200px] transition-colors ${isOver
+                    ? pipelineView === 'buyer'
+                        ? 'bg-blue-50 border-blue-300'
+                        : 'bg-green-50 border-green-300'
+                    : 'bg-gray-50 border-gray-200'
                     }`}
             >
                 {deals.length === 0 ? (
@@ -43,6 +56,7 @@ const StageColumn = ({ code, name, deals, onDealClick }: StageColumnProps) => {
                             key={deal.id}
                             deal={deal}
                             onClick={() => onDealClick?.(deal)}
+                            pipelineView={pipelineView}
                         />
                     ))
                 )}
@@ -52,3 +66,4 @@ const StageColumn = ({ code, name, deals, onDealClick }: StageColumnProps) => {
 };
 
 export default StageColumn;
+

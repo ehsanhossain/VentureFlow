@@ -77,6 +77,7 @@ const Content: React.FC<ContentProps> = ({
         <Header
           mobileMenuOpen={mobileMenuOpen}
           toggleMobileMenu={toggleMobileMenu}
+          sidebarExpanded={sidebarExpanded}
         />
       )}
       {!hideLayout && (

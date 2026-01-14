@@ -1054,7 +1054,7 @@ export const PartnerPortal: React.FC = () => {
                           {isComponentOpen && (
                             <input
                               type="checkbox"
-                              className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 shrink-0"
+                              className="h-5 w-5 text-[#064771] border-gray-300 rounded focus:ring-blue-500 shrink-0"
                               checked={isSelected}
                               onChange={() => handleCheckboxChange(partner.id)}
                             />
@@ -1306,3 +1306,4 @@ export const PartnerPortal: React.FC = () => {
 };
 
 export default PartnerPortal;
+

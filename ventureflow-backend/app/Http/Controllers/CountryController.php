@@ -19,7 +19,7 @@ class CountryController extends Controller
                 'alpha_2_code' => $country->alpha_2_code,
                 'alpha_3_code' => $country->alpha_3_code,
                 'numeric_code' => $country->numeric_code,
-                'svg_icon_url' => asset("storage/country/{$country->svg_icon}"),
+                'svg_icon_url' => "https://flagcdn.com/" . strtolower($country->alpha_2_code) . ".svg",
             ];
         });
 

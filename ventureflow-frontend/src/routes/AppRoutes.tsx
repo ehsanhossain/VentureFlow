@@ -7,26 +7,29 @@ import CurrencyTable from "../pages/currency/CurrencyTable";
 import IndexEmployee from "../pages/employee/IndexEmployee";
 import Register from "../pages/currency/Register";
 import BuyerPortal from "../pages/buyer-portal/BuyerPortal";
-import PartnerPortal from "../pages/partner-portal/IndexPartnerPortal";
 import EmployeeDetails from "../pages/employee/details/EmployeeDetails";
 import BuyerTeaserCenter from "../pages/buyer-portal/buyer-teaser/BuyerTeaserCenter";
 import SellerPortal from "../pages/seller-portal/index/SellerPortal";
 import AddSeller from "../pages/seller-portal/create/AddSeller";
-import AddPartner from "../pages/partner-portal/create/AddPartner";
 import SellerTeaserCenter from "../pages/seller-portal/seller-teaser/SellerTeaserCenter";
 import AddBuyer from "../pages/buyer-portal/create-buyer/AddBuyer";
 import BuyerPortalDetails from "../pages/buyer-portal/buyer-portal-view/BuyerPortalDetails";
-import PartnerPortalDetails from "../pages/partner-portal/partner-portal-view/PartnerPortalDetails";
 import Dashboard from "../pages/Dashboard";
 import SellerPortalDetails from "../pages/seller-portal/seller-portal-view/SellerPortalDetails";
 import Settings from "../pages/settings/Settings";
 import ProspectsPortal from "../pages/prospects/ProspectsPortal";
 import DealPipeline from "../pages/deals/DealPipeline";
+import PartnerManagement from "../pages/settings/components/PartnerManagement";
+import GeneralSettings from "../pages/settings/components/GeneralSettings";
+import PipelineSettings from "../pages/settings/components/PipelineSettings";
+import ChangePassword from "../pages/auth/ChangePassword";
+import PartnerPortalDetails from "../pages/partner-portal/partner-portal-view/PartnerPortalDetails";
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/change-password" element={<ChangePassword />} />
       <Route
         path="/"
         element={
@@ -164,38 +167,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/partner-portal"
-        element={
-          <ProtectedRoute>
-            <PartnerPortal />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/partner-portal/create"
-        element={
-          <ProtectedRoute>
-            <AddPartner />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/partner-portal/edit/:id"
-        element={
-          <ProtectedRoute>
-            <AddPartner />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/partner-portal/view/:id"
-        element={
-          <ProtectedRoute>
-            <PartnerPortalDetails />
-          </ProtectedRoute>
-        }
-      />
+
       <Route
         path="/settings"
         element={
@@ -204,9 +176,13 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       >
+        <Route path="general" element={<GeneralSettings />} />
         <Route path="currency" element={<CurrencyTable />} />
         <Route path="currency/add" element={<Register />} />
         <Route path="currency/edit/:id" element={<Register />} />
+        <Route path="partners" element={<PartnerManagement />} />
+        <Route path="partners/:id" element={<PartnerPortalDetails />} />
+        <Route path="pipeline" element={<PipelineSettings />} />
       </Route>
       <Route
         path="/profile"

@@ -20,6 +20,12 @@ class DealController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'pic']);
+        $view = $request->query('view', 'buyer');
+        
+        // Ensure view is valid
+        if (!in_array($view, ['buyer', 'seller'])) {
+            $view = 'buyer';
+        }
 
         // Apply filters
         if ($request->has('stage_code')) {
@@ -50,33 +56,39 @@ class DealController extends Controller
             });
         }
 
-        if ($request->has('country')) {
-            $countryId = $request->country;
-            $query->where(function ($q) use ($countryId) {
-                $q->whereHas('buyer.companyOverview', function ($bco) use ($countryId) {
-                    $bco->where('hq_country', $countryId);
+        if ($request->has('countries')) {
+            $countryIds = (array) $request->countries;
+            $query->where(function ($q) use ($countryIds) {
+                $q->whereHas('buyer.companyOverview', function ($bco) use ($countryIds) {
+                    $bco->whereIn('hq_country', $countryIds);
                 })
-                ->orWhereHas('seller.companyOverview', function ($sco) use ($countryId) {
-                    $sco->where('hq_country', $countryId);
+                ->orWhereHas('seller.companyOverview', function ($sco) use ($countryIds) {
+                    $sco->whereIn('hq_country', $countryIds);
                 });
             });
         }
 
         $deals = $query->orderBy('updated_at', 'desc')->get();
 
+        // Fetch dynamic stages
+        $stages = \App\Models\PipelineStage::where('pipeline_type', $view)
+            ->where('is_active', true)
+            ->orderBy('order_index')
+            ->get();
+
         // Group by stage
         $grouped = [];
-        foreach (Deal::STAGES as $code => $stage) {
-            $grouped[$code] = [
-                'code' => $code,
-                'name' => $stage['name'],
-                'progress' => $stage['progress'],
-                'deals' => $deals->where('stage_code', $code)->values(),
+        foreach ($stages as $stage) {
+            $grouped[$stage->code] = [
+                'code' => $stage->code,
+                'name' => $stage->name,
+                'progress' => $stage->progress,
+                'deals' => $deals->where('stage_code', $stage->code)->values(),
             ];
         }
 
         return response()->json([
-            'stages' => Deal::STAGES,
+            'stages' => $stages,
             'grouped' => $grouped,
             'total' => $deals->count(),
         ]);
@@ -135,10 +147,17 @@ class DealController extends Controller
             'target_close_date' => 'nullable|date',
         ]);
 
-        // Set default stage and progress
+        // Determine stage code and look up progress from pipeline stages
         $stageCode = $validated['stage_code'] ?? 'K';
+        
+        // Look up stage from buyer pipeline first, then seller
+        $stage = \App\Models\PipelineStage::where('code', $stageCode)
+            ->where('is_active', true)
+            ->orderBy('pipeline_type', 'asc') // 'buyer' comes before 'seller'
+            ->first();
+
         $validated['stage_code'] = $stageCode;
-        $validated['progress_percent'] = Deal::STAGES[$stageCode]['progress'] ?? 5;
+        $validated['progress_percent'] = $stage ? $stage->progress : 5;
 
         $deal = Deal::create($validated);
 
@@ -214,17 +233,32 @@ class DealController extends Controller
     public function updateStage(Request $request, Deal $deal): JsonResponse
     {
         $validated = $request->validate([
-            'stage_code' => 'required|string|max:1|in:K,J,I,H,G,F,E,D,C,B,A',
+            'stage_code' => 'required|string|max:2',
+            'pipeline_type' => 'nullable|in:buyer,seller',
         ]);
 
         $fromStage = $deal->stage_code;
         $toStage = $validated['stage_code'];
+        $pipelineType = $validated['pipeline_type'] ?? 'buyer';
 
         if ($fromStage !== $toStage) {
+            // Look up stage to get correct progress
+            $stage = \App\Models\PipelineStage::where('pipeline_type', $pipelineType)
+                ->where('code', $toStage)
+                ->where('is_active', true)
+                ->first();
+
+            // Fallback: try the other pipeline type
+            if (!$stage) {
+                $stage = \App\Models\PipelineStage::where('code', $toStage)
+                    ->where('is_active', true)
+                    ->first();
+            }
+
             // Update deal
             $deal->update([
                 'stage_code' => $toStage,
-                'progress_percent' => Deal::STAGES[$toStage]['progress'] ?? 0,
+                'progress_percent' => $stage ? $stage->progress : 0,
             ]);
 
             // Log stage change

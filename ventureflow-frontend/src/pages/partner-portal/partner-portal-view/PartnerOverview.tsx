@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../../config/api';
 import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 import { showAlert } from '../../../components/Alert';
 import html2pdf from 'html2pdf.js';
+import { useTranslation } from 'react-i18next';
 
 const CompanyOverview: React.FC = () => {
+  const { t } = useTranslation();
   const { id: paramId } = useParams();
   const id = paramId || localStorage.getItem('seller_id');
 
   // All hooks must be called at the top level, before any conditional logic
-  const navigate = useNavigate();
 
   const [companyInfo, setCompanyInfo] = useState({
     company_title: '',
@@ -69,7 +69,7 @@ const CompanyOverview: React.FC = () => {
   const handleDownloadPDF = async () => {
     const element = document.querySelector('.pdf-container') as HTMLElement;
     if (!element) {
-      showAlert({ type: "error", message: "No element with class .pdf-container found" });
+      showAlert({ type: "error", message: t('common.error.elementNotFound', { element: '.pdf-container' }) });
       return;
     }
     await document.fonts.ready;
@@ -97,20 +97,20 @@ const CompanyOverview: React.FC = () => {
   const baseURL = import.meta.env.VITE_APP_URL;
 
   const handleCopyLinkExample = () => {
-    const fullUrl = `${baseURL}/partner-portal/view/${id}`;
- 
+    const fullUrl = `${baseURL}/settings/partners/${id}`;
+
 
     navigator.clipboard
       .writeText(fullUrl)
       .then(() => {
         showAlert({
           type: 'success',
-          message: 'Link copied to clipboard',
+          message: t('common.linkCopied'),
         });
-        
+
       })
       .catch((_err) => {
-        showAlert({ type: "error", message: "Failed to copy link" });
+        showAlert({ type: "error", message: t('common.error.copyFailed') });
       });
   };
 
@@ -120,8 +120,8 @@ const CompanyOverview: React.FC = () => {
       .then((res) => {
         setCountries(res.data);
       })
-      .catch((_err) => showAlert({ type: "error", message: "Failed to fetch countries" }));
-  }, []);
+      .catch((_err) => showAlert({ type: "error", message: t('settings.partners.error.fetchCountries') }));
+  }, [t]);
 
   useEffect(() => {
     api
@@ -129,15 +129,15 @@ const CompanyOverview: React.FC = () => {
       .then((res) => {
         setEmployees(res.data);
       })
-      .catch((_err) => showAlert({ type: "error", message: "Failed to fetch employees" }));
-  }, []);
+      .catch((_err) => showAlert({ type: "error", message: t('settings.partners.error.fetchEmployees') }));
+  }, [t]);
 
   useEffect(() => {
     if (!id || countries.length === 0) return;
 
     const fetchPartner = async () => {
       try {
-        const response = await api.get(`/api/partner/${id}`);
+        const response = await api.get(`/api/partners/${id}`);
         const partnerData = response.data?.data;
         const rawCountryId = partnerData.partner_overview?.hq_country;
         const countryId = rawCountryId ? parseInt(rawCountryId, 10) : null;
@@ -151,17 +151,17 @@ const CompanyOverview: React.FC = () => {
 
           origin_country: Array.isArray(partnerData.partner_overview?.hq_country)
             ? partnerData.partner_overview.hq_country.map((cid: string | number) => {
-                const c = getCountryById(Number(cid));
-                return c ? c.name : '';
-              })
+              const c = getCountryById(Number(cid));
+              return c ? c.name : '';
+            })
             : [country?.name || ''],
           origin_country_flag_svg: Array.isArray(partnerData.partner_overview?.hq_country)
             ? partnerData.partner_overview.hq_country.map((cid: string | number) => {
-                const c = getCountryById(Number(cid));
-                return c ? c.svg_icon_url : '';
-              })
+              const c = getCountryById(Number(cid));
+              return c ? c.svg_icon_url : '';
+            })
             : [country?.svg_icon_url || ''],
-          status: Number(partnerData.partnership_structure?.status) === 1 ? 'Active' : 'Inactive',
+          status: Number(partnerData.partnership_structure?.status) === 1 ? t('common.active') : t('common.inactive'),
           mou_status: partnerData.partnership_structure?.mou_status || '',
           description: partnerData.partner_overview?.details || '',
           tcf_person: partnerData.partner_overview?.our_contact_person || '',
@@ -214,17 +214,17 @@ const CompanyOverview: React.FC = () => {
           no_pic_needed: partnerData.partner_overview?.no_pic_needed || false,
         }));
       } catch {
-        showAlert({ type: "error", message: "Failed to fetch partner" });
+        showAlert({ type: "error", message: t('settings.partners.error.fetchPartner') });
       }
     };
 
     fetchPartner();
-  }, [id, countries, getCountryById]);
+  }, [id, countries, getCountryById, t]);
 
   if (!paramId && !localStorage.getItem('seller_id')) {
     return (
       <div className="p-8 text-red-600 font-semibold flex justify-center items-center h-[200px]">
-        Error: No seller ID found. Please complete company overview.
+        {t('settings.partners.error.noSellerId')}
       </div>
     );
   }
@@ -299,7 +299,7 @@ const CompanyOverview: React.FC = () => {
               <div className="flex justify-start items-start flex-col gap-4 w-[344px]">
                 <div className="flex justify-start items-center flex-row gap-[17px]">
                   <div className="text-[#727272] text-sm font-medium leading-5">
-                    HQ / Origin Country
+                    {t('settings.partners.hqCountry')}
                   </div>
                   <div className="flex justify-start items-center flex-row gap-[8.67px]">
                     {companyInfo?.origin_country_flag_svg ? (
@@ -310,21 +310,21 @@ const CompanyOverview: React.FC = () => {
                       />
                     ) : (
                       <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
-                        n/a
+                        {t('common.na')}
                       </span>
                     )}
                     <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                      {companyInfo?.origin_country || 'N/A'}
+                      {companyInfo?.origin_country || t('common.na')}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex self-stretch justify-start items-center flex-row gap-[49px]">
                   <div className="text-[#727272] text-sm font-medium leading-5 text-nowrap">
-                    Company Type
+                    {t('settings.partners.companyType')}
                   </div>
                   <span className="text-[#30313D] text-sm font-semibold leading-5 text-nowrap">
-                    {companyInfo?.company_type || 'N/A'}
+                    {companyInfo?.company_type || t('common.na')}
                   </span>
                 </div>
               </div>
@@ -385,11 +385,11 @@ const CompanyOverview: React.FC = () => {
                             strokeWidth="1.2"
                           />
                         </svg>
-                        <span className="text-[#064771] text-[12px] text-nowrap hover:underline">Share</span>
+                        <span className="text-[#064771] text-[12px] text-nowrap hover:underline">{t('common.share')}</span>
                       </button>
                     </div>
                     <span className="text-[#FFFFFF] leading-[12.788783073425293px] ml-[-90px]">
-                      Partner ID
+                      {t('settings.partners.partnerId')}
                     </span>
                   </div>
                 </div>
@@ -414,21 +414,21 @@ const CompanyOverview: React.FC = () => {
                         />
                       </svg>
                       <p className="text-[#FFFFFF] text-[28.646873474121094px] font-semibold leading-[30.69308090209961px]">
-                        {companyInfo?.partner_id || 'N/A'}
+                        {companyInfo?.partner_id || t('common.na')}
                       </p>
                     </div>
                     <div className="flex justify-start items-start flex-row gap-1.5">
                       <span className="text-[#AFAFAF] text-sm leading-[18.860000610351562px]">
-                        Last Release
+                        {t('common.lastRelease')}
                       </span>
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
-                          : 'N/A'}
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
+                          : t('common.na')}
                       </span>
                     </div>
                   </div>
@@ -470,30 +470,7 @@ const CompanyOverview: React.FC = () => {
                           strokeLinejoin="round"
                         />
                       </svg>
-                      <span className="text-[#064771] text-[12px] text-nowrap">Download PDF</span>
-                    </button>
-                    <button
-                      className="flex justify-center items-center flex-row gap-[3.044971227645874px] py-[3.5524661540985107px] px-[5.647058963775635px] bg-[#FFFFFF] rounded-[35.16731643676758px] w-[82px] h-[24px]"
-                      style={{ width: '82px' }}
-                      onClick={() => navigate(`/partner-portal/edit/${id}`)}
-                    >
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 13 13"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M2.2437 5.87325C2.58773 3.53533 4.76188 1.91897 7.0998 2.263C7.89745 2.38037 8.6457 2.72072 9.25836 3.24484L8.70684 3.79637C8.52198 3.98127 8.52203 4.28103 8.70695 4.46588C8.79569 4.55461 8.91606 4.60447 9.04155 4.60449H11.2127C11.4741 4.60449 11.6861 4.39254 11.6861 4.13108V1.95998C11.686 1.69852 11.474 1.48661 11.2125 1.48665C11.0871 1.48668 10.9667 1.53654 10.8779 1.62526L10.2625 2.2407C7.91549 0.148595 4.31689 0.355198 2.22479 2.70217C1.48362 3.53362 1.00264 4.56424 0.841439 5.66636C0.777882 6.05708 1.04309 6.42535 1.4338 6.48891C1.46899 6.49463 1.50454 6.49772 1.5402 6.49816C1.89767 6.4943 2.19772 6.22776 2.2437 5.87325Z"
-                          fill="#064771"
-                        />
-                        <path
-                          d="M11.4193 6.50146C11.0618 6.50533 10.7617 6.77187 10.7158 7.12638C10.3717 9.4643 8.19759 11.0807 5.85967 10.7366C5.06202 10.6193 4.31376 10.2789 3.7011 9.75481L4.25262 9.20328C4.43748 9.01838 4.43744 8.71862 4.25251 8.53376C4.16377 8.44504 4.0434 8.39518 3.91791 8.39515H1.74685C1.48539 8.39515 1.27344 8.60711 1.27344 8.86857V11.0397C1.2735 11.3011 1.4855 11.513 1.74696 11.513C1.87245 11.513 1.99282 11.4631 2.08156 11.3744L2.697 10.7589C5.04342 12.8513 8.64175 12.6453 10.7341 10.2989C11.4757 9.46725 11.9569 8.43628 12.118 7.33376C12.1818 6.94308 11.9169 6.57463 11.5262 6.51081C11.4908 6.50502 11.4551 6.50189 11.4193 6.50146Z"
-                          fill="#064771"
-                        />
-                      </svg>
-                      <span className="text-[#064771] text-[12px] text-nowrap">Update</span>
+                      <span className="text-[#064771] text-[12px] text-nowrap">{t('common.downloadPdf')}</span>
                     </button>
                   </div>
                 </div>
@@ -503,10 +480,12 @@ const CompanyOverview: React.FC = () => {
         </div>
       </div>
 
+
+
       <div className="flex gap-[73px] w-[1316px] mt-[50px]">
         <div className="flex flex-col items-start gap-4 p-0 pt-12 pl-7 rounded-none ">
           <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins">
-            Business Overview
+            {t('settings.partners.businessOverview')}
           </p>
 
           <svg
@@ -532,7 +511,7 @@ const CompanyOverview: React.FC = () => {
 
         <div className="pt-12">
           <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins mb-[18px]">
-            Partnership Structure
+            {t('settings.partners.partnershipStructureTitle')}
           </p>
           <svg
             width="560"
@@ -549,40 +528,40 @@ const CompanyOverview: React.FC = () => {
               <div className="">
                 <div className="flex self-stretch justify-start items-center flex-row gap-x-10">
                   <p className="text-[#484848] leading-[19.28569984436035px]">
-                    Partnership Structure
+                    {t('settings.partners.partnershipStructure')}
                   </p>
                   <p className="text-[#30313D] font-medium leading-normal ml-[100px]">
-                    {companyInfo?.partnership_structure || 'N/A'}
+                    {companyInfo?.partnership_structure || t('common.na')}
                   </p>
                 </div>
 
                 <div className="flex self-stretch justify-start items-center flex-row gap-x-10 mt-[40px]">
                   <p className="text-[#484848] leading-[19.28569984436035px]">
-                    Commission/Referral Bonus Criteria
+                    {t('settings.partners.commissionBonusCriteria')}
                   </p>
                   <p className="text-[#30313D] font-medium leading-normal ml-[10px]">
-                    {companyInfo?.bonus_criteria || 'N/A'}
+                    {companyInfo?.bonus_criteria || t('common.na')}
                   </p>
                 </div>
 
                 <div className="flex self-stretch justify-start items-center flex-row gap-x-10 mt-[40px]">
-                  <p className="text-[#484848] leading-[19.28569984436035px]">MOU Status</p>
+                  <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.mouStatus')}</p>
                   <p className="text-[#30313D] font-medium leading-normal ml-[180px]">
-                    {companyInfo?.mou_status || 'N/A'}
+                    {companyInfo?.mou_status || t('common.na')}
                   </p>
                 </div>
 
                 <div className="flex self-stretch justify-start items-center flex-row gap-x-10 mt-[40px]">
-                  <p className="text-[#484848] leading-[19.28569984436035px]">Year Founded</p>
+                  <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.yearFounded')}</p>
                   <p className="text-[#30313D] font-medium leading-normal ml-[160px]">
-                    {companyInfo?.year_founded || 'N/A'}
+                    {companyInfo?.year_founded || t('common.na')}
                   </p>
                 </div>
               </div>
 
               <div className="flex self-stretch justify-start items-center flex-row gap-2.5 mt-[40px]">
                 <p className="text-[#484848] leading-[19.29px] text-nowrap">
-                  Broader Industry Operations
+                  {t('settings.partners.broaderIndustry')}
                 </p>
 
                 <div className="flex justify-start items-center flex-row gap-[8.67px] bg-[#E6F1FA] px-3 py-2 rounded-full ml-[70px]">
@@ -594,17 +573,17 @@ const CompanyOverview: React.FC = () => {
                     />
                   ) : (
                     <span className="w-[26px] h-[26px] rounded-full text-gray-800 text-[10px] flex items-center justify-center bg-red-600">
-                      n/a
+                      {t('common.na')}
                     </span>
                   )}
                   <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                    {MaincountryData?.name || 'N/A'}
+                    {MaincountryData?.name || t('common.na')}
                   </span>
                 </div>
               </div>
 
               <div className="flex justify-start items-center gap-2.5 mt-[30px] text-nowrap">
-                <p className="text-[#484848] leading-[19.29px]">Focused Industry</p>
+                <p className="text-[#484848] leading-[19.29px]">{t('settings.partners.focusedIndustry')}</p>
 
                 <div className="w-full max-w-[700px] ml-[165px]">
                   <div className="flex flex-wrap gap-4">
@@ -622,7 +601,7 @@ const CompanyOverview: React.FC = () => {
 
               <div className="flex self-stretch justify-start items-center flex-row gap-2.5 mt-[40px]">
                 <p className="text-[#484848] leading-[19.29px] text-nowrap">
-                  Partnership Coverage Range
+                  {t('settings.partners.partnershipCoverage')}
                 </p>
 
                 <div className="flex justify-start items-center flex-row gap-[8.67px] bg-[#E6F1FA] px-3 py-2 rounded-full ml-[80px]">
@@ -638,14 +617,14 @@ const CompanyOverview: React.FC = () => {
                     </span>
                   )}
                   <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
-                    {countryData?.name || 'N/A'}
+                    {countryData?.name || t('common.na')}
                   </span>
                 </div>
               </div>
 
               {Number(companyInfo?.no_pic_needed) !== 1 && (
                 <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
-                  <p className="text-[#484848] leading-[4.821rem]">TCF Contact Person</p>
+                  <p className="text-[#484848] leading-[4.821rem]">{t('settings.partners.tcfContactPerson')}</p>
                   <div className="flex justify-center items-center flex-row bg-white border border-[#CAC4D0] rounded-[20px] w-[237px] ml-[150px]">
                     <div className="flex justify-start items-center flex-row gap-2 py-1.5 pr-4 pl-1 w-[236px] h-8  border-gray-300 rounded">
                       <img
@@ -662,7 +641,7 @@ const CompanyOverview: React.FC = () => {
                           {employeeData.first_name} {employeeData.last_name}
                         </span>
                       ) : (
-                        <span className="text-[#A0A0A0] italic">Unknown</span>
+                        <span className="text-[#A0A0A0] italic">{t('common.unknown')}</span>
                       )}
                     </div>
                   </div>
@@ -671,7 +650,7 @@ const CompanyOverview: React.FC = () => {
 
               <div className=" ">
                 <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins mb-[18px] mt-[85px] ">
-                  Social Wings of Prospect
+                  {t('settings.partners.socialWings')}
                 </p>
                 <svg
                   width="560"
@@ -703,7 +682,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          Website
+                          {t('common.website')}
                         </span>
                       </div>
                     </div>
@@ -716,10 +695,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.website
-                            ? `${companyInfo?.website.slice(0, 30)}${
-                                companyInfo?.website.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.website.slice(0, 30)}${companyInfo?.website.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -758,7 +736,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          LinkedIn
+                          {t('common.linkedin')}
                         </span>
                       </div>
                     </div>
@@ -771,10 +749,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.linkedin
-                            ? `${companyInfo?.linkedin.slice(0, 30)}${
-                                companyInfo?.linkedin.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.linkedin.slice(0, 30)}${companyInfo?.linkedin.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -813,7 +790,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          X (Twitter){' '}
+                          {t('common.twitter')}{' '}
                         </span>
                       </div>
                     </div>
@@ -826,10 +803,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.twitter
-                            ? `${companyInfo?.twitter.slice(0, 30)}${
-                                companyInfo?.twitter.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.twitter.slice(0, 30)}${companyInfo?.twitter.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -868,7 +844,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          Facebook
+                          {t('common.facebook')}
                         </span>
                       </div>
                     </div>
@@ -881,10 +857,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.facebook
-                            ? `${companyInfo?.facebook.slice(0, 30)}${
-                                companyInfo?.facebook.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.facebook.slice(0, 30)}${companyInfo?.facebook.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -931,7 +906,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          Instagram
+                          {t('common.instagram')}
                         </span>
                       </div>
                     </div>
@@ -944,10 +919,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.instagram
-                            ? `${companyInfo?.instagram.slice(0, 30)}${
-                                companyInfo?.instagram.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.instagram.slice(0, 30)}${companyInfo?.instagram.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -986,7 +960,7 @@ const CompanyOverview: React.FC = () => {
                           />
                         </svg>
                         <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
-                          YouTube
+                          {t('common.youtube')}
                         </span>
                       </div>
                     </div>
@@ -999,10 +973,9 @@ const CompanyOverview: React.FC = () => {
                           className="text-[#064771] underline"
                         >
                           {companyInfo?.youtube
-                            ? `${companyInfo?.youtube.slice(0, 30)}${
-                                companyInfo?.youtube.length > 30 ? '...' : ''
-                              }`
-                            : 'N/A'}
+                            ? `${companyInfo?.youtube.slice(0, 30)}${companyInfo?.youtube.length > 30 ? '...' : ''
+                            }`
+                            : t('common.na')}
                         </a>
                       </span>
                       <svg
@@ -1032,7 +1005,7 @@ const CompanyOverview: React.FC = () => {
       <div className="flex gap-[73px] w-[1316px] mt-[50px]">
         <div className="flex flex-col items-start gap-4 p-0 pt-12 pl-7 rounded-none ">
           <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins">
-            Partner&apos;s General Contact
+            {t('settings.partners.generalContact')}
           </p>
           <svg
             width="560"
@@ -1046,7 +1019,7 @@ const CompanyOverview: React.FC = () => {
 
           <div className="flex self-stretch justify-start items-start flex-col gap-5 text-nowrap ">
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
-              <p className="text-[#484848] leading-[19.28569984436035px]">Company Email</p>
+              <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.companyEmail')}</p>
               <div className="flex justify-start items-center flex-row gap-[9px] ml-auto">
                 <svg
                   width="20"
@@ -1070,7 +1043,7 @@ const CompanyOverview: React.FC = () => {
                 </svg>
                 <div className="flex justify-start items-center flex-row gap-1.5">
                   <span className="text-[#064771] text-sm font-medium leading-[22px]">
-                    {companyInfo?.company_email || 'N/A'}
+                    {companyInfo?.company_email || t('common.na')}
                   </span>
                   <button>
                     <svg
@@ -1091,7 +1064,7 @@ const CompanyOverview: React.FC = () => {
             </div>
 
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
-              <p className="text-[#484848] leading-[19.28569984436035px]">Contact Number</p>
+              <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.contactNumber')}</p>
               <div className="flex justify-start items-center flex-row gap-[9px] ml-auto">
                 <svg
                   width="17"
@@ -1107,7 +1080,7 @@ const CompanyOverview: React.FC = () => {
                 </svg>
                 <div className="flex justify-start items-center flex-row gap-1.5">
                   <span className="text-[#064771] text-sm font-medium leading-[22px]">
-                    {companyInfo?.contact_number || 'N/A'}
+                    {companyInfo?.contact_number || t('common.na')}
                   </span>
                   <button>
                     <svg
@@ -1128,7 +1101,7 @@ const CompanyOverview: React.FC = () => {
             </div>
 
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
-              <p className="text-[#484848] leading-[19.28569984436035px]">Partner&apos;s Website</p>
+              <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.partnerWebsite')}</p>
               <div className="flex justify-start items-center flex-row gap-[9px] ml-auto">
                 <svg
                   width="17"
@@ -1144,7 +1117,7 @@ const CompanyOverview: React.FC = () => {
                 </svg>
                 <div className="flex justify-start items-center flex-row gap-1.5">
                   <span className="text-[#064771] text-sm font-medium leading-[22px]">
-                    {companyInfo?.website || 'N/A'}
+                    {companyInfo?.website || t('common.na')}
                   </span>
                   <button>
                     <svg
@@ -1165,14 +1138,14 @@ const CompanyOverview: React.FC = () => {
             </div>
 
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5 h-[93px] mt-[-40px]">
-              <p className="text-[#484848] leading-[19.28569984436035px]">HQ Address</p>
+              <p className="text-[#484848] leading-[19.28569984436035px]">{t('settings.partners.hqAddress')}</p>
 
               <span className="text-[#30313D] text-right font-medium leading-normal ml-auto">
                 {companyInfo?.hq_address
                   ? companyInfo.hq_address.length > 40
                     ? `${companyInfo.hq_address.slice(0, 40)}...`
                     : companyInfo.hq_address
-                  : 'N/A'}
+                  : t('common.na')}
               </span>
 
               <svg
@@ -1181,7 +1154,7 @@ const CompanyOverview: React.FC = () => {
                     navigator.clipboard.writeText(companyInfo.hq_address);
                     showAlert({
                       type: 'success',
-                      message: 'Copied to clipboard',
+                      message: t('common.copiedToClipboard'),
                     });
                   }
                 }}
@@ -1205,7 +1178,7 @@ const CompanyOverview: React.FC = () => {
             >
               <div className="flex self-stretch justify-start items-start flex-col gap-4">
                 <p className="self-stretch text-[#064771] text-lg font-medium leading-5">
-                  Contact Person
+                  {t('settings.partners.contactPersonTitle')}
                 </p>
                 <svg
                   width="424"
@@ -1228,10 +1201,10 @@ const CompanyOverview: React.FC = () => {
                       className="flex justify-start items-start flex-col gap-[9px] w-[173px]"
                       style={{ width: '173px' }}
                     >
-                      <p className="self-stretch text-[#838383] text-sm">Contact Person</p>
+                      <p className="self-stretch text-[#838383] text-sm">{t('settings.partners.contactPerson')}</p>
                       <div className="flex self-stretch justify-start items-start flex-row gap-[9px]">
                         <span className="text-[#30313D] text-lg font-medium">
-                          {companyInfo?.partner_contact_person_name || 'N/A'}
+                          {companyInfo?.partner_contact_person_name || t('common.na')}
                         </span>
                         <div
                           className="flex justify-center items-center flex-col gap-[4.81751823425293px] py-[4.335766315460205px] px-[14.934307098388672px] bg-[#064771] rounded-[4.335766315460205px] w-[93px]"
@@ -1239,7 +1212,7 @@ const CompanyOverview: React.FC = () => {
                         >
                           <div className="flex justify-start items-start flex-row gap-[4.81751823425293px]">
                             <span className="text-[#FFFFFF] text-[13.676398277282715px] font-semibold leading-[19.53771209716797px]">
-                              Key Person
+                              {t('settings.partners.keyPerson')}
                             </span>
                           </div>
                         </div>
@@ -1250,19 +1223,19 @@ const CompanyOverview: React.FC = () => {
                     <div className="flex self-stretch justify-start items-start flex-col gap-2.5">
                       <div className="flex justify-start items-center flex-row gap-2.5">
                         <span className="text-[#838383] text-sm leading-[18.860000610351562px]">
-                          Designation/Position
+                          {t('settings.partners.designationPosition')}
                         </span>
                       </div>
                       <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                         <span className="text-[#064771] text-sm font-medium leading-[22px]">
-                          {companyInfo?.partner_contact_person_designation || 'N/A'}
+                          {companyInfo?.partner_contact_person_designation || t('common.na')}
                         </span>
                       </div>
                     </div>
                     <div className="flex self-stretch justify-start items-start flex-col gap-2.5">
                       <div className="flex justify-start items-center flex-row gap-2.5">
                         <span className="text-[#838383] text-sm leading-[18.860000610351562px]">
-                          Person’s Contact Emails
+                          {t('settings.partners.personContactEmails')}
                         </span>
                         <svg
                           width="12"
@@ -1273,32 +1246,18 @@ const CompanyOverview: React.FC = () => {
                         >
                           <path
                             d="M10.6949 2.70773L9.41964 1.39062C9.26302 1.2298 9.07587 1.10187 8.86917 1.01434C8.66246 0.9268 8.44035 0.881421 8.21587 0.880859H5.58333C4.94002 0.881671 4.31665 1.10424 3.8183 1.51106C3.31995 1.91788 2.97709 2.48406 2.8475 3.11419H2.79167C2.05154 3.11508 1.34199 3.40948 0.818639 3.93283C0.295292 4.45618 0.000886554 5.16573 0 5.90586V11.4892C0.000886554 12.2293 0.295292 12.9389 0.818639 13.4622C1.34199 13.9856 2.05154 14.28 2.79167 14.2809H6.14166C6.88179 14.28 7.59134 13.9856 8.11469 13.4622C8.63804 12.9389 8.93244 12.2293 8.93333 11.4892V11.4334C9.56346 11.3038 10.1296 10.9609 10.5365 10.4626C10.9433 9.9642 11.1659 9.34084 11.1667 8.69752V3.87352C11.1675 3.43826 10.9982 3.0199 10.6949 2.70773ZM6.14166 13.1642H2.79167C2.34743 13.1642 1.92139 12.9877 1.60726 12.6736C1.29314 12.3595 1.11667 11.9334 1.11667 11.4892V5.90586C1.11667 5.46162 1.29314 5.03558 1.60726 4.72145C1.92139 4.40733 2.34743 4.23086 2.79167 4.23086V8.69752C2.79255 9.43765 3.08696 10.1472 3.61031 10.6705C4.13365 11.1939 4.84321 11.4883 5.58333 11.4892H7.81666C7.81666 11.9334 7.64019 12.3595 7.32607 12.6736C7.01195 12.9877 6.5859 13.1642 6.14166 13.1642ZM8.375 10.3725H5.58333C5.13909 10.3725 4.71305 10.196 4.39893 9.88193C4.0848 9.5678 3.90833 9.14176 3.90833 8.69752V3.67252C3.90833 3.22829 4.0848 2.80224 4.39893 2.48812C4.71305 2.174 5.13909 1.99753 5.58333 1.99753H7.81666V3.11419C7.81666 3.41035 7.93431 3.69438 8.14373 3.90379C8.35314 4.11321 8.63717 4.23086 8.93333 4.23086H10.05V8.69752C10.05 9.14176 9.87352 9.5678 9.5594 9.88193C9.24528 10.196 8.81923 10.3725 8.375 10.3725Z"
-                            fill="#838383"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                        <svg
-                          width="15"
-                          height="13"
-                          viewBox="0 0 15 13"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M11.875 0.28125H3.125C2.2965 0.282116 1.50222 0.569731 0.916387 1.08101C0.330551 1.59228 0.000992411 2.28547 0 3.00852L0 9.55398C0.000992411 10.277 0.330551 10.9702 0.916387 11.4815C1.50222 11.9928 2.2965 12.2804 3.125 12.2812H11.875C12.7035 12.2804 13.4978 11.9928 14.0836 11.4815C14.6695 10.9702 14.999 10.277 15 9.55398V3.00852C14.999 2.28547 14.6695 1.59228 14.0836 1.08101C13.4978 0.569731 12.7035 0.282116 11.875 0.28125ZM3.125 1.37216H11.875C12.2492 1.3728 12.6147 1.47117 12.9243 1.6546C13.234 1.83803 13.4737 2.09813 13.6125 2.40143L8.82625 6.57907C8.47402 6.88524 7.99714 7.05714 7.5 7.05714C7.00287 7.05714 6.52598 6.88524 6.17375 6.57907L1.3875 2.40143C1.52634 2.09813 1.76601 1.83803 2.07565 1.6546C2.3853 1.47117 2.75076 1.3728 3.125 1.37216ZM11.875 11.1903H3.125C2.62772 11.1903 2.15081 11.0179 1.79917 10.7111C1.44754 10.4042 1.25 9.98797 1.25 9.55398V3.8267L5.29 7.35034C5.87664 7.86103 6.67141 8.14782 7.5 8.14782C8.32859 8.14782 9.12336 7.86103 9.71 7.35034L13.75 3.8267V9.55398C13.75 9.98797 13.5525 10.4042 13.2008 10.7111C12.8492 11.0179 12.3723 11.1903 11.875 11.1903Z"
                             fill="#064771"
                           />
                         </svg>
                         <span className="text-[#064771] text-sm font-medium leading-[22px]">
-                          {companyInfo?.partner_contact_person_email || 'N/A'}
+                          {companyInfo?.partner_contact_person_email || t('common.na')}
                         </span>
                       </div>
                     </div>
                     <div className="flex self-stretch justify-start items-start flex-col gap-2.5">
                       <div className="flex justify-start items-center flex-row gap-2.5">
                         <span className="text-[#838383] text-sm leading-[18.860000610351562px]">
-                          Person’s Contact
+                          {t('settings.partners.personContact')}
                         </span>
                         <svg
                           width="12"
@@ -1341,12 +1300,12 @@ const CompanyOverview: React.FC = () => {
                                 </svg>
                               </svg>
                               <span className="text-[#064771] text-sm leading-[22px]">
-                                {number || 'N/A'}
+                                {number || t('common.na')}
                               </span>
                             </div>
                           ))
                         ) : (
-                          <span className="text-[#064771] text-sm leading-[22px]">N/A</span>
+                          <span className="text-[#064771] text-sm leading-[22px]">{t('common.na')}</span>
                         )}
                       </div>
                     </div>
@@ -1368,7 +1327,7 @@ const CompanyOverview: React.FC = () => {
           <div className="flex justify-start items-center flex-row gap-4">
             <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px] mt-[20px] ">
               <button className="flex justify-center items-center flex-row gap-1.5 py-[5.032660484313965px] px-3 bg-[#064771] rounded-[49.82036209106445px] h-[34px] ml-[-1100px]">
-                <span className="text-[#FFF] ">Next</span>
+                <span className="text-[#FFF] ">{t('common.next')}</span>
 
                 <svg
                   width="8"

@@ -166,8 +166,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
           key={day}
           onClick={() => handleDaySelect(day)}
           className={`h-8 w-8 rounded-full flex items-center justify-center text-sm transition
-            ${isToday ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100"}
-            ${isSelected ? "bg-blue-500 text-white hover:bg-blue-600" : ""}`}
+            ${isToday ? "bg-blue-100 text-[#064771]" : "hover:bg-gray-100"}
+            ${isSelected ? "bg-blue-500 text-white hover:bg-[#064771]" : ""}`}
         >
           {day}
         </button>
@@ -318,7 +318,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                       type="button"
                       key={month}
                       onClick={() => handleMonthSelect(index)}
-                      className={`p-2 rounded-md hover:bg-gray-100 ${isCurrentMonth ? 'bg-blue-100 text-blue-600' : ''} ${isSelectedMonth ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
+                      className={`p-2 rounded-md hover:bg-gray-100 ${isCurrentMonth ? 'bg-blue-100 text-[#064771]' : ''} ${isSelectedMonth ? 'bg-blue-500 text-white hover:bg-[#064771]' : ''}`}
                     >
                       {month.substring(0, 3)}
                     </button>
@@ -337,7 +337,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                       type="button"
                       key={year}
                       onClick={() => handleYearSelect(year)}
-                      className={`p-2 rounded-md hover:bg-gray-100 ${isCurrentYear ? 'bg-blue-100 text-blue-600' : ''} ${isSelectedYear ? 'bg-blue-500 text-white hover:bg-blue-600' : ''}`}
+                      className={`p-2 rounded-md hover:bg-gray-100 ${isCurrentYear ? 'bg-blue-100 text-[#064771]' : ''} ${isSelectedYear ? 'bg-blue-500 text-white hover:bg-[#064771]' : ''}`}
                     >
                       {year}
                     </button>

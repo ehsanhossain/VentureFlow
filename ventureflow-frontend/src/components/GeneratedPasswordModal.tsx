@@ -33,10 +33,10 @@ export default function GeneratedPasswordModal({ generatedPassword, onClose }: G
         {/* Header Section */}
         <div className="flex flex-col items-start py-4 px-6 border-b border-solid border-[#E0E3E6]">
           <span className="text-[#40454A] text-lg font-semibold leading-7">
-            Generated Employee Password
+            Generated User Password
           </span>
           <span className="text-[#40454A] text-[13px] leading-5">
-            Copy this password for the new employee.
+            Copy this password for the new user.
           </span>
         </div>
 

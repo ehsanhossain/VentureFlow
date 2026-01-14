@@ -8,10 +8,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        poppins: ["Poppins", "Helvetica", "sans-serif"],
+        poppins: ['"IBM Plex Sans"', "sans-serif"], // Overriding poppins to IBM Plex Sans as user requested all fonts change
+        sans: ['"IBM Plex Sans"', "sans-serif"],
         sf: ["SF Pro Display", "sans-serif"],
         roboto: ["Roboto", "sans-serif"],
-        sans: ["sans-serif"],
       },
     },
   },
@@ -23,18 +23,18 @@ export default {
         ".custom-scrollbar": {
           scrollbarWidth: "thin",
           "&::-webkit-scrollbar": {
-            width: "8px", 
+            width: "8px",
             height: "8px",
           },
           "&::-webkit-scrollbar-track": {
             background: theme("colors.gray.200", "#E5E7EB"),
-            borderRadius: "10px", 
+            borderRadius: "10px",
           },
           "&::-webkit-scrollbar-thumb": {
             background: theme("colors.gray.500", "#888"),
-            borderRadius: "10px", 
-            border: "2px solid transparent", 
-            backgroundClip: "content-box", 
+            borderRadius: "10px",
+            border: "2px solid transparent",
+            backgroundClip: "content-box",
           },
           "&::-webkit-scrollbar-thumb:hover": {
             background: theme("colors.gray.700", "#555"),

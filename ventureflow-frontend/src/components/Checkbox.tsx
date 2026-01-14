@@ -177,7 +177,7 @@ export default Checkbox; // Changed to default export
 //
 //       <button
 //         onClick={() => setIsDisabled(!isDisabled)}
-//         className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 transition-colors"
+//         className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-[#064771] active:bg-[#053a5c] transition-colors"
 //       >
 //         Toggle First Checkbox Disable ({isDisabled ? "Enable" : "Disable"})
 //       </button>
@@ -186,3 +186,4 @@ export default Checkbox; // Changed to default export
 // };
 //
 // export default App; // If you want to run this example
+

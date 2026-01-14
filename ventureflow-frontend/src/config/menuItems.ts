@@ -23,7 +23,7 @@ export const menuItems: MenuItem[] = [
   { icon: DashboardIcon, label: "Dashboard", path: "/" },
   {
     icon: ProspectsIcon,
-    label: "Companies",
+    label: "Prospects",
     path: "/prospects",
     subItems: [
       { label: "Seller Register", path: "/seller-portal/add", icon: SellerIcon },
@@ -31,14 +31,16 @@ export const menuItems: MenuItem[] = [
     ],
   },
   { icon: CatalystIcon, label: "Deal Pipeline", path: "/deal-pipeline" },
-  { icon: BuyerPartnerIcon, label: "Partner", path: "/partner-portal" },
   { icon: EmployeeIcon, label: "Employee", path: "/employee", roles: ['System Admin'] },
   {
     icon: SettingsIcon,
     label: "Settings",
     path: "/settings",
     subItems: [
+      { label: "General", path: "/settings/general", icon: SettingsIcon },
       { label: "Currency", path: "/settings/currency", icon: CurrencyIcon },
+      { label: "Partner Management", path: "/settings/partners", icon: BuyerPartnerIcon },
+      { label: "Pipeline Workflow", path: "/settings/pipeline", icon: CatalystIcon },
     ],
   },
 ];
