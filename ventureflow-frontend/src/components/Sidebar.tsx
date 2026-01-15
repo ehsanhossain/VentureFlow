@@ -117,7 +117,8 @@ export function Sidebar({
                     {/* Parent menu item */}
                     <div
                       className={`
-                        flex items-center rounded-lg transition-all w-full px-2 my-0.5 relative
+                        flex items-center rounded-lg transition-all w-full my-0.5 relative
+                        ${sidebarExpanded ? "px-2" : "justify-center"}
                         ${isActive && sidebarExpanded
                           ? "bg-blue-50 text-[#064771]"
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -133,22 +134,25 @@ export function Sidebar({
                       {/* Clickable icon+label that navigates to path */}
                       <Link
                         to={item.path || "/"}
-                        className="flex items-center flex-1 py-2 cursor-pointer outline-none pl-2"
+                        className={`
+                          flex items-center flex-1 py-1 cursor-pointer outline-none relative
+                          ${sidebarExpanded ? "pl-2" : "justify-center"}
+                        `}
                       >
                         <div className={`
-                            flex items-center justify-center w-6 h-6 shrink-0 transition-colors
+                            flex items-center justify-center w-12 h-12 shrink-0 transition-colors rounded-lg
                             ${!sidebarExpanded && isActive ? "text-[#064771]" : ""}
                         `}>
-                          <item.icon className="w-5 h-5" strokeWidth={1.5} />
+                          <item.icon className="w-8 h-8" />
                         </div>
 
                         {/* Label - visible only when expanded */}
                         <span
                           className={`
-                            transition-all duration-300 text-sm font-medium whitespace-nowrap ml-3
+                            transition-all duration-300 text-sm font-medium whitespace-nowrap
                             ${sidebarExpanded
-                              ? "opacity-100"
-                              : "opacity-0 w-0 overflow-hidden"
+                              ? "opacity-100 ml-3"
+                              : "opacity-0 w-0 overflow-hidden ml-0"
                             }
                           `}
                         >
@@ -234,7 +238,8 @@ export function Sidebar({
                   <Link
                     to={item.path || "/"}
                     className={`
-                        flex items-center rounded-lg transition-all w-full px-2 py-2 my-0.5 outline-none relative
+                        flex items-center rounded-lg transition-all w-full py-1 my-0.5 outline-none relative
+                        ${sidebarExpanded ? "px-2" : "justify-center"}
                         ${isActive
                         ? sidebarExpanded ? "bg-blue-50 text-[#064771]" : "text-[#064771] bg-blue-50"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -248,18 +253,18 @@ export function Sidebar({
                     )}
 
                     <div
-                      className={`flex items-center justify-center w-6 h-6 shrink-0 ${isActive && sidebarExpanded ? "ml-2" : ""}`}
+                      className={`flex items-center justify-center w-12 h-12 shrink-0 ${isActive && sidebarExpanded ? "ml-0" : ""}`}
                     >
-                      <item.icon className="w-5 h-5" strokeWidth={1.5} />
+                      <item.icon className="w-8 h-8" />
                     </div>
 
                     {/* Label - visible only when expanded */}
                     <span
                       className={`
-                        transition-all duration-300 text-sm font-medium whitespace-nowrap ml-3
+                        transition-all duration-300 text-sm font-medium whitespace-nowrap
                         ${sidebarExpanded
-                          ? "opacity-100"
-                          : "opacity-0 w-0 overflow-hidden"
+                          ? "opacity-100 ml-3"
+                          : "opacity-0 w-0 overflow-hidden ml-0"
                         }
                         `}
                     >

@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8F9FB] pt-16">
+    <div className="flex h-screen bg-[#F8F9FB]">
       {/* Sidebar */}
       <aside
         className={`bg-white border-r border-gray-200 flex-shrink-0 min-h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'
