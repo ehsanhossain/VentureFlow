@@ -169,11 +169,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             <div className="relative hidden md:block" ref={createDropdownRef}>
               <button
                 onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5e] transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-bold shadow-sm"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 text-gray-500" />
                 <span>Create</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${createDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${createDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {createDropdownOpen && (

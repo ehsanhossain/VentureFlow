@@ -44,7 +44,7 @@ const CompanyOverview: React.FC = () => {
 
   const handleCopyLinkExample = () => {
     const fullUrl = `${baseURL}/buyer-portal/view/${id}`;
-   
+
 
     navigator.clipboard
       .writeText(fullUrl)
@@ -53,7 +53,7 @@ const CompanyOverview: React.FC = () => {
           type: 'success',
           message: 'Link copied to clipboard',
         });
-      
+
       })
       .catch(() => {
         showAlert({ type: "error", message: "Failed to copy" });
@@ -113,18 +113,20 @@ const CompanyOverview: React.FC = () => {
         const overview = buyerData.company_overview || {};
         const target_preference = buyerData.target_preference || {};
 
-      
+
 
         const prefs = target_preference?.b_ind_prefs;
 
-      
+
         if (prefs) {
           try {
             const parsed = JSON.parse(prefs);
-            const industryNames = parsed.map((item: any) => item.name);
-            setFocusedIndustries(industryNames);
+            if (Array.isArray(parsed)) {
+              const industryNames = parsed.map((item: any) => item?.name).filter(Boolean);
+              setFocusedIndustries(industryNames);
+            }
           } catch {
-            showAlert({ type: "error", message: "Failed to parse b_ind_prefs" });
+            console.error("Failed to parse b_ind_prefs", prefs);
           }
         }
 
@@ -176,19 +178,6 @@ const CompanyOverview: React.FC = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      try {
-        const res = await fetch('/api/company-informations');
-        const data = await res.json();
-        setCompanyInfo(data);
-      } catch {
-        showAlert({ type: "error", message: "Error fetching company info" });
-      }
-    };
-
-    fetchCompanyInfo();
-  }, []);
 
 
 
@@ -463,10 +452,10 @@ const CompanyOverview: React.FC = () => {
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
                           : 'N/A'}
                       </span>
                     </div>
@@ -630,16 +619,17 @@ const CompanyOverview: React.FC = () => {
 
                 <div className="flex flex-col gap-2 w-[401px] ml-[125px]">
                   <div className="flex flex-wrap gap-4">
-                    {companyInfo?.industry_ops?.flatMap((industry: any) =>
-                      industry.name.split(',').map((name: string, index: number) => (
+                    {Array.isArray(companyInfo?.industry_ops) && companyInfo.industry_ops.flatMap((industry: any) => {
+                      if (!industry?.name) return [];
+                      return industry.name.split(',').map((name: string, index: number) => (
                         <div
                           key={`${industry.id}-${index}`}
                           className="flex justify-center items-center gap-2.5 py-1.5 px-[7px] border border-solid rounded-[49px] h-[32px] text-sm font-medium leading-4 bg-white text-[#064771] border-[#064771]"
                         >
                           {name.trim()}
                         </div>
-                      ))
-                    )}
+                      ));
+                    })}
                   </div>
                 </div>
               </div>
@@ -731,8 +721,8 @@ const CompanyOverview: React.FC = () => {
 
                     {companyInfo?.project_start_date
                       ? new Date(companyInfo.project_start_date)
-                          .toLocaleDateString('en-GB')
-                          .replace(/\//g, '-')
+                        .toLocaleDateString('en-GB')
+                        .replace(/\//g, '-')
                       : 'N/A'}
                   </div>
                 </div>
@@ -760,8 +750,8 @@ const CompanyOverview: React.FC = () => {
 
                     {companyInfo?.expected_transaction_timeline
                       ? new Date(companyInfo.expected_transaction_timeline)
-                          .toLocaleDateString('en-GB')
-                          .replace(/\//g, '-')
+                        .toLocaleDateString('en-GB')
+                        .replace(/\//g, '-')
                       : 'N/A'}
                   </div>
                 </div>
@@ -785,8 +775,8 @@ const CompanyOverview: React.FC = () => {
                         <span className="font-poppins text-nowrap text-[#30313D] text-sm font-semibold leading-[31.78px]">
                           {employeeData
                             ? [employeeData.first_name, employeeData.last_name]
-                                .filter(Boolean)
-                                .join(' ')
+                              .filter(Boolean)
+                              .join(' ')
                             : 'N/A'}
                         </span>
                       </div>
@@ -911,13 +901,13 @@ const CompanyOverview: React.FC = () => {
               <span className="text-[#30313D] text-right font-medium leading-normal ml-auto">
                 {Array.isArray(companyInfo?.hq_address) && companyInfo.hq_address.length > 0
                   ? (() => {
-                      const fullAddress = companyInfo.hq_address
-                        .map((item: any) => item.address)
-                        .join(', ');
-                      return fullAddress.length > 40
-                        ? `${fullAddress.slice(0, 40)}...`
-                        : fullAddress;
-                    })()
+                    const fullAddress = companyInfo.hq_address
+                      .map((item: any) => item.address)
+                      .join(', ');
+                    return fullAddress.length > 40
+                      ? `${fullAddress.slice(0, 40)}...`
+                      : fullAddress;
+                  })()
                   : 'N/A'}
               </span>
 
@@ -925,7 +915,7 @@ const CompanyOverview: React.FC = () => {
                 onClick={() => {
                   if (Array.isArray(companyInfo?.hq_address) && companyInfo.hq_address.length > 0) {
                     const fullAddress = companyInfo.hq_address
-                      .map((item) => item.address)
+                      .map((item: any) => item.address)
                       .join(', ');
                     navigator.clipboard.writeText(fullAddress);
                     showAlert({
