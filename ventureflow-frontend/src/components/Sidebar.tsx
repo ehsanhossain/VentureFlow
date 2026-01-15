@@ -59,7 +59,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white border-r transition-all duration-300 z-50 overflow-x-hidden
+      className={`fixed left-0 top-0 h-screen bg-white border-r transition-all duration-300 z-50
         ${mobileMenuOpen
           ? "translate-x-0"
           : "-translate-x-full md:translate-x-0"
@@ -68,28 +68,28 @@ export function Sidebar({
     >
       <div className="relative h-full flex flex-col">
         {/* Logo Area */}
-        <div className="flex flex-col items-center border-b border-gray-100 flex-shrink-0 relative py-3 gap-2">
-          <Link to="/" className="text-[#064771] flex items-center justify-center transition-all duration-300 overflow-hidden">
+        <div className={`flex items-center border-b border-gray-100 flex-shrink-0 relative h-16 ${sidebarExpanded ? 'justify-start px-6' : 'justify-center focus:outline-none'}`}>
+          <Link to="/" className="text-[#064771] flex items-center justify-center transition-all duration-300 w-full h-full relative">
             {sidebarExpanded ? (
-              <div className="px-4 w-32 animate-in fade-in duration-300">
+              <div className="w-40 animate-in fade-in duration-300 overflow-hidden flex items-center justify-start">
                 <Logo />
               </div>
             ) : (
-              <div className="w-5 animate-in zoom-in duration-300">
+              <div className="w-8 h-8 flex items-center justify-center animate-in zoom-in duration-300">
                 <LogoIcon />
               </div>
             )}
           </Link>
 
-          {/* Sidebar Toggle Button (Under Logo) */}
+          {/* Sidebar Toggle Button */}
           <button
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="p-1 px-2 hover:bg-gray-100 rounded-md hidden md:flex items-center justify-center transition-all duration-300 text-gray-400 hover:text-[#064771]"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-md shadow-sm hidden md:flex items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#064771] hover:border-[#064771] z-50 focus:outline-none"
           >
             {sidebarExpanded ? (
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             ) : (
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             )}
           </button>
         </div>
@@ -117,7 +117,7 @@ export function Sidebar({
                     {/* Parent menu item */}
                     <div
                       className={`
-                        flex items-center rounded-lg transition-all w-full px-2 my-0.5
+                        flex items-center rounded-lg transition-all w-full px-2 my-0.5 relative
                         ${isActive && sidebarExpanded
                           ? "bg-blue-50 text-[#064771]"
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -125,13 +125,15 @@ export function Sidebar({
                       `}
                     >
                       {isActive && sidebarExpanded && (
-                        <div className="absolute left-0 w-1 h-6 bg-[#064771] rounded-r-full" />
+                        <div className="absolute left-0 w-1.5 h-full py-2">
+                          <div className="w-full h-full bg-[#064771] rounded-r-full"></div>
+                        </div>
                       )}
 
                       {/* Clickable icon+label that navigates to path */}
                       <Link
                         to={item.path || "/"}
-                        className="flex items-center flex-1 py-2 cursor-pointer outline-none"
+                        className="flex items-center flex-1 py-2 cursor-pointer outline-none pl-2"
                       >
                         <div className={`
                             flex items-center justify-center w-6 h-6 shrink-0 transition-colors
@@ -159,7 +161,7 @@ export function Sidebar({
                         <button
                           onClick={() => toggleMenu(item.label)}
                           className={`
-                          p-1 rounded hover:bg-gray-200/50 transition-colors cursor-pointer
+                          p-1 rounded hover:bg-gray-200/50 transition-colors cursor-pointer mr-2
                           ${sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}
                         `}
                         >
@@ -232,7 +234,7 @@ export function Sidebar({
                   <Link
                     to={item.path || "/"}
                     className={`
-                        flex items-center rounded-lg transition-all w-full px-2 py-2 my-0.5 outline-none
+                        flex items-center rounded-lg transition-all w-full px-2 py-2 my-0.5 outline-none relative
                         ${isActive
                         ? sidebarExpanded ? "bg-blue-50 text-[#064771]" : "text-[#064771] bg-blue-50"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -240,11 +242,13 @@ export function Sidebar({
                     `}
                   >
                     {isActive && sidebarExpanded && (
-                      <div className="absolute left-0 w-1 h-6 bg-[#064771] rounded-r-full" />
+                      <div className="absolute left-0 w-1.5 h-full py-2">
+                        <div className="w-full h-full bg-[#064771] rounded-r-full"></div>
+                      </div>
                     )}
 
                     <div
-                      className="flex items-center justify-center w-6 h-6 shrink-0"
+                      className={`flex items-center justify-center w-6 h-6 shrink-0 ${isActive && sidebarExpanded ? "ml-2" : ""}`}
                     >
                       <item.icon className="w-5 h-5" strokeWidth={1.5} />
                     </div>
