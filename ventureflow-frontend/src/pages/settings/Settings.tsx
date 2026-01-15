@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CurrencyIcon, SettingsIcon } from '../../assets/icons';
-import { Users, ChevronLeft, ChevronRight, GitFork } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, GitFork, UserCog } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
@@ -21,6 +21,11 @@ const Settings: React.FC = () => {
       label: t('navigation.general', 'General'),
       path: '/settings/general',
       icon: SettingsIcon,
+    },
+    {
+      label: t('navigation.staffManagement', 'Staff & Accounts'),
+      path: '/settings/staff',
+      icon: UserCog,
     },
     {
       label: t('navigation.currency', 'Currency'),

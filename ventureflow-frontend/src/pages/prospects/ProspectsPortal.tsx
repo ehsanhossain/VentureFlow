@@ -439,17 +439,17 @@ const ProspectsPortal: React.FC = () => {
                 </>
             )}
 
-            <div className="px-6 py-6 w-full">
-                <div className="flex flex-col gap-6">
+            <div className="px-6 py-4 w-full">
+                <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <h1 className="text-3xl font-bold text-gray-900">Prospects</h1>
-                            <div className="flex bg-gray-100 rounded-lg p-1 ml-4 shadow-inner">
-                                <button onClick={() => setActiveTab('investors')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771] shadow-sm transform scale-105' : 'text-gray-500 hover:text-gray-900'}`}>
-                                    Investors <span className={`ml-1 ${activeTab === 'investors' ? 'text-[#064771]/60' : 'text-gray-400'}`}>({counts.investors})</span>
+                            <div className="flex bg-gray-200/50 rounded-xl p-1.5 ml-4 shadow-inner">
+                                <button onClick={() => setActiveTab('investors')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}>
+                                    Investors <span className={`ml-1.5 text-xs ${activeTab === 'investors' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.investors})</span>
                                 </button>
-                                <button onClick={() => setActiveTab('targets')} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771] shadow-sm transform scale-105' : 'text-gray-500 hover:text-gray-900'}`}>
-                                    Targets <span className={`ml-1 ${activeTab === 'targets' ? 'text-[#064771]/60' : 'text-gray-400'}`}>({counts.targets})</span>
+                                <button onClick={() => setActiveTab('targets')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}>
+                                    Targets <span className={`ml-1.5 text-xs ${activeTab === 'targets' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.targets})</span>
                                 </button>
                             </div>
                         </div>

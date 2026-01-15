@@ -209,7 +209,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             onMouseDown={(e) => handleMouseDown(e, column)}
         >
             {/* The persistent separator line */}
-            <div className="absolute right-0 top-0 h-full w-[1px] bg-gray-200 group-hover/handle:bg-[#064771] group-hover/handle:w-[2px] transition-all" />
+            <div className="absolute right-0 top-0 h-full w-[1px] bg-gray-200 transition-all" />
 
             {/* The grab handle pill (visible on hover) */}
             <div className="absolute right-[-1px] top-1/2 -translate-y-1/2 h-8 w-[3px] bg-[#064771] rounded-full opacity-0 group-hover/handle:opacity-100 transition-all shadow-[0_0_10px_rgba(6,71,113,0.3)]" />

@@ -20,6 +20,8 @@ import Settings from "../pages/settings/Settings";
 import ProspectsPortal from "../pages/prospects/ProspectsPortal";
 import DealPipeline from "../pages/deals/DealPipeline";
 import PartnerManagement from "../pages/settings/components/PartnerManagement";
+import StaffManagement from "../pages/settings/components/StaffManagement";
+import CreateStaff from "../pages/settings/components/CreateStaff";
 import GeneralSettings from "../pages/settings/components/GeneralSettings";
 import PipelineSettings from "../pages/settings/components/PipelineSettings";
 import ChangePassword from "../pages/auth/ChangePassword";
@@ -177,6 +179,9 @@ const AppRoutes = () => {
         }
       >
         <Route path="general" element={<GeneralSettings />} />
+        <Route path="staff" element={<StaffManagement />} />
+        <Route path="staff/create" element={<CreateStaff />} />
+        <Route path="staff/edit/:id" element={<CreateStaff />} />
         <Route path="currency" element={<CurrencyTable />} />
         <Route path="currency/add" element={<Register />} />
         <Route path="currency/edit/:id" element={<Register />} />
