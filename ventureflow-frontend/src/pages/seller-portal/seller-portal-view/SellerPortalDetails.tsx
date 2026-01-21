@@ -4,13 +4,13 @@ import Breadcrumb from '../../../assets/breadcrumb';
 import LetterIcon from '../../../assets/svg/LetterIcon';
 import FinancialBagIcon from '../../../assets/svg/FinancialBagIcon';
 import PartnershipDetailsIcon from '../../../assets/svg/PartnershipDetails';
-import Attachment from '../../../assets/svg/Attachment';
-import TeaserCenterIcon from '../../../assets/svg/TeaserCenter';
+
+
 import CompanyOverview from './CompanyOverview';
 import FinancialDetails from './FinancialDetails';
 import PartnershipDetails from './PartnershipDetails';
-import TeaserCenter from './TeaserCenter';
-import Attachments from './Attachments';
+
+
 import { useNavigate } from 'react-router-dom';
 import { useTabStore } from './store/tabStore';
 import { useParams } from 'react-router-dom';
@@ -19,8 +19,8 @@ import { showAlert } from '../../../components/Alert';
 const CompanyOverviewTab = () => <CompanyOverview />;
 const FinancialDetailsTab = () => <FinancialDetails />;
 const PartnershipDetailsTab = () => <PartnershipDetails />;
-const AttachmentsTab = () => <Attachments />;
-const TeaserCenterTab = () => <TeaserCenter />;
+
+
 
 const tabsData = [
   {
@@ -44,28 +44,16 @@ const tabsData = [
     activeIcon: <PartnershipDetailsIcon isActive={true} />,
     inactiveIcon: <PartnershipDetailsIcon isActive={false} />,
   },
-  {
-    id: 'attachments',
-    label: 'Attachments',
 
-    activeIcon: <Attachment isActive={true} />,
-    inactiveIcon: <Attachment isActive={false} />,
-  },
-  {
-    id: 'teaser-center',
-    label: 'Teaser Center',
 
-    activeIcon: <TeaserCenterIcon isActive={true} />,
-    inactiveIcon: <TeaserCenterIcon isActive={false} />,
-  },
 ];
 
 const TabContentMap: Record<string, React.FC> = {
   'company-overview': CompanyOverviewTab,
   'financial-details': FinancialDetailsTab,
   'partnership-details': PartnershipDetailsTab,
-  attachments: AttachmentsTab,
-  'teaser-center': TeaserCenterTab,
+
+
 };
 
 const SellerPortalDetails: React.FC = () => {
@@ -82,7 +70,7 @@ const SellerPortalDetails: React.FC = () => {
         const response = await api.get(`/api/seller/${id}`);
         const sellerData = response.data?.data || {};
         setSeller(sellerData);
-      } catch  {
+      } catch {
         showAlert({ type: 'error', message: 'Failed to fetch seller' });
       }
     };
@@ -94,9 +82,9 @@ const SellerPortalDetails: React.FC = () => {
 
   const breadcrumbLinks = [
     { label: 'Home', url: '/', isCurrentPage: false },
-    { label: 'Seller Portal', url: '/seller-portal', isCurrentPage: false },
+    { label: 'Target Portal', url: '/seller-portal', isCurrentPage: false },
     {
-      label: id ? seller?.company_overview?.reg_name || 'Edit Seller' : 'Create a New Seller',
+      label: id ? seller?.company_overview?.reg_name || 'Edit Target' : 'Create a New Target',
       url: '',
       isCurrentPage: true,
     },
@@ -118,7 +106,7 @@ const SellerPortalDetails: React.FC = () => {
   return (
     <div className="flex flex-col w-full py-6 font-poppins">
       <div className="flex flex-col w-full px-6">
-        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Seller in Details</h1>
+        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Target Details</h1>
 
         <div className="flex items-center gap-2.5 mb-6">
           <button

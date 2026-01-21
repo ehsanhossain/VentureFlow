@@ -2,8 +2,8 @@
 
 namespace App\Imports;
 
-use App\Models\Buyer;
-use App\Models\BuyersCompanyOverview;
+use App\Models\Seller;
+use App\Models\SellersCompanyOverview;
 use App\Models\Country;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -16,7 +16,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, WithChunkReading, WithValidation, WithMapping
+class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, WithChunkReading, WithValidation, WithMapping
 {
     private function parseJsonColumn($value): ?array
     {
@@ -112,12 +112,10 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             return;
         }
 
-        $ebitdaTimesData = $this->parseJsonColumn($row['ebitda_multiples'] ?? null);
-
         // --- ID Generation Logic ---
         $countryName = $row['hq_origin_country'] ?? $row['hq_country'] ?? null;
         $hqCountryId = null;
-        $buyerId = null;
+        $sellerId = null;
 
         if ($countryName) {
             // Find Country by Name to get Alpha Code and ID
@@ -127,49 +125,46 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
                 $hqCountryId = $country->id;
                 $countryAlpha = strtoupper($country->alpha_2_code ?? substr($countryName, 0, 2));
 
-                // Generate Buyer ID only if we have a valid Alpha Code
+                // Generate Seller ID only if we have a valid Alpha Code
                 if ($countryAlpha) {
-                    $prefix = $countryAlpha . '-B-';
+                    $prefix = $countryAlpha . '-S-';
                     
                     // Find max existing sequence
-                    // Implementation mimics BuyerController::getLastSequence
-                    $lastBuyer = Buyer::where('buyer_id', 'LIKE', $prefix . '%')
-                        ->select('buyer_id')
+                    // Implementation mimics SellerController::getLastSequence
+                    $lastSeller = Seller::where('seller_id', 'LIKE', $prefix . '%')
+                        ->select('seller_id')
                         ->get()
                         ->map(function ($item) use ($prefix) {
-                            $numericPart = str_replace($prefix, '', $item->buyer_id);
+                            $numericPart = str_replace($prefix, '', $item->seller_id);
                             return (int) $numericPart;
                         })
                         ->max();
 
-                    $nextSequence = ($lastBuyer ? $lastBuyer : 0) + 1;
-                    $formattedSequence = str_pad($nextSequence, 3, '0', STR_PAD_LEFT); // Ensure e.g. 001 or 01 based on preference, here using 3 digits as per example XX-B-XXX
-                    // Note: User image showed XX-B-XXX (3 digits). Adjusting to that.
-                    $buyerId = $prefix . $formattedSequence;
+                    $nextSequence = ($lastSeller ? $lastSeller : 0) + 1;
+                    $formattedSequence = str_pad($nextSequence, 3, '0', STR_PAD_LEFT); 
+                    $sellerId = $prefix . $formattedSequence;
                 }
             } else {
-                 Log::warning("Country '{$countryName}' not found in database. Buyer ID generation skipped.");
+                 Log::warning("Country '{$countryName}' not found in database. Seller ID generation skipped.");
             }
         }
 
-        // Create Company Overview
-        $overview = BuyersCompanyOverview::create([
+        // Create Seller Company Overview
+        $overview = SellersCompanyOverview::create([
             'reg_name'                 => $companyRegName,
             'hq_country'               => $hqCountryId, // Store ID, not name
             'company_type'             => $row['company_type'] ?? null,
             'year_founded'             => $row['year_founded'] ?? null,
-            'industry_ops'             => $row['broader_industry_operations'] ?? $row['target_business_industry'] ?? null,
-            'main_industry_operations' => $commaSeparatedToArray($row['main_industry_operations'] ?? null),
-            'niche_industry'           => $commaSeparatedToArray($row['niche_priority_industry'] ?? null),
+            'industry_ops'             => $commaSeparatedToArray($row['industry_operations'] ?? $row['industry'] ?? null),
             'emp_count'                => $row['current_employee_counts'] ?? null,
-            'reason_ma'                => $row['reason_ma'] ?? $row['purpose_of_ma'] ?? null,
+            'reason_ma'                => $row['reason_ma'] ?? null,
             'proj_start_date'          => $this->transformDate($row['project_start_date'] ?? null),
             'txn_timeline'             => $row['expected_transaction_timeline'] ?? null,
             'incharge_name'            => $row['our_person_in_charge'] ?? null,
             'no_pic_needed'            => $stringToBoolean($row['no_pic_needed'] ?? false),
             'status'                   => $row['status'] ?? null,
             'details'                  => $row['details'] ?? null,
-            'email'                    => $row['company_s_email'] ?? $row['url_website'] ?? null, 
+            'email'                    => $row['company_s_email'] ?? null,
             'phone'                    => $row['company_s_phone_number'] ?? null,
             'hq_address'               => $this->parseAddress($row['hq_address'] ?? null),
             'shareholder_name'         => $commaSeparatedToArray($row['shareholder_name'] ?? null),
@@ -177,30 +172,21 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'seller_designation'       => $row['designation_position'] ?? null,
             'seller_email'             => $row['email_address'] ?? null,
             'seller_phone'             => $commaSeparatedToArray($row['phone_number'] ?? null),
-            'website'                  => $row['website_link'] ?? $row['url_website'] ?? null,
+            'website'                  => $row['website_link'] ?? null,
             'linkedin'                 => $row['linkedin_link'] ?? null,
             'twitter'                  => $row['x_twitter_link'] ?? null,
             'facebook'                 => $row['facebook_link'] ?? null,
             'instagram'                => $row['instagram_link'] ?? null,
             'youtube'                  => $row['youtube_link'] ?? null,
-            // 'ebitda_times'             => $ebitdaTimesData, // Not in fillable of model currently shown, relying on model def.
-            'buyer_id'                 => $buyerId, // Store localized ID in overview if field exists (it does in fillable)
+            'seller_id'                => $sellerId, // Localized ID
         ]);
 
-        // Create Parent Buyer Record
-        $buyer = Buyer::create([
-            'buyer_id' => $buyerId,
+         // Create Parent Seller Record
+         $seller = Seller::create([
+            'seller_id' => $sellerId,
             'company_overview_id' => $overview->id,
-            // Other IDs (target_preference, etc) can be null initially
+            'status' => 1, // Defaulting to 1 (active) or draft as suitable, defaulting to active here or checking is_draft logic
         ]);
-
-        // Link Overview back to Buyer (optional but good for bi-directionality if needed)
-        // $overview->buyer_id = $buyer->id; // The fillable has 'buyer_id' which usually stores the STRING ID, not the FK.
-        // Actually buyers_company_overviews table structure usually has a foreign key or just the string ID? 
-        // Based on BuyerController lines 291-292: 
-        // $buyer->company_overview_id = $overview->id; 
-        // $buyer->buyer_id = ...
-        // So Buyer -> Overview is the main link.
     }
 
     public function chunkSize(): int
@@ -215,9 +201,7 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'hq_origin_country'             => 'nullable|string|max:100',
             'company_type'                  => 'nullable|string|max:100',
             'year_founded'                  => 'nullable|digits:4|integer|min:1000|max:' . date('Y'),
-            'broader_industry_operations'   => 'nullable|string|max:255',
-            'main_industry_operations'      => 'nullable|string',
-            'niche_priority_industry'       => 'nullable|string',
+            'industry_operations'           => 'nullable|string',
             'current_employee_counts'       => 'nullable',
             'reason_ma'                     => 'nullable|string',
             'project_start_date'            => 'nullable',
@@ -228,7 +212,7 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'details'                       => 'nullable|string',
             'company_s_email'               => 'nullable|email|max:150',
             'company_s_phone_number'        => 'nullable|string|max:50',
-            'hq_address'                    => 'nullable|string', 
+            'hq_address'                    => 'nullable|string',
             'shareholder_name'              => 'nullable|string',
             'seller_side_contact_person_name' => 'nullable|string|max:100',
             'designation_position'          => 'nullable|string|max:100',
@@ -240,10 +224,6 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'facebook_link'                 => 'nullable|url|max:255',
             'instagram_link'                => 'nullable|url|max:255',
             'youtube_link'                  => 'nullable|url|max:255',
-            'seller_id'                     => 'nullable',
-            'seller_image'                  => 'nullable|string',
-            'profile_picture'               => 'nullable|string',
-            'ebitda_multiples'              => 'nullable|string', 
         ];
     }
 
@@ -251,7 +231,7 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
     {
         return [
             'company_registered_name.required' => 'The "Company Registered Name" is required for each company.',
-            'company_s_email.email' => 'The "Company’s Email" is not a valid email address.',
+            'company_s_email.email' => 'The "Company\'s Email" is not a valid email address.',
             'email_address.email' => 'The seller "Email Address" is not a valid email address.',
             'year_founded.digits' => 'The "Year Founded" must be a 4-digit year.',
             'website_link.url' => 'The "Website Link" must be a valid URL.',
@@ -264,7 +244,7 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             return null;
         }
         try {
-            if (is_numeric($value) && $value > 25569 && $value < 60000) { 
+            if (is_numeric($value) && $value > 25569 && $value < 60000) { // Basic check for Excel date numbers
                 return ExcelDate::excelToDateTimeObject($value)->format('Y-m-d');
             }
             return Carbon::parse((string) $value)->format('Y-m-d');
@@ -274,10 +254,10 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
         }
     }
 
-    private function parseAddress($value): array 
+    private function parseAddress($value): array
     {
         if (is_null($value) || trim((string)$value) === '') {
-            return []; 
+            return [];
         }
 
         $trimmedValue = trim((string)$value);

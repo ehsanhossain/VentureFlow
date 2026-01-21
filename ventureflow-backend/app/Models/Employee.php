@@ -5,6 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\User;
+use App\Models\Country;
+use App\Models\Company;
+use App\Models\Department;
+use App\Models\Branch;
+use App\Models\Team;
+use App\Models\Designation;
 
 class Employee extends Authenticatable
 {
@@ -43,31 +50,31 @@ class Employee extends Authenticatable
     }
 
     // Company relationship
-    public function company()
+    public function company_data()
     {
         return $this->belongsTo(Company::class, 'company');
     }
 
     // Department relationship
-    public function department()
+    public function department_data()
     {
         return $this->belongsTo(Department::class, 'department');
     }
 
     // Branch relationship
-    public function branch()
+    public function branch_data()
     {
         return $this->belongsTo(Branch::class, 'branch');
     }
 
     // Team relationship
-    public function team()
+    public function team_data()
     {
         return $this->belongsTo(Team::class, 'team');
     }
 
     // Designation relationship
-    public function designation()
+    public function designation_data()
     {
         return $this->belongsTo(Designation::class, 'designation');
     }

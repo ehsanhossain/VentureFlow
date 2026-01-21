@@ -106,7 +106,7 @@ const SellerPortal: React.FC = () => {
         params: { page, search: query },
       });
       setFromPartners(fromPartners.data?.meta?.total);
-    } catch  {
+    } catch {
       showAlert({ type: 'error', message: 'Failed to fetch sellers' });
     }
   };
@@ -118,7 +118,7 @@ const SellerPortal: React.FC = () => {
   const tabsData = [
     {
       id: 'all-sellers',
-      label: 'All Sellers',
+      label: 'All Targets',
       count: sellers.meta?.total ?? 0,
       activeIcon: <CartIcon isActive={true} />,
       inactiveIcon: <CartIcon isActive={false} />,
@@ -162,7 +162,7 @@ const SellerPortal: React.FC = () => {
 
   const breadcrumbLinks = [
     { label: 'Home', url: '/', isCurrentPage: false },
-    { label: 'Seller Portal', url: '/seller-portal', isCurrentPage: true },
+    { label: 'Target Portal', url: '/seller-portal', isCurrentPage: true },
   ];
 
   const [activeTab, setActiveTab] = useState('all-sellers');
@@ -249,14 +249,14 @@ const SellerPortal: React.FC = () => {
   };
 
   const handleImportNotification = (_data?: Record<string, unknown>) => {
- 
+
   };
 
   return (
     <div className="flex items-center gap-[13px] w-auto font-poppins">
       <div className="flex flex-col flex-shrink-0  items-start gap-0  flex-wrap  w-full">
         <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal] ml-9 mt-7">
-          Seller Portal
+          Target Portal
         </div>
         <div className="flex items-center self-stretch ml-9 w-auto pt-4">
           <div className="flex items-center gap-2.5 w-auto ">
@@ -313,7 +313,7 @@ const SellerPortal: React.FC = () => {
                         />
                       </svg>
                       <span className="text-white font-poppins text-sm leading-5">
-                        Create a Seller
+                        Create a Target
                       </span>
                     </div>
                   </button>
@@ -404,27 +404,7 @@ const SellerPortal: React.FC = () => {
                   </div>
                 </div>
 
-                <button onClick={() => navigate('/seller-teaser-center')}>
-                  <div className="flex items-end h-[34px] gap-2.5">
-                    <div className="flex items-center gap-1 py-1.5 px-3 h-[34px] bg-[#F1FBFF] border border-[#064771] rounded-full">
-                      <svg
-                        width="23"
-                        height="21"
-                        viewBox="0 0 23 21"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M17.6954 10.6131C20.4958 10.6131 22.7659 12.8832 22.7659 15.6835C22.7659 18.4838 20.4958 20.7539 17.6954 20.7539C15.2832 20.7539 13.2644 19.0694 12.7512 16.8124H10.2454C9.73218 19.0694 7.71336 20.7539 5.30108 20.7539C2.50076 20.7539 0.230659 18.4838 0.230659 15.6835C0.230659 12.8832 2.50076 10.6131 5.30108 10.6131C7.91109 10.6131 10.0605 12.5851 10.3406 15.1204H12.6559C12.936 12.5851 15.0854 10.6131 17.6954 10.6131ZM5.30108 12.3032C3.4342 12.3032 1.9208 13.8166 1.9208 15.6835C1.9208 17.5504 3.4342 19.0638 5.30108 19.0638C7.16796 19.0638 8.68136 17.5504 8.68136 15.6835C8.68136 13.8166 7.16796 12.3032 5.30108 12.3032ZM17.6954 12.3032C15.8286 12.3032 14.3152 13.8166 14.3152 15.6835C14.3152 17.5504 15.8286 19.0638 17.6954 19.0638C19.5623 19.0638 21.0757 17.5504 21.0757 15.6835C21.0757 13.8166 19.5623 12.3032 17.6954 12.3032ZM11.4983 7.51447C15.3172 7.51447 18.8561 7.89705 22.1144 8.6637C22.5687 8.77059 22.8503 9.22554 22.7434 9.67986C22.6365 10.1342 22.1816 10.4158 21.7272 10.3089C18.6005 9.5732 15.191 9.20461 11.4983 9.20461C7.8055 9.20461 4.39603 9.5732 1.26928 10.3089C0.814971 10.4158 0.360021 10.1342 0.253124 9.67986C0.146226 9.22554 0.427863 8.77059 0.882176 8.6637C4.14041 7.89705 7.67929 7.51447 11.4983 7.51447ZM15.6676 0.753906C16.8201 0.753906 17.8708 1.39271 18.4051 2.40077L18.4991 2.59404L20.1578 6.32618C20.3474 6.75268 20.1553 7.25208 19.7288 7.44164C19.3379 7.61539 18.8856 7.46847 18.667 7.11427L18.6134 7.01261L16.9546 3.28047C16.7491 2.81808 16.3136 2.50514 15.8179 2.45206L15.6676 2.44405H7.32897C6.82296 2.44405 6.36011 2.71495 6.11029 3.14635L6.04191 3.28047L4.38318 7.01261C4.19362 7.43911 3.69422 7.63119 3.26773 7.44164C2.87677 7.26788 2.68279 6.83376 2.79918 6.4341L2.83871 6.32618L4.49744 2.59404C4.96551 1.54088 5.97601 0.840124 7.11417 0.761326L7.32897 0.753906H15.6676Z"
-                          fill="#064771"
-                        />
-                      </svg>
-                      <span className="text-[#064771] font-poppins text-sm leading-5 underline">
-                        Teaser Center
-                      </span>
-                    </div>
-                  </div>
-                </button>
+
               </div>
             </div>
           </div>
@@ -448,11 +428,10 @@ const SellerPortal: React.FC = () => {
                   <div className="flex justify-start items-center flex-row">
                     <button
                       onClick={() => setActiveButton('button1')}
-                      className={`flex justify-center items-center gap-2 py-2 px-3 rounded-tl rounded-bl w-10 h-10 ${
-                        activeButton === 'button1'
-                          ? 'bg-[#064771]'
-                          : 'bg-white border-solid border-[#E5E7EB] border rounded-tr'
-                      }`}
+                      className={`flex justify-center items-center gap-2 py-2 px-3 rounded-tl rounded-bl w-10 h-10 ${activeButton === 'button1'
+                        ? 'bg-[#064771]'
+                        : 'bg-white border-solid border-[#E5E7EB] border rounded-tr'
+                        }`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -470,9 +449,8 @@ const SellerPortal: React.FC = () => {
 
                     <button
                       onClick={() => setActiveButton('button2')}
-                      className={`flex justify-center items-center gap-2 py-2 px-3 border-solid border-[#E5E7EB] border rounded-tr rounded-br w-10 h-10 ${
-                        activeButton === 'button2' ? 'bg-[#064771]' : 'bg-white'
-                      }`}
+                      className={`flex justify-center items-center gap-2 py-2 px-3 border-solid border-[#E5E7EB] border rounded-tr rounded-br w-10 h-10 ${activeButton === 'button2' ? 'bg-[#064771]' : 'bg-white'
+                        }`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

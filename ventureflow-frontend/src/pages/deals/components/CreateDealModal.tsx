@@ -33,6 +33,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
     const [buyers, setBuyers] = useState<Buyer[]>([]);
     const [sellers, setSellers] = useState<Seller[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [stages, setStages] = useState<{ code: string; name: string }[]>([]);
     const [searchBuyer, setSearchBuyer] = useState('');
     const [searchSeller, setSearchSeller] = useState('');
 
@@ -41,11 +42,10 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         seller_id: 0,
         name: '',
         industry: '',
-        estimated_ev_value: '',
-        estimated_ev_currency: 'USD',
         priority: 'medium',
         pic_user_id: '',
         target_close_date: '',
+        stage_code: '',
     });
 
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -55,7 +55,27 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         fetchBuyers();
         fetchSellers();
         fetchUsers();
+        fetchStages();
     }, []);
+
+    const fetchStages = async () => {
+        try {
+            const response = await api.get('/api/pipeline-stages', {
+                params: { type: defaultView }
+            });
+            const stagesData = response.data || [];
+            // Backend filters by type, but ensuring client-side match as well
+            const filteredStages = stagesData.filter((s: any) => s.pipeline_type === defaultView);
+            setStages(filteredStages);
+
+            if (filteredStages.length > 0) {
+                setFormData(prev => ({ ...prev, stage_code: filteredStages[0].code }));
+            }
+
+        } catch {
+            console.error('Failed to fetch stages');
+        }
+    };
 
     const fetchBuyers = async () => {
         try {
@@ -128,7 +148,6 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             await api.post('/api/deals', {
                 ...formData,
-                estimated_ev_value: formData.estimated_ev_value ? parseFloat(formData.estimated_ev_value) : null,
                 pic_user_id: formData.pic_user_id ? parseInt(formData.pic_user_id) : null,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
@@ -277,14 +296,18 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Estimated EV</label>
-                                    <input
-                                        type="number"
-                                        value={formData.estimated_ev_value}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_value: e.target.value }))}
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                                    <select
+                                        value={formData.stage_code}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, stage_code: e.target.value }))}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., 85000000"
-                                    />
+                                    >
+                                        {stages.map((stage) => (
+                                            <option key={stage.code} value={stage.code}>
+                                                {stage.code} - {stage.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">

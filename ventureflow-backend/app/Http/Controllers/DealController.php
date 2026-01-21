@@ -148,16 +148,26 @@ class DealController extends Controller
         ]);
 
         // Determine stage code and look up progress from pipeline stages
-        $stageCode = $validated['stage_code'] ?? 'K';
+        $stageCode = $validated['stage_code'] ?? null;
         
-        // Look up stage from buyer pipeline first, then seller
-        $stage = \App\Models\PipelineStage::where('code', $stageCode)
-            ->where('is_active', true)
-            ->orderBy('pipeline_type', 'asc') // 'buyer' comes before 'seller'
-            ->first();
+        $stageQuery = \App\Models\PipelineStage::where('is_active', true);
 
-        $validated['stage_code'] = $stageCode;
-        $validated['progress_percent'] = $stage ? $stage->progress : 5;
+        if ($stageCode) {
+             $stageQuery->where('code', $stageCode);
+        } else {
+             // Default to the first stage of the buyer pipeline if no stage provided
+             $stageQuery->where('pipeline_type', 'buyer')->orderBy('order_index', 'asc');
+        }
+        
+        $stage = $stageQuery->first();
+
+        // If still no stage found (e.g. invalid code provided), fallback to any first active stage
+        if (!$stage) {
+            $stage = \App\Models\PipelineStage::where('is_active', true)->orderBy('order_index', 'asc')->first();
+        }
+
+        $validated['stage_code'] = $stage ? $stage->code : 'A'; // Fallback to 'A' if absolutely nothing found
+        $validated['progress_percent'] = $stage ? $stage->progress : 0;
 
         $deal = Deal::create($validated);
 

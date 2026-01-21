@@ -31,8 +31,8 @@ export function Sidebar({
     const mapping: { [key: string]: string } = {
       "Dashboard": "navigation.dashboard",
       "Prospects": "navigation.companies",
-      "Seller Register": "navigation.sellerRegister",
-      "Buyer Register": "navigation.buyerRegister",
+      "Target Register": "navigation.sellerRegister",
+      "Investor Register": "navigation.buyerRegister",
       "Deal Pipeline": "navigation.dealPipeline",
       "Employee": "navigation.employees",
       "Settings": "navigation.settings",

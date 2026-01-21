@@ -51,6 +51,8 @@ type FormValues = {
   status: string[];
   details: string;
   noPICNeeded: boolean;
+  companyRank: string;
+  investorProfileLink: string;
 };
 
 type Employee = {
@@ -127,6 +129,12 @@ const statusOptions = [
   { value: 'Canceled', label: 'Canceled' },
   { value: 'In-Active', label: 'In-Active' },
   { value: 'Drafts', label: 'Drafts' },
+];
+
+const companyRankOptions = [
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
 ];
 
 import { AIImportModal } from '../../../components/AIImportModal';
@@ -576,6 +584,8 @@ const CompanyOverview: React.FC = () => {
       status: 'status',
       contactPersons: 'seller_phone',
       details: 'details',
+      companyRank: 'rank',
+      investorProfileLink: 'investor_profile_link',
     };
 
     Object.entries(stringMap).forEach(([key, dbField]) => {
@@ -1155,6 +1165,22 @@ const CompanyOverview: React.FC = () => {
 
             <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
               <Input {...register('companyRegisteredName', {})} placeholder="Enter Company Name" />
+            </div>
+
+            <Label text="Rank" />
+            <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
+              <Controller
+                name="companyRank"
+                control={control}
+                render={({ field }) => (
+                  <SelectPicker
+                    options={companyRankOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Select Rank"
+                  />
+                )}
+              />
             </div>
 
             <div className="flex items-center gap-2">
@@ -1775,6 +1801,17 @@ const CompanyOverview: React.FC = () => {
                     </svg>
                   }
                   className="h-[37px] p-0 pl-10 pr-2"
+                />
+              </div>
+            </div>
+
+            <Label text="Investor's Profile Download Link" />
+            <div className="flex items-center gap-3 p-[10px_20px_10px_20px]rounded-md w-full sm:w-80 md:w-96 lg:w-[500px]">
+              <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
+                <Input
+                  {...register('investorProfileLink')}
+                  placeholder="https://example.com/profile.pdf"
+                  className="h-[37px] p-0 pr-2"
                 />
               </div>
             </div>

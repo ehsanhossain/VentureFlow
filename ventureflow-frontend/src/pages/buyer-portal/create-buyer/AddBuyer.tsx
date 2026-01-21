@@ -5,13 +5,13 @@ import LetterIcon from '../../../assets/svg/LetterIcon';
 import TargetPreferenceIcon from '../../../assets/svg/TargetPreference';
 import FinancialBagIcon from '../../../assets/svg/FinancialBagIcon';
 import PartnershipDetailsIcon from '../../../assets/svg/PartnershipDetails';
-import Attachment from '../../../assets/svg/Attachment';
+
 import CompanyOverview from './CompanyOverview';
 import TargetPreference from './TargetPreference';
 import FinancialDetails from './FinancialDetails';
 import PartnershipDetails from './PartnershipDetails';
-import TeaserCenter from './TeaserCenter';
-import Attachments from './Attachments';
+
+
 import { useTabStore } from './store/tabStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,8 +19,8 @@ const CompanyOverviewTab = () => <CompanyOverview />;
 const TargetPreferenceTab = () => <TargetPreference />;
 const FinancialDetailsTab = () => <FinancialDetails />;
 const PartnershipDetailsTab = () => <PartnershipDetails />;
-const AttachmentsTab = () => <Attachments />;
-const TeaserCenterTab = () => <TeaserCenter />;
+
+
 
 const tabsData = [
   {
@@ -47,12 +47,7 @@ const tabsData = [
     activeIcon: <PartnershipDetailsIcon isActive={true} />,
     inactiveIcon: <PartnershipDetailsIcon isActive={false} />,
   },
-  {
-    id: 'attachments',
-    label: 'Attachments',
-    activeIcon: <Attachment isActive={true} />,
-    inactiveIcon: <Attachment isActive={false} />,
-  },
+
 ];
 
 const TabContentMap: Record<string, React.FC> = {
@@ -60,15 +55,15 @@ const TabContentMap: Record<string, React.FC> = {
   'target-preference': TargetPreferenceTab,
   'financial-details': FinancialDetailsTab,
   'partnership-details': PartnershipDetailsTab,
-  attachments: AttachmentsTab,
-  'teaser-center': TeaserCenterTab,
+
+
 };
 
 const AddBuyer: React.FC = () => {
   const breadcrumbLinks = [
     { label: 'Home', url: '/', isCurrentPage: false },
-    { label: 'Buyer Portal', url: '/buyer-portal', isCurrentPage: false },
-    { label: 'Buyer Management', url: '', isCurrentPage: true },
+    { label: 'Investor Portal', url: '/buyer-portal', isCurrentPage: false },
+    { label: 'Investor Management', url: '', isCurrentPage: true },
   ];
 
   const activeTab = useTabStore((state) => state.activeTab);
@@ -85,7 +80,7 @@ const AddBuyer: React.FC = () => {
   return (
     <div className="flex flex-col w-full py-6 font-poppins">
       <div className="flex flex-col w-full pl-[45px] pt-[10px]">
-        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Buyer Management</h1>
+        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Investor Management</h1>
 
         <div className="flex items-center gap-2.5 mb-6">
           <button

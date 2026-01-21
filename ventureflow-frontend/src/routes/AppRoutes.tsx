@@ -8,10 +8,10 @@ import IndexEmployee from "../pages/employee/IndexEmployee";
 import Register from "../pages/currency/Register";
 import BuyerPortal from "../pages/buyer-portal/BuyerPortal";
 import EmployeeDetails from "../pages/employee/details/EmployeeDetails";
-import BuyerTeaserCenter from "../pages/buyer-portal/buyer-teaser/BuyerTeaserCenter";
+
 import SellerPortal from "../pages/seller-portal/index/SellerPortal";
 import AddSeller from "../pages/seller-portal/create/AddSeller";
-import SellerTeaserCenter from "../pages/seller-portal/seller-teaser/SellerTeaserCenter";
+
 import AddBuyer from "../pages/buyer-portal/create-buyer/AddBuyer";
 import BuyerPortalDetails from "../pages/buyer-portal/buyer-portal-view/BuyerPortalDetails";
 import Dashboard from "../pages/Dashboard";
@@ -88,14 +88,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/seller-teaser-center"
-        element={
-          <ProtectedRoute>
-            <SellerTeaserCenter />
-          </ProtectedRoute>
-        }
-      />
+
       <Route
         path="/buyer-portal"
         element={
@@ -128,14 +121,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/buyer-teaser-center"
-        element={
-          <ProtectedRoute>
-            <BuyerTeaserCenter />
-          </ProtectedRoute>
-        }
-      />
+
       <Route
         path="/employee"
         element={

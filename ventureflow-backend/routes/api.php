@@ -124,6 +124,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Import Routes
     Route::post('/import/buyers-company-overview', [ImportController::class, 'importBuyersCompanyOverview']);
+    Route::post('/import/sellers-company-overview', [ImportController::class, 'importSellersCompanyOverview']);
+    Route::delete('/sellers', [SellerController::class, 'destroy']);
 
     // Folder Routes
     Route::apiResource('folders', FolderController::class);

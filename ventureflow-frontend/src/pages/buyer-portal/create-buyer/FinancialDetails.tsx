@@ -40,6 +40,7 @@ type FormValues = {
   mnaStructure: string;
   profitCriteria: string;
   defaultCurrency: string;
+  investmentCondition: string;
 };
 
 const FinancialDetails: React.FC = () => {
@@ -420,6 +421,7 @@ const FinancialDetails: React.FC = () => {
       'mnaStructure',
       'profitCriteria',
       'defaultCurrency',
+      'investmentCondition',
     ];
 
     stringFields.forEach((field) => {
@@ -700,6 +702,16 @@ const FinancialDetails: React.FC = () => {
 
               <div className="flex items-center gap-2 p-2  border-gray-300 rounded-md w-[215px] h-[40px]">
                 <Input {...register('ebitdaLatestYear_amount', {})} placeholder="Amount" />
+              </div>
+            </div>
+
+            <Label text="Investment Condition" />
+            <div className="flex items-center gap-3 rounded-md w-full sm:w-80 md:w-96 lg:w-[500px]">
+              <div className="w-full bg-transparent text-gray-600 text-sm font-medium outline-none placeholder-gray-400 max-h-10 pr-2">
+                <Input
+                  {...register('investmentCondition')}
+                  placeholder="e.g., Profitable, Minority stake, etc."
+                />
               </div>
             </div>
 

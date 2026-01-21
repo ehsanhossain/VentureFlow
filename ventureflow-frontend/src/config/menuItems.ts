@@ -26,8 +26,8 @@ export const menuItems: MenuItem[] = [
     label: "Prospects",
     path: "/prospects",
     subItems: [
-      { label: "Seller Register", path: "/seller-portal/add", icon: SellerIcon },
-      { label: "Buyer Register", path: "/buyer-portal/create", icon: BuyerIcon },
+      { label: "Target Register", path: "/seller-portal/add", icon: SellerIcon },
+      { label: "Investor Register", path: "/buyer-portal/create", icon: BuyerIcon },
     ],
   },
   { icon: CatalystIcon, label: "Deal Pipeline", path: "/deal-pipeline" },

@@ -16,8 +16,10 @@ import {
     Layout,
     Download,
     Upload,
-    FileSpreadsheet
+    FileSpreadsheet,
+    AlertCircle
 } from 'lucide-react';
+import { showAlert } from '../../components/Alert';
 
 interface Country {
     id: number;
@@ -100,6 +102,149 @@ const ProspectsPortal: React.FC = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [buyerRes, sellerRes] = await Promise.all([
+                api.get('/api/buyer', { params: { search: searchQuery, ...filters } }),
+                api.get('/api/seller', { params: { search: searchQuery } })
+            ]);
+
+            const buyerData = Array.isArray(buyerRes.data?.data) ? buyerRes.data.data : [];
+            const sellerDataRaw = Array.isArray(sellerRes.data?.data) ? sellerRes.data.data : [];
+
+            setCounts({
+                investors: buyerRes.data?.meta?.total || 0,
+                targets: sellerRes.data?.meta?.total || 0
+            });
+
+            if (activeTab === 'investors') {
+                const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
+                    const hqCountryId = b.company_overview?.hq_country;
+                    const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
+
+                    const indMap = Array.isArray(b.company_overview?.main_industry_operations)
+                        ? b.company_overview.main_industry_operations.map((i: any) => i?.name || "Unknown")
+                        : [];
+
+                    const targetCountriesData = Array.isArray(b.target_countries)
+                        ? b.target_countries.map((tc: any) => {
+                            const cid = (tc && typeof tc === 'object') ? tc.id : tc;
+                            const co = countries.find(con => String(con.id) === String(cid));
+                            return co ? { name: co.name, flag: co.flagSrc } : null;
+                        }).filter(Boolean)
+                        : [];
+
+                    return {
+                        id: b.id,
+                        projectCode: b.buyer_id || "N/A",
+                        companyName: b.company_overview?.reg_name || "Unknown Company",
+                        hq: {
+                            name: hqCountry?.name || "Unknown",
+                            flag: hqCountry?.flagSrc || ""
+                        },
+                        targetCountries: targetCountriesData as { name: string; flag: string }[],
+                        targetIndustries: indMap,
+                        pipelineStatus: b.pipeline_status || b.current_stage || "N/A",
+                        budget: b.financial_details?.investment_budget,
+                        isPinned: pinnedIds.includes(b.id),
+                        companyType: b.company_overview?.company_type,
+                        website: b.company_overview?.website,
+                        email: b.company_overview?.email,
+                        phone: b.company_overview?.phone,
+                        employeeCount: b.company_overview?.emp_count,
+                        yearFounded: b.company_overview?.year_founded
+                    };
+                });
+                setInvestors(mappedInvestors);
+            } else {
+                const mappedTargets: TargetRowData[] = sellerDataRaw.map((s: any) => {
+                    const hqCountryId = s.company_overview?.hq_country;
+                    const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
+
+                    const industryList = Array.isArray(s.company_overview?.industry_ops)
+                        ? s.company_overview.industry_ops.map((i: any) => i?.name || "Unknown")
+                        : [];
+
+                    return {
+                        id: s.id,
+                        projectCode: s.seller_id || "N/A",
+                        companyName: s.company_overview?.reg_name || "Unknown Company",
+                        hq: {
+                            name: hqCountry?.name || "Unknown",
+                            flag: hqCountry?.flagSrc || ""
+                        },
+                        industry: industryList,
+                        pipelineStatus: s.company_overview?.status || "N/A",
+                        desiredInvestment: s.financial_details?.expected_investment_amount,
+                        ebitda: s.financial_details?.ebitda_value,
+                        isPinned: pinnedIds.includes(s.id),
+                    };
+                });
+                setTargets(mappedTargets);
+            }
+        } catch (error) {
+            console.error("Failed to fetch data", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const startImport = async () => {
+        if (!selectedFile) {
+            showAlert({ type: 'error', message: 'Please select a file first' });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('excel_file', selectedFile);
+
+        try {
+            const endpoint = activeTab === 'investors'
+                ? '/api/import/buyers-company-overview'
+                : '/api/import/sellers-company-overview';
+
+            const response = await api.post(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            showAlert({ type: 'success', message: response.data.message });
+            setIsImportModalOpen(false);
+            setSelectedFile(null);
+            fetchData();
+        } catch (error: any) {
+            showAlert({
+                type: 'error',
+                message: error.response?.data?.message || 'Failed to import data'
+            });
+        }
+    };
 
     const createDropdownRef = useRef<HTMLDivElement>(null);
     const filterDrawerRef = useRef<HTMLDivElement>(null);
@@ -166,7 +311,13 @@ const ProspectsPortal: React.FC = () => {
                 }
 
                 if (currencyRes.data) {
-                    const currData = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
+                    const currDataRaw = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
+                    const currData = currDataRaw.map((c: any) => ({
+                        id: c.id,
+                        code: c.currency_code,
+                        sign: c.currency_sign,
+                        exchange_rate: c.exchange_rate
+                    }));
                     setCurrencies(currData);
                     const usd = currData.find((c: any) => c.currency_code === 'USD');
                     if (usd) {
@@ -179,8 +330,8 @@ const ProspectsPortal: React.FC = () => {
                     } else if (currData.length > 0) {
                         setSelectedCurrency({
                             id: currData[0].id,
-                            code: currData[0].currency_code,
-                            symbol: currData[0].currency_sign,
+                            code: currData[0].code,
+                            symbol: currData[0].sign,
                             rate: parseFloat(currData[0].exchange_rate || '1')
                         });
                     }
@@ -194,99 +345,7 @@ const ProspectsPortal: React.FC = () => {
 
     // Fetch Investors/Targets
     useEffect(() => {
-        let isMounted = true;
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const [buyerRes, sellerRes] = await Promise.all([
-                    api.get('/api/buyer', { params: { search: searchQuery, ...filters } }),
-                    api.get('/api/seller', { params: { search: searchQuery } })
-                ]);
-
-                if (!isMounted) return;
-
-                const buyerData = Array.isArray(buyerRes.data?.data) ? buyerRes.data.data : [];
-                const sellerDataRaw = Array.isArray(sellerRes.data?.data) ? sellerRes.data.data : [];
-
-                setCounts({
-                    investors: buyerRes.data?.meta?.total || 0,
-                    targets: sellerRes.data?.meta?.total || 0
-                });
-
-                if (activeTab === 'investors') {
-                    const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
-                        const hqCountryId = b.company_overview?.hq_country;
-                        const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
-
-                        const industries = Array.isArray(b.company_overview?.main_industry_operations)
-                            ? b.company_overview.main_industry_operations.map((i: any) => i?.name || "Unknown")
-                            : [];
-
-                        const targetCountriesData = Array.isArray(b.target_countries)
-                            ? b.target_countries.map((tc: any) => {
-                                const id = (tc && typeof tc === 'object') ? tc.id : tc;
-                                const c = countries.find(co => String(co.id) === String(id));
-                                return c ? { name: c.name, flag: c.flagSrc } : null;
-                            }).filter(Boolean)
-                            : [];
-
-                        return {
-                            id: b.id,
-                            projectCode: b.buyer_id || "N/A",
-                            companyName: b.company_overview?.reg_name || "Unknown Company",
-                            hq: {
-                                name: hqCountry?.name || "Unknown",
-                                flag: hqCountry?.flagSrc || ""
-                            },
-                            targetCountries: targetCountriesData as { name: string; flag: string }[],
-                            targetIndustries: industries,
-                            pipelineStatus: b.pipeline_status || b.current_stage || "N/A",
-                            budget: b.financial_details?.investment_budget,
-                            isPinned: pinnedIds.includes(b.id),
-                            companyType: b.company_overview?.company_type,
-                            website: b.company_overview?.website,
-                            email: b.company_overview?.email,
-                            phone: b.company_overview?.phone,
-                            employeeCount: b.company_overview?.emp_count,
-                            yearFounded: b.company_overview?.year_founded
-                        };
-                    });
-                    setInvestors(mappedInvestors);
-                } else {
-                    const mappedTargets: TargetRowData[] = sellerDataRaw.map((s: any) => {
-                        const hqCountryId = s.company_overview?.hq_country;
-                        const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
-
-                        const industryList = Array.isArray(s.company_overview?.industry_ops)
-                            ? s.company_overview.industry_ops.map((i: any) => i?.name || "Unknown")
-                            : [];
-
-                        return {
-                            id: s.id,
-                            projectCode: s.seller_id || "N/A",
-                            companyName: s.company_overview?.reg_name || "Unknown Company",
-                            hq: {
-                                name: hqCountry?.name || "Unknown",
-                                flag: hqCountry?.flagSrc || ""
-                            },
-                            industry: industryList,
-                            pipelineStatus: s.company_overview?.status || "N/A",
-                            desiredInvestment: s.financial_details?.expected_investment_amount,
-                            ebitda: s.financial_details?.ebitda_value,
-                            isPinned: pinnedIds.includes(s.id),
-                        };
-                    });
-                    setTargets(mappedTargets);
-                }
-            } catch (error) {
-                console.error("Failed to fetch data", error);
-            } finally {
-                if (isMounted) setIsLoading(false);
-            }
-        };
-
         if (countries.length > 0) fetchData();
-        return () => { isMounted = false; };
     }, [activeTab, searchQuery, countries, pinnedIds, filters]);
 
     const handleTogglePin = (id: number) => {
@@ -349,38 +408,76 @@ const ProspectsPortal: React.FC = () => {
                             </div>
 
                             <div className="space-y-6">
-                                <div className="p-6 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50/50 flex flex-col items-center justify-center gap-4 group hover:border-[#064771]/30 transition-all cursor-pointer">
-                                    <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 group-hover:text-[#064771] transition-colors">
+                                <div
+                                    className={`p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4 group transition-all cursor-pointer ${selectedFile
+                                        ? 'border-[#064771] bg-[#064771]/5'
+                                        : 'border-gray-200 bg-gray-50/50 hover:border-[#064771]/30'
+                                        }`}
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept=".csv,.xlsx,.xls"
+                                        onChange={handleFileSelect}
+                                    />
+                                    <div className={`w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors ${selectedFile ? 'text-[#064771]' : 'text-gray-400 group-hover:text-[#064771]'
+                                        }`}>
                                         <FileSpreadsheet className="w-8 h-8" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-semibold text-gray-900">Click to upload or drag and drop</p>
-                                        <p className="text-xs text-gray-500 mt-1">CSV files only, max 10MB</p>
+                                        <p className="text-sm font-semibold text-gray-900">
+                                            {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'CSV, XLSX files only, max 10MB'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="bg-blue-50/50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#064771]">
-                                            <Download className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-[#064771]">Download Template</p>
-                                            <p className="text-[10px] text-blue-600 font-medium tracking-wide border-b border-blue-200 w-fit">Get the format right</p>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                        <div className="flex gap-3">
+                                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-semibold text-amber-900">Important Note</p>
+                                                <p className="text-xs text-amber-700 leading-relaxed">
+                                                    Please download and use our template to ensure your data is correctly formatted.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => downloadCsvTemplate(activeTab === 'investors' ? 'investor' : 'target')}
-                                        className="px-4 py-2 bg-[#064771] text-white text-xs font-bold rounded-xl shadow-lg shadow-[#064771]/20 transform active:scale-95 transition-all"
-                                    >
-                                        Download
-                                    </button>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadCsvTemplate(activeTab === 'investors' ? 'investor' : 'target');
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Download Template
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                startImport();
+                                            }}
+                                            disabled={!selectedFile}
+                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-2xl text-sm font-semibold hover:bg-[#053a5c] transition-all shadow-lg shadow-[#064771]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Start Import
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-3">
                             <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
-                            <button className="flex-1 py-3 bg-[#064771] text-white rounded-2xl text-sm font-bold shadow-lg shadow-[#064771]/10 transform active:scale-95 transition-all">Start Import</button>
                         </div>
                     </div>
                 </div>
@@ -550,6 +647,7 @@ const ProspectsPortal: React.FC = () => {
                                 onOpenFilter={() => setIsFilterOpen(true)}
                                 visibleColumns={visibleColumns}
                                 selectedCurrency={selectedCurrency || undefined}
+                                onRefresh={fetchData}
                             />
                         ) : (
                             <TargetTable
@@ -559,6 +657,7 @@ const ProspectsPortal: React.FC = () => {
                                 onOpenFilter={() => setIsFilterOpen(true)}
                                 visibleColumns={visibleColumns}
                                 selectedCurrency={selectedCurrency || undefined}
+                                onRefresh={fetchData}
                             />
                         )}
                     </div>

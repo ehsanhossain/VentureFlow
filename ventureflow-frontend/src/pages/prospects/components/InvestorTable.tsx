@@ -22,8 +22,11 @@ import {
     Zap,
     ArrowUp,
     ArrowDown,
-    ListFilter
+    ListFilter,
+    Trash2
 } from 'lucide-react';
+import api from '../../../config/api';
+import { showAlert } from '../../../components/Alert';
 
 export interface InvestorRowData {
     id: number;
@@ -50,6 +53,7 @@ interface InvestorTableProps {
     onOpenFilter?: () => void;
     visibleColumns: string[];
     selectedCurrency?: { code: string, symbol: string, rate: number };
+    onRefresh?: () => void;
 }
 
 type SortKey = keyof InvestorRowData;
@@ -61,7 +65,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     onTogglePin,
     onOpenFilter,
     visibleColumns,
-    selectedCurrency
+    selectedCurrency,
+    onRefresh
 }) => {
     const navigate = useNavigate();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -133,6 +138,32 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             newSelected.delete(id);
         }
         setSelectedIds(newSelected);
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(new Set(data.map(d => d.id)));
+        } else {
+            setSelectedIds(new Set());
+        }
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.size === 0) return;
+
+        if (window.confirm(`Are you sure you want to delete ${selectedIds.size} investors? This action cannot be undone.`)) {
+            try {
+                const response = await api.delete('/buyers', {
+                    data: { ids: Array.from(selectedIds) }
+                });
+                showAlert({ type: 'success', message: response.data.message });
+                setSelectedIds(new Set());
+                if (onRefresh) onRefresh();
+            } catch (error: any) {
+                console.error("Delete failed", error);
+                showAlert({ type: 'error', message: error.response?.data?.message || 'Failed to delete items' });
+            }
+        }
     };
 
     const handleSort = (key: SortKey) => {
@@ -228,7 +259,12 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     className="p-1.5 hover:bg-gray-200 rounded-lg transition-all focus:outline-none active:scale-90"
                                 >
                                     {isSelectMode ? (
-                                        <CheckSquare className="w-5 h-5 text-[#064771]" />
+                                        <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                            <Checkbox
+                                                checked={selectedIds.size === data.length && data.length > 0}
+                                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                            />
+                                        </div>
                                     ) : (
                                         <Square className="w-5 h-5 text-gray-300" />
                                     )}
@@ -344,19 +380,31 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
                             <TableHead className="text-right w-[120px] pr-6 sticky right-0 bg-gray-50/50 z-40 border-l border-gray-100">
                                 <div className="flex items-center justify-end gap-2">
-                                    <button
-                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                        onClick={onOpenFilter}
-                                        title="Advanced Filters"
-                                    >
-                                        <Filter className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                        title="General Sorting"
-                                    >
-                                        <ListFilter className="w-4 h-4 rotate-180" />
-                                    </button>
+                                    {selectedIds.size > 0 ? (
+                                        <button
+                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded-lg text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
+                                            onClick={handleDeleteSelected}
+                                            title="Delete Selected"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <button
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                onClick={onOpenFilter}
+                                                title="Advanced Filters"
+                                            >
+                                                <Filter className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                title="General Sorting"
+                                            >
+                                                <ListFilter className="w-4 h-4 rotate-180" />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </TableHead>
                         </TableRow>
@@ -547,13 +595,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#064771]" />
                         <span className="font-medium">View Details</span>
                     </button>
-                    <button
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors group"
-                        onClick={() => { navigate(`/buyer-portal/edit/${contextMenu.rowId}`); setContextMenu(null); }}
-                    >
-                        <Zap className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
-                        <span className="font-medium">Enrich Details</span>
-                    </button>
+                    {!(selectedIds.size > 1 && selectedIds.has(contextMenu.rowId)) && (
+                        <button
+                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors group"
+                            onClick={() => { navigate(`/buyer-portal/edit/${contextMenu.rowId}`); setContextMenu(null); }}
+                        >
+                            <Zap className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
+                            <span className="font-medium">Enrich Details</span>
+                        </button>
+                    )}
                 </div>
             )}
         </div>

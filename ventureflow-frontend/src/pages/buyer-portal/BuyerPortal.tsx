@@ -88,7 +88,7 @@ const BuyerPortal: React.FC = () => {
 
       const fromPartners = await api.get("/api/buyer/from-partners");
       setFromPartners(fromPartners.data?.meta?.total);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showAlert({ type: "error", message: "Failed to fetch buyers" });
     }
@@ -101,7 +101,7 @@ const BuyerPortal: React.FC = () => {
   const tabsData = [
     {
       id: "all-buyers",
-      label: "All Buyers",
+      label: "All Investors",
       count: buyers.meta?.total ?? 0,
       activeIcon: <CartIcon isActive={true} />,
       inactiveIcon: <CartIcon isActive={false} />,
@@ -145,7 +145,7 @@ const BuyerPortal: React.FC = () => {
 
   const breadcrumbLinks = [
     { label: "Home", url: "/", isCurrentPage: false },
-    { label: "Buyer Portal", url: "/buyer-portal", isCurrentPage: true },
+    { label: "Investor Portal", url: "/buyer-portal", isCurrentPage: true },
   ];
 
   const [activeTab, setActiveTab] = useState("all-buyers");
@@ -167,7 +167,7 @@ const BuyerPortal: React.FC = () => {
     <div className="flex items-center gap-[13px] w-auto font-poppins">
       <div className="flex flex-col flex-shrink-0  items-start gap-0  flex-wrap  w-full">
         <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal] ml-9 mt-7">
-          Buyer Portal
+          Investor Portal
         </div>
         <div className="flex items-center self-stretch ml-9 w-auto pt-4">
           <div className="flex items-center gap-2.5 w-auto ">
@@ -208,7 +208,7 @@ const BuyerPortal: React.FC = () => {
             <div className="flex items-start">
               <Breadcrumb links={breadcrumbLinks} />
             </div>
-          
+
             <div className="absolute right-0 pr-10 flex justify-between ">
               <div className="flex justify-start items-center flex-row gap-4">
                 <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px]">
@@ -227,7 +227,7 @@ const BuyerPortal: React.FC = () => {
                         />
                       </svg>
                       <span className="text-white font-poppins text-sm leading-5">
-                        Create a Buyer
+                        Create an Investor
                       </span>
                     </div>
                   </button>
@@ -309,7 +309,7 @@ const BuyerPortal: React.FC = () => {
                       </span>
                     </button>
                   </div>
-                </div>             
+                </div>
               </div>
             </div>
           </div>
@@ -332,11 +332,10 @@ const BuyerPortal: React.FC = () => {
                   <div className="flex justify-start items-center flex-row">
                     <button
                       onClick={() => setActiveButton("button1")}
-                      className={`flex justify-center items-center gap-2 py-2 px-3 rounded-tl rounded-bl w-10 h-10 ${
-                        activeButton === "button1"
+                      className={`flex justify-center items-center gap-2 py-2 px-3 rounded-tl rounded-bl w-10 h-10 ${activeButton === "button1"
                           ? "bg-[#064771]"
                           : "bg-white border-solid border-[#E5E7EB] border rounded-tr"
-                      }`}
+                        }`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -355,9 +354,8 @@ const BuyerPortal: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setActiveButton("button2")}
-                      className={`flex justify-center items-center gap-2 py-2 px-3 border-solid border-[#E5E7EB] border rounded-tr rounded-br w-10 h-10 ${
-                        activeButton === "button2" ? "bg-[#064771]" : "bg-white"
-                      }`}
+                      className={`flex justify-center items-center gap-2 py-2 px-3 border-solid border-[#E5E7EB] border rounded-tr rounded-br w-10 h-10 ${activeButton === "button2" ? "bg-[#064771]" : "bg-white"
+                        }`}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

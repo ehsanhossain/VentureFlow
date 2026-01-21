@@ -29,11 +29,11 @@ class EmployeeController extends Controller
         $employees = Employee::with([
             'country',
             'user',
-            'company',
-            'department',
-            'branch',
-            'team',
-            'designation',
+            'company_data',
+            'department_data',
+            'branch_data',
+            'team_data',
+            'designation_data',
         ])
             ->when($search, function ($query, $search) {
                 return $query->where(function ($query) use ($search) {
@@ -82,86 +82,56 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
+        DB::beginTransaction();
         try {
-            // Determine registration type (default to employee for backward compatibility)
+            // Determine registration type (default to employee)
             $type = $request->input('type', 'employee');
 
             if ($type === 'partner') {
                 // Partner Registration Logic
-                $data = $request->only([
-                    'partner_id',
-                    'reg_name',
-                    'login_email', // User email
-                    'password',
-                    // Add other partner fields as needed from the form
-                    'hq_country', // Example
+                $validated = $request->validate([
+                    'partner_id' => 'required|string',
+                    'reg_name' => 'required|string',
+                    'login_email' => 'required|email',
+                    'password' => 'nullable|string|min:6',
+                    'hq_country' => 'nullable|string',
                 ]);
-               
+
                 // 1. Create/Update User
                 $userData = [
-                    'name' => $data['reg_name'] ?? 'Partner',
-                    'email' => $data['login_email'],
+                    'name' => $validated['reg_name'],
+                    'email' => $validated['login_email'],
                 ];
-                if (!empty($data['password'])) {
-                    $userData['password'] = Hash::make($data['password']);
+                if (!empty($validated['password'])) {
+                    $userData['password'] = Hash::make($validated['password']);
                 }
 
                 $user = User::updateOrCreate(
-                    ['email' => $data['login_email']],
+                    ['email' => $validated['login_email']],
                     $userData
                 );
 
                 // Assign Partner Role
-                $user->syncRoles(['Partner']); // Ensure 'Partner' role exists in seeder
+                $role = Role::firstOrCreate(['name' => 'Partner']);
+                $user->assignRole($role);
 
                 // 2. Create Partner Overview
-                // We might need to handle basic fields here. 
-                // Assuming the form sends enough to create a valid PartnerOverview
                 $overviewData = [
-                    'reg_name' => $data['reg_name'] ?? null,
-                    'hq_country' => $data['hq_country'] ?? null,
-                    // Add defaults or other fields
+                    'reg_name' => $validated['reg_name'],
+                    'hq_country' => $validated['hq_country'] ?? null,
                 ];
                 $overview = PartnersPartnerOverview::create($overviewData);
 
                 // 3. Create Partner Record
                 $partnerData = [
-                    'partner_id' => $data['partner_id'],
+                    'partner_id' => $validated['partner_id'],
                     'partner_overview_id' => $overview->id,
-                    // 'user_id' => $user->id, // If Partner model has user_id, add it. 
-                    // Based on Partner.php view, it DOES NOT have user_id explicitly shown in fillable?
-                    // Let's check if we need to link User to Partner. 
-                    // Usually User links to Employee/Partner or vice versa.
-                    // Employee has 'user_id'. Partner model didn't show it. 
-                    // **CRITICAL**: We need to link User to Partner for login to work effectively as that Partner.
-                    // If Partner table doesn't have user_id, we might need to add it or use a different link.
-                    // For now, I will assume we need to add user_id to Partner or rely on email match if logic exists.
-                    // BUT Standard Laravel is User hasOne/belongsTo Partner.
-                    
-                    // Let's assume for this specific codebase, we should check if Partner has user_id.
-                    // The view of Partner.php did NOT show user_id in fillable.
-                    // I will check the schema or assume I need to add it/it exists but hidden.
-                    // For safety, I will try to add it if it's in the DB, or just create the record.
-                    // CHECK: EmployeeController creates Employee with `user_id`.
-                    // likely Partner needs `user_id` too. I'll add it to the array, if it fills, good.
+                    'user_id' => $user->id,
                 ];
                 
-                // Note: The Partner model view previously showed: partner_id, partner_image, partnership_structure_id, partner_overview_id.
-                // It did NOT show user_id. This is a potential issue for "Unified Login".
-                // I will add 'user_id' -> $user->id to $partnerData.
-                
-                // Create Partner
-                 $partner = Partner::create($partnerData);
-                 
-                 // If Partner model allows user_id update it
-                 // strict mode might fail if not in fillable.
-                 // I'll assume for now I can just create it. 
-                 // *Wait*, if Partner doesn't have user_id, how does a logged in User know which Partner they are?
-                 // User model likely has `partner_id` or similar? Or polymorphic?
-                 // EmployeeController: $data['user_id'] = $user->id; Employee::create($data); -> Employee has user_id.
-                 
-                 // I will assume I need to add user_id to Partner model fillable or just force save it. 
-                 // Let's proceed with creating Partner.
+                $partner = Partner::create($partnerData);
+
+                DB::commit();
 
                 return response()->json([
                     'message' => 'Partner created successfully',
@@ -170,70 +140,96 @@ class EmployeeController extends Controller
                 ], 201);
 
             } else {
-                // Employee Registration Logic (Existing)
-                $data = $request->only([
-                    'id',
-                    'first_name',
-                    'last_name',
-                    'gender',
-                    'employee_id',
-                    'nationality',
-                    'employee_status',
-                    'joining_date',
-                    'dob',
-                    'work_email',
-                    'contact_number',
-                    'company',
-                    'department',
-                    'branch',
-                    'team',
-                    'designation',
-                    'role',
-                    'login_email',
-                    'password',
+                // Employee Registration Logic
+                $validated = $request->validate([
+                    'first_name' => 'required|string',
+                    'last_name' => 'required|string',
+                    'login_email' => 'required|email',
+                    'work_email' => 'required|email',
+                    'role' => 'required|string',
+                    'employee_id' => 'required|string',
+                    'id' => 'nullable|integer',
+                    'gender' => 'nullable|string',
+                    'nationality' => 'nullable|string',
+                    'contact_number' => 'nullable|string',
+                    'password' => 'nullable|string|min:6',
+                    'designation' => 'nullable|string',
+                    'department' => 'nullable|string',
+                    'image' => 'nullable|image|max:1024',
                 ]);
-    
+
+                $imagePath = null;
                 if ($request->hasFile('image')) {
-                    $path = $request->file('image')->store('employees', 'public');
-                    $data['image'] = $path;
+                    $imagePath = $request->file('image')->store('employees', 'public');
                 }
-    
+
+                // Create/Update User
                 $userData = [
-                    'name' => $data['first_name'] . ' ' . $data['last_name'],
+                    'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                    'email' => $validated['login_email'],
                 ];
-    
-                if (!empty($data['password'])) {
-                    $userData['password'] = Hash::make($data['password']);
+
+                if (!empty($validated['password'])) {
+                    $userData['password'] = Hash::make($validated['password']);
                 }
-    
+
                 $user = User::updateOrCreate(
-                    ['email' => $data['login_email']],
+                    ['email' => $validated['login_email']],
                     $userData
                 );
-    
-                if ($request->user()->hasRole('System Admin') && !empty($data['role'])) {
-                    $user->syncRoles([$data['role']]);
-                } elseif (!$user->hasAnyRole(Role::all())) {
-                     // Default to Staff if no role exists and not set by Admin
+
+                // Assign Role
+                if ($request->user() && $request->user()->hasRole('System Admin')) {
+                     $role = Role::where('name', $validated['role'])->first();
+                     if ($role) {
+                         $user->syncRoles([$role]);
+                     }
+                } elseif (!$user->roles()->exists()) {
                      $user->assignRole('Staff');
                 }
-    
-                $data['user_id'] = $user->id;
-    
-                if (!empty($data['id'])) {
-                    $employee = Employee::findOrFail($data['id']);
-                    $employee->update($data);
-                } else {
-                    $employee = Employee::create($data);
+
+                // Create/Update Employee Record
+                $employeeData = [
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                    'employee_id' => $validated['employee_id'],
+                    'work_email' => $validated['work_email'],
+                    'user_id' => $user->id,
+                    'gender' => $validated['gender'] ?? null,
+                    'nationality' => $validated['nationality'] ?? null,
+                    'contact_number' => $validated['contact_number'] ?? null,
+                ];
+
+                if ($imagePath) {
+                    $employeeData['image'] = $imagePath;
                 }
-    
+
+                if (!empty($validated['id'])) {
+                    $employee = Employee::findOrFail($validated['id']);
+                    $employee->update($employeeData);
+                    $message = 'Employee updated successfully';
+                } else {
+                    $employee = Employee::create($employeeData);
+                    $message = 'Employee created successfully';
+                }
+
+                DB::commit();
+
                 return response()->json([
-                    'message' => !empty($data['id']) ? 'Employee updated successfully' : 'Employee created successfully',
+                    'message' => $message,
                     'employee' => $employee,
                     'user' => $user,
                 ], 201);
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Employee Save Error: ' . $e->getMessage());
             return response()->json([
                 'message' => 'An error occurred while saving',
                 'error' => $e->getMessage(),
@@ -251,11 +247,11 @@ class EmployeeController extends Controller
             $employee = Employee::with([
                 'country',
                 'user.roles',
-                'company',
-                'department',
-                'branch',
-                'team',
-                'designation',
+                'company_data',
+                'department_data',
+                'branch_data',
+                'team_data',
+                'designation_data',
             ])->findOrFail($id);
 
             $employee->role = ($employee->user && $employee->user->roles) ? $employee->user->roles->pluck('name')->first() : null;

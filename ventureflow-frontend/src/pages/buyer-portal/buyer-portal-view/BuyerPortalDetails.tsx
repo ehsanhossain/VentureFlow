@@ -4,13 +4,13 @@ import Breadcrumb from '../../../assets/breadcrumb';
 import LetterIcon from '../../../assets/svg/LetterIcon';
 import FinancialBagIcon from '../../../assets/svg/FinancialBagIcon';
 import PartnershipDetailsIcon from '../../../assets/svg/PartnershipDetails';
-import Attachment from '../../../assets/svg/Attachment';
+
 import TargetPreferenceIcon from '../../../assets/svg/TargetPreference';
 import CompanyOverview from './CompanyOverview';
 import FinancialDetails from './FinancialDetails';
 import PartnershipDetails from './PartnershipDetails';
 import TargetPreferences from './TargetPreferences';
-import Attachments from './Attachments';
+
 import { useTabStore } from './store/tabStore';
 import { useParams } from 'react-router-dom';
 import api from '../../../config/api';
@@ -20,7 +20,7 @@ const CompanyOverviewTab = () => <CompanyOverview />;
 const TargetPreferencesTab = () => <TargetPreferences />;
 const FinancialDetailsTab = () => <FinancialDetails />;
 const PartnershipDetailsTab = () => <PartnershipDetails />;
-const AttachmentsTab = () => <Attachments />;
+
 
 const tabsData = [
   {
@@ -49,12 +49,6 @@ const tabsData = [
     activeIcon: <PartnershipDetailsIcon isActive={true} />,
     inactiveIcon: <PartnershipDetailsIcon isActive={false} />,
   },
-  {
-    id: 'attachments',
-    label: 'Attachments',
-    activeIcon: <Attachment isActive={true} />,
-    inactiveIcon: <Attachment isActive={false} />,
-  },
 ];
 
 const TabContentMap: Record<string, React.FC> = {
@@ -62,7 +56,7 @@ const TabContentMap: Record<string, React.FC> = {
   'target-preferences': TargetPreferencesTab,
   'financial-details': FinancialDetailsTab,
   'partnership-details': PartnershipDetailsTab,
-  attachments: AttachmentsTab,
+
 };
 
 const BuyerPortalDetails: React.FC = () => {
@@ -76,7 +70,7 @@ const BuyerPortalDetails: React.FC = () => {
         const buyerData = response.data?.data || {};
 
         setBuyer(buyerData);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to fetch buyer" });
       }
@@ -89,9 +83,9 @@ const BuyerPortalDetails: React.FC = () => {
 
   const breadcrumbLinks = [
     { label: 'Home', url: '/', isCurrentPage: false },
-    { label: 'Buyer Portal', url: '/buyer-portal', isCurrentPage: false },
+    { label: 'Investor Portal', url: '/buyer-portal', isCurrentPage: false },
     {
-      label: buyer?.company_overview?.reg_name || 'Company Details',
+      label: buyer?.company_overview?.reg_name || 'Investor Details',
       url: '',
       isCurrentPage: true,
     },
@@ -112,7 +106,7 @@ const BuyerPortalDetails: React.FC = () => {
   return (
     <div className="flex flex-col w-full px-10 py-4 font-poppins">
       <div className="flex flex-col w-full">
-        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Buyer in Details</h1>
+        <h1 className="text-[#00081a] text-[1.75rem] font-medium mb-4">Investor Details</h1>
 
         <div className="flex items-center gap-2.5 mb-6">
           <button
