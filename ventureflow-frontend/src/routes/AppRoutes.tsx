@@ -6,14 +6,14 @@ import Login from "../pages/auth/Login";
 import CurrencyTable from "../pages/currency/CurrencyTable";
 import IndexEmployee from "../pages/employee/IndexEmployee";
 import Register from "../pages/currency/Register";
-import BuyerPortal from "../pages/buyer-portal/BuyerPortal";
+
 import EmployeeDetails from "../pages/employee/details/EmployeeDetails";
 
 import SellerPortal from "../pages/seller-portal/index/SellerPortal";
 import AddSeller from "../pages/seller-portal/create/AddSeller";
 
-import AddBuyer from "../pages/buyer-portal/create-buyer/AddBuyer";
-import BuyerPortalDetails from "../pages/buyer-portal/buyer-portal-view/BuyerPortalDetails";
+import AddBuyer from "../pages/investor-portal/create-buyer/AddBuyer";
+import BuyerPortalDetails from "../pages/investor-portal/buyer-portal-view/BuyerPortalDetails";
 import Dashboard from "../pages/Dashboard";
 import SellerPortalDetails from "../pages/seller-portal/seller-portal-view/SellerPortalDetails";
 import Settings from "../pages/settings/Settings";
@@ -90,15 +90,7 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/buyer-portal"
-        element={
-          <ProtectedRoute>
-            <BuyerPortal />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/buyer-portal/create"
+        path="/prospects/add-investor"
         element={
           <ProtectedRoute>
             <AddBuyer />
@@ -106,7 +98,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/buyer-portal/edit/:id"
+        path="/prospects/edit-investor/:id"
         element={
           <ProtectedRoute>
             <AddBuyer />
@@ -114,7 +106,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/buyer-portal/view/:id"
+        path="/prospects/investor/:id"
         element={
           <ProtectedRoute>
             <BuyerPortalDetails />

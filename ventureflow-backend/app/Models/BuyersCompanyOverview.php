@@ -45,6 +45,13 @@ class BuyersCompanyOverview extends Model
         'buyer_id',
         'buyer_image',
         'profile_picture',
+        'rank',
+        'contacts',
+        'investment_budget',
+        'investment_condition',
+        'target_countries',
+        'investor_profile_link',
+        'introduced_projects',
     ];
 
     protected $casts = [
@@ -54,6 +61,10 @@ class BuyersCompanyOverview extends Model
         'hq_address' => 'array',
         'seller_phone' => 'array',
         'no_pic_needed' => 'boolean',
+        'contacts' => 'array',
+        'investment_budget' => 'array',
+        'target_countries' => 'array',
+        'introduced_projects' => 'array',
     ];
 
     // Relationship with the Buyer (assuming buyer_id references buyers table)

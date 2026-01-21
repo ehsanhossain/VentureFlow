@@ -231,7 +231,7 @@ const TeaserCenter: React.FC = () => {
       industry: !!teaserData.has_industry,
     });
 
-   
+
   }, [teaserData, countries, setValue]);
 
   const [checkedItems, setCheckedItems] = useState({
@@ -311,7 +311,7 @@ const TeaserCenter: React.FC = () => {
         },
       });
       showAlert({ type: 'success', message: 'Draft Saved' });
-      navigate('/buyer-portal');
+      navigate('/prospects?tab=investors');
     } catch (error) {
       if (axios.isAxiosError(error)) {
         showAlert({ type: 'error', message: `Failed to submit buyer teaser center data: ${error.response?.data?.detail || error.message}` });
@@ -322,7 +322,7 @@ const TeaserCenter: React.FC = () => {
   };
 
   const onDraft = async (data: FormValues) => {
-  
+
     const formData = new FormData();
 
     const buyerId = id;
@@ -388,7 +388,7 @@ const TeaserCenter: React.FC = () => {
         },
       });
 
-   
+
       showAlert({ type: 'success', message: 'Draft Saved' });
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -467,7 +467,7 @@ const TeaserCenter: React.FC = () => {
       });
 
       showAlert({ type: 'success', message: 'Draft Saved' });
-      navigate('/buyer-portal');
+      navigate('/prospects?tab=investors');
     } catch (error) {
       if (axios.isAxiosError(error)) {
         showAlert({ type: 'error', message: `Failed to save draft: ${error.response?.data?.detail || error.message}` });
@@ -1297,7 +1297,7 @@ const TeaserCenter: React.FC = () => {
               <button
                 className="flex justify-center items-center flex-row gap-[4.313709259033203px] py-[5.032660484313965px] px-[6.470563888549805px] bg-[#FFF6F7] border-solid border-[#DF272A] border-[0.7664670944213867px] rounded-[49.82036209106445px] w-[100px] h-[34px]"
                 style={{ width: '100px' }}
-                onClick={() => navigate('/buyer-portal')}
+                onClick={() => navigate('/prospects?tab=investors')}
                 type="button"
               >
                 <svg

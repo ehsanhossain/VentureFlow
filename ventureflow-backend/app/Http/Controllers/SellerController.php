@@ -49,7 +49,11 @@ class SellerController extends Controller
             'partnershipDetails',
             'teaserCenter',
         ])
-            ->where('status', 1)
+            ->when($status === 'Draft', function ($query) {
+                $query->where('status', 2);
+            }, function ($query) {
+                $query->where('status', 1);
+            })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('seller_id', 'like', "%{$search}%")
@@ -147,6 +151,24 @@ class SellerController extends Controller
 
 
 
+    public function checkId(Request $request)
+    {
+        $id = $request->input('id');
+        $exclude = $request->input('exclude');
+
+        $query = Seller::where('seller_id', $id);
+
+        if ($exclude) {
+            $query->where('id', '!=', $exclude);
+        }
+
+        $exists = $query->exists();
+
+        return response()->json([
+            'available' => !$exists
+        ]);
+    }
+
     public function getLastSequence(Request $request)
     {
         $countryAlpha = strtoupper($request->input('country'));
@@ -162,12 +184,12 @@ class SellerController extends Controller
                 })
                 ->max();
 
-            $lastSequence = $lastSeller ? $lastSeller : 0;
+            $lastSequence = $lastSeller ? (int)$lastSeller : 0;
 
             return response()->json(['lastSequence' => $lastSequence]);
         } catch (\Exception $e) {
             \Log::error("Error fetching last sequence for country {$countryAlpha}: " . $e->getMessage());
-            return response()->json(['error' => 'Could not retrieve sequence number from controller.'], 500);
+            return response()->json(['error' => 'Could not retrieve sequence number.'], 500);
         }
     }
 

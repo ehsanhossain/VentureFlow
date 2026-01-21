@@ -8,7 +8,6 @@ import DatePicker from '../../../components/DatePicker';
 import { Country as BaseCountry, Dropdown } from '../components/Dropdown';
 import { PlusSquareIcon } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import api from '../../../config/api';
 import { useTabStore } from './store/tabStore';
 import { showAlert } from '../../../components/Alert';
@@ -201,6 +200,8 @@ const CompanyOverview: React.FC = () => {
 
   const [industries, setIndustries] = useState<ApiIndustry[]>([]);
   const [subIndustries, setSubIndustries] = useState<ApiIndustry[]>([]);
+  const [isCheckingId, setIsCheckingId] = useState(false);
+  const [isIdAvailable, setIsIdAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchIndustries = async () => {
@@ -353,8 +354,6 @@ const CompanyOverview: React.FC = () => {
 
   const [companyData, setCompanyData] = useState<CompanyOverviewData | null>(null);
 
-  const [sellerId, setSellerId] = useState<string | null>(null);
-
   useEffect(() => {
     if (!id) return;
     const fetchCompanyData = async () => {
@@ -362,7 +361,6 @@ const CompanyOverview: React.FC = () => {
         const response = await api.get(`/api/seller/${id}`);
         const data = response.data.data;
         setCompanyData(data.company_overview as CompanyOverviewData);
-        setSellerId(data.seller_id);
       } catch {
         showAlert({ type: "error", message: "Failed to fetch company data" });
       }
@@ -372,7 +370,7 @@ const CompanyOverview: React.FC = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!originCountry || !originCountry.alpha) {
+    if (!originCountry || !originCountry.alpha || isEditMode) {
       return;
     }
 
@@ -384,39 +382,41 @@ const CompanyOverview: React.FC = () => {
         const lastSequence = response.data.lastSequence;
 
         if (typeof lastSequence !== 'number') {
-          showAlert({ type: "error", message: "API Error: lastSequence was not a number" });
           throw new Error('Invalid data received for last sequence.');
         }
 
         const nextSequence = lastSequence + 1;
-        const formattedSequence = String(nextSequence).padStart(2, '0');
+        const formattedSequence = String(nextSequence).padStart(3, '0');
         const newDealroomId = `${countryAlpha}-S-${formattedSequence}`;
-
-        const prefix = sellerId?.split('-')[0];
-
-        if (id && prefix == countryAlpha) {
-          setValue('dealroomId', sellerId ?? '');
-        } else {
-          setValue('dealroomId', newDealroomId);
-        }
+        setValue('dealroomId', newDealroomId);
+        setIsIdAvailable(true);
       } catch (error) {
-        const err = error as {
-          response?: { status?: number; data?: unknown; detail?: string };
-          request?: unknown;
-          message?: string;
-        };
-        if (err.response) {
-          showAlert({ type: "error", message: "Error generating dealroomId (axios response)" });
-        } else if (err.request) {
-          showAlert({ type: "error", message: "Error generating dealroomId (axios request)" });
-        } else {
-          showAlert({ type: "error", message: "Error generating dealroomId" });
-        }
+        console.error('Error generating dealroomId', error);
       }
     };
 
     generateDealroomId();
-  }, [originCountry, companyData, setValue, id, sellerId]);
+  }, [originCountry, setValue, isEditMode]);
+
+  const dealroomIdValue = watch('dealroomId');
+  useEffect(() => {
+    const checkId = async () => {
+      if (!dealroomIdValue || dealroomIdValue === 'XX-S-XXX') return;
+      setIsCheckingId(true);
+      try {
+        const response = await api.get(`/api/seller/check-id?id=${dealroomIdValue}${id ? `&exclude=${id}` : ''}`);
+        setIsIdAvailable(response.data.available);
+      } catch (error) {
+        console.error(error);
+        setIsIdAvailable(null);
+      } finally {
+        setIsCheckingId(false);
+      }
+    };
+
+    const timer = setTimeout(checkId, 500);
+    return () => clearTimeout(timer);
+  }, [dealroomIdValue, id]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -607,49 +607,34 @@ const CompanyOverview: React.FC = () => {
     showAlert({ type: 'success', message: 'Form populated from AI data!' });
   };
 
-  const onSubmit = async (data: FormValues) => {
-
+  const onSubmit = async (data: FormValues, isDraft: boolean = false) => {
     const formData = new FormData();
-
     const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
 
     const stringFields: (keyof FormValues)[] = [
-      'companyName',
-      'companyType',
-      'localIndustryCode',
-      'companyRank',
-      'totalEmployeeCounts',
-      'fullTimeEmployeeCounts',
-      'potentialSynergries',
-      'companyPhoneNumber',
-      'companyEmail',
-      'hqAddress',
-      'shareholderName',
-      'sellerSideContactPersonName',
-      'designationAndPosition',
-      'emailAddress',
-      'phoneNumber',
-      'websiteLink',
-      'linkedinLink',
-      'twitterLink',
-      'facebookLink',
-      'instagramLink',
-      'youtubeLink',
-      'dealroomId',
-      'pic',
-      'details',
-      'projectStartDate',
-      'expectedTransactionTimeline',
-      'our_person_incharge',
-      'broderIndustries',
+      'companyName', 'companyType', 'localIndustryCode', 'companyRank',
+      'totalEmployeeCounts', 'fullTimeEmployeeCounts', 'potentialSynergries',
+      'companyPhoneNumber', 'companyEmail', 'hqAddress', 'shareholderName',
+      'sellerSideContactPersonName', 'designationAndPosition', 'emailAddress',
+      'phoneNumber', 'websiteLink', 'linkedinLink', 'twitterLink',
+      'facebookLink', 'instagramLink', 'youtubeLink', 'dealroomId',
+      'pic', 'details', 'projectStartDate', 'expectedTransactionTimeline',
+      'our_person_incharge', 'broderIndustries',
     ];
 
     stringFields.forEach((field) => {
       const value = data[field];
       if (value !== undefined && value !== null && value !== '') {
-        formData.append(field, value as string);
+        if (field === 'status' || field === 'broderIndustries') {
+          formData.append(field, JSON.stringify(normalizeToArray(value)));
+        } else {
+          formData.append(field, value as string);
+        }
       }
     });
+
+    // Handle is_draft based on whether it's a draft or final submission
+    formData.append('is_draft', isDraft ? '2' : '1');
 
     if (id) {
       formData.append('seller_id', id);
@@ -661,7 +646,7 @@ const CompanyOverview: React.FC = () => {
       formData.append('yearFounded', String(data.yearFounded));
     }
 
-    if (data.profilePicture && data.profilePicture.length > 0) {
+    if (data.profilePicture?.[0]) {
       formData.append('profilePicture', data.profilePicture[0]);
     }
 
@@ -672,6 +657,7 @@ const CompanyOverview: React.FC = () => {
     if (data.operationalCountries) {
       formData.append('operationalCountries', JSON.stringify(data.operationalCountries));
     }
+
     if (data.our_person_incharge !== undefined && data.our_person_incharge !== null) {
       formData.append('incharge_name', String(data.our_person_incharge));
     }
@@ -681,16 +667,10 @@ const CompanyOverview: React.FC = () => {
     }
 
     formData.append('broderIndustries', JSON.stringify(normalizeToArray(data.broderIndustries)));
-
-    formData.append(
-      'priorityIndustries',
-      JSON.stringify(normalizeToArray(data.priorityIndustries))
-    );
-
+    formData.append('priorityIndustries', JSON.stringify(normalizeToArray(data.priorityIndustries)));
     formData.append('noPICNeeded', noPicNeeded ? '1' : '0');
-    normalizeToArray(data.reason_for_mna).forEach((item) =>
-      formData.append('reason_for_mna[]', item)
-    );
+
+    normalizeToArray(data.reason_for_mna).forEach((item) => formData.append('reason_for_mna[]', item));
     normalizeToArray(data.status).forEach((item) => formData.append('status[]', item));
 
     if (data.shareholders) {
@@ -703,271 +683,31 @@ const CompanyOverview: React.FC = () => {
 
     try {
       const response = await api.post('/api/seller/company-overviews', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-
       localStorage.setItem('seller_id', response.data.data);
-      showAlert({ type: 'success', message: 'Draft Saved' });
-      setActiveTab('financial-details');
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        showAlert({ type: "error", message: "Failed to submit company overview" });
-        alert(
-          `Failed to submit company overview: ${error.response?.data?.detail || error.message}`
-        );
-      } else {
-        showAlert({ type: "error", message: "An unexpected error occurred" });
-        alert('An unexpected error occurred during submission.');
+      showAlert({ type: 'success', message: isDraft ? 'Draft Saved' : 'Company Overview Saved' });
+
+      if (!isDraft) {
+        setActiveTab('financial-details');
       }
+    } catch (error) {
+      console.error("Submission error:", error);
+      showAlert({ type: "error", message: "Failed to submit company overview" });
     }
   };
 
-  const onDraft = async (data: FormValues) => {
-
-    const formData = new FormData();
-
-    const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
-
-    const stringFields: (keyof FormValues)[] = [
-      'companyName',
-      'companyType',
-      'localIndustryCode',
-      'companyRank',
-      'totalEmployeeCounts',
-      'fullTimeEmployeeCounts',
-      'potentialSynergries',
-      'companyPhoneNumber',
-      'companyEmail',
-      'hqAddress',
-      'shareholderName',
-      'sellerSideContactPersonName',
-      'designationAndPosition',
-      'emailAddress',
-      'phoneNumber',
-      'websiteLink',
-      'linkedinLink',
-      'twitterLink',
-      'facebookLink',
-      'instagramLink',
-      'youtubeLink',
-      'dealroomId',
-      'pic',
-      'details',
-      'projectStartDate',
-      'expectedTransactionTimeline',
-      'our_person_incharge',
-      'broderIndustries',
-    ];
-
-    stringFields.forEach((field) => {
-      const value = data[field];
-      if (value !== undefined && value !== null && value !== '') {
-        formData.append(field, value as string);
-      }
-    });
-
-    if (id) {
-      formData.append('seller_id', id);
-    }
-
-    formData.append('is_draft', '2');
-
-    if (data.yearFounded instanceof Date && !isNaN(data.yearFounded.getTime())) {
-      formData.append('yearFounded', String(data.yearFounded.getFullYear()));
-    } else if (typeof data.yearFounded === 'number' || typeof data.yearFounded === 'string') {
-      formData.append('yearFounded', String(data.yearFounded));
-    }
-
-    if (data.profilePicture && data.profilePicture.length > 0) {
-      formData.append('profilePicture', data.profilePicture[0]);
-    }
-
-    if (data.originCountry) {
-      formData.append('originCountry', JSON.stringify(data.originCountry));
-    }
-
-    if (data.operationalCountries) {
-      formData.append('operationalCountries', JSON.stringify(data.operationalCountries));
-    }
-    if (data.our_person_incharge !== undefined && data.our_person_incharge !== null) {
-      formData.append('incharge_name', String(data.our_person_incharge));
-    }
-
-    if (data.hqAddresses) {
-      formData.set('hq_address', JSON.stringify(data.hqAddresses));
-    }
-
-    formData.append('broderIndustries', JSON.stringify(normalizeToArray(data.broderIndustries)));
-
-    formData.append(
-      'priorityIndustries',
-      JSON.stringify(normalizeToArray(data.priorityIndustries))
-    );
-
-    formData.append('noPICNeeded', noPicNeeded ? '1' : '0');
-    normalizeToArray(data.reason_for_mna).forEach((item) =>
-      formData.append('reason_for_mna[]', item)
-    );
-    normalizeToArray(data.status).forEach((item) => formData.append('status[]', item));
-
-    if (data.shareholders) {
-      formData.set('shareholder_name', JSON.stringify(data.shareholders));
-    }
-
-    if (data.contactPersons && data.contactPersons.length > 0) {
-      formData.append('contactPersons', JSON.stringify(data.contactPersons));
-    }
-
-    try {
-      const response = await api.post('/api/seller/company-overviews', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-
-      localStorage.setItem('seller_id', response.data.data);
-      showAlert({ type: 'success', message: 'Draft Saved' });
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        showAlert({ type: "error", message: "Failed to submit company overview" });
-        alert(
-          `Failed to submit company overview: ${error.response?.data?.detail || error.message}`
-        );
-      } else {
-        showAlert({ type: "error", message: "An unexpected error occurred" });
-        alert('An unexpected error occurred during submission.');
-      }
-    }
-  };
-
-  const onDraftCancel = async (data: FormValues) => {
-
-    const formData = new FormData();
-
-    const normalizeToArray = (value: unknown) => (Array.isArray(value) ? value : value ? [value] : []);
-
-    const stringFields: (keyof FormValues)[] = [
-      'companyName',
-      'companyType',
-      'localIndustryCode',
-      'companyRank',
-      'totalEmployeeCounts',
-      'fullTimeEmployeeCounts',
-      'potentialSynergries',
-      'companyPhoneNumber',
-      'companyEmail',
-      'hqAddress',
-      'shareholderName',
-      'sellerSideContactPersonName',
-      'designationAndPosition',
-      'emailAddress',
-      'phoneNumber',
-      'websiteLink',
-      'linkedinLink',
-      'twitterLink',
-      'facebookLink',
-      'instagramLink',
-      'youtubeLink',
-      'dealroomId',
-      'pic',
-      'details',
-      'projectStartDate',
-      'expectedTransactionTimeline',
-      'our_person_incharge',
-      'broderIndustries',
-    ];
-
-    stringFields.forEach((field) => {
-      const value = data[field];
-      if (value !== undefined && value !== null && value !== '') {
-        formData.append(field, value as string);
-      }
-    });
-
-    if (id) {
-      formData.append('seller_id', id);
-    }
-
-    formData.append('is_draft', '2');
-
-    if (data.yearFounded instanceof Date && !isNaN(data.yearFounded.getTime())) {
-      formData.append('yearFounded', String(data.yearFounded.getFullYear()));
-    } else if (typeof data.yearFounded === 'number' || typeof data.yearFounded === 'string') {
-      formData.append('yearFounded', String(data.yearFounded));
-    }
-
-    if (data.profilePicture && data.profilePicture.length > 0) {
-      formData.append('profilePicture', data.profilePicture[0]);
-    }
-
-    if (data.originCountry) {
-      formData.append('originCountry', JSON.stringify(data.originCountry));
-    }
-
-    if (data.operationalCountries) {
-      formData.append('operationalCountries', JSON.stringify(data.operationalCountries));
-    }
-    if (data.our_person_incharge !== undefined && data.our_person_incharge !== null) {
-      formData.append('incharge_name', String(data.our_person_incharge));
-    }
-
-    if (data.hqAddresses) {
-      formData.set('hq_address', JSON.stringify(data.hqAddresses));
-    }
-
-    formData.append('broderIndustries', JSON.stringify(normalizeToArray(data.broderIndustries)));
-
-    formData.append(
-      'priorityIndustries',
-      JSON.stringify(normalizeToArray(data.priorityIndustries))
-    );
-
-    formData.append('noPICNeeded', noPicNeeded ? '1' : '0');
-    normalizeToArray(data.reason_for_mna).forEach((item) =>
-      formData.append('reason_for_mna[]', item)
-    );
-    normalizeToArray(data.status).forEach((item) => formData.append('status[]', item));
-
-    if (data.shareholders) {
-      formData.set('shareholder_name', JSON.stringify(data.shareholders));
-    }
-
-    if (data.contactPersons && data.contactPersons.length > 0) {
-      formData.append('contactPersons', JSON.stringify(data.contactPersons));
-    }
-
-    try {
-      const response = await api.post('/api/seller/company-overviews', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-
-      localStorage.setItem('seller_id', response.data.data);
-      showAlert({ type: 'success', message: 'Draft Saved' });
-      navigate('/seller-portal');
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        showAlert({ type: "error", message: "Failed to submit company overview" });
-        alert(
-          `Failed to submit company overview: ${error.response?.data?.detail || error.message}`
-        );
-      } else {
-        showAlert({ type: "error", message: "An unexpected error occurred" });
-        alert('An unexpected error occurred during submission.');
-      }
-    }
+  const onDraft = (data: FormValues) => onSubmit(data, true);
+  const onDraftCancel = (data: FormValues) => {
+    onSubmit(data, true);
+    navigate('/prospects?tab=targets');
   };
 
   const navigate = useNavigate();
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit((data) => onSubmit(data, false))}>
       <div className="pl-[15px] font-poppins">
         <div className="flex gap-[70px] w-full ">
           <div className="flex flex-col items-start gap-4 p-0 pt-12 pl-7 rounded-none w-[500px] ">
@@ -1878,9 +1618,11 @@ const CompanyOverview: React.FC = () => {
           <div className="  mt-[80px] ml-[-55px]">
             <DealroomID
               name="dealroomId"
-              control={control}
+              control={control as any}
               label="Seller ID"
               description="The Seller ID (e.g., TH-S-1) signifies the location (TH = Thailand), the entity type (S = Seller), and a unique sequential number (1 = first seller from Thailand)."
+              isChecking={isCheckingId}
+              isAvailable={isIdAvailable}
               onSave={(_val) => { }}
               iconSrc={
                 <svg

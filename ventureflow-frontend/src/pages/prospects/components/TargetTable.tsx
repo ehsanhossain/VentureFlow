@@ -15,7 +15,6 @@ import {
     MoreVertical,
     Filter,
     ArrowUpDown,
-    CheckSquare,
     Square,
     Bookmark,
     Eye,
@@ -233,9 +232,12 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     );
 
     return (
-        <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                <Table className="min-w-full table-fixed border-separate border-spacing-0">
+        <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table flex flex-col">
+            <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300/40 hover:scrollbar-thumb-gray-300/60 scrollbar-track-transparent transition-colors">
+                <Table
+                    containerClassName="overflow-visible"
+                    className="min-w-full min-h-full table-fixed border-separate border-spacing-0"
+                >
                     <TableHeader>
                         <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-b border-gray-100">
                             <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">

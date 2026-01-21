@@ -81,6 +81,10 @@ class BuyerController extends Controller
                 $query->whereHas('companyOverview', function ($q) use ($status) {
                     $q->where('status', 'LIKE', trim($status));
                 });
+            }, function ($query) {
+                $query->whereHas('companyOverview', function ($q) {
+                    $q->where('status', 'Active');
+                });
             })
 
             // --- Filter by source ---
@@ -169,6 +173,24 @@ class BuyerController extends Controller
 
 
 
+    public function checkId(Request $request)
+    {
+        $id = $request->input('id');
+        $exclude = $request->input('exclude');
+
+        $query = Buyer::where('buyer_id', $id);
+
+        if ($exclude) {
+            $query->where('id', '!=', $exclude);
+        }
+
+        $exists = $query->exists();
+
+        return response()->json([
+            'available' => !$exists
+        ]);
+    }
+
     public function getLastSequence(Request $request)
     {
         $countryAlpha = strtoupper($request->input('country'));
@@ -184,12 +206,12 @@ class BuyerController extends Controller
                 })
                 ->max();
 
-            $lastSequence = $lastBuyer ? $lastBuyer : 0;
+            $lastSequence = $lastBuyer ? (int)$lastBuyer : 0;
 
             return response()->json(['lastSequence' => $lastSequence]);
         } catch (\Exception $e) {
             \Log::error("Error fetching last sequence for country {$countryAlpha}: " . $e->getMessage());
-            return response()->json(['error' => 'Could not retrieve sequence number from controller.'], 500);
+            return response()->json(['error' => 'Could not retrieve sequence number.'], 500);
         }
     }
 
@@ -227,6 +249,10 @@ class BuyerController extends Controller
                 'seller_phone',
                 'shareholder_name',
                 'hq_address',
+                'contacts',
+                'investment_budget',
+                'target_countries',
+                'introduced_projects',
             ];
 
             foreach ($jsonFields as $field) {
@@ -283,6 +309,15 @@ class BuyerController extends Controller
             $overview->facebook = $data['facebook'] ?? null;
             $overview->instagram = $data['instagram'] ?? null;
             $overview->youtube = $data['youtube'] ?? null;
+
+            // New fields
+            $overview->rank = $data['rank'] ?? null;
+            $overview->contacts = $data['contacts'] ?? null;
+            $overview->investment_budget = $data['investment_budget'] ?? null;
+            $overview->investment_condition = $data['investment_condition'] ?? null;
+            $overview->target_countries = $data['target_countries'] ?? null;
+            $overview->investor_profile_link = $data['investor_profile_link'] ?? null;
+            $overview->introduced_projects = $data['introduced_projects'] ?? null;
 
             $overview->save();
 

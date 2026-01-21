@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Controller, Control } from "react-hook-form";
-import { PencilIcon, CornerDownLeftIcon } from "lucide-react";
+import { PencilIcon, CornerDownLeftIcon, Check, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const Card = React.forwardRef<
@@ -28,12 +28,14 @@ CardContent.displayName = "CardContent";
 
 interface DealroomIDProps {
   name: string;
-  control: Control<{ [key: string]: string }>;
+  control: Control<any>;
   label: string;
   description: string;
   iconSrc?: string | React.ReactNode;
   onSave: (newId: string) => void;
   validateId?: (id: string) => boolean;
+  isChecking?: boolean;
+  isAvailable?: boolean | null;
 }
 
 export const DealroomID: React.FC<DealroomIDProps> = ({
@@ -43,7 +45,9 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
   description,
   iconSrc = "/vector.svg",
   onSave,
-  validateId = (id) => /^[A-Z]{2}-[A-Z]-\d{3}$/.test(id),
+  validateId = (id) => id.length > 5, // Flexible validation
+  isChecking = false,
+  isAvailable = null,
 }) => {
   const [isEditing, setIsEditing] = React.useState(false);
 
@@ -121,29 +125,40 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                       <div className="flex items-center gap-2">
                         {iconSrc}
                         {isEditing ? (
-                          <input
-                            {...field}
-                            id={inputId}
-                            type="text"
-                            onChange={(e) =>
-                              field.onChange(e.target.value.toUpperCase())
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleSave();
-                              } else if (e.key === "Escape") {
-                                setIsEditing(false);
+                          <div className="relative flex items-center">
+                            <input
+                              {...field}
+                              id={inputId}
+                              type="text"
+                              onChange={(e) =>
+                                field.onChange(e.target.value.toUpperCase())
                               }
-                            }}
-                            className="bg-transparent font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6 outline-none w-[120px]"
-                            autoFocus
-                            aria-label="Dealroom ID"
-                          />
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleSave();
+                                } else if (e.key === "Escape") {
+                                  setIsEditing(false);
+                                }
+                              }}
+                              className="bg-transparent font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6 outline-none w-[150px]"
+                              autoFocus
+                              aria-label="Dealroom ID"
+                            />
+                            <div className="ml-2 flex items-center gap-1">
+                              {isChecking && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+                              {!isChecking && isAvailable === true && <Check className="w-5 h-5 text-green-400" />}
+                              {!isChecking && isAvailable === false && <AlertCircle className="w-5 h-5 text-red-400" />}
+                            </div>
+                          </div>
                         ) : (
-                          <span className="font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6">
-                            {field.value}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6">
+                              {field.value}
+                            </span>
+                            {!isChecking && isAvailable === true && <Check className="w-4 h-4 text-green-400" />}
+                            {!isChecking && isAvailable === false && <AlertCircle className="w-4 h-4 text-red-400" />}
+                          </div>
                         )}
                       </div>
                       <button

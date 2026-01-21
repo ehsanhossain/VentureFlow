@@ -43,8 +43,8 @@ const FinancialDetails: React.FC = () => {
   const baseURL = import.meta.env.VITE_APP_URL;
 
   const handleCopyLinkExample = () => {
-    const fullUrl = `${baseURL}/buyer-portal/view/${id}`;
- 
+    const fullUrl = `${baseURL}/prospects/investor/${id}`;
+
 
     navigator.clipboard
       .writeText(fullUrl)
@@ -53,7 +53,7 @@ const FinancialDetails: React.FC = () => {
           type: 'success',
           message: 'Link copied to clipboard',
         });
-    
+
       })
       .catch(() => {
         showAlert({ type: "error", message: "Failed to copy" });
@@ -122,7 +122,7 @@ const FinancialDetails: React.FC = () => {
     const fetchBuyer = async () => {
       try {
         const response = await api.get(`/api/buyer/${id}`);
-      
+
 
         const overview = response.data.data.company_overview || {};
         const financial = response.data.data.financial_details || {};
@@ -141,14 +141,14 @@ const FinancialDetails: React.FC = () => {
         });
 
         let fetchedCurrencyName = '';
-      
+
 
         if (financial?.default_currency) {
           try {
             const currencyDataResponse = await api.get(
               `/api/currencies/${financial.default_currency}`
             );
-        
+
 
             if (currencyDataResponse?.data?.currency_name) {
               fetchedCurrencyName = currencyDataResponse.data.currency_name;
@@ -397,10 +397,10 @@ const FinancialDetails: React.FC = () => {
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
                           : 'N/A'}
                       </span>
                     </div>

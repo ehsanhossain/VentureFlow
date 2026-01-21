@@ -65,8 +65,8 @@ const Attachments: React.FC = () => {
   const baseURL = import.meta.env.VITE_APP_URL;
 
   const handleCopyLinkExample = () => {
-    const fullUrl = `${baseURL}/buyer-portal/view/${id}`;
-  
+    const fullUrl = `${baseURL}/prospects/investor/${id}`;
+
 
     navigator.clipboard
       .writeText(fullUrl)
@@ -75,7 +75,7 @@ const Attachments: React.FC = () => {
           type: 'success',
           message: 'Link copied to clipboard',
         });
-        
+
       })
       .catch(() => {
         showAlert({ type: "error", message: "Failed to copy" });
@@ -132,7 +132,7 @@ const Attachments: React.FC = () => {
     const fetchBuyerPartnerData = async () => {
       try {
         const response = await api.get(`/api/buyer/${id}`);
-      
+
 
         const overview = response.data.data.company_overview || {};
 
@@ -186,7 +186,7 @@ const Attachments: React.FC = () => {
   const countryData = getCountryById(parseInt(companyInfo.origin_country));
 
   const fetchFoldersApi = async (): Promise<Folder[]> => {
-    
+
 
     try {
       const response = await api.get(`/api/buyers/${id}/folders`);
@@ -268,7 +268,7 @@ const Attachments: React.FC = () => {
   };
 
   const renameFolderApi = async (id: string, newName: string): Promise<Folder> => {
- 
+
     try {
       const response = await api.put(`/api/folders/${id}`, { name: newName });
 
@@ -304,7 +304,7 @@ const Attachments: React.FC = () => {
   };
 
   const deleteFolderApi = async (id: string): Promise<void> => {
-    
+
     try {
       const response = await api.delete(`/api/folders/${id}`);
 
@@ -350,7 +350,7 @@ const Attachments: React.FC = () => {
   }));
 
   const onFetchFilesCallback = useCallback(async () => {
-   
+
     try {
       const response = await api.get<{ data: ApiFile[] }>('/api/files', {
         params: {
@@ -633,10 +633,10 @@ const Attachments: React.FC = () => {
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
                           : 'N/A'}
                       </span>
                     </div>
@@ -686,7 +686,7 @@ const Attachments: React.FC = () => {
                     <button
                       className="flex justify-center items-center flex-row gap-[3.044971227645874px] py-[3.5524661540985107px] px-[5.647058963775635px] bg-[#FFFFFF] rounded-[35.16731643676758px] w-[82px] h-[24px]"
                       style={{ width: '82px' }}
-                      onClick={() => navigate(`/buyer-portal/edit/${id}`)}
+                      onClick={() => navigate(`/prospects/edit-investor/${id}`)}
                     >
                       <svg
                         width="13"
@@ -767,7 +767,7 @@ const Attachments: React.FC = () => {
             <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px]">
               <button
                 className="flex justify-center items-center flex-row gap-1.5 py-[5.032660484313965px] px-3 rounded-[49.82036209106445px] h-[34px] bg-[#064771]"
-                onClick={() => navigate('/buyer-portal')}
+                onClick={() => navigate('/prospects?tab=investors')}
               >
                 <span className="text-[#FFF] ">close</span>
               </button>

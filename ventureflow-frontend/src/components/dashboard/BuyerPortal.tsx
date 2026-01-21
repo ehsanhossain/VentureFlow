@@ -86,10 +86,10 @@ const BuyerPortal: React.FC = () => {
         </div>
         <div
           className="flex items-center space-x-2 cursor-pointer"
-          onClick={() => navigate("/buyer-portal")}
+          onClick={() => navigate("/prospects?tab=investors")}
         >
           <div className="text-[#064771] text-xl font-semibold underline">
-            {t('dashboard.buyerPortal', 'Buyer Portal')}
+            {t('dashboard.investorPortal', 'Investor Portal')}
           </div>
           <svg
             width={25}

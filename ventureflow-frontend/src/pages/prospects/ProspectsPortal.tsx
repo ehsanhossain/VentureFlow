@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../config/api';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
@@ -36,7 +36,9 @@ interface Currency {
 
 const ALL_INVESTOR_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
+    { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
+    { id: 'primaryContact', label: 'Primary Contact' },
     { id: 'hq', label: 'HQ Country' },
     { id: 'targetCountries', label: 'Target Countries' },
     { id: 'targetIndustries', label: 'Target Industries' },
@@ -50,7 +52,7 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'yearFounded', label: 'Founded' },
 ];
 
-const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'companyName', 'hq', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
+const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'hq', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
 
 const ALL_TARGET_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
@@ -66,7 +68,9 @@ const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'hq', 'industry', 
 
 const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'investors' | 'targets'>('investors');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTab = (searchParams.get('tab') as 'investors' | 'targets') || 'investors';
+    const [activeTab, setActiveTab] = useState<'investors' | 'targets'>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [investors, setInvestors] = useState<InvestorRowData[]>([]);
@@ -144,25 +148,50 @@ const ProspectsPortal: React.FC = () => {
 
             if (activeTab === 'investors') {
                 const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
-                    const hqCountryId = b.company_overview?.hq_country;
+                    const overview = b.company_overview || {};
+                    const hqCountryId = overview.hq_country;
                     const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
 
-                    const indMap = Array.isArray(b.company_overview?.main_industry_operations)
-                        ? b.company_overview.main_industry_operations.map((i: any) => i?.name || "Unknown")
+                    const indMap = Array.isArray(overview.main_industry_operations)
+                        ? overview.main_industry_operations.map((i: any) => i?.name || "Unknown")
                         : [];
 
-                    const targetCountriesData = Array.isArray(b.target_countries)
-                        ? b.target_countries.map((tc: any) => {
+                    // Parse Target Countries
+                    let targetCountriesRaw = overview.target_countries;
+                    // If backend sends it as string despite cast, parse it. Casts should handle it though.
+                    if (typeof targetCountriesRaw === 'string') {
+                        try { targetCountriesRaw = JSON.parse(targetCountriesRaw); } catch (e) { targetCountriesRaw = []; }
+                    } else if (!targetCountriesRaw && b.target_preferences?.target_countries) {
+                        // Fallback to old location if needed (though we should migrate data)
+                        targetCountriesRaw = b.target_preferences.target_countries;
+                    }
+
+                    const targetCountriesData = Array.isArray(targetCountriesRaw)
+                        ? targetCountriesRaw.map((tc: any) => {
                             const cid = (tc && typeof tc === 'object') ? tc.id : tc;
                             const co = countries.find(con => String(con.id) === String(cid));
                             return co ? { name: co.name, flag: co.flagSrc } : null;
                         }).filter(Boolean)
                         : [];
 
+                    // Parse Contacts for Primary Contact
+                    let contactsRaw = overview.contacts;
+                    if (typeof contactsRaw === 'string') {
+                        try { contactsRaw = JSON.parse(contactsRaw); } catch (e) { contactsRaw = []; }
+                    }
+
+                    const primaryContactObj = Array.isArray(contactsRaw)
+                        ? (contactsRaw.find((c: any) => c.isPrimary) || contactsRaw[0])
+                        : null;
+
+                    const primaryContactName = primaryContactObj?.name || overview.seller_contact_name || "N/A";
+
                     return {
                         id: b.id,
                         projectCode: b.buyer_id || "N/A",
-                        companyName: b.company_overview?.reg_name || "Unknown Company",
+                        rank: overview.rank || '',
+                        companyName: overview.reg_name || "Unknown Company",
+                        primaryContact: primaryContactName,
                         hq: {
                             name: hqCountry?.name || "Unknown",
                             flag: hqCountry?.flagSrc || ""
@@ -172,12 +201,12 @@ const ProspectsPortal: React.FC = () => {
                         pipelineStatus: b.pipeline_status || b.current_stage || "N/A",
                         budget: b.financial_details?.investment_budget,
                         isPinned: pinnedIds.includes(b.id),
-                        companyType: b.company_overview?.company_type,
-                        website: b.company_overview?.website,
-                        email: b.company_overview?.email,
-                        phone: b.company_overview?.phone,
-                        employeeCount: b.company_overview?.emp_count,
-                        yearFounded: b.company_overview?.year_founded
+                        companyType: overview.company_type,
+                        website: overview.website,
+                        email: overview.email,
+                        phone: overview.phone,
+                        employeeCount: overview.emp_count,
+                        yearFounded: overview.year_founded
                     };
                 });
                 setInvestors(mappedInvestors);
@@ -386,7 +415,7 @@ const ProspectsPortal: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col w-full min-h-screen bg-gray-50/50 font-poppins overflow-x-hidden relative">
+        <div className="flex flex-col w-full h-[calc(100vh-64px)] bg-gray-50/50 font-poppins overflow-hidden relative">
             {/* Import Modal */}
             {isImportModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
@@ -486,66 +515,112 @@ const ProspectsPortal: React.FC = () => {
             {/* Filter Side Drawer */}
             {isFilterOpen && (
                 <>
-                    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity" onClick={() => setIsFilterOpen(false)} />
-                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[400px] bg-white shadow-2xl z-50 p-6 animate-in slide-in-from-right duration-300">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#064771] flex items-center justify-center">
-                                    <Filter className="w-5 h-5" />
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => setIsFilterOpen(false)} />
+                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[380px] bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-gray-50">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-[#F1FBFF] text-[#064771] flex items-center justify-center shadow-sm">
+                                    <Filter className="w-6 h-6" />
                                 </div>
-                                <h2 className="text-xl font-bold text-gray-900">Advanced Filters</h2>
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Advanced Filters</h2>
+                                    <p className="text-xs text-gray-500 mt-0.5 font-medium">Refine your prospects list</p>
+                                </div>
                             </div>
-                            <button onClick={() => setIsFilterOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <X className="w-5 h-5 text-gray-400" />
+                            <button
+                                onClick={() => setIsFilterOpen(false)}
+                                className="p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                                <select
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771]"
-                                    value={filters.status}
-                                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                                >
-                                    <option value="">All Statuses</option>
-                                    <option value="Active">Active</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Interested">Interested</option>
-                                    <option value="NDA">NDA</option>
-                                </select>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2.5 ml-1">Status</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
+                                            value={filters.status}
+                                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                                        >
+                                            <option value="">All Statuses</option>
+                                            <option value="Active">Active</option>
+                                            <option value="In Progress">In Progress</option>
+                                            <option value="Interested">Interested</option>
+                                            <option value="NDA">NDA</option>
+                                            <option value="Draft">Drafts</option>
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors">
+                                            <ChevronDown className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2.5 ml-1">HQ Country</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
+                                            value={filters.country}
+                                            onChange={(e) => setFilters({ ...filters, country: e.target.value })}
+                                        >
+                                            <option value="">All Countries</option>
+                                            {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors">
+                                            <ChevronDown className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">HQ Country</label>
-                                <select
-                                    className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771]"
-                                    value={filters.country}
-                                    onChange={(e) => setFilters({ ...filters, country: e.target.value })}
-                                >
-                                    <option value="">All Countries</option>
-                                    {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="pt-6 border-t border-gray-100 flex flex-col gap-3">
-                                <button className="w-full py-3 bg-[#064771] text-white rounded-xl font-bold shadow-lg shadow-[#064771]/20 hover:bg-[#053a5c] transition-all" onClick={() => setIsFilterOpen(false)}>Apply Filters</button>
-                                <button className="w-full py-3 bg-gray-50 text-gray-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-100 transition-all" onClick={() => setFilters({ status: '', country: '', industry: '' })}>
-                                    <RotateCcw className="w-4 h-4" /> Reset Filters
-                                </button>
-                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
+                            <button
+                                className="w-full py-4 bg-[#064771] text-white rounded-2xl font-bold shadow-xl shadow-[#064771]/20 hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                                onClick={() => setIsFilterOpen(false)}
+                            >
+                                Apply Filters
+                            </button>
+                            <button
+                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
+                                onClick={() => setFilters({ status: '', country: '', industry: '' })}
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                Reset Filters
+                            </button>
                         </div>
                     </div>
                 </>
             )}
 
-            <div className="px-6 py-4 w-full">
-                <div className="flex flex-col gap-4">
+            <div className="px-6 py-4 w-full flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex flex-col gap-4 h-full">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <h1 className="text-3xl font-bold text-gray-900">Prospects</h1>
                             <div className="flex bg-gray-200/50 rounded-xl p-1.5 ml-4 shadow-inner">
-                                <button onClick={() => setActiveTab('investors')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab('investors');
+                                        setSearchParams({ tab: 'investors' });
+                                    }}
+                                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
+                                >
                                     Investors <span className={`ml-1.5 text-xs ${activeTab === 'investors' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.investors})</span>
                                 </button>
-                                <button onClick={() => setActiveTab('targets')} className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}>
+                                <button
+                                    onClick={() => {
+                                        setActiveTab('targets');
+                                        setSearchParams({ tab: 'targets' });
+                                    }}
+                                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
+                                >
                                     Targets <span className={`ml-1.5 text-xs ${activeTab === 'targets' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.targets})</span>
                                 </button>
                             </div>
@@ -560,13 +635,23 @@ const ProspectsPortal: React.FC = () => {
                                     placeholder="Search prospects here"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 pr-16 py-2 border border-gray-200 rounded-lg text-sm w-[280px] focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all bg-white"
+                                    className="pl-9 pr-16 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-[280px] focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] hover:border-gray-300 transition-all"
                                 />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-gray-200 font-medium text-gray-500 shadow-sm text-[11px] select-none pointer-events-none">
-                                    <span className="text-sm font-light scale-110 translate-y-[0.5px]">⌘</span>
-                                    <span className="font-semibold text-gray-400">F</span>
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400 select-none pointer-events-none">
+                                    <span className="text-xs">⌘</span> F
                                 </div>
                             </div>
+
+                            <button
+                                onClick={() => setFilters(prev => ({ ...prev, status: prev.status === 'Draft' ? '' : 'Draft' }))}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border shadow-sm ${filters.status === 'Draft'
+                                    ? 'bg-[#064771] text-white border-[#064771]'
+                                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <span className={`w-2 h-2 rounded-full ${filters.status === 'Draft' ? 'bg-orange-400 animate-pulse' : 'bg-gray-300'}`} />
+                                Drafts
+                            </button>
 
                             <div className="relative" ref={toolsDropdownRef}>
                                 <button
@@ -622,7 +707,7 @@ const ProspectsPortal: React.FC = () => {
                                 </button>
                                 {isCreateOpen && (
                                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden">
-                                        <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors" onClick={() => navigate('/buyer-portal/create')}>
+                                        <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors" onClick={() => navigate('/prospects/add-investor')}>
                                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Add Investor
                                         </button>
                                         <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors" onClick={() => navigate('/seller-portal/add')}>
@@ -638,7 +723,7 @@ const ProspectsPortal: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="w-full transition-all duration-500">
+                    <div className="w-full flex-1 min-h-0 transition-all duration-500">
                         {activeTab === 'investors' ? (
                             <InvestorTable
                                 data={investors}

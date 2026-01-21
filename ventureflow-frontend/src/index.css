@@ -13,9 +13,38 @@ html,
 body {
   overflow-x: hidden;
   max-width: 100vw;
+  scrollbar-gutter: stable;
 }
 
 #root {
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+/* Premium Scrollbar Customization */
+@layer utilities {
+  .premium-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Support for tailwind-scrollbar plugin colors */
+  .scrollbar-premium {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
 }

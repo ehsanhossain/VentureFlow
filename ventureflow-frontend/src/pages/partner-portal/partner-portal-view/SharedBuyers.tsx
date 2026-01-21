@@ -246,7 +246,7 @@ const SharedBuyers = (): JSX.Element => {
                         <button
                           type="button"
                           className="flex items-center justify-center w-[35px] h-[35px] bg-[#FFF7F7] border rounded-full p-1"
-                          onClick={() => navigate(`/buyer-portal/view/${buyer.buyer_id}`)}
+                          onClick={() => navigate(`/prospects/investor/${buyer.id}`)}
                         >
                           <svg
                             width="21"

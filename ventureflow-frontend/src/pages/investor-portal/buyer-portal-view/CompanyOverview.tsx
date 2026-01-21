@@ -43,7 +43,7 @@ const CompanyOverview: React.FC = () => {
   const baseURL = import.meta.env.VITE_APP_URL;
 
   const handleCopyLinkExample = () => {
-    const fullUrl = `${baseURL}/buyer-portal/view/${id}`;
+    const fullUrl = `${baseURL}/prospects/investor/${id}`;
 
 
     navigator.clipboard
@@ -531,7 +531,7 @@ const CompanyOverview: React.FC = () => {
                         <button
                           className="text-[#064771] text-[12px] text-nowrap"
                           onClick={() => {
-                            navigate(`/buyer-portal/edit/${id}`);
+                            navigate(`/prospects/edit-investor/${id}`);
                           }}
                         >
                           Update

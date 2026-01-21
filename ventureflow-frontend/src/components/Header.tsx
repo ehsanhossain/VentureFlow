@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Menu, X, Check, Bell, Search, Command, Loader2, FileText, Building, User, Briefcase, Home, Plus, ChevronDown } from "lucide-react";
 import ProfileDropdown from "../components/dashboard/ProfileDropdown";
 import { useNotifications } from "../context/NotificationContext";
@@ -58,7 +58,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
         setSearchOpen(true);
       }
       if (e.key === 'Escape') {
-        setSearchOpen(false);
+        if (searchOpen) {
+          setSearchOpen(false);
+        } else {
+          navigate(-1);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -100,20 +104,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
     setResults(null);
   }
 
-  // Generate Breadcrumbs
   const pathSegments = location.pathname.split('/').filter(Boolean);
-  const breadcrumbs = pathSegments.map((segment, index) => {
-    const name = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
-    const isLast = index === pathSegments.length - 1;
-    return (
-      <span key={segment} className="flex items-center">
-        <span className="mx-2 text-gray-400">/</span>
-        <span className={isLast ? "text-gray-900 font-medium" : "text-gray-500"}>
-          {name === 'Employee' ? 'HRVC' : name}
-        </span>
-      </span>
-    );
-  });
+
 
   return (
     <>
@@ -137,12 +129,42 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               )}
             </button>
 
-            {/* Breadcrumb (Desktop) */}
-            <div className="hidden lg:flex items-center text-sm">
-              <Link to="/" className="text-gray-500 hover:text-gray-700 transition-colors">
+            {/* Premium Breadcrumbs (Desktop) */}
+            <div className="hidden lg:flex items-center text-sm font-medium">
+              <Link to="/" className="text-gray-400 hover:text-[#064771] transition-all p-1.5 hover:bg-gray-100 rounded-md">
                 <Home className="w-4 h-4" />
               </Link>
-              {breadcrumbs}
+
+              <div className="flex items-center overflow-hidden max-w-[400px]">
+                {pathSegments.length > 3 && (
+                  <span className="flex items-center text-gray-400 px-1">
+                    <span className="mx-1 text-gray-300">/</span>
+                    <span className="text-xs">...</span>
+                  </span>
+                )}
+
+                {pathSegments.slice(-3).map((segment, index) => {
+                  const url = `/${pathSegments.slice(0, pathSegments.length - 3 + index + 1).join('/')}`;
+                  const name = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+                  const isLast = (pathSegments.length - 3 + index) === pathSegments.length - 1;
+
+                  return (
+                    <span key={segment} className="flex items-center group">
+                      <span className="mx-1 text-gray-300">/</span>
+                      <Link
+                        to={url}
+                        className={`px-2 py-1 rounded-md transition-all truncate max-w-[120px] ${isLast
+                          ? "text-[#064771] bg-blue-50/50 font-bold"
+                          : "text-gray-500 hover:text-[#064771] hover:bg-gray-50"
+                          }`}
+                        title={name}
+                      >
+                        {name === 'Employee' ? 'HRVC' : name}
+                      </Link>
+                    </span>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Global Search Bar */}
@@ -179,10 +201,10 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               {createDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
                   <button
-                    onClick={() => { navigate('/buyer-portal/create'); setCreateDropdownOpen(false); }}
+                    onClick={() => { navigate('/prospects/add-investor'); setCreateDropdownOpen(false); }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
                   >
-                    Create Buyer
+                    Create Investor
                   </button>
                   <button
                     onClick={() => { navigate('/seller-portal/add'); setCreateDropdownOpen(false); }}
@@ -351,7 +373,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.companies.map((company) => (
                         <li key={`company-${company.id}-${company.type}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
-                          onClick={() => { navigate(company.type === 'Seller' ? `/seller-portal/view/${company.id}` : `/buyer-portal/view/${company.id}`); closeSearch(); }}>
+                          onClick={() => { navigate(company.type === 'Seller' ? `/seller-portal/view/${company.id}` : `/prospects/investor/${company.id}`); closeSearch(); }}>
                           <Building className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
                           <span className="ml-3 flex-auto truncate">{company.name}</span>
                           <span className="ml-3 flex-none text-xs text-gray-400">{company.type}</span>

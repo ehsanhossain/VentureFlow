@@ -15,7 +15,6 @@ import {
     MoreVertical,
     Filter,
     ArrowUpDown,
-    CheckSquare,
     Square,
     Bookmark,
     Eye,
@@ -44,6 +43,8 @@ export interface InvestorRowData {
     phone?: string;
     employeeCount?: string;
     yearFounded?: string;
+    rank?: string;
+    primaryContact?: string;
 }
 
 interface InvestorTableProps {
@@ -90,6 +91,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         phone: 150,
         employeeCount: 130,
         yearFounded: 120,
+        rank: 80,
+        primaryContact: 180,
     });
 
     const isResizing = useRef<string | null>(null);
@@ -248,9 +251,12 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     );
 
     return (
-        <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                <Table className="min-w-full table-fixed border-separate border-spacing-0">
+        <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table flex flex-col">
+            <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300/40 hover:scrollbar-thumb-gray-300/60 scrollbar-track-transparent transition-colors">
+                <Table
+                    containerClassName="overflow-visible"
+                    className="min-w-full min-h-full table-fixed border-separate border-spacing-0"
+                >
                     <TableHeader>
                         <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-b border-gray-100">
                             <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">
@@ -287,6 +293,19 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                 </TableHead>
                             )}
 
+                            {isVisible('rank') && (
+                                <TableHead style={{ width: columnWidths.rank }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
+                                    <div
+                                        className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
+                                        onClick={() => handleSort('rank')}
+                                    >
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</span>
+                                        <SortIcon column="rank" />
+                                    </div>
+                                    <ResizeHandle column="rank" />
+                                </TableHead>
+                            )}
+
                             {isVisible('companyName') && (
                                 <TableHead
                                     style={{ width: columnWidths.companyName }}
@@ -300,6 +319,13 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         <SortIcon column="companyName" />
                                     </div>
                                     <ResizeHandle column="companyName" />
+                                </TableHead>
+                            )}
+
+                            {isVisible('primaryContact') && (
+                                <TableHead style={{ width: columnWidths.primaryContact }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Primary Contact</span>
+                                    <ResizeHandle column="primaryContact" />
                                 </TableHead>
                             )}
 
@@ -431,7 +457,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                 <TableRow
                                     key={row.id}
                                     onContextMenu={(e) => handleContextMenu(e, row.id)}
-                                    onClick={() => navigate(`/buyer-portal/view/${row.id}`)}
+                                    onClick={() => navigate(`/prospects/investor/${row.id}`)}
                                     className={`
                                         group transition-all duration-200 border-l-[3px] border-b border-gray-100 cursor-pointer
                                         ${selectedIds.has(row.id) ? 'bg-blue-50/80 border-l-[#064771]' : 'hover:bg-gray-50 bg-white border-l-transparent hover:border-l-[#064771]'}
@@ -459,10 +485,29 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         </TableCell>
                                     )}
 
+                                    {isVisible('rank') && (
+                                        <TableCell className="border-b border-gray-100">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${row.rank === 'A' ? 'bg-green-100 text-green-800' :
+                                                row.rank === 'B' ? 'bg-blue-100 text-blue-800' :
+                                                    row.rank ? 'bg-gray-100 text-gray-800' : 'text-gray-400 italic'
+                                                }`}>
+                                                {row.rank || 'N/A'}
+                                            </span>
+                                        </TableCell>
+                                    )}
+
                                     {isVisible('companyName') && (
                                         <TableCell className="text-gray-900 font-bold text-[14px] border-b border-gray-100">
                                             <Tooltip content={row.companyName}>
                                                 <span className="truncate block">{row.companyName}</span>
+                                            </Tooltip>
+                                        </TableCell>
+                                    )}
+
+                                    {isVisible('primaryContact') && (
+                                        <TableCell className="border-b border-gray-100">
+                                            <Tooltip content={row.primaryContact}>
+                                                <span className="text-gray-700 text-sm truncate block">{row.primaryContact || 'N/A'}</span>
                                             </Tooltip>
                                         </TableCell>
                                     )}
@@ -590,7 +635,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </button>
                     <button
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#064771] flex items-center gap-3 transition-colors group"
-                        onClick={() => { navigate(`/buyer-portal/view/${contextMenu.rowId}`); setContextMenu(null); }}
+                        onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
                     >
                         <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#064771]" />
                         <span className="font-medium">View Details</span>
@@ -598,7 +643,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     {!(selectedIds.size > 1 && selectedIds.has(contextMenu.rowId)) && (
                         <button
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors group"
-                            onClick={() => { navigate(`/buyer-portal/edit/${contextMenu.rowId}`); setContextMenu(null); }}
+                            onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
                             <Zap className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
                             <span className="font-medium">Enrich Details</span>

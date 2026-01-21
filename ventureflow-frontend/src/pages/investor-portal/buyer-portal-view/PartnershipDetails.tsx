@@ -62,7 +62,7 @@ const PartnershipDetails: React.FC = () => {
       return;
     }
 
-    const fullUrl = `${baseURL}/buyer-portal/view/${resolvedBuyerId}`;
+    const fullUrl = `${baseURL}/prospects/investor/${resolvedBuyerId}`;
 
     navigator.clipboard
       .writeText(fullUrl)
@@ -127,7 +127,7 @@ const PartnershipDetails: React.FC = () => {
     const fetchBuyerPartnerData = async () => {
       try {
         const response = await api.get(`/api/buyer/${id}`);
-    
+
 
         const overview = response.data.data.company_overview || {};
         const partner = response.data.data.partnership_details || {};
@@ -188,7 +188,7 @@ const PartnershipDetails: React.FC = () => {
   const getCountryById = (id: number) => countries.find((c: { id: number }) => c.id === id);
 
   const countryData = getCountryById(parseInt(companyInfo.origin_country));
- 
+
 
   const [selectedPartnerDetails, setSelectedPartnerDetails] =
     useState<Record<string, unknown> | null>(null);
@@ -446,10 +446,10 @@ const PartnershipDetails: React.FC = () => {
                         <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                           {companyInfo?.updated_at
                             ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                                month: 'short',
-                                year: 'numeric',
-                                day: '2-digit',
-                              })
+                              month: 'short',
+                              year: 'numeric',
+                              day: '2-digit',
+                            })
                             : 'N/A'}
                         </span>
                       </div>
@@ -500,7 +500,7 @@ const PartnershipDetails: React.FC = () => {
                         className="flex justify-center items-center flex-row gap-[3.044971227645874px] py-[3.5524661540985107px] px-[5.647058963775635px] bg-[#FFFFFF] rounded-[35.16731643676758px] w-[82px] h-[24px]"
                         style={{ width: '82px' }}
                         onClick={() => {
-                          navigate(`/buyer-portal/edit/${id}`);
+                          navigate(`/prospects/edit-investor/${id}`);
                         }}
                       >
                         <svg
@@ -571,9 +571,8 @@ const PartnershipDetails: React.FC = () => {
                   <img
                     src={
                       selectedPartnerDetails?.partner_image
-                        ? `${import.meta.env.VITE_API_BASE_URL}${
-                            selectedPartnerDetails?.partner_image
-                          }`
+                        ? `${import.meta.env.VITE_API_BASE_URL}${selectedPartnerDetails?.partner_image
+                        }`
                         : `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="145" height="145" viewBox="0 0 145 145" fill="none">
 <rect x="1" y="1" width="143" height="143" rx="71.5" fill="#F1FBFF"/>
 <rect x="1" y="1" width="143" height="143" rx="71.5" stroke="#064771" stroke-width="2"/>
@@ -787,9 +786,9 @@ const PartnershipDetails: React.FC = () => {
                             {selectedPartnerDetails?.partner_overview?.company_email
                               ? selectedPartnerDetails.partner_overview.company_email.length > 30
                                 ? `${selectedPartnerDetails.partner_overview.company_email.slice(
-                                    0,
-                                    30
-                                  )}...`
+                                  0,
+                                  30
+                                )}...`
                                 : selectedPartnerDetails.partner_overview.company_email
                               : 'N/A'}
                           </span>
@@ -831,9 +830,9 @@ const PartnershipDetails: React.FC = () => {
                             {selectedPartnerDetails?.partner_overview?.company_phone
                               ? selectedPartnerDetails.partner_overview.company_phone.length > 30
                                 ? `${selectedPartnerDetails.partner_overview.company_phone.slice(
-                                    0,
-                                    30
-                                  )}...`
+                                  0,
+                                  30
+                                )}...`
                                 : selectedPartnerDetails.partner_overview.company_phone
                               : 'N/A'}
                           </span>
@@ -877,9 +876,9 @@ const PartnershipDetails: React.FC = () => {
                             {selectedPartnerDetails?.partner_overview?.website
                               ? selectedPartnerDetails.partner_overview.website.length > 30
                                 ? `${selectedPartnerDetails.partner_overview.website.slice(
-                                    0,
-                                    30
-                                  )}...`
+                                  0,
+                                  30
+                                )}...`
                                 : selectedPartnerDetails.partner_overview.website
                               : 'N/A'}
                           </span>
@@ -910,9 +909,9 @@ const PartnershipDetails: React.FC = () => {
                         {selectedPartnerDetails?.partner_overview?.hq_address
                           ? selectedPartnerDetails.partner_overview.hq_address.length > 30
                             ? `${selectedPartnerDetails.partner_overview.hq_address.slice(
-                                0,
-                                30
-                              )}...`
+                              0,
+                              30
+                            )}...`
                             : selectedPartnerDetails.partner_overview.hq_address
                           : 'N/A'}
                       </span>
@@ -1322,10 +1321,10 @@ const PartnershipDetails: React.FC = () => {
                         <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                           {companyInfo?.updated_at
                             ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                                month: 'short',
-                                year: 'numeric',
-                                day: '2-digit',
-                              })
+                              month: 'short',
+                              year: 'numeric',
+                              day: '2-digit',
+                            })
                             : 'N/A'}
                         </span>
                       </div>
@@ -1376,7 +1375,7 @@ const PartnershipDetails: React.FC = () => {
                         className="flex justify-center items-center flex-row gap-[3.044971227645874px] py-[3.5524661540985107px] px-[5.647058963775635px] bg-[#FFFFFF] rounded-[35.16731643676758px] w-[82px] h-[24px]"
                         style={{ width: '82px' }}
                         onClick={() => {
-                          navigate(`/buyer-portal/edit/${id}`);
+                          navigate(`/prospects/edit-investor/${id}`);
                         }}
                       >
                         <svg

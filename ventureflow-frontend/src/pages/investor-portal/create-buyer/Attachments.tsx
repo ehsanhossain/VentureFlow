@@ -10,7 +10,7 @@ import {
   InitialBrowseIconSVG,
 } from "../../../components/FileUpload";
 
-import { FileManager, Folder } from "../../../components/FileManager"; 
+import { FileManager, Folder } from "../../../components/FileManager";
 import api from "../../../config/api";
 import axios from "axios";
 import FileView from "../../../components/FileView";
@@ -30,10 +30,10 @@ interface AttachmentFile {
 
 
 const handleCopyLinkExample = (_folderId: string) => {
-  
+
 };
 const handleDownloadExample = (_folderId: string) => {
-  
+
 };
 const handleShareExample = (_folderId: string) => {
 
@@ -73,7 +73,7 @@ const Attachments: React.FC = () => {
 
 
   const onFetchFilesCallback = useCallback(async () => {
-   
+
     try {
       const response = await api.get<{ data: ApiFile[] }>("/api/files", {
         params: {
@@ -267,7 +267,7 @@ const Attachments: React.FC = () => {
 
 
   const handleFilesChange = (_files: File[]) => {
-    
+
   };
 
   const fileUploadConfig = {
@@ -281,13 +281,13 @@ const Attachments: React.FC = () => {
         action: "browse",
       },
       showBadgeComponent: false,
-      background: "bg-white", 
+      background: "bg-white",
     },
     selected: {
       title: (files: File[]) =>
         `${files.length} file${files.length > 1 ? "s" : ""} selected`,
       subtitle: (files: File[]) => files.map((file) => file.name).join(", "),
-      icon: <UploadCloudIcon color="#0A8043" />, 
+      icon: <UploadCloudIcon color="#0A8043" />,
       primaryButton: {
         text: "Upload",
         icon: <UploadIconSVG />,
@@ -306,7 +306,7 @@ const Attachments: React.FC = () => {
       showBadgeComponent: true,
       badge: (files: File[]) =>
         `${files.length} file${files.length > 1 ? "s" : ""} ready to upload`,
-      background: "bg-white", 
+      background: "bg-white",
     },
     uploading: {
       title: "Uploading...",
@@ -355,36 +355,36 @@ const Attachments: React.FC = () => {
   };
 
   const handleDownloadFile = async (file: AttachmentFile) => {
-  
+
     const fileId = file.id;
-    
+
 
     try {
-    
+
       const response = await api.get(`/api/files/${fileId}/download`, {
-        responseType: "blob", 
+        responseType: "blob",
       });
 
-      
+
       const blob = new Blob([response.data], {
         type: response.headers["content-type"] || "application/octet-stream",
       });
 
-    
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
 
       link.setAttribute("download", file.name || "downloaded_file");
 
-   document.body.appendChild(link);
+      document.body.appendChild(link);
       link.click();
 
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
       showAlert({ type: "error", message: "Failed to download file" });
-   
+
     }
   };
 
@@ -400,9 +400,9 @@ const Attachments: React.FC = () => {
     } catch (error: unknown) {
       let errorMessage = "Unknown error";
       if (axios.isAxiosError(error) && error.response?.data?.message) {
-         errorMessage = error.response.data.message;
+        errorMessage = error.response.data.message;
       } else if (error instanceof Error) {
-         errorMessage = error.message;
+        errorMessage = error.message;
       }
       alert(`Error renaming file: ${errorMessage}`);
       showAlert({ type: "error", message: "Error renaming file" });
@@ -418,9 +418,9 @@ const Attachments: React.FC = () => {
     } catch (error: unknown) {
       let errorMessage = "Unknown error";
       if (axios.isAxiosError(error) && error.response?.data?.message) {
-         errorMessage = error.response.data.message;
+        errorMessage = error.response.data.message;
       } else if (error instanceof Error) {
-         errorMessage = error.message;
+        errorMessage = error.message;
       }
       alert(`Error deleting file: ${errorMessage}`);
       showAlert({ type: "error", message: "Error deleting file" });
@@ -454,10 +454,10 @@ const Attachments: React.FC = () => {
         onShare={handleShareExample}
         onViewSize={handleViewSizeExample}
         onFolderSelect={handleFolderSelected}
-    
+
       />
 
-  
+
 
       <FileView
         files={filesForView}
@@ -468,17 +468,17 @@ const Attachments: React.FC = () => {
         onDownloadFile={handleDownloadFile}
       />
 
-    
+
       <div className="flex justify-between items-center flex-row gap-[916px] mt-[65px]">
         <div
           className="flex justify-start items-end flex-row gap-[10.06532096862793px] w-[93px] h-[34px]"
           style={{ width: "93px" }}
         >
-         
+
           <button
             className="flex justify-center items-center flex-row gap-[4.313709259033203px] py-[5.032660484313965px] px-[6.470563888549805px] bg-[#FFF6F7] border-solid border-[#DF272A] border-[0.7664670944213867px] rounded-[49.82036209106445px] w-[100px] h-[34px]"
             style={{ width: "100px" }}
-            onClick={() => navigate("/buyer-portal")}
+            onClick={() => navigate("/prospects?tab=investors")}
             type="button"
           >
             <svg
@@ -532,23 +532,23 @@ const Attachments: React.FC = () => {
             <span className="text-[#FFF] ">Back</span>
           </button>
 
-       
+
           <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px]">
             <button
               className="flex justify-center items-center flex-row gap-1.5 py-[5.032660484313965px] px-3 bg-[#064771] rounded-[49.82036209106445px] h-[34px]"
-              onClick={() => navigate("/buyer-portal")}
+              onClick={() => navigate("/prospects?tab=investors")}
             >
               <span className="text-[#FFF] text-nowrap ">Publish</span>
 
-              
+
             </button>
           </div>
         </div>
       </div>
-    
+
     </div>
 
-    
+
   );
 };
 

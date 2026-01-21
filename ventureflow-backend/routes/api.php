@@ -74,6 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Seller Routes
     Route::get('/seller/get-last-sequence', [SellerController::class, 'getLastSequence']);
+    Route::get('/seller/check-id', [SellerController::class, 'checkId']);
     Route::get('/seller/pinned', [SellerController::class, 'pinnedData']);
     Route::get('/seller/unpinned', [SellerController::class, 'unpinnedData']);
     Route::get('/seller/closed', [SellerController::class, 'closedDeals']);
@@ -106,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Buyers Routes
     Route::get('/buyer/get-last-sequence', [BuyerController::class, 'getLastSequence']);
+    Route::get('/buyer/check-id', [BuyerController::class, 'checkId']);
     Route::get('/buyer/pinned', [BuyerController::class, 'pinnedData']);
     Route::get('/buyer/unpinned', [BuyerController::class, 'unpinnedData']);
     Route::get('/buyer/closed-deals', [BuyerController::class, 'closedDeals']);

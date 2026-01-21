@@ -43,8 +43,8 @@ const TargetPreferences: React.FC = () => {
   const baseURL = import.meta.env.VITE_APP_URL;
 
   const handleCopyLinkExample = () => {
-    const fullUrl = `${baseURL}/buyer-portal/view/${id}`;
- 
+    const fullUrl = `${baseURL}/prospects/investor/${id}`;
+
 
     navigator.clipboard
       .writeText(fullUrl)
@@ -53,7 +53,7 @@ const TargetPreferences: React.FC = () => {
           type: 'success',
           message: 'Link copied to clipboard',
         });
-      
+
       })
       .catch(() => {
         showAlert({ type: "error", message: "Failed to copy" });
@@ -62,7 +62,21 @@ const TargetPreferences: React.FC = () => {
 
   const setActiveTab = useTabStore((state) => state.setActiveTab);
   const navigate = useNavigate();
-  const [companyInfo, setCompanyInfo] = useState({
+  const [companyInfo, setCompanyInfo] = useState<{
+    company_title: string;
+    origin_country_flag_svg: string;
+    rating: string;
+    company_type: string;
+    status: string;
+    origin_country: string;
+    broder_industry_operations: any;
+    year_founded: string;
+    full_time_employee_counts: string;
+    niche_industry_preferences: any[];
+    buyer_id: string;
+    updated_at: string;
+    image_url: string;
+  }>({
     company_title: '',
     origin_country_flag_svg: '',
     rating: '',
@@ -82,7 +96,7 @@ const TargetPreferences: React.FC = () => {
     operational_countries_or_customer_base: string;
     full_time_employee_counts: string;
     preferred_company_type: string;
-    target_countries: string[];
+    target_countries: any[];
     certifications: string[];
     main_market: string;
     timeline_expectations: string;
@@ -135,7 +149,7 @@ const TargetPreferences: React.FC = () => {
     }
   }, [id]);
 
-  const [countries, setCountries] = useState([]);
+  const [countries, setCountries] = useState<any[]>([]);
   useEffect(() => {
     api
       .get('/api/countries')
@@ -147,8 +161,8 @@ const TargetPreferences: React.FC = () => {
 
   const getCountryById = (id: number) => countries.find((c: { id: number }) => c.id === id);
 
-  const countryData = getCountryById(parseInt(companyInfo.origin_country));
-  const MainMarketcountryData = getCountryById(parseInt(targetPreference?.main_market));
+  const countryData = getCountryById(parseInt(companyInfo.origin_country || '0'));
+  const MainMarketcountryData = getCountryById(parseInt(targetPreference?.main_market || '0'));
 
   if (!paramId && !localStorage.getItem('seller_id')) {
     return (
@@ -227,9 +241,9 @@ const TargetPreferences: React.FC = () => {
                     HQ / Origin Country
                   </div>
                   <div className="flex justify-start items-center flex-row gap-[8.67px]">
-                    {countryData?.svg_icon_url ? (
+                    {countryData?.svg_icon_url || countryData?.flagSrc ? (
                       <img
-                        src={countryData?.svg_icon_url}
+                        src={countryData?.svg_icon_url || countryData?.flagSrc}
                         alt="flag"
                         className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
                       />
@@ -379,10 +393,10 @@ const TargetPreferences: React.FC = () => {
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString('en-GB', {
-                              month: 'short',
-                              year: 'numeric',
-                              day: '2-digit',
-                            })
+                            month: 'short',
+                            year: 'numeric',
+                            day: '2-digit',
+                          })
                           : 'N/A'}
                       </span>
                     </div>
@@ -446,11 +460,11 @@ const TargetPreferences: React.FC = () => {
                           xmlns="http://www.w3.org/2000/svg"
                         >
                           <path
-                            d="M2.2437 5.87325C2.58773 3.53533 4.76188 1.91897 7.0998 2.263C7.89745 2.38037 8.6457 2.72072 9.25836 3.24484L8.70684 3.79637C8.52198 3.98127 8.52203 4.28103 8.70695 4.46588C8.79569 4.55461 8.91606 4.60447 9.04155 4.60449H11.2127C11.4741 4.60449 11.6861 4.39254 11.6861 4.13108V1.95998C11.686 1.69852 11.474 1.48661 11.2125 1.48665C11.0871 1.48668 10.9667 1.53654 10.8779 1.62526L10.2625 2.2407C7.91549 0.148595 4.31689 0.355198 2.22479 2.70217C1.48362 3.53362 1.00264 4.56424 0.841439 5.66636C0.777882 6.05708 1.04309 6.42535 1.4338 6.48891C1.46899 6.49463 1.50454 6.49772 1.5402 6.49816C1.89767 6.4943 2.19772 6.22776 2.2437 5.87325Z"
+                            d="M2.2437 5.87325C2.58773 3.53533 4.76188 1.91897 7.0998 2.263C7.89745 2.38037 8.6457 2.72072 9.25836 3.24484L8.70684 3.79637C8.52198 3.98127 8.52203 4.28103 8.70695 4.46588C8.79569 4.55461 8.91606 4.60447 9.04155 4.60449H11.2127C11.4741 4.60449 11.6861 4.39254 11.6861 4.13108V1.95998C11.686 1.69852 11.474 1.48661 11.2125 1.48665C11.0871 1.48668 10.9667 1.53654 10.8779 1.62526L10.2625 2.2407C7.91549 0.148595 4.31689 0.355198 2.22479 2.70217C1.48362 3.53362 1.00264 4.56424 0.841439 5.66636C0.777882 6.05708 1.04309 6.42535 1.43380 6.48891C1.46899 6.49463 1.50454 6.49772 1.54020 6.49816C1.89767 6.4943 2.19772 6.22776 2.24370 5.87325Z"
                             fill="#064771"
                           />
                           <path
-                            d="M11.4193 6.50146C11.0618 6.50533 10.7617 6.77187 10.7158 7.12638C10.3717 9.4643 8.19759 11.0807 5.85967 10.7366C5.06202 10.6193 4.31376 10.2789 3.7011 9.75481L4.25262 9.20328C4.43748 9.01838 4.43744 8.71862 4.25251 8.53376C4.16377 8.44504 4.0434 8.39518 3.91791 8.39515H1.74685C1.48539 8.39515 1.27344 8.60711 1.27344 8.86857V11.0397C1.2735 11.3011 1.4855 11.513 1.74696 11.513C1.87245 11.513 1.99282 11.4631 2.08156 11.3744L2.697 10.7589C5.04342 12.8513 8.64175 12.6453 10.7341 10.2989C11.4757 9.46725 11.9569 8.43628 12.118 7.33376C12.1818 6.94308 11.9169 6.57463 11.5262 6.51081C11.4908 6.50502 11.4551 6.50189 11.4193 6.50146Z"
+                            d="M11.4193 6.50146C11.0618 6.50533 10.7617 6.77187 10.7158 7.12638C10.3717 9.4643 8.19759 11.0807 5.85967 10.7366C5.06202 10.6193 4.31376 10.2789 3.70110 9.75481L4.25262 9.20328C4.43748 9.01838 4.43744 8.71862 4.25251 8.53376C4.16377 8.44504 4.04340 8.39518 3.91791 8.39515H1.74685C1.48539 8.39515 1.27344 8.60711 1.27344 8.86857V11.0397C1.27350 11.3011 1.48550 11.513 1.74696 11.513C1.87245 11.513 1.99282 11.4631 2.08156 11.3744L2.69700 10.7589C5.04342 12.8513 8.64175 12.6453 10.7341 10.2989C11.4757 9.46725 11.9569 8.43628 12.1180 7.33376C12.1818 6.94308 11.9169 6.57463 11.5262 6.51081C11.4908 6.50502 11.4551 6.50189 11.4193 6.50146Z"
                             fill="#064771"
                           />
                         </svg>
@@ -458,7 +472,7 @@ const TargetPreferences: React.FC = () => {
                         <button
                           className="text-[#064771] text-[12px] text-nowrap"
                           onClick={() => {
-                            navigate(`/buyer-portal/edit/${id}`);
+                            navigate(`/prospects/edit-investor/${id}`);
                           }}
                         >
                           Update
@@ -499,7 +513,7 @@ const TargetPreferences: React.FC = () => {
                   {(() => {
                     let industries = companyInfo?.broder_industry_operations;
 
-                    if (typeof industries === 'string') {
+                    if (typeof industries === 'string' && industries.trim() !== '') {
                       try {
                         industries = JSON.parse(industries);
                       } catch {
@@ -511,7 +525,7 @@ const TargetPreferences: React.FC = () => {
                       industries = [];
                     }
 
-                    return industries.map((industry) => (
+                    return industries.map((industry: any) => (
                       <button
                         key={industry.id}
                         className="flex justify-center items-center gap-2.5 py-1.5 px-[7px] rounded-[49px] h-[32px] text-sm font-medium leading-4 whitespace-nowrap bg-white text-[#064771] border border-[#064771]"
@@ -567,7 +581,7 @@ const TargetPreferences: React.FC = () => {
                 {(() => {
                   let countries = targetPreference?.target_countries;
 
-                  if (typeof countries === 'string') {
+                  if (typeof countries === 'string' && (countries as string).trim() !== '') {
                     try {
                       countries = JSON.parse(countries);
                     } catch {
@@ -576,13 +590,13 @@ const TargetPreferences: React.FC = () => {
                   }
 
                   return Array.isArray(countries) && countries.length > 0 ? (
-                    countries.map((country) => (
+                    countries.map((country: any) => (
                       <div
                         key={country.id}
                         className="flex justify-start items-center flex-row gap-1 px-2 py-1 rounded-md bg-[#E6F1F9] w-fit"
                       >
                         <img
-                          src={country.flagSrc}
+                          src={country.flagSrc || country.svg_icon_url}
                           alt={country.name}
                           className="w-[18px] h-[18px] object-contain"
                         />
@@ -620,9 +634,9 @@ const TargetPreferences: React.FC = () => {
                 </p>
 
                 <div className="flex justify-start items-center flex-row gap-[8.67px] ml-[35px] ">
-                  {MainMarketcountryData?.svg_icon_url ? (
+                  {MainMarketcountryData?.svg_icon_url || MainMarketcountryData?.flagSrc ? (
                     <img
-                      src={MainMarketcountryData?.svg_icon_url}
+                      src={MainMarketcountryData?.svg_icon_url || MainMarketcountryData?.flagSrc}
                       alt="flag"
                       className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
                     />
@@ -677,8 +691,8 @@ const TargetPreferences: React.FC = () => {
                   <p className="text-[#30313D] font-medium">
                     {targetPreference?.timeline_expectations
                       ? new Date(targetPreference.timeline_expectations)
-                          .toLocaleDateString('en-GB')
-                          .replace(/\//g, '-')
+                        .toLocaleDateString('en-GB')
+                        .replace(/\//g, '-')
                       : 'N/A'}
                   </p>
                 </div>
@@ -704,27 +718,27 @@ const TargetPreferences: React.FC = () => {
 
                   return Array.isArray(certifications) && certifications.length > 0
                     ? certifications.map((cert, index) => (
-                        <div
-                          key={index}
-                          className="flex flex-col sm:flex-row sm:items-center gap-2 py-3"
-                        >
-                          <p className="text-[#484848] sm:min-w-[180px]">
-                            {index + 1}. Certification/License
-                          </p>
-                          <p className="text-[#30313D] font-medium ml-[150px]">{cert || 'N/A'}</p>
-                        </div>
-                      ))
+                      <div
+                        key={index}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 py-3"
+                      >
+                        <p className="text-[#484848] sm:min-w-[180px]">
+                          {index + 1}. Certification/License
+                        </p>
+                        <p className="text-[#30313D] font-medium ml-[150px]">{cert || 'N/A'}</p>
+                      </div>
+                    ))
                     : [1, 2, 3, 4].map((num) => (
-                        <div
-                          key={num}
-                          className="flex flex-col sm:flex-row sm:items-center gap-2 py-3"
-                        >
-                          <p className="text-[#484848] sm:min-w-[180px]">
-                            {num}. Certification/License
-                          </p>
-                          <p className="text-[#30313D] font-medium ml-[150px]">N/A</p>
-                        </div>
-                      ));
+                      <div
+                        key={num}
+                        className="flex flex-col sm:flex-row sm:items-center gap-2 py-3"
+                      >
+                        <p className="text-[#484848] sm:min-w-[180px]">
+                          {num}. Certification/License
+                        </p>
+                        <p className="text-[#30313D] font-medium ml-[150px]">N/A</p>
+                      </div>
+                    ));
                 })()}
               </div>
             </div>

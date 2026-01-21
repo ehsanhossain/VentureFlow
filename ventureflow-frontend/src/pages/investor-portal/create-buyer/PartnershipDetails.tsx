@@ -87,19 +87,19 @@ const PartnershipDetails: React.FC = () => {
     fetchPartners();
   }, []);
 
-interface PartnerDetailData {
-  partner_overview: {
-    hq_country: string;
-    reg_name?: string;
-    company_phone?: string;
-    hq_address?: string;
-    website?: string;
-    contact_person_name?: string;
-    contact_person_email?: string;
-    contact_person_phone?: string;
-  };
-  partner_image: string;
-}
+  interface PartnerDetailData {
+    partner_overview: {
+      hq_country: string;
+      reg_name?: string;
+      company_phone?: string;
+      hq_address?: string;
+      website?: string;
+      contact_person_name?: string;
+      contact_person_email?: string;
+      contact_person_phone?: string;
+    };
+    partner_image: string;
+  }
 
   const [selectedPartnerDetails, setSelectedPartnerDetails] = useState<PartnerDetailData | null>(null);
   const handlePartnerSelect = async (partnerId: string | null) => {
@@ -108,7 +108,7 @@ interface PartnerDetailData {
         const response = await api.get(`/api/partner/${partnerId}`);
         setSelectedPartnerDetails(response.data.data);
 
-      
+
       } catch {
         showAlert({ type: "error", message: "Failed to fetch partner details" });
       }
@@ -280,7 +280,7 @@ interface PartnerDetailData {
       });
       localStorage.setItem('buyer_id', response.data.data);
       showAlert({ type: 'success', message: 'Draft Saved' });
-      navigate('/buyer-portal');
+      navigate('/prospects?tab=investors');
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage =
@@ -347,9 +347,8 @@ interface PartnerDetailData {
                   className="w-5 h-5 rounded-full border-[#064771] border-2 checked:bg-[#064771] focus:outline-none"
                 />
                 <span
-                  className={`text-[#30313D] leading-[19.28569984436035px] ${
-                    selectedChoice === 'managedByUs' ? 'font-semibold' : ''
-                  }`}
+                  className={`text-[#30313D] leading-[19.28569984436035px] ${selectedChoice === 'managedByUs' ? 'font-semibold' : ''
+                    }`}
                 >
                   Managed by Us
                 </span>
@@ -363,9 +362,8 @@ interface PartnerDetailData {
                   className="w-5 h-5 rounded-full border-[#D1D5DB] border-2 checked:bg-[#D1D5DB] focus:outline-none"
                 />
                 <span
-                  className={`text-[#30313D] leading-[19.28569984436035px] ${
-                    selectedChoice === 'managedPartner' ? 'font-semibold' : ''
-                  } whitespace-nowrap`}
+                  className={`text-[#30313D] leading-[19.28569984436035px] ${selectedChoice === 'managedPartner' ? 'font-semibold' : ''
+                    } whitespace-nowrap`}
                 >
                   Managed Partner
                 </span>
@@ -789,18 +787,16 @@ interface PartnerDetailData {
                 <Label text="Partner Details " />
 
                 <div
-                  className={`flex self-stretch justify-start items-start flex-col gap-2.5 border-dashed rounded-[12.337573051452637px] h-[639px] mt-[32px] ml-4 ${
-                    !selectedPartnerDetails ? 'blur-sm pointer-events-none' : ''
-                  }`}
+                  className={`flex self-stretch justify-start items-start flex-col gap-2.5 border-dashed rounded-[12.337573051452637px] h-[639px] mt-[32px] ml-4 ${!selectedPartnerDetails ? 'blur-sm pointer-events-none' : ''
+                    }`}
                 >
                   <div className="flex self-stretch justify-start items-center flex-row gap-4 ">
                     <div className="w-[50px] h-[50px] rounded-full overflow-hidden bg-gray-200">
                       <img
                         src={
                           selectedPartnerDetails?.partner_image
-                            ? `${import.meta.env.VITE_API_BASE_URL}${
-                                selectedPartnerDetails.partner_image
-                              }`
+                            ? `${import.meta.env.VITE_API_BASE_URL}${selectedPartnerDetails.partner_image
+                            }`
                             : `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="145" height="145" viewBox="0 0 145 145" fill="none">
 <rect x="1" y="1" width="143" height="143" rx="71.5" fill="#F1FBFF"/>
 <rect x="1" y="1" width="143" height="143" rx="71.5" stroke="#064771" stroke-width="2"/>
@@ -847,9 +843,9 @@ interface PartnerDetailData {
                         {selectedPartnerDetails?.partner_overview?.company_phone
                           ? selectedPartnerDetails.partner_overview.company_phone.length > 40
                             ? `${selectedPartnerDetails.partner_overview.company_phone.slice(
-                                0,
-                                40
-                              )}...`
+                              0,
+                              40
+                            )}...`
                             : selectedPartnerDetails.partner_overview.company_phone
                           : 'N/A'}
                       </span>
@@ -862,9 +858,9 @@ interface PartnerDetailData {
                         {selectedPartnerDetails?.partner_overview?.hq_address
                           ? selectedPartnerDetails.partner_overview.hq_address.length > 40
                             ? `${selectedPartnerDetails.partner_overview.hq_address.slice(
-                                0,
-                                40
-                              )}...`
+                              0,
+                              40
+                            )}...`
                             : selectedPartnerDetails.partner_overview.hq_address
                           : 'N/A'}
                       </span>
@@ -923,9 +919,9 @@ interface PartnerDetailData {
                             ? selectedPartnerDetails.partner_overview.contact_person_name.length >
                               25
                               ? `${selectedPartnerDetails.partner_overview.contact_person_name.slice(
-                                  0,
-                                  25
-                                )}...`
+                                0,
+                                25
+                              )}...`
                               : selectedPartnerDetails.partner_overview.contact_person_name
                             : 'N/A'}
                         </p>
@@ -969,9 +965,9 @@ interface PartnerDetailData {
                             ? selectedPartnerDetails.partner_overview.contact_person_email.length >
                               20
                               ? `${selectedPartnerDetails.partner_overview.contact_person_email.slice(
-                                  0,
-                                  20
-                                )}...`
+                                0,
+                                20
+                              )}...`
                               : selectedPartnerDetails.partner_overview.contact_person_email
                             : 'N/A'}
                         </span>
@@ -1015,9 +1011,9 @@ interface PartnerDetailData {
                             ? selectedPartnerDetails.partner_overview.contact_person_phone.length >
                               20
                               ? `${selectedPartnerDetails.partner_overview.contact_person_phone.slice(
-                                  0,
-                                  20
-                                )}...`
+                                0,
+                                20
+                              )}...`
                               : selectedPartnerDetails.partner_overview.contact_person_phone
                             : 'N/A'}
                         </span>
@@ -1041,7 +1037,7 @@ interface PartnerDetailData {
               <button
                 className="flex justify-center items-center flex-row gap-[4.313709259033203px] py-[5.032660484313965px] px-[6.470563888549805px] bg-[#FFF6F7] border-solid border-[#DF272A] border-[0.7664670944213867px] rounded-[49.82036209106445px] w-[100px] h-[34px]"
                 style={{ width: '100px' }}
-                onClick={() => navigate('/buyer-portal')}
+                onClick={() => navigate('/prospects?tab=investors')}
                 type="button"
               >
                 <svg
