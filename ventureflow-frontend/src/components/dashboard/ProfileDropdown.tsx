@@ -61,13 +61,13 @@ const ProfileDropdown: React.FC = () => {
     <div ref={dropdownRef} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-gray-50 transition-all duration-200 group focus:outline-none"
+        className="flex items-center gap-3 p-1.5 rounded hover:bg-gray-50 transition-all duration-200 group focus:outline-none"
       >
         <div className="relative">
           <img
             src={profileImageUrl}
             alt="Profile"
-            className="w-9 h-9 rounded-lg object-cover ring-2 ring-transparent group-hover:ring-[#064771]/20 transition-all"
+            className="w-9 h-9 rounded object-cover ring-2 ring-transparent group-hover:ring-[#064771]/20 transition-all"
           />
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
         </div>
@@ -80,14 +80,14 @@ const ProfileDropdown: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded border border-gray-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right shadow-lg">
           {/* User Info Header */}
           <div className="p-4 bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
             <div className="flex items-center gap-3">
               <img
                 src={profileImageUrl}
                 alt="Avatar"
-                className="w-12 h-12 rounded-xl object-cover shadow-sm bg-gray-100"
+                className="w-12 h-12 rounded object-cover bg-gray-100"
               />
               <div className="flex flex-col min-w-0">
                 <p className="text-sm font-bold text-gray-900 truncate">
@@ -111,9 +111,9 @@ const ProfileDropdown: React.FC = () => {
                   showAlert({ type: "error", message: t('profile.profileNotFound') });
                 }
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded-xl transition-all group"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded transition-all group"
             >
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
+              <div className="w-8 h-8 rounded bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
                 <User className="w-4 h-4" />
               </div>
               <span className="font-medium">{t('profile.myProfile', 'My Profile')}</span>
@@ -121,9 +121,9 @@ const ProfileDropdown: React.FC = () => {
 
             <button
               onClick={() => { navigate('/settings'); setIsOpen(false); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded-xl transition-all group"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded transition-all group"
             >
-              <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-500 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
+              <div className="w-8 h-8 rounded bg-gray-50 text-gray-500 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
                 <Settings className="w-4 h-4" />
               </div>
               <span className="font-medium">{t('profile.settings', 'Settings')}</span>
@@ -133,9 +133,9 @@ const ProfileDropdown: React.FC = () => {
           <div className="border-t border-gray-100 p-2 bg-gray-50/50">
             <button
               onClick={logout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-all group"
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded transition-all group"
             >
-              <div className="w-8 h-8 rounded-lg bg-red-100/50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all">
+              <div className="w-8 h-8 rounded bg-red-100/50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all">
                 <LogOut className="w-4 h-4" />
               </div>
               <span className="font-bold">{t('profile.logout', 'Sign Out')}</span>

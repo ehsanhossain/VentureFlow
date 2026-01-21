@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Buyer;
+use App\Models\ActivityLog;
 use App\Models\BuyersCompanyOverview;
 use App\Models\BuyersTargetPreferences;
 use App\Models\FileFolder;
@@ -49,6 +50,7 @@ class BuyerController extends Controller
             'financialDetails',
             'partnershipDetails',
             'teaserCenter',
+            'deals'
         ])
             // --- General search filter ---
             ->when($search, function ($query) use ($search) {
@@ -264,6 +266,17 @@ class BuyerController extends Controller
             $buyer = Buyer::find($data['buyer'] ?? null);
             $isNewOverview = false;
 
+            // UNBREAKABLE: Final check for ID uniqueness to prevent race conditions
+            if (!$buyer || ($data['buyer_id'] && $data['buyer_id'] !== $buyer->buyer_id)) {
+                $code = $data['buyer_id'];
+                $exists = Buyer::where('buyer_id', $code)
+                    ->when($buyer, function($q) use ($buyer) { $q->where('id', '!=', $buyer->id); })
+                    ->exists();
+                if ($exists) {
+                    return response()->json(['message' => 'The project code is already in use.'], 422);
+                }
+            }
+
             if ($buyer && $buyer->company_overview_id) {
                 // Update existing company overview
                 $overview = BuyersCompanyOverview::find($buyer->company_overview_id) ?? new BuyersCompanyOverview();
@@ -331,12 +344,30 @@ class BuyerController extends Controller
                 }
 
                 $buyer->save();
+
+                // Add Activity Log
+                ActivityLog::create([
+                    'user_id' => \Auth::id(),
+                    'loggable_id' => $buyer->id,
+                    'loggable_type' => Buyer::class,
+                    'type' => 'system',
+                    'content' => "Investor profile updated: " . ($overview->reg_name ?? ''),
+                ]);
             } else {
                 // Create new Buyer if it doesn't exist
                 $buyer = Buyer::create([
                     'buyer_id' => $data['buyer_id'] ?? null,
                     'image' => $data['profile_picture'] ?? null,
                     'company_overview_id' => $overview->id,
+                ]);
+
+                // Add Activity Log
+                ActivityLog::create([
+                    'user_id' => \Auth::id(),
+                    'loggable_id' => $buyer->id,
+                    'loggable_type' => Buyer::class,
+                    'type' => 'system',
+                    'content' => "New Investor profile registered: " . ($overview->reg_name ?? ''),
                 ]);
 
                  // Notify System Admins
@@ -688,6 +719,11 @@ class BuyerController extends Controller
             $deletedCount = 0;
 
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
+                // UNBREAKABLE: Manual cleanup for polymorphic logs and other relations
+                ActivityLog::where('loggable_type', Buyer::class)
+                    ->whereIn('loggable_id', $idsToDelete)
+                    ->delete();
+                
                 FileFolder::whereIn('buyer_id', $idsToDelete)->delete();
                 $deletedCount = Buyer::destroy($idsToDelete);
             });

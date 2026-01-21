@@ -68,7 +68,20 @@ class DealController extends Controller
             });
         }
 
-        $deals = $query->orderBy('updated_at', 'desc')->get();
+        // UNBREAKABLE: Ensure deals only appear if they have a valid ACTIVE entity for the current view
+        if ($view === 'buyer') {
+            $query->whereHas('buyer.companyOverview', function ($q) {
+                $q->where('status', 'Active');
+            });
+        } else {
+            $query->whereHas('seller', function ($q) {
+                $q->where('status', '1');
+            });
+        }
+
+        $deals = $query->withCount(['activityLogs as comment_count' => function($q) {
+            $q->where('type', 'comment');
+        }])->orderBy('updated_at', 'desc')->get();
 
         // Fetch dynamic stages
         $stages = \App\Models\PipelineStage::where('pipeline_type', $view)
@@ -175,8 +188,17 @@ class DealController extends Controller
         DealStageHistory::create([
             'deal_id' => $deal->id,
             'from_stage' => null,
-            'to_stage' => $stageCode,
+            'to_stage' => $validated['stage_code'],
             'changed_by_user_id' => Auth::id(),
+        ]);
+
+        // Add Activity Log
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'loggable_id' => $deal->id,
+            'loggable_type' => Deal::class,
+            'type' => 'system',
+            'content' => "Deal created and moved to phase " . $validated['stage_code'],
         ]);
 
         // Notify Admins and PIC
@@ -279,6 +301,15 @@ class DealController extends Controller
                 'changed_by_user_id' => Auth::id(),
             ]);
 
+            // Add Activity Log
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'loggable_id' => $deal->id,
+                'loggable_type' => Deal::class,
+                'type' => 'system',
+                'content' => "Deal phase updated from {$fromStage} to {$toStage}",
+            ]);
+
             // Notify Admins and PIC
             try {
                 $recipients = User::role('System Admin')->get();
@@ -301,6 +332,11 @@ class DealController extends Controller
      */
     public function destroy(Deal $deal): JsonResponse
     {
+        // UNBREAKABLE: Cleanup activity logs
+        \App\Models\ActivityLog::where('loggable_type', Deal::class)
+            ->where('loggable_id', $deal->id)
+            ->delete();
+
         $deal->delete();
 
         return response()->json([

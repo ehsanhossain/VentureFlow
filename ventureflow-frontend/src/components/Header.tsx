@@ -131,7 +131,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
             {/* Premium Breadcrumbs (Desktop) */}
             <div className="hidden lg:flex items-center text-sm font-medium">
-              <Link to="/" className="text-gray-400 hover:text-[#064771] transition-all p-1.5 hover:bg-gray-100 rounded-md">
+              <Link to="/" className="text-gray-400 hover:text-[#064771] transition-all p-1.5 hover:bg-gray-100 rounded">
                 <Home className="w-4 h-4" />
               </Link>
 
@@ -153,10 +153,13 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       <span className="mx-1 text-gray-300">/</span>
                       <Link
                         to={url}
-                        className={`px-2 py-1 rounded-md transition-all truncate max-w-[120px] ${isLast
-                          ? "text-[#064771] bg-blue-50/50 font-bold"
-                          : "text-gray-500 hover:text-[#064771] hover:bg-gray-50"
-                          }`}
+                        className={`
+                        px-2 py-1 rounded transition-all whitespace-nowrap
+                        ${isLast
+                            ? 'text-[#064771] bg-blue-50/50 font-semibold'
+                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                          }
+                      `}
                         title={name}
                       >
                         {name === 'Employee' ? 'HRVC' : name}
@@ -170,14 +173,12 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             {/* Global Search Bar */}
             <div className="hidden md:flex flex-1 max-w-xl mx-auto lg:ml-8 relative">
               <div
-                className="w-full flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 cursor-text hover:border-gray-300 transition-colors group"
+                className="w-full flex items-center bg-gray-50 border border-gray-200 rounded px-3 py-2 cursor-text hover:border-gray-300 transition-colors group"
                 onClick={() => setSearchOpen(true)}
               >
-                <Search className="w-4 h-4 text-gray-400 group-hover:text-gray-500 mr-3" />
-                <span className="text-sm text-gray-400 group-hover:text-gray-500 flex-1 text-left">
-                  Search deals, companies, documents...
-                </span>
-                <div className="hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400">
+                <Search className="w-4 h-4 text-gray-400 mr-2 group-hover:text-gray-500 transition-colors" />
+                <span className="text-sm text-gray-400 font-medium">Search anything...</span>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400">
                   <span className="text-xs">⌘</span> K
                 </div>
               </div>
@@ -191,7 +192,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             <div className="relative hidden md:block" ref={createDropdownRef}>
               <button
                 onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-bold shadow-sm"
+                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-bold"
               >
                 <Plus className="w-4 h-4 text-gray-500" />
                 <span>Create</span>
@@ -199,7 +200,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               </button>
 
               {createDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
                   <button
                     onClick={() => { navigate('/prospects/add-investor'); setCreateDropdownOpen(false); }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
@@ -224,7 +225,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
             {/* Mobile Search Icon */}
             <button
-              className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+              className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="w-5 h-5" />
@@ -233,7 +234,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             {/* Notification Icon */}
             <div className="relative" ref={dropdownRef}>
               <button
-                className="p-2 hover:bg-gray-100 rounded-lg relative transition-colors text-gray-500"
+                className="p-2 hover:bg-gray-100 rounded relative transition-colors text-gray-500"
                 onClick={() => setIsOpen(!isOpen)}
               >
                 <Bell className="w-5 h-5" />
@@ -243,7 +244,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               </button>
 
               {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 py-1 max-h-[400px] overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded border border-gray-100 py-1 max-h-[400px] overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
                   <div className="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-semibold text-gray-700 text-sm">{t('header.notifications')}</h3>
                     {unreadCount > 0 && (
@@ -317,7 +318,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
         <div className="fixed inset-0 z-[60] overflow-y-auto p-4 sm:p-6 md:p-20">
           <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onClick={closeSearch} />
 
-          <div className="mx-auto max-w-2xl transform divide-y divide-gray-100 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black ring-opacity-5 transition-all">
+          <div className="mx-auto max-w-2xl transform divide-y divide-gray-100 overflow-hidden rounded bg-white ring-1 ring-black ring-opacity-5 transition-all">
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
               <input

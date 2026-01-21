@@ -34,6 +34,18 @@ class Deal extends Model
         'target_close_date' => 'date',
     ];
 
+    protected $appends = ['stage_name', 'stage_progress'];
+
+    public function getStageNameAttribute()
+    {
+        return $this->getStageName();
+    }
+
+    public function getStageProgressAttribute()
+    {
+        return $this->getStageProgress();
+    }
+
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(Buyer::class, 'buyer_id');
@@ -88,5 +100,10 @@ class Deal extends Model
                              ->first();
 
         return $stage ? $stage->progress : $this->progress_percent;
+    }
+
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'loggable');
     }
 }

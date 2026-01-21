@@ -45,16 +45,17 @@ export interface InvestorRowData {
     yearFounded?: string;
     rank?: string;
     primaryContact?: string;
+    sourceCurrencyRate?: number; // Exchange rate of the investor's default currency relative to base
 }
 
 interface InvestorTableProps {
     data: InvestorRowData[];
-    isLoading?: boolean;
+    isLoading: boolean;
     onTogglePin: (id: number) => void;
-    onOpenFilter?: () => void;
+    onOpenFilter: () => void;
     visibleColumns: string[];
-    selectedCurrency?: { code: string, symbol: string, rate: number };
-    onRefresh?: () => void;
+    selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
+    onRefresh: () => void;
 }
 
 type SortKey = keyof InvestorRowData;
@@ -76,55 +77,77 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, rowId: number } | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
 
+    // Pipeline stages for investor pipeline
+    const [pipelineStages, setPipelineStages] = useState<{ code: string; name: string; order_index: number }[]>([]);
+
+    // Fetch pipeline stages for investor (buyer) pipeline
+    useEffect(() => {
+        const fetchPipelineStages = async () => {
+            try {
+                const response = await api.get('/api/pipeline-stages', { params: { type: 'buyer' } });
+                setPipelineStages(response.data || []);
+            } catch (error) {
+                console.error('Failed to fetch pipeline stages:', error);
+            }
+        };
+        fetchPipelineStages();
+    }, []);
+
+    // Helper function to get stage position as "Stage X/Y"
+    const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
+        if (!pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
+            return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
+        }
+
+        const totalStages = pipelineStages.length;
+        const stageIndex = pipelineStages.findIndex(
+            s => s.code.toUpperCase() === stageCode.toUpperCase() || s.name.toUpperCase() === stageCode.toUpperCase()
+        );
+
+        if (stageIndex === -1) {
+            return { display: stageCode, stageName: stageCode };
+        }
+
+        const stageName = pipelineStages[stageIndex].name;
+        return {
+            display: `Stage ${stageIndex + 1}/${totalStages}`,
+            stageName: stageName
+        };
+    };
+
     // Column resizing state
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
         projectCode: 150,
-        companyName: 240,
-        hq: 140,
-        targetCountries: 180,
-        targetIndustries: 180,
-        pipelineStatus: 140,
-        budget: 160,
-        companyType: 140,
-        website: 200,
-        email: 200,
-        phone: 150,
-        employeeCount: 130,
-        yearFounded: 120,
         rank: 80,
-        primaryContact: 180,
+        companyName: 200,
+        primaryContact: 150,
+        hq: 120,
+        targetCountries: 200,
+        targetIndustries: 200,
+        pipelineStatus: 120,
+        budget: 150,
     });
 
-    const isResizing = useRef<string | null>(null);
-    const startX = useRef<number>(0);
-    const startWidth = useRef<number>(0);
-
-    const handleMouseDown = (e: React.MouseEvent, column: string) => {
+    const handleResizeStart = (e: React.MouseEvent, column: string) => {
         e.preventDefault();
-        isResizing.current = column;
-        startX.current = e.pageX;
-        startWidth.current = columnWidths[column] || 150;
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
+        const startX = e.pageX;
+        const startWidth = columnWidths[column];
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = Math.max(50, startWidth + (e.pageX - startX));
+            setColumnWidths(prev => ({ ...prev, [column]: newWidth }));
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!isResizing.current) return;
-        const diff = e.pageX - startX.current;
-        const newWidth = Math.max(80, startWidth.current + diff);
-        setColumnWidths(prev => ({ ...prev, [isResizing.current!]: newWidth }));
-    };
-
-    const handleMouseUp = () => {
-        isResizing.current = null;
-        document.body.style.cursor = 'default';
-        document.body.style.userSelect = 'auto';
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-    };
+    const handleMouseDown = handleResizeStart;
 
     const toggleSelectMode = () => {
         setIsSelectMode(!isSelectMode);
@@ -223,12 +246,12 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     }, []);
 
     const SortIcon = ({ column }: { column: SortKey }) => {
-        if (sortConfig.key !== column || !sortConfig.direction) return <ArrowUpDown className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        if (sortConfig.key !== column || !sortConfig.direction) return <ArrowUpDown className="w-3 h-3 text-gray-300" />;
         return sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-[#064771]" /> : <ArrowDown className="w-3 h-3 text-[#064771]" />;
     };
 
     const getBudgetDisplay = (budget: any) => {
-        return formatCompactBudget(budget, selectedCurrency?.symbol || '$');
+        return formatCompactBudget(budget, selectedCurrency?.symbol || '$', selectedCurrency?.rate);
     };
 
     const isVisible = (col: string) => visibleColumns.includes(col);
@@ -251,7 +274,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     );
 
     return (
-        <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table flex flex-col">
+        <div className="w-full h-full bg-white rounded border border-gray-100 overflow-hidden relative group/table flex flex-col">
             <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300/40 hover:scrollbar-thumb-gray-300/60 scrollbar-track-transparent transition-colors">
                 <Table
                     containerClassName="overflow-visible"
@@ -262,7 +285,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">
                                 <button
                                     onClick={toggleSelectMode}
-                                    className="p-1.5 hover:bg-gray-200 rounded-lg transition-all focus:outline-none active:scale-90"
+                                    className="p-1.5 hover:bg-gray-200 rounded transition-all focus:outline-none active:scale-90"
                                 >
                                     {isSelectMode ? (
                                         <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -408,7 +431,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                 <div className="flex items-center justify-end gap-2">
                                     {selectedIds.size > 0 ? (
                                         <button
-                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded-lg text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
+                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
                                             onClick={handleDeleteSelected}
                                             title="Delete Selected"
                                         >
@@ -417,14 +440,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     ) : (
                                         <>
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
                                                 onClick={onOpenFilter}
                                                 title="Advanced Filters"
                                             >
                                                 <Filter className="w-4 h-4" />
                                             </button>
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
                                                 title="General Sorting"
                                             >
                                                 <ListFilter className="w-4 h-4 rotate-180" />
@@ -582,23 +605,26 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         </TableCell>
                                     )}
 
-                                    {isVisible('pipelineStatus') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <span className={`
-                                                px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm border whitespace-nowrap
-                                                ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                                                    row.pipelineStatus === 'NDA' ? 'bg-blue-100 text-[#064771] border-blue-200' :
-                                                        row.pipelineStatus === 'SOURCING' ? 'bg-[#064771] text-white border-[#064771]' :
-                                                            'bg-green-100 text-green-700 border-green-200'}
-                                            `}>
-                                                {row.pipelineStatus}
-                                            </span>
-                                        </TableCell>
-                                    )}
+                                    {isVisible('pipelineStatus') && (() => {
+                                        const stageInfo = getStagePosition(row.pipelineStatus);
+                                        return (
+                                            <TableCell className="border-b border-gray-100">
+                                                <Tooltip content={stageInfo.stageName}>
+                                                    <span className={`
+                                                        px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap cursor-help
+                                                        ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                                                            'bg-[#064771]/10 text-[#064771] border-[#064771]/20'}
+                                                    `}>
+                                                        {stageInfo.display}
+                                                    </span>
+                                                </Tooltip>
+                                            </TableCell>
+                                        );
+                                    })()}
 
                                     {isVisible('budget') && (
                                         <TableCell className="font-bold text-gray-900 text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.budget, selectedCurrency?.symbol)}>
+                                            <Tooltip content={formatFullBudget(row.budget, selectedCurrency?.symbol, selectedCurrency?.rate)}>
                                                 <span className="whitespace-nowrap">{getBudgetDisplay(row.budget)}</span>
                                             </Tooltip>
                                         </TableCell>
@@ -606,7 +632,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
                                     <TableCell className="text-right pr-6 sticky right-0 bg-inherit z-20 border-l border-gray-100 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
                                         <button
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded-lg text-gray-400 hover:text-[#064771] transition-all"
+                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-400 hover:text-[#064771] transition-all"
                                             onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
                                         >
                                             <MoreVertical className="w-4 h-4" />
@@ -623,7 +649,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             {contextMenu && (
                 <div
                     ref={contextMenuRef}
-                    className="fixed bg-white rounded-xl shadow-2xl border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-[#00000015]"
+                    className="fixed bg-white rounded border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-2xl"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                 >
                     <button

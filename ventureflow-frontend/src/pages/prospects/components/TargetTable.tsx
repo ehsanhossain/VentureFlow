@@ -37,6 +37,7 @@ export interface TargetRowData {
     desiredInvestment: any;
     ebitda: any;
     isPinned?: boolean;
+    sourceCurrencyRate?: number; // Exchange rate of the target's default currency relative to base
 }
 
 interface TargetTableProps {
@@ -45,7 +46,7 @@ interface TargetTableProps {
     onTogglePin: (id: number) => void;
     onOpenFilter?: () => void;
     visibleColumns: string[];
-    selectedCurrency?: { code: string, symbol: string, rate: number };
+    selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh?: () => void;
 }
 
@@ -68,53 +69,79 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, rowId: number } | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
 
+    // Pipeline stages for target (seller) pipeline
+    const [pipelineStages, setPipelineStages] = useState<{ code: string; name: string; order_index: number }[]>([]);
+
+    // Fetch pipeline stages for target (seller) pipeline
+    useEffect(() => {
+        const fetchPipelineStages = async () => {
+            try {
+                const response = await api.get('/api/pipeline-stages', { params: { type: 'seller' } });
+                setPipelineStages(response.data || []);
+            } catch (error) {
+                console.error('Failed to fetch pipeline stages:', error);
+            }
+        };
+        fetchPipelineStages();
+    }, []);
+
+    // Helper function to get stage position as "Stage X/Y"
+    const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
+        if (!pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
+            return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
+        }
+
+        const totalStages = pipelineStages.length;
+        const stageIndex = pipelineStages.findIndex(
+            s => s.code.toUpperCase() === stageCode.toUpperCase() || s.name.toUpperCase() === stageCode.toUpperCase()
+        );
+
+        if (stageIndex === -1) {
+            return { display: stageCode, stageName: stageCode };
+        }
+
+        const stageName = pipelineStages[stageIndex].name;
+        return {
+            display: `Stage ${stageIndex + 1}/${totalStages}`,
+            stageName: stageName
+        };
+    };
+
     // Column resizing state
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
         projectCode: 150,
-        companyName: 240,
-        hq: 140,
-        industry: 180,
-        pipelineStatus: 140,
-        desiredInvestment: 180,
+        companyName: 200,
+        hq: 120,
+        industry: 200,
+        pipelineStatus: 120,
+        desiredInvestment: 160,
         ebitda: 140,
     });
 
-    const isResizing = useRef<string | null>(null);
-    const startX = useRef<number>(0);
-    const startWidth = useRef<number>(0);
-
-    const handleMouseDown = (e: React.MouseEvent, column: string) => {
+    const handleResizeStart = (e: React.MouseEvent, column: string) => {
         e.preventDefault();
-        isResizing.current = column;
-        startX.current = e.pageX;
-        startWidth.current = columnWidths[column] || 150;
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
+        const startX = e.pageX;
+        const startWidth = columnWidths[column];
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        const handleMouseMove = (e: MouseEvent) => {
+            const newWidth = Math.max(50, startWidth + (e.pageX - startX));
+            setColumnWidths(prev => ({ ...prev, [column]: newWidth }));
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
-        if (!isResizing.current) return;
-        const diff = e.pageX - startX.current;
-        const newWidth = Math.max(80, startWidth.current + diff);
-        setColumnWidths(prev => ({ ...prev, [isResizing.current!]: newWidth }));
-    };
-
-    const handleMouseUp = () => {
-        isResizing.current = null;
-        document.body.style.cursor = 'default';
-        document.body.style.userSelect = 'auto';
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-    };
+    const handleMouseDown = handleResizeStart;
 
     const toggleSelectMode = () => {
         setIsSelectMode(!isSelectMode);
-        if (isSelectMode) {
-            setSelectedIds(new Set());
-        }
+        if (isSelectMode) setSelectedIds(new Set());
     };
 
     const handleSelectRow = (id: number, checked: boolean) => {
@@ -129,7 +156,8 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            setSelectedIds(new Set(data.map(d => d.id)));
+            const allIds = new Set(data.map(item => item.id));
+            setSelectedIds(allIds);
         } else {
             setSelectedIds(new Set());
         }
@@ -154,14 +182,13 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     };
 
     const handleSort = (key: SortKey) => {
-        setSortConfig(prev => {
-            if (prev.key === key) {
-                if (prev.direction === 'asc') return { key, direction: 'desc' };
-                if (prev.direction === 'desc') return { key, direction: null };
-                return { key, direction: 'asc' };
-            }
-            return { key, direction: 'asc' };
-        });
+        let direction: SortDirection = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = null; // Reset sort
+        }
+        setSortConfig({ key, direction });
     };
 
     const sortedData = useMemo(() => {
@@ -207,12 +234,16 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     }, []);
 
     const SortIcon = ({ column }: { column: SortKey }) => {
-        if (sortConfig.key !== column || !sortConfig.direction) return <ArrowUpDown className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />;
+        if (sortConfig.key !== column || !sortConfig.direction) return <ArrowUpDown className="w-3 h-3 text-gray-300" />;
         return sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-[#064771]" /> : <ArrowDown className="w-3 h-3 text-[#064771]" />;
     };
 
-    const getBudgetDisplay = (budget: any) => {
-        return formatCompactBudget(budget, selectedCurrency?.symbol || '$');
+    const getBudgetDisplay = (budget: any, sourceRate?: number) => {
+        const targetRate = selectedCurrency?.rate || 1;
+        const sRate = sourceRate || 1;
+        const conversionRate = targetRate / sRate;
+
+        return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
     const isVisible = (col: string) => visibleColumns.includes(col);
@@ -232,7 +263,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     );
 
     return (
-        <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group/table flex flex-col">
+        <div className="w-full h-full bg-white rounded border border-gray-100 overflow-hidden relative group/table flex flex-col">
             <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300/40 hover:scrollbar-thumb-gray-300/60 scrollbar-track-transparent transition-colors">
                 <Table
                     containerClassName="overflow-visible"
@@ -243,7 +274,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">
                                 <button
                                     onClick={toggleSelectMode}
-                                    className="p-1.5 hover:bg-gray-200 rounded-lg transition-all focus:outline-none active:scale-90"
+                                    className="p-1.5 hover:bg-gray-200 rounded transition-all focus:outline-none active:scale-90"
                                 >
                                     {isSelectMode ? (
                                         <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -362,7 +393,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 <div className="flex items-center justify-end gap-2">
                                     {selectedIds.size > 0 ? (
                                         <button
-                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded-lg text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
+                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
                                             onClick={handleDeleteSelected}
                                             title="Delete Selected"
                                         >
@@ -371,14 +402,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     ) : (
                                         <>
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
                                                 onClick={onOpenFilter}
                                                 title="Advanced Filters"
                                             >
                                                 <Filter className="w-4 h-4" />
                                             </button>
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg text-gray-500 border border-gray-100 transition-all active:scale-95"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
                                                 title="General Sorting"
                                             >
                                                 <ListFilter className="w-4 h-4 rotate-180" />
@@ -481,39 +512,42 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         </TableCell>
                                     )}
 
-                                    {isVisible('pipelineStatus') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <span className={`
-                                                px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm border whitespace-nowrap
-                                                ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                                                    row.pipelineStatus === 'LIVE' ? 'bg-green-100 text-green-700 border-green-200' :
-                                                        row.pipelineStatus === 'DRAFT' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                                            'bg-blue-100 text-[#064771] border-blue-200'}
-                                            `}>
-                                                {row.pipelineStatus}
-                                            </span>
-                                        </TableCell>
-                                    )}
+                                    {isVisible('pipelineStatus') && (() => {
+                                        const stageInfo = getStagePosition(row.pipelineStatus);
+                                        return (
+                                            <TableCell className="border-b border-gray-100">
+                                                <Tooltip content={stageInfo.stageName}>
+                                                    <span className={`
+                                                        px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap cursor-help
+                                                        ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                                                            'bg-green-100/50 text-green-700 border-green-200'}
+                                                    `}>
+                                                        {stageInfo.display}
+                                                    </span>
+                                                </Tooltip>
+                                            </TableCell>
+                                        );
+                                    })()}
 
                                     {isVisible('desiredInvestment') && (
                                         <TableCell className="font-bold text-gray-900 text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.desiredInvestment, selectedCurrency?.symbol)}>
-                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.desiredInvestment)}</span>
+                                            <Tooltip content={formatFullBudget(row.desiredInvestment, selectedCurrency?.symbol, (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}>
+                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate)}</span>
                                             </Tooltip>
                                         </TableCell>
                                     )}
 
                                     {isVisible('ebitda') && (
                                         <TableCell className="font-bold text-[#064771] text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.ebitda, selectedCurrency?.symbol)}>
-                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.ebitda)}</span>
+                                            <Tooltip content={formatFullBudget(row.ebitda, selectedCurrency?.symbol, (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}>
+                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.ebitda, row.sourceCurrencyRate)}</span>
                                             </Tooltip>
                                         </TableCell>
                                     )}
 
                                     <TableCell className="text-right pr-6 sticky right-0 bg-inherit z-20 border-l border-gray-100 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
                                         <button
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded-lg text-gray-400 hover:text-[#064771] transition-all"
+                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-400 hover:text-[#064771] transition-all"
                                             onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
                                         >
                                             <MoreVertical className="w-4 h-4" />
@@ -531,7 +565,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 contextMenu && (
                     <div
                         ref={contextMenuRef}
-                        className="fixed bg-white rounded-xl shadow-2xl border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-[#00000015]"
+                        className="fixed bg-white rounded border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-2xl"
                         style={{ top: contextMenu.y, left: contextMenu.x }}
                     >
                         <button

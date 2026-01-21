@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useTabStore } from "./store/tabStore";
 import { showAlert } from "../../../components/Alert";
 import html2pdf from 'html2pdf.js';
+import { formatCurrency } from "../../../utils/formatters";
 
 
 type Country = {
@@ -122,20 +123,20 @@ const FinancialDetails: React.FC = () => {
 
   const handleCopyLinkExample = () => {
     const fullUrl = `${baseURL}/seller-portal/view/${id}`;
-  
+
 
     navigator.clipboard
       .writeText(fullUrl)
       .then(() => {
-      showAlert({
-        type: "success",
-        message: "Link copied to clipboard",
-      });
-      
-    })
-    .catch(() => {
-      showAlert({ type: 'error', message: 'Failed to copy link' });
-    })
+        showAlert({
+          type: "success",
+          message: "Link copied to clipboard",
+        });
+
+      })
+      .catch(() => {
+        showAlert({ type: 'error', message: 'Failed to copy link' });
+      })
   };
 
   useEffect(() => {
@@ -196,8 +197,8 @@ const FinancialDetails: React.FC = () => {
             ) {
               fetchedCurrencyName = currencyDataResponse.data.currency_name;
             }
-          } catch  {
-             showAlert({ type: 'error', message: 'Failed to fetch currency' });
+          } catch {
+            showAlert({ type: 'error', message: 'Failed to fetch currency' });
           }
         }
 
@@ -214,11 +215,11 @@ const FinancialDetails: React.FC = () => {
           valuation_method: financial.valuation_method || "",
           max_investor_shareholding_percentage:
             response.data.data.teaser_center?.misp || "",
-         
+
           ebitda_values: financial.ebitda_value || "",
           ebitda_times: financial.ebitda_times || "",
         });
-      } catch  {
+      } catch {
         showAlert({ type: 'error', message: 'Failed to load seller data' });
       }
     };
@@ -234,7 +235,7 @@ const FinancialDetails: React.FC = () => {
       .then((res) => {
         setCountries(res.data);
       })
-    
+
   }, []);
 
   const getCountryById = (id: number) => countries.find((c) => c.id === id);
@@ -253,28 +254,27 @@ const FinancialDetails: React.FC = () => {
 
 
     <div className="font-poppins px-8 pdf-container">
-    
+
 
 
       <div className=" flex w-full">
-   
+
         <div className="w-full h-[180px]">
           <div className="flex justify-start items-center flex-row gap-[22px] w-full">
             {companyInfo?.image_url ? (
               <img
                 className="rounded-[180px] w-[180px] h-[180px]"
-                src={`${import.meta.env.VITE_API_BASE_URL}/storage/${
-                  companyInfo.image_url
-                }`}
+                src={`${import.meta.env.VITE_API_BASE_URL}/storage/${companyInfo.image_url
+                  }`}
                 style={{ objectFit: "cover", width: "180px" }}
                 alt="Seller"
               />
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" width="146" height="145" viewBox="0 0 146 145" fill="none">
-<rect x="1.125" y="1" width="143" height="143" rx="71.5" fill="#F1FBFF"/>
-<rect x="1.125" y="1" width="143" height="143" rx="71.5" stroke="#064771" strokeWidth="2"/>
-<path d="M86.6143 57.5H95.3915C95.9223 57.5005 96.4341 57.6981 96.8276 58.0544C97.2211 58.4107 97.4684 58.9004 97.5215 59.4286L98.8286 72.5H94.5172L93.4457 61.7857H86.6143V68.2143C86.6143 68.7826 86.3886 69.3276 85.9867 69.7295C85.5848 70.1314 85.0398 70.3571 84.4715 70.3571C83.9031 70.3571 83.3581 70.1314 82.9562 69.7295C82.5544 69.3276 82.3286 68.7826 82.3286 68.2143V61.7857H65.1857V68.2143C65.1857 68.7826 64.96 69.3276 64.5581 69.7295C64.1563 70.1314 63.6112 70.3571 63.0429 70.3571C62.4746 70.3571 61.9295 70.1314 61.5277 69.7295C61.1258 69.3276 60.9 68.7826 60.9 68.2143V61.7857H54.0643L50.6357 96.0714H73.7572V100.357H48.2657C47.9664 100.357 47.6705 100.294 47.3971 100.172C47.1236 100.051 46.8786 99.873 46.678 99.651C46.4773 99.4289 46.3254 99.1673 46.232 98.8829C46.1386 98.5986 46.1058 98.2978 46.1357 98L49.9929 59.4286C50.046 58.9004 50.2932 58.4107 50.6867 58.0544C51.0803 57.6981 51.592 57.5005 52.1229 57.5H60.9V56.0043C60.9 48.5729 66.6257 42.5 73.7572 42.5C80.8886 42.5 86.6143 48.5729 86.6143 56.0043V57.5043V57.5ZM82.3286 57.5V56.0043C82.3286 50.8871 78.4629 46.7857 73.7572 46.7857C69.0515 46.7857 65.1857 50.8871 65.1857 56.0043V57.5043H82.3286V57.5ZM95.8157 89.9L90.9 84.9886V100.357C90.9 100.925 90.6743 101.471 90.2724 101.872C89.8705 102.274 89.3255 102.5 88.7572 102.5C88.1889 102.5 87.6438 102.274 87.2419 101.872C86.8401 101.471 86.6143 100.925 86.6143 100.357V84.9886L81.7029 89.9C81.5052 90.1047 81.2688 90.2679 81.0073 90.3802C80.7459 90.4925 80.4647 90.5516 80.1802 90.5541C79.8956 90.5566 79.6135 90.5024 79.3501 90.3946C79.0868 90.2869 78.8475 90.1278 78.6463 89.9266C78.4451 89.7254 78.286 89.4861 78.1783 89.2228C78.0705 88.9594 78.0163 88.6772 78.0188 88.3927C78.0213 88.1082 78.0804 87.827 78.1927 87.5656C78.305 87.3041 78.4682 87.0677 78.6729 86.87L87.2443 78.2986C87.6462 77.8968 88.1911 77.6712 88.7593 77.6712C89.3275 77.6712 89.8725 77.8968 90.2743 78.2986L98.8457 86.87C99.0504 87.0677 99.2137 87.3041 99.326 87.5656C99.4383 87.827 99.4974 88.1082 99.4998 88.3927C99.5023 88.6772 99.4481 88.9594 99.3404 89.2228C99.2326 89.4861 99.0735 89.7254 98.8723 89.9266C98.6711 90.1278 98.4319 90.2869 98.1685 90.3946C97.9052 90.5024 97.623 90.5566 97.3385 90.5541C97.0539 90.5516 96.7727 90.4925 96.5113 90.3802C96.2499 90.2679 96.0134 90.1047 95.8157 89.9Z" fill="#064771"/>
-</svg>
+                <rect x="1.125" y="1" width="143" height="143" rx="71.5" fill="#F1FBFF" />
+                <rect x="1.125" y="1" width="143" height="143" rx="71.5" stroke="#064771" strokeWidth="2" />
+                <path d="M86.6143 57.5H95.3915C95.9223 57.5005 96.4341 57.6981 96.8276 58.0544C97.2211 58.4107 97.4684 58.9004 97.5215 59.4286L98.8286 72.5H94.5172L93.4457 61.7857H86.6143V68.2143C86.6143 68.7826 86.3886 69.3276 85.9867 69.7295C85.5848 70.1314 85.0398 70.3571 84.4715 70.3571C83.9031 70.3571 83.3581 70.1314 82.9562 69.7295C82.5544 69.3276 82.3286 68.7826 82.3286 68.2143V61.7857H65.1857V68.2143C65.1857 68.7826 64.96 69.3276 64.5581 69.7295C64.1563 70.1314 63.6112 70.3571 63.0429 70.3571C62.4746 70.3571 61.9295 70.1314 61.5277 69.7295C61.1258 69.3276 60.9 68.7826 60.9 68.2143V61.7857H54.0643L50.6357 96.0714H73.7572V100.357H48.2657C47.9664 100.357 47.6705 100.294 47.3971 100.172C47.1236 100.051 46.8786 99.873 46.678 99.651C46.4773 99.4289 46.3254 99.1673 46.232 98.8829C46.1386 98.5986 46.1058 98.2978 46.1357 98L49.9929 59.4286C50.046 58.9004 50.2932 58.4107 50.6867 58.0544C51.0803 57.6981 51.592 57.5005 52.1229 57.5H60.9V56.0043C60.9 48.5729 66.6257 42.5 73.7572 42.5C80.8886 42.5 86.6143 48.5729 86.6143 56.0043V57.5043V57.5ZM82.3286 57.5V56.0043C82.3286 50.8871 78.4629 46.7857 73.7572 46.7857C69.0515 46.7857 65.1857 50.8871 65.1857 56.0043V57.5043H82.3286V57.5ZM95.8157 89.9L90.9 84.9886V100.357C90.9 100.925 90.6743 101.471 90.2724 101.872C89.8705 102.274 89.3255 102.5 88.7572 102.5C88.1889 102.5 87.6438 102.274 87.2419 101.872C86.8401 101.471 86.6143 100.925 86.6143 100.357V84.9886L81.7029 89.9C81.5052 90.1047 81.2688 90.2679 81.0073 90.3802C80.7459 90.4925 80.4647 90.5516 80.1802 90.5541C79.8956 90.5566 79.6135 90.5024 79.3501 90.3946C79.0868 90.2869 78.8475 90.1278 78.6463 89.9266C78.4451 89.7254 78.286 89.4861 78.1783 89.2228C78.0705 88.9594 78.0163 88.6772 78.0188 88.3927C78.0213 88.1082 78.0804 87.827 78.1927 87.5656C78.305 87.3041 78.4682 87.0677 78.6729 86.87L87.2443 78.2986C87.6462 77.8968 88.1911 77.6712 88.7593 77.6712C89.3275 77.6712 89.8725 77.8968 90.2743 78.2986L98.8457 86.87C99.0504 87.0677 99.2137 87.3041 99.326 87.5656C99.4383 87.827 99.4974 88.1082 99.4998 88.3927C99.5023 88.6772 99.4481 88.9594 99.3404 89.2228C99.2326 89.4861 99.0735 89.7254 98.8723 89.9266C98.6711 90.1278 98.4319 90.2869 98.1685 90.3946C97.9052 90.5024 97.623 90.5566 97.3385 90.5541C97.0539 90.5516 96.7727 90.4925 96.5113 90.3802C96.2499 90.2679 96.0134 90.1047 95.8157 89.9Z" fill="#064771" />
+              </svg>
             )}
 
             <div className="flex justify-start items-start flex-col gap-[13px] w-[520px]">
@@ -364,7 +364,7 @@ const FinancialDetails: React.FC = () => {
             </div>
           </div>
         </div>
-       
+
         <div className=" h-[180px] w-[245px] ml-[12px] text-nowrap">
           <div
             className="flex justify-center items-center flex-row gap-[4px]  pr-4 bg-[#064771] rounded-[5px] w-[245px] h-[180px]"
@@ -448,7 +448,7 @@ const FinancialDetails: React.FC = () => {
                         />
                       </svg>
                       <p className="text-[#FFFFFF] text-[28.646873474121094px] font-semibold leading-[30.69308090209961px]">
-                        
+
                         {companyInfo?.seller_id || "N/A"}
                       </p>
                     </div>
@@ -459,13 +459,13 @@ const FinancialDetails: React.FC = () => {
                       <span className="text-[#FFFFFF] text-sm font-medium leading-[10px] mt-[5px]">
                         {companyInfo?.updated_at
                           ? new Date(companyInfo.updated_at).toLocaleDateString(
-                              "en-GB",
-                              {
-                                month: "short",
-                                year: "numeric",
-                                day: "2-digit",
-                              }
-                            )
+                            "en-GB",
+                            {
+                              month: "short",
+                              year: "numeric",
+                              day: "2-digit",
+                            }
+                          )
                           : "N/A"}
                       </span>
                     </div>
@@ -544,13 +544,13 @@ const FinancialDetails: React.FC = () => {
             </div>
           </div>
         </div>
-       
-      </div>
-     
 
-  
+      </div>
+
+
+
       <div className="flex gap-[70px] mt-[54px] ">
-      
+
         <div className="flex flex-col items-start gap-4 p-0 pt-12 pl-7 rounded-none">
           <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins">
             Financial Details
@@ -579,7 +579,7 @@ const FinancialDetails: React.FC = () => {
                 Monthly Revenue
               </p>
               <p className="text-[#30313D] font-medium leading-normal ml-[350px]">
-                {financialInfo?.monthly_revenue || "N/A"}
+                {formatCurrency(financialInfo?.monthly_revenue)}
               </p>
             </div>
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
@@ -594,10 +594,10 @@ const FinancialDetails: React.FC = () => {
                     );
                     return revenueData.length > 0
                       ? revenueData
-                          .map((item: RevenueItem) => `${item.year} - ${item.value}`)
-                          .join(", ")
+                        .map((item: RevenueItem) => `${item.year} - ${formatCurrency(item.value)}`)
+                        .join(", ")
                       : "N/A";
-                  } catch  {
+                  } catch {
                     showAlert({ type: 'error', message: 'Failed to parse revenue data' });
                     return "Invalid data";
                   }
@@ -616,10 +616,10 @@ const FinancialDetails: React.FC = () => {
                     );
                     return profitData.length > 0
                       ? profitData
-                          .map((item: RevenueItem) => `${item.year} - ${item.value}`)
-                          .join(", ")
+                        .map((item: RevenueItem) => `${item.year} - ${formatCurrency(item.value)}`)
+                        .join(", ")
                       : "N/A";
-                  } catch  {
+                  } catch {
                     showAlert({ type: 'error', message: 'Failed to parse profit data' });
                     return "Invalid data";
                   }
@@ -631,7 +631,7 @@ const FinancialDetails: React.FC = () => {
                 Expected Investment Amount (Desired Amount)
               </p>
               <p className="text-[#30313D] font-medium leading-normal ml-[100px]">
-                {financialInfo?.expected_investment_amount || "N/A"}
+                {formatCurrency(financialInfo?.expected_investment_amount)}
               </p>
             </div>
             <div className="flex self-stretch justify-start items-center flex-row gap-2.5">
@@ -663,7 +663,7 @@ const FinancialDetails: React.FC = () => {
                 </button>
 
                 <p className="text-[#30313D] font-medium leading-normal">
-                  
+
                   {financialInfo?.ma_structure || "N/A"}
                 </p>
               </div>
@@ -672,7 +672,7 @@ const FinancialDetails: React.FC = () => {
         </div>
       </div>
 
-   
+
       <div className="flex flex-col items-start gap-4 p-0 pt-12 pl-7 rounded-none mt-[74px]">
         <p className="w-full text-left text-[#064771] text-lg font-medium leading-5 font-poppins">
           Valuation Details
@@ -702,36 +702,36 @@ const FinancialDetails: React.FC = () => {
             </p>
 
             <p className="text-[#30313D] font-medium leading-normal ml-[300px] ">
-              {financialInfo?.ebitda_values || "N/A"}
+              {formatCurrency(financialInfo?.ebitda_values)}
             </p>
           </div>
 
-         <div className="flex flex-wrap items-start gap-2.5">
-  <p className="text-[#484848] leading-[19.28px] min-w-[180px]">
-    EBITDA Description
-  </p>
+          <div className="flex flex-wrap items-start gap-2.5">
+            <p className="text-[#484848] leading-[19.28px] min-w-[180px]">
+              EBITDA Description
+            </p>
 
-  {financialInfo?.ebitda_times ? (
-    <div
-      className="text-[#30313D] font-medium text-sm leading-normal break-words max-w-full ml-[220px]"
-      dangerouslySetInnerHTML={{
-        __html: `<b><i>${JSON.parse(financialInfo.ebitda_times)?.[0] || "N/A"}</i></b>`,
-      }}
-    />
-  ) : (
-    <p className="text-[#a0a0a0] text-sm">N/A</p>
-  )}
-</div>
+            {financialInfo?.ebitda_times ? (
+              <div
+                className="text-[#30313D] font-medium text-sm leading-normal break-words max-w-full ml-[220px]"
+                dangerouslySetInnerHTML={{
+                  __html: `<b><i>${JSON.parse(financialInfo.ebitda_times)?.[0] || "N/A"}</i></b>`,
+                }}
+              />
+            ) : (
+              <p className="text-[#a0a0a0] text-sm">N/A</p>
+            )}
+          </div>
 
 
-     
+
 
         </div>
       </div>
-   
+
 
       <div className="ml-7 mt-[110px]">
-     
+
 
         <div className="flex justify-between items-center flex-row gap-[916px] mt-15 ml-">
           <div
@@ -740,7 +740,7 @@ const FinancialDetails: React.FC = () => {
           ></div>
 
           <div className="flex justify-start items-center flex-row gap-4 mx-auto w-fit ml-[-350px]">
-           
+
 
             <button
               className="flex justify-center items-center flex-row gap-1.5 py-[5.032660484313965px] px-3 bg-[#064771] rounded-[49.82036209106445px] h-[34px] "
@@ -764,7 +764,7 @@ const FinancialDetails: React.FC = () => {
               <span className="text-[#FFF] ">Back</span>
             </button>
 
-        
+
             <div className="flex justify-start items-end flex-row gap-[10.06532096862793px] h-[34px]">
               <button
                 className="flex justify-center items-center flex-row gap-1.5 py-[5.032660484313965px] px-3 bg-[#064771] rounded-[49.82036209106445px] h-[34px]"
@@ -791,12 +791,12 @@ const FinancialDetails: React.FC = () => {
           </div>
         </div>
 
-       
+
       </div>
-      
+
     </div>
 
-    
+
   );
 };
 

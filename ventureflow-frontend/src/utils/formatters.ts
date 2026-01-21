@@ -1,4 +1,20 @@
 /**
+ * Formats a number or string into a currency string with commas
+ */
+export const formatCurrency = (value: number | string): string => {
+    if (value === 0 || value === '0') return '0';
+    if (!value) return 'N/A';
+
+    const num = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+    if (isNaN(num)) return String(value);
+
+    return num.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+};
+
+/**
  * Formats a number into a shorter string representation (K, M, B)
  */
 export const formatCompactNumber = (number: number): string => {
@@ -11,17 +27,30 @@ export const formatCompactNumber = (number: number): string => {
 
 /**
  * Formats a budget object or string into a compact range representation ($100K - $1M)
+ * @param budget The budget object with min/max values
+ * @param currencySymbol The currency symbol to display
+ * @param exchangeRate Optional exchange rate for currency conversion (rate relative to base currency like USD)
  */
-export const formatCompactBudget = (budget: any, currencySymbol: string = '$'): string => {
+export const formatCompactBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
     if (typeof budget === 'string') return budget;
 
     try {
-        const min = budget.min !== undefined ? budget.min : (budget.minimum !== undefined ? budget.minimum : undefined);
-        const max = budget.max !== undefined ? budget.max : (budget.maximum !== undefined ? budget.maximum : undefined);
-        const symbol = budget.symbol || currencySymbol;
+        let min = budget.min !== undefined && budget.min !== '' ? budget.min : (budget.minimum !== undefined && budget.minimum !== '' ? budget.minimum : undefined);
+        let max = budget.max !== undefined && budget.max !== '' ? budget.max : (budget.maximum !== undefined && budget.maximum !== '' ? budget.maximum : undefined);
+
+        if (min === undefined && max === undefined) return 'Flexible';
+
+        const symbol = currencySymbol;
+
+        // Apply exchange rate conversion if provided
+        if (exchangeRate && exchangeRate !== 1) {
+            if (min !== undefined) min = Number(min) * exchangeRate;
+            if (max !== undefined) max = Number(max) * exchangeRate;
+        }
 
         if (min !== undefined && max !== undefined) {
+            if (Number(min) === 0 && Number(max) === 0) return 'Flexible';
             return `${symbol}${formatCompactNumber(Number(min))} - ${symbol}${formatCompactNumber(Number(max))}`;
         } else if (min !== undefined) {
             return `From ${symbol}${formatCompactNumber(Number(min))}`;
@@ -29,27 +58,40 @@ export const formatCompactBudget = (budget: any, currencySymbol: string = '$'): 
             return `Up to ${symbol}${formatCompactNumber(Number(max))}`;
         }
     } catch (e) {
-        return 'Invalid Format';
+        return 'Flexible';
     }
 
-    return 'N/A';
+    return 'Flexible';
 };
 
 /**
  * Formats a budget object into a full numeric string for tooltips
+ * @param budget The budget object with min/max values
+ * @param currencySymbol The currency symbol to display
+ * @param exchangeRate Optional exchange rate for currency conversion
  */
-export const formatFullBudget = (budget: any, currencySymbol: string = '$'): string => {
+export const formatFullBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
     if (typeof budget === 'string') return budget;
 
     try {
-        const min = budget.min !== undefined ? budget.min : (budget.minimum !== undefined ? budget.minimum : undefined);
-        const max = budget.max !== undefined ? budget.max : (budget.maximum !== undefined ? budget.maximum : undefined);
-        const symbol = budget.symbol || currencySymbol;
+        let min = budget.min !== undefined && budget.min !== '' ? budget.min : (budget.minimum !== undefined && budget.minimum !== '' ? budget.minimum : undefined);
+        let max = budget.max !== undefined && budget.max !== '' ? budget.max : (budget.maximum !== undefined && budget.maximum !== '' ? budget.maximum : undefined);
 
-        const fmt = (n: any) => Number(n).toLocaleString();
+        if (min === undefined && max === undefined) return 'Flexible';
+
+        const symbol = currencySymbol;
+
+        // Apply exchange rate conversion if provided
+        if (exchangeRate && exchangeRate !== 1) {
+            if (min !== undefined) min = Number(min) * exchangeRate;
+            if (max !== undefined) max = Number(max) * exchangeRate;
+        }
+
+        const fmt = (n: any) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
         if (min !== undefined && max !== undefined) {
+            if (Number(min) === 0 && Number(max) === 0) return 'Flexible';
             return `${symbol}${fmt(min)} - ${symbol}${fmt(max)}`;
         } else if (min !== undefined) {
             return `From ${symbol}${fmt(min)}`;
@@ -57,9 +99,9 @@ export const formatFullBudget = (budget: any, currencySymbol: string = '$'): str
             return `Up to ${symbol}${fmt(max)}`;
         }
     } catch (e) {
-        return 'Invalid Format';
+        return 'Flexible';
     }
-    return 'N/A';
+    return 'Flexible';
 };
 
 /**

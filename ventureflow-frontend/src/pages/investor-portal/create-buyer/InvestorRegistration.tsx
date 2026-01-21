@@ -8,9 +8,9 @@ import { Input } from '../../../components/Input';
 import Label from '../../../components/Label';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
-import { TextArea } from '../../../components/textarea/TextArea';
 import SelectPicker from '../../../components/SelectPicker';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
+import { ActivityLogChat } from '../../prospects/components/ActivityLogChat';
 
 // Types
 interface FormValues {
@@ -19,11 +19,12 @@ interface FormValues {
     rank: 'A' | 'B' | 'C';
     companyName: string; // reg_name
     website: string;
+    hqAddresses: { label: string; address: string }[]; // New HQ Address field
 
     // Investment Intent
     targetIndustries: Industry[]; // main_industry_operations
     purposeMNA: string; // reason_ma
-    targetCountries: Country[]; // target_countries (new field in frontend, mapped to generic or new column)
+    targetCountries: Country[]; // target_countries
     budgetMin: string;
     budgetMax: string;
     budgetCurrency: string;
@@ -54,7 +55,16 @@ interface ExtendedCountry extends Country {
     alpha?: string;
 }
 
-
+// M&A Purpose Options
+const MNA_PURPOSES = [
+    { value: 'Strategic Expansion', label: 'Strategic Expansion' },
+    { value: 'Market Entry', label: 'Market Entry' },
+    { value: 'Talent Acquisition', label: 'Talent Acquisition' },
+    { value: 'Diversification', label: 'Diversification' },
+    { value: 'Technology Acquisition', label: 'Technology Acquisition' },
+    { value: 'Financial Investment', label: 'Financial Investment' },
+    { value: 'Other', label: 'Other' },
+];
 
 export const InvestorRegistration: React.FC = () => {
     const navigate = useNavigate();
@@ -71,6 +81,7 @@ export const InvestorRegistration: React.FC = () => {
             rank: 'B',
             budgetCurrency: 'USD',
             contacts: [{ name: '', department: '', designation: '', phone: '', email: '', isPrimary: true }],
+            hqAddresses: [{ label: 'Headquarters', address: '' }],
             introducedProjects: [],
             noPICNeeded: false
         }
@@ -79,6 +90,11 @@ export const InvestorRegistration: React.FC = () => {
     const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
         control,
         name: 'contacts'
+    });
+
+    const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
+        control,
+        name: 'hqAddresses'
     });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
@@ -196,6 +212,15 @@ export const InvestorRegistration: React.FC = () => {
                     }
 
                     try {
+                        const addresses = typeof overview.hq_address === 'string' ? JSON.parse(overview.hq_address) : overview.hq_address;
+                        if (addresses && Array.isArray(addresses)) {
+                            setValue('hqAddresses', addresses);
+                        } else if (overview.hq_address && !Array.isArray(addresses)) {
+                            setValue('hqAddresses', [{ label: 'Headquarters', address: String(overview.hq_address) }]);
+                        }
+                    } catch (e) { }
+
+                    try {
                         const budget = typeof overview.investment_budget === 'string' ? JSON.parse(overview.investment_budget) : overview.investment_budget;
                         if (budget) {
                             setValue('budgetMin', budget.min || '');
@@ -243,6 +268,7 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('website', data.website);
             payload.append('rank', data.rank);
             payload.append('status', isDraft ? 'Draft' : 'Active');
+            payload.append('hq_address', JSON.stringify(data.hqAddresses));
 
             // Investment Intent
             payload.append('reason_ma', data.purposeMNA || '');
@@ -377,6 +403,37 @@ export const InvestorRegistration: React.FC = () => {
                             />
                         </div>
                     </div>
+
+                    {/* HQ Addresses */}
+                    <div className="md:col-span-2 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label text="HQ Addresses" />
+                            <button type="button" onClick={() => appendAddress({ label: 'Headquarters', address: '' })} className="text-sm text-[#064771] font-medium hover:underline flex items-center">
+                                <Plus className="w-3 h-3 mr-1" /> Add Address
+                            </button>
+                        </div>
+                        {addressFields.map((field, index) => (
+                            <div key={field.id} className="flex flex-col md:flex-row gap-2 items-start">
+                                <div className="flex-1 w-full md:w-1/3">
+                                    <input
+                                        {...register(`hqAddresses.${index}.label` as const)}
+                                        placeholder="Label (e.g. Head Office)"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="flex-[2] w-full flex gap-2">
+                                    <input
+                                        {...register(`hqAddresses.${index}.address` as const)}
+                                        placeholder="Full Address"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                    <button type="button" onClick={() => removeAddress(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </CollapsibleSection>
 
@@ -407,13 +464,20 @@ export const InvestorRegistration: React.FC = () => {
                             control={control}
                             name="purposeMNA"
                             render={({ field }) => (
-                                <TextArea
-                                    value={field.value || ''}
+                                <SelectPicker
+                                    options={MNA_PURPOSES}
+                                    value={field.value}
                                     onChange={field.onChange}
-                                    onBlur={field.onBlur}
+                                    placeholder="Select Purpose"
                                 />
                             )}
                         />
+                    </div>
+
+                    {/* Notes / Audit Log System */}
+                    <div>
+                        <Label text="Notes & Audit Log" />
+                        <ActivityLogChat entityId={id} entityType="buyer" />
                     </div>
 
                     {/* Target Countries */}

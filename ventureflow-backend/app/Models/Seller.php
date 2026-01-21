@@ -82,4 +82,17 @@ class Seller extends Model
         return $this->belongsToMany(Folder::class, 'file_folders', 'seller_id', 'folder_id')
             ->withTimestamps();
     }
+
+    /**
+     * Get the deals associated with the seller.
+     */
+    public function deals(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Deal::class, 'seller_id');
+    }
+
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'loggable');
+    }
 }

@@ -1,4 +1,6 @@
+import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import { MoreVertical, MessageSquare, Clock } from 'lucide-react';
 import { Deal } from '../DealPipeline';
 
 interface DealCardProps {
@@ -12,6 +14,19 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: deal.id,
     });
+
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const style = transform
         ? {
@@ -71,13 +86,40 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
                 <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{primaryEntity}</div>
                 </div>
-                {/* View indicator badge */}
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pipelineView === 'buyer'
-                    ? 'bg-blue-50 text-[#064771]'
-                    : 'bg-green-50 text-green-600'
-                    }`}>
-                    {pipelineView === 'buyer' ? 'B' : 'S'}
-                </span>
+                <div className="flex items-center gap-1">
+                    {/* View indicator badge */}
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pipelineView === 'buyer'
+                        ? 'bg-blue-50 text-[#064771]'
+                        : 'bg-green-50 text-green-600'
+                        }`}>
+                        {pipelineView === 'buyer' ? 'B' : 'S'}
+                    </span>
+                    {/* 3-dot Menu */}
+                    <div className="relative" ref={menuRef}>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMenu(!showMenu);
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded text-gray-400"
+                        >
+                            <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {showMenu && (
+                            <div className="absolute right-0 mt-1 w-32 bg-white border rounded shadow-lg z-50 py-1">
+                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
+                                    View Details
+                                </button>
+                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
+                                    Edit Deal
+                                </button>
+                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 flex items-center gap-2">
+                                    Archive
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Relationship label + Secondary Entity */}
@@ -126,20 +168,24 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
             {/* Footer Icons */}
             <div className="flex items-center justify-between text-xs text-gray-400">
                 <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // This will be handled by the parent
+                            if (deal.onChatClick) deal.onChatClick(deal);
+                        }}
+                        className="flex items-center gap-1 hover:text-[#064771] transition-colors relative"
+                    >
+                        <MessageSquare className="w-4 h-4" />
                         {deal.comment_count}
-                    </span>
-                    <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                        </svg>
-                        {deal.attachment_count}
-                    </span>
+                        {/* Notification Dot */}
+                        {deal.has_new_activity && (
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                        )}
+                    </button>
                 </div>
-                <span className="truncate">
+                <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
                     {new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
             </div>

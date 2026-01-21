@@ -4,6 +4,8 @@ import Breadcrumb from '../../../assets/breadcrumb';
 import LetterIcon from '../../../assets/svg/LetterIcon';
 import FinancialBagIcon from '../../../assets/svg/FinancialBagIcon';
 import PartnershipDetailsIcon from '../../../assets/svg/PartnershipDetails';
+import { MessageSquare } from 'lucide-react';
+import { ActivityLogChat } from '../../prospects/components/ActivityLogChat';
 
 
 import CompanyOverview from './CompanyOverview';
@@ -19,6 +21,14 @@ import { showAlert } from '../../../components/Alert';
 const CompanyOverviewTab = () => <CompanyOverview />;
 const FinancialDetailsTab = () => <FinancialDetails />;
 const PartnershipDetailsTab = () => <PartnershipDetails />;
+const ActivityLogTab = () => {
+  const { id } = useParams();
+  return (
+    <div className="px-6 h-[600px] border rounded-lg overflow-hidden bg-white shadow-sm">
+      <ActivityLogChat entityId={id} entityType="seller" />
+    </div>
+  );
+};
 
 
 
@@ -44,16 +54,19 @@ const tabsData = [
     activeIcon: <PartnershipDetailsIcon isActive={true} />,
     inactiveIcon: <PartnershipDetailsIcon isActive={false} />,
   },
-
-
+  {
+    id: 'activity-log',
+    label: 'Activity Log',
+    activeIcon: <MessageSquare className="w-5 h-5 text-[#064771]" />,
+    inactiveIcon: <MessageSquare className="w-5 h-5 text-gray-400" />,
+  },
 ];
 
 const TabContentMap: Record<string, React.FC> = {
   'company-overview': CompanyOverviewTab,
   'financial-details': FinancialDetailsTab,
   'partnership-details': PartnershipDetailsTab,
-
-
+  'activity-log': ActivityLogTab,
 };
 
 const SellerPortalDetails: React.FC = () => {

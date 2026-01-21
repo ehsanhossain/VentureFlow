@@ -133,6 +133,20 @@ const ProspectsPortal: React.FC = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
+            // Fetch currencies first if not already loaded fully (we need them for rate conversion)
+            let currentCurrencies = currencies;
+            if (currencies.length <= 10) {
+                const currencyRes = await api.get('/api/currencies', { params: { per_page: 1000 } });
+                const currDataRaw = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
+                currentCurrencies = currDataRaw.map((c: any) => ({
+                    id: c.id,
+                    code: c.currency_code,
+                    sign: c.currency_sign,
+                    exchange_rate: c.exchange_rate
+                }));
+                setCurrencies(currentCurrencies);
+            }
+
             const [buyerRes, sellerRes] = await Promise.all([
                 api.get('/api/buyer', { params: { search: searchQuery, ...filters } }),
                 api.get('/api/seller', { params: { search: searchQuery } })
@@ -142,8 +156,8 @@ const ProspectsPortal: React.FC = () => {
             const sellerDataRaw = Array.isArray(sellerRes.data?.data) ? sellerRes.data.data : [];
 
             setCounts({
-                investors: buyerRes.data?.meta?.total || 0,
-                targets: sellerRes.data?.meta?.total || 0
+                investors: buyerRes.data?.meta?.total ?? buyerData.length,
+                targets: sellerRes.data?.meta?.total ?? sellerDataRaw.length
             });
 
             if (activeTab === 'investors') {
@@ -158,11 +172,9 @@ const ProspectsPortal: React.FC = () => {
 
                     // Parse Target Countries
                     let targetCountriesRaw = overview.target_countries;
-                    // If backend sends it as string despite cast, parse it. Casts should handle it though.
                     if (typeof targetCountriesRaw === 'string') {
                         try { targetCountriesRaw = JSON.parse(targetCountriesRaw); } catch (e) { targetCountriesRaw = []; }
                     } else if (!targetCountriesRaw && b.target_preferences?.target_countries) {
-                        // Fallback to old location if needed (though we should migrate data)
                         targetCountriesRaw = b.target_preferences.target_countries;
                     }
 
@@ -186,6 +198,11 @@ const ProspectsPortal: React.FC = () => {
 
                     const primaryContactName = primaryContactObj?.name || overview.seller_contact_name || "N/A";
 
+                    // Determine Source Currency Rate
+                    const defaultCurrencyId = b.financial_details?.default_currency;
+                    const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
+                    const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
+
                     return {
                         id: b.id,
                         projectCode: b.buyer_id || "N/A",
@@ -198,15 +215,16 @@ const ProspectsPortal: React.FC = () => {
                         },
                         targetCountries: targetCountriesData as { name: string; flag: string }[],
                         targetIndustries: indMap,
-                        pipelineStatus: b.pipeline_status || b.current_stage || "N/A",
-                        budget: b.financial_details?.investment_budget,
+                        pipelineStatus: b.deals && b.deals.length > 0 ? b.deals[b.deals.length - 1].stage_name : (b.pipeline_status || b.current_stage || "N/A"),
+                        budget: overview.investment_budget,
                         isPinned: pinnedIds.includes(b.id),
                         companyType: overview.company_type,
                         website: overview.website,
                         email: overview.email,
                         phone: overview.phone,
                         employeeCount: overview.emp_count,
-                        yearFounded: overview.year_founded
+                        yearFounded: overview.year_founded,
+                        sourceCurrencyRate: sourceRate
                     };
                 });
                 setInvestors(mappedInvestors);
@@ -219,6 +237,12 @@ const ProspectsPortal: React.FC = () => {
                         ? s.company_overview.industry_ops.map((i: any) => i?.name || "Unknown")
                         : [];
 
+                    // Determine Source Currency Rate for Target (assuming financial_details has it too, otherwise default to 1)
+                    // Note: Check if seller model has financial_details.default_currency field usage
+                    const defaultCurrencyId = s.financial_details?.default_currency;
+                    const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
+                    const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
+
                     return {
                         id: s.id,
                         projectCode: s.seller_id || "N/A",
@@ -228,10 +252,11 @@ const ProspectsPortal: React.FC = () => {
                             flag: hqCountry?.flagSrc || ""
                         },
                         industry: industryList,
-                        pipelineStatus: s.company_overview?.status || "N/A",
+                        pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_name : (s.company_overview?.status || "N/A"),
                         desiredInvestment: s.financial_details?.expected_investment_amount,
                         ebitda: s.financial_details?.ebitda_value,
                         isPinned: pinnedIds.includes(s.id),
+                        sourceCurrencyRate: sourceRate
                     };
                 });
                 setTargets(mappedTargets);
@@ -419,11 +444,11 @@ const ProspectsPortal: React.FC = () => {
             {/* Import Modal */}
             {isImportModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100">
+                    <div className="bg-white rounded border border-gray-100 w-full max-w-lg overflow-hidden shadow-2xl">
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#064771] flex items-center justify-center">
+                                    <div className="w-12 h-12 rounded bg-blue-50 text-[#064771] flex items-center justify-center">
                                         <Upload className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -431,14 +456,14 @@ const ProspectsPortal: React.FC = () => {
                                         <p className="text-sm text-gray-500">Bulk upload your {activeTab} list</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                                <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded transition-colors">
                                     <X className="w-6 h-6 text-gray-400" />
                                 </button>
                             </div>
 
                             <div className="space-y-6">
                                 <div
-                                    className={`p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4 group transition-all cursor-pointer ${selectedFile
+                                    className={`p-10 border-2 border-dashed rounded flex flex-col items-center justify-center gap-4 group transition-all cursor-pointer ${selectedFile
                                         ? 'border-[#064771] bg-[#064771]/5'
                                         : 'border-gray-200 bg-gray-50/50 hover:border-[#064771]/30'
                                         }`}
@@ -453,7 +478,7 @@ const ProspectsPortal: React.FC = () => {
                                         accept=".csv,.xlsx,.xls"
                                         onChange={handleFileSelect}
                                     />
-                                    <div className={`w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors ${selectedFile ? 'text-[#064771]' : 'text-gray-400 group-hover:text-[#064771]'
+                                    <div className={`w-16 h-16 rounded-full bg-white border border-gray-100 flex items-center justify-center transition-colors ${selectedFile ? 'text-[#064771]' : 'text-gray-400 group-hover:text-[#064771]'
                                         }`}>
                                         <FileSpreadsheet className="w-8 h-8" />
                                     </div>
@@ -468,7 +493,7 @@ const ProspectsPortal: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                    <div className="p-4 bg-amber-50 rounded border border-amber-100">
                                         <div className="flex gap-3">
                                             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                                             <div className="space-y-1">
@@ -486,7 +511,7 @@ const ProspectsPortal: React.FC = () => {
                                                 e.stopPropagation();
                                                 downloadCsvTemplate(activeTab === 'investors' ? 'investor' : 'target');
                                             }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                                         >
                                             <Download className="w-4 h-4" />
                                             Download Template
@@ -497,7 +522,7 @@ const ProspectsPortal: React.FC = () => {
                                                 startImport();
                                             }}
                                             disabled={!selectedFile}
-                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-2xl text-sm font-semibold hover:bg-[#053a5c] transition-all shadow-lg shadow-[#064771]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             Start Import
                                         </button>
@@ -516,11 +541,11 @@ const ProspectsPortal: React.FC = () => {
             {isFilterOpen && (
                 <>
                     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => setIsFilterOpen(false)} />
-                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[380px] bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[380px] bg-white border-l border-gray-100 z-50 flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 border-b border-gray-50">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-[#F1FBFF] text-[#064771] flex items-center justify-center shadow-sm">
+                                <div className="w-12 h-12 rounded bg-[#F1FBFF] text-[#064771] flex items-center justify-center">
                                     <Filter className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -530,7 +555,7 @@ const ProspectsPortal: React.FC = () => {
                             </div>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
-                                className="p-2.5 hover:bg-gray-100 rounded-xl transition-all duration-200 text-gray-400 hover:text-gray-600"
+                                className="p-2.5 hover:bg-gray-100 rounded transition-all duration-200 text-gray-400 hover:text-gray-600"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -543,7 +568,7 @@ const ProspectsPortal: React.FC = () => {
                                     <label className="block text-sm font-bold text-gray-700 mb-2.5 ml-1">Status</label>
                                     <div className="relative group">
                                         <select
-                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
+                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
                                             value={filters.status}
                                             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                                         >
@@ -582,13 +607,13 @@ const ProspectsPortal: React.FC = () => {
                         {/* Footer Actions */}
                         <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
                             <button
-                                className="w-full py-4 bg-[#064771] text-white rounded-2xl font-bold shadow-xl shadow-[#064771]/20 hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-[#064771] text-white rounded font-bold hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
                                 onClick={() => setIsFilterOpen(false)}
                             >
                                 Apply Filters
                             </button>
                             <button
-                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
+                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded font-bold flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                                 onClick={() => setFilters({ status: '', country: '', industry: '' })}
                             >
                                 <RotateCcw className="w-4 h-4" />
@@ -604,13 +629,13 @@ const ProspectsPortal: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <h1 className="text-3xl font-bold text-gray-900">Prospects</h1>
-                            <div className="flex bg-gray-200/50 rounded-xl p-1.5 ml-4 shadow-inner">
+                            <div className="flex bg-gray-200/50 rounded p-1.5 ml-4">
                                 <button
                                     onClick={() => {
                                         setActiveTab('investors');
                                         setSearchParams({ tab: 'investors' });
                                     }}
-                                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
+                                    className={`px-6 py-2.5 rounded text-sm font-bold transition-all duration-200 ${activeTab === 'investors' ? 'bg-white text-[#064771]' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
                                 >
                                     Investors <span className={`ml-1.5 text-xs ${activeTab === 'investors' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.investors})</span>
                                 </button>
@@ -619,7 +644,7 @@ const ProspectsPortal: React.FC = () => {
                                         setActiveTab('targets');
                                         setSearchParams({ tab: 'targets' });
                                     }}
-                                    className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
+                                    className={`px-6 py-2.5 rounded text-sm font-bold transition-all duration-200 ${activeTab === 'targets' ? 'bg-white text-[#064771]' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
                                 >
                                     Targets <span className={`ml-1.5 text-xs ${activeTab === 'targets' ? 'text-[#064771]/50' : 'text-gray-400'}`}>({counts.targets})</span>
                                 </button>
@@ -635,7 +660,7 @@ const ProspectsPortal: React.FC = () => {
                                     placeholder="Search prospects here"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-9 pr-16 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm w-[280px] focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] hover:border-gray-300 transition-all"
+                                    className="pl-9 pr-16 py-2 bg-gray-50 border border-gray-200 rounded text-sm w-[280px] focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] hover:border-gray-300 transition-all font-medium"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400 select-none pointer-events-none">
                                     <span className="text-xs">⌘</span> F
@@ -644,7 +669,7 @@ const ProspectsPortal: React.FC = () => {
 
                             <button
                                 onClick={() => setFilters(prev => ({ ...prev, status: prev.status === 'Draft' ? '' : 'Draft' }))}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border shadow-sm ${filters.status === 'Draft'
+                                className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-bold transition-all border ${filters.status === 'Draft'
                                     ? 'bg-[#064771] text-white border-[#064771]'
                                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                                     }`}
@@ -656,20 +681,20 @@ const ProspectsPortal: React.FC = () => {
                             <div className="relative" ref={toolsDropdownRef}>
                                 <button
                                     onClick={() => setIsToolsOpen(!isToolsOpen)}
-                                    className="flex items-center gap-2 bg-[#E6F1F9] hover:bg-[#D9EAF7] text-[#064771] px-4 py-2 rounded-lg text-sm font-bold transition-all border border-[#064771]/10 shadow-sm hover:shadow-md active:scale-95"
+                                    className="flex items-center gap-2 bg-[#E6F1F9] hover:bg-[#D9EAF7] text-[#064771] px-4 py-2 rounded text-sm font-bold transition-all border border-[#064771]/10 active:scale-95"
                                 >
                                     <Settings2 className="w-4 h-4" />
                                     Tools
                                 </button>
                                 {isToolsOpen && (
-                                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    <div className="absolute right-0 mt-2 w-64 bg-white rounded border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right shadow-2xl">
                                         <div className="space-y-4">
                                             <div>
                                                 <div className="flex items-center gap-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                                                     <DollarSign className="w-3 h-3" /> Currency
                                                 </div>
                                                 <select
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded text-xs"
                                                     value={selectedCurrency?.id}
                                                     onChange={(e) => {
                                                         const curr = currencies.find(c => c.id === Number(e.target.value));
@@ -688,7 +713,7 @@ const ProspectsPortal: React.FC = () => {
                                                         <button
                                                             key={col.id}
                                                             onClick={() => toggleColumn(col.id)}
-                                                            className="flex items-center justify-between w-full p-2 text-xs rounded-lg hover:bg-gray-50 transition-colors"
+                                                            className="flex items-center justify-between w-full p-2 text-xs rounded hover:bg-gray-50 transition-colors"
                                                         >
                                                             <span className={visibleColumns.includes(col.id) ? 'text-gray-900 font-medium' : 'text-gray-400'}>{col.label}</span>
                                                             {visibleColumns.includes(col.id) && <Check className="w-3 h-3 text-[#064771]" />}
@@ -702,11 +727,11 @@ const ProspectsPortal: React.FC = () => {
                             </div>
 
                             <div className="relative" ref={createDropdownRef}>
-                                <button onClick={() => setIsCreateOpen(!isCreateOpen)} className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 px-4 py-2 rounded-lg text-sm font-bold transition-all hover:bg-gray-50 hover:border-gray-300 shadow-sm active:scale-95">
+                                <button onClick={() => setIsCreateOpen(!isCreateOpen)} className="flex items-center gap-2 bg-white text-gray-900 border border-gray-200 px-4 py-2 rounded text-sm font-bold transition-all hover:bg-gray-50 hover:border-gray-300 active:scale-95">
                                     <Plus className="w-4 h-4 text-gray-500" /> Create <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isCreateOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden">
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl">
                                         <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors" onClick={() => navigate('/prospects/add-investor')}>
                                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Add Investor
                                         </button>

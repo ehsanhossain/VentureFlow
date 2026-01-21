@@ -160,4 +160,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pipeline-stages', [PipelineStageController::class, 'store']);
     Route::patch('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'update']);
     Route::delete('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'destroy']);
+
+    // Activity Log Routes
+    Route::get('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index']);
+    Route::post('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'store']);
 });

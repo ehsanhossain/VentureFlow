@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Loader2, Link as LinkIcon, User, Globe, Wallet } from 'lucide-react';
+import { Loader2, Link as LinkIcon, User, Globe, Wallet, MessageSquare } from 'lucide-react';
+import { formatCurrency } from '../../../utils/formatters';
 import Label from '../../../components/Label';
+import { ActivityLogChat } from '../../prospects/components/ActivityLogChat';
 
 interface Contact {
   name: string;
@@ -89,7 +91,7 @@ const BuyerPortalDetails: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 py-1.5 px-3 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-[#064771] transition-all group font-medium text-sm"
+              className="flex items-center gap-2 py-1.5 px-3 hover:bg-gray-100 rounded text-gray-500 hover:text-[#064771] transition-all group font-medium text-sm"
               title="Return to previous page"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -101,13 +103,13 @@ const BuyerPortalDetails: React.FC = () => {
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold text-gray-900">{companyName}</h1>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${rank === 'A' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${rank === 'A' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                   rank === 'B' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                     'bg-slate-50 text-slate-600 border border-slate-100'
                   }`}>
                   Rank {rank}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-100 uppercase tracking-wider">
+                <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-gray-50 text-gray-500 border border-gray-100 uppercase tracking-wider">
                   {projectCode}
                 </span>
               </div>
@@ -122,7 +124,7 @@ const BuyerPortalDetails: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(`/prospects/edit-investor/${id}`)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-all shadow-sm text-sm font-semibold"
+              className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded hover:bg-[#053a5c] transition-all text-sm font-semibold"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -157,7 +159,7 @@ const BuyerPortalDetails: React.FC = () => {
               </div>
               <div className="md:col-span-2 space-y-1.5">
                 <Label text="Purpose of M&A" />
-                <p className="text-gray-600 leading-relaxed text-sm bg-gray-50/50 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                <p className="text-gray-600 leading-relaxed text-sm bg-gray-50/50 p-4 rounded border border-gray-100 whitespace-pre-wrap">
                   {purposeMNA || 'No purpose description provided.'}
                 </p>
               </div>
@@ -173,7 +175,7 @@ const BuyerPortalDetails: React.FC = () => {
                   <Label text="Target Industries" />
                   <div className="flex flex-wrap gap-2">
                     {industries.length > 0 ? industries.map((ind, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 shadow-sm">
+                      <span key={idx} className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700">
                         {ind.name}
                       </span>
                     )) : <span className="text-gray-400 text-sm italic">Open to all industries</span>}
@@ -183,7 +185,7 @@ const BuyerPortalDetails: React.FC = () => {
                   <Label text="Target Countries" />
                   <div className="flex flex-wrap gap-2">
                     {targetCountries.length > 0 ? targetCountries.map((c, idx) => (
-                      <div key={idx} className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-700 shadow-sm">
+                      <div key={idx} className="flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700">
                         {c.flagSrc && <img src={c.flagSrc} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />}
                         {c.name}
                       </div>
@@ -192,15 +194,18 @@ const BuyerPortalDetails: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ring-1 ring-gray-100 p-6 rounded-2xl bg-gray-50/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border border-gray-100 p-6 rounded bg-gray-50/30">
                 <div className="space-y-1.5">
                   <Label text="Investment Budget" />
                   <div className="flex items-center gap-2.5 text-gray-900 font-bold text-lg">
-                    <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                    <div className="p-2 bg-white rounded border border-gray-100">
                       <Wallet className="w-5 h-5 text-[#064771]" />
                     </div>
                     {investmentBudget ? (
-                      <span>{investmentBudget.min} - {investmentBudget.max} <span className="text-sm font-medium text-gray-400">{investmentBudget.currency}</span></span>
+                      <span>
+                        {formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)}
+                        <span className="text-sm font-medium text-gray-400 ml-1">{investmentBudget.currency}</span>
+                      </span>
                     ) : <span>Flexible</span>}
                   </div>
                 </div>
@@ -222,11 +227,11 @@ const BuyerPortalDetails: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {contacts.length > 0 ? contacts.map((contact, idx) => (
-                <div key={idx} className={`p-5 rounded-2xl border transition-all ${contact.isPrimary ? 'bg-white border-[#064771]/20 ring-1 ring-[#064771]/5 shadow-md shadow-[#064771]/10' : 'bg-gray-50/50 border-gray-100 hover:border-gray-200'
+                <div key={idx} className={`p-5 rounded border transition-all ${contact.isPrimary ? 'bg-white border-[#064771]/20 ring-1 ring-[#064771]/5' : 'bg-gray-50/50 border-gray-100 hover:border-gray-200'
                   }`}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${contact.isPrimary ? 'bg-[#064771] text-white' : 'bg-white border border-gray-200 text-gray-400'
+                      <div className={`w-10 h-10 rounded flex items-center justify-center ${contact.isPrimary ? 'bg-[#064771] text-white' : 'bg-white border border-gray-200 text-gray-400'
                         }`}>
                         <User className="w-5 h-5" />
                       </div>
@@ -236,7 +241,7 @@ const BuyerPortalDetails: React.FC = () => {
                       </div>
                     </div>
                     {contact.isPrimary && (
-                      <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded-full">Primary</span>
+                      <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded">Primary</span>
                     )}
                   </div>
                   <div className="space-y-2.5 pt-2 border-t border-gray-100">
@@ -253,11 +258,24 @@ const BuyerPortalDetails: React.FC = () => {
               )) : <div className="text-gray-400 italic text-sm py-4">No contact information available.</div>}
             </div>
           </section>
+
+          {/* Activity Log Section */}
+          <section className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm mt-8">
+            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#064771]" />
+                Activity Log & History
+              </h2>
+            </div>
+            <div className="p-0 h-[600px]">
+              <ActivityLogChat entityId={id} entityType="buyer" />
+            </div>
+          </section>
         </div>
 
         {/* Sidebar / Metadata Area */}
         <div className="lg:col-span-4 space-y-8">
-          <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 space-y-6">
+          <div className="bg-gray-50/50 rounded p-8 border border-gray-100 space-y-6">
             <h3 className="text-sm font-bold text-gray-900">Documents & Links</h3>
             <div className="space-y-3">
               {investorProfileLink ? (
@@ -265,10 +283,10 @@ const BuyerPortalDetails: React.FC = () => {
                   href={investorProfileLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-[#064771] hover:shadow-md transition-all group"
+                  className="flex items-center justify-between p-4 bg-white rounded border border-gray-100 hover:border-[#064771] transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-[#064771] transition-colors">
+                    <div className="p-2 bg-blue-50 rounded group-hover:bg-[#064771] transition-colors">
                       <LinkIcon className="w-4 h-4 text-[#064771] group-hover:text-white" />
                     </div>
                     <span className="text-sm font-semibold text-gray-700">Investor Profile</span>
@@ -276,7 +294,7 @@ const BuyerPortalDetails: React.FC = () => {
                   <svg className="w-4 h-4 text-gray-300 group-hover:text-[#064771]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </a>
               ) : (
-                <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded">
                   <span className="text-xs text-gray-400">No documents uploaded</span>
                 </div>
               )}

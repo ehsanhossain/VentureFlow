@@ -59,4 +59,17 @@ class Buyer extends Model
     {
         return $this->belongsTo(BuyersTeaserCenters::class, 'teaser_center_id');
     }
+
+    /**
+     * Relationship to the deals.
+     */
+    public function deals(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Deal::class, 'buyer_id');
+    }
+
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'loggable');
+    }
 }

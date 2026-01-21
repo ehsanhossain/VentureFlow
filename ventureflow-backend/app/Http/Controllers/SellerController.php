@@ -10,6 +10,7 @@ use App\Models\SellersCompanyOverview;
 use App\Models\SellersFinancialDetail;
 use App\Models\SellersTeaserCenter;
 use App\Models\Buyer;
+use App\Models\ActivityLog;
 use App\Models\SellersPartnershipDetail;
 use App\Models\FileFolder;
 use Carbon\Carbon;
@@ -48,6 +49,7 @@ class SellerController extends Controller
             'financialDetails',
             'partnershipDetails',
             'teaserCenter',
+            'deals'
         ])
             ->when($status === 'Draft', function ($query) {
                 $query->where('status', 2);
@@ -317,10 +319,21 @@ class SellerController extends Controller
             // Save the overview
             $overview->save();
 
+            // UNBREAKABLE: Final check for ID uniqueness
+            $dealroomId = $request->input('dealroomId');
+            if ($dealroomId) {
+                $exists = Seller::where('seller_id', $dealroomId)
+                    ->when($seller, function($q) use ($seller) { $q->where('id', '!=', $seller->id); })
+                    ->exists();
+                if ($exists) {
+                    return response()->json(['message' => 'The project code (Dealroom ID) is already in use.'], 422);
+                }
+            }
+
             // Create or update the seller record
             if (!$seller) {
                 $seller = new Seller();
-                $seller->seller_id = $request->input('dealroomId');
+                $seller->seller_id = $dealroomId;
             }
 
             if ($request->hasFile('profilePicture')) {
@@ -333,6 +346,15 @@ class SellerController extends Controller
             $seller->seller_id = $request->input('dealroomId');
             $seller->status = $request->input('is_draft') ?? '1'; // Default to 'active' if not provided
             $seller->save();
+
+            // Add Activity Log
+            ActivityLog::create([
+                'user_id' => \Auth::id(),
+                'loggable_id' => $seller->id,
+                'loggable_type' => Seller::class,
+                'type' => 'system',
+                'content' => ($request->seller_id ? "Target profile updated: " : "New Target profile registered: ") . ($overview->reg_name ?? ''),
+            ]);
 
             // Notify System Admins if it's a new seller
             if (!$request->seller_id) {
@@ -590,6 +612,11 @@ class SellerController extends Controller
 
             // Use a database transaction to ensure data integrity.
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
+                // UNBREAKABLE: Manual cleanup for polymorphic logs and other relations
+                ActivityLog::where('loggable_type', Seller::class)
+                    ->whereIn('loggable_id', $idsToDelete)
+                    ->delete();
+
                 FileFolder::whereIn('seller_id', $idsToDelete)->delete();
 
                 $deletedCount = Seller::destroy($idsToDelete);

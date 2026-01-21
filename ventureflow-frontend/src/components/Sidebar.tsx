@@ -84,7 +84,7 @@ export function Sidebar({
           {/* Sidebar Toggle Button */}
           <button
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-md shadow-sm hidden md:flex items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#064771] hover:border-[#064771] z-50 focus:outline-none"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded hidden md:flex items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#064771] hover:border-[#064771] z-50 focus:outline-none"
           >
             {sidebarExpanded ? (
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -117,7 +117,7 @@ export function Sidebar({
                     {/* Parent menu item */}
                     <div
                       className={`
-                        flex items-center rounded-lg transition-all w-full my-0.5 relative
+                        flex items-center rounded transition-all w-full my-0.5 relative
                         ${sidebarExpanded ? "px-2" : "justify-center"}
                         ${isActive && sidebarExpanded
                           ? "bg-blue-50 text-[#064771]"
@@ -140,7 +140,7 @@ export function Sidebar({
                         `}
                       >
                         <div className={`
-                            flex items-center justify-center w-12 h-12 shrink-0 transition-colors rounded-lg
+                            flex items-center justify-center w-12 h-12 shrink-0 transition-colors rounded
                             ${!sidebarExpanded && isActive ? "text-[#064771]" : ""}
                         `}>
                           <item.icon className="w-8 h-8" />
@@ -184,7 +184,7 @@ export function Sidebar({
                             key={subIndex}
                             to={subItem.path}
                             className={`
-                              flex items-center px-3 py-2 text-sm rounded-lg transition-colors
+                              flex items-center px-3 py-2 text-sm rounded transition-colors
                               ${location.pathname === subItem.path
                                 ? "text-[#064771] font-medium bg-blue-50/50"
                                 : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
@@ -204,7 +204,7 @@ export function Sidebar({
                         onMouseEnter={() => setExpandedMenu(item.label)}
                         onMouseLeave={() => !sidebarExpanded && setExpandedMenu(null)}
                       >
-                        <div className="bg-white border border-gray-100 shadow-xl rounded-lg py-2 w-full animate-in fade-in zoom-in-95 duration-150">
+                        <div className="bg-white border border-gray-100 shadow-2xl rounded py-2 w-full animate-in fade-in zoom-in-95 duration-150">
                           <div className="px-4 py-2 text-sm font-semibold text-gray-900 border-b border-gray-50 bg-gray-50/50">
                             {t(getTranslationKey(item.label))}
                           </div>
@@ -238,7 +238,7 @@ export function Sidebar({
                   <Link
                     to={item.path || "/"}
                     className={`
-                        flex items-center rounded-lg transition-all w-full py-1 my-0.5 outline-none relative
+                        flex items-center rounded transition-all w-full py-1 my-0.5 outline-none relative
                         ${sidebarExpanded ? "px-2" : "justify-center"}
                         ${isActive
                         ? sidebarExpanded ? "bg-blue-50 text-[#064771]" : "text-[#064771] bg-blue-50"

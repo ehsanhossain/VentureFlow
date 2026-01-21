@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import api from '../../config/api';
 import { Country, Dropdown } from '../currency/components/Dropdown';
 import { showAlert } from '../../components/Alert';
+import { ActivityLogChat } from '../prospects/components/ActivityLogChat';
 import {
     DndContext,
     DragEndEvent,
@@ -43,6 +45,8 @@ export interface Deal {
     comment_count: number;
     attachment_count: number;
     updated_at: string;
+    has_new_activity?: boolean; // For notification dot
+    onChatClick?: (deal: Deal) => void; // Callback for chat button
     buyer?: {
         id: number;
         company_overview?: {
@@ -77,7 +81,7 @@ const DealPipeline = () => {
     const navigate = useNavigate();
     const [deals, setDeals] = useState<GroupedDeals>({});
     const [stages, setStages] = useState<PipelineStage[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'board' | 'table'>('board');
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -87,6 +91,7 @@ const DealPipeline = () => {
     const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
     const [pipelineView, setPipelineView] = useState<PipelineView>('buyer');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [chatDeal, setChatDeal] = useState<Deal | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -120,7 +125,17 @@ const DealPipeline = () => {
                     view: pipelineView,
                 }
             });
-            setDeals(response.data.grouped);
+            const enhancedGrouped = { ...response.data.grouped };
+            // Add chat click handler to each deal
+            Object.keys(enhancedGrouped).forEach(stage => {
+                enhancedGrouped[stage].deals = enhancedGrouped[stage].deals.map((d: any) => ({
+                    ...d,
+                    onChatClick: (deal: Deal) => setChatDeal(deal),
+                    // Mock: randomly add some activity for demo
+                    has_new_activity: d.comment_count > 0 && Math.random() > 0.5
+                }));
+            });
+            setDeals(enhancedGrouped);
             setStages(response.data.stages);
         } catch {
             showAlert({ type: 'error', message: 'Failed to fetch deals' });
@@ -130,9 +145,9 @@ const DealPipeline = () => {
 
     useEffect(() => {
         const loadData = async () => {
-            setLoading(true);
+            setIsLoading(true);
             await fetchDeals();
-            setLoading(false);
+            setIsLoading(false);
         };
         loadData();
     }, [searchQuery, selectedCountries, pipelineView]);
@@ -295,7 +310,7 @@ const DealPipeline = () => {
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
                                     >
-                                        Buyer
+                                        Investor
                                     </button>
                                     <button
                                         onClick={() => setPipelineView('seller')}
@@ -304,7 +319,7 @@ const DealPipeline = () => {
                                             : 'text-gray-500 hover:text-gray-700'
                                             }`}
                                     >
-                                        Seller
+                                        Target
                                     </button>
                                 </div>
 
@@ -433,7 +448,7 @@ const DealPipeline = () => {
                                             ? 'bg-[#064771] text-white shadow-md'
                                             : 'bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-100'
                                             }`}
-                                        title="Buyer Pipeline"
+                                        title="Investor's Pipeline"
                                     >
                                         <span className="font-bold text-sm">B</span>
                                     </button>
@@ -443,7 +458,7 @@ const DealPipeline = () => {
                                             ? 'bg-green-600 text-white shadow-md'
                                             : 'bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-100'
                                             }`}
-                                        title="Seller Pipeline"
+                                        title="Target Pipeline"
                                     >
                                         <span className="font-bold text-sm">S</span>
                                     </button>
@@ -460,10 +475,10 @@ const DealPipeline = () => {
                                             key={code}
                                             onClick={() => setSelectedStage(isSelected ? null : code)}
                                             className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-all relative ${isSelected
-                                                    ? pipelineView === 'buyer' ? 'bg-[#064771] text-white shadow-md' : 'bg-green-600 text-white shadow-md'
-                                                    : stageDeals.length > 0
-                                                        ? pipelineView === 'buyer' ? 'bg-blue-50 text-[#064771] border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'
-                                                        : 'bg-white text-gray-300 border border-gray-100 hover:border-gray-300'
+                                                ? pipelineView === 'buyer' ? 'bg-[#064771] text-white shadow-md' : 'bg-green-600 text-white shadow-md'
+                                                : stageDeals.length > 0
+                                                    ? pipelineView === 'buyer' ? 'bg-blue-50 text-[#064771] border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'
+                                                    : 'bg-white text-gray-300 border border-gray-100 hover:border-gray-300'
                                                 }`}
                                             title={`${stage.name} (${stageDeals.length})`}
                                         >
@@ -501,30 +516,39 @@ const DealPipeline = () => {
 
                     {activeTab === 'board' && (
                         <div className="flex-1 overflow-x-auto p-4">
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCorners}
-                                onDragStart={handleDragStart}
-                                onDragEnd={handleDragEnd}
-                            >
-                                <div className="flex gap-4 min-w-max">
-                                    {stages
-                                        .filter((stage) => !selectedStage || selectedStage === stage.code)
-                                        .map((stage) => (
-                                            <StageColumn
-                                                key={stage.code}
-                                                code={stage.code}
-                                                name={stage.name}
-                                                deals={deals[stage.code]?.deals || []}
-                                                onDealClick={(deal) => navigate(`/deals/${deal.id}`)}
-                                                pipelineView={pipelineView}
-                                            />
-                                        ))}
+                            {isLoading ? (
+                                <div className="flex items-center justify-center h-64">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
+                                        <span className="text-sm font-medium text-gray-500">Loading deals...</span>
+                                    </div>
                                 </div>
-                                <DragOverlay>
-                                    {activeDeal ? <DealCard deal={activeDeal} isDragging pipelineView={pipelineView} /> : null}
-                                </DragOverlay>
-                            </DndContext>
+                            ) : (
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCorners}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <div className="flex gap-4 min-w-max">
+                                        {stages
+                                            .filter((stage) => !selectedStage || selectedStage === stage.code)
+                                            .map((stage) => (
+                                                <StageColumn
+                                                    key={stage.code}
+                                                    code={stage.code}
+                                                    name={stage.name}
+                                                    deals={deals[stage.code]?.deals || []}
+                                                    onDealClick={(deal) => navigate(`/deals/${deal.id}`)}
+                                                    pipelineView={pipelineView}
+                                                />
+                                            ))}
+                                    </div>
+                                    <DragOverlay>
+                                        {activeDeal ? <DealCard deal={activeDeal} isDragging pipelineView={pipelineView} /> : null}
+                                    </DragOverlay>
+                                </DndContext>
+                            )}
                         </div>
                     )}
 
@@ -534,7 +558,7 @@ const DealPipeline = () => {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Deal Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Buyer' : 'Seller'}</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Investor' : 'Target'}</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stage</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Value</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
@@ -597,6 +621,43 @@ const DealPipeline = () => {
                     onClose={() => setShowCreateModal(false)}
                     onCreated={handleDealCreated}
                     defaultView={pipelineView}
+                />
+            )}
+
+            {/* Chat Overlay Drawer */}
+            <div className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-white shadow-2xl z-[100] transform transition-transform duration-300 ease-in-out border-l border-gray-100 p-0 flex flex-col ${chatDeal ? 'translate-x-0' : 'translate-x-full'}`}>
+                {chatDeal && (
+                    <>
+                        <div className="flex items-center justify-between p-4 border-b bg-gray-50/50">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">{chatDeal.name}</h3>
+                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Deal Activity & Audit Logs</p>
+                            </div>
+                            <button
+                                onClick={() => setChatDeal(null)}
+                                className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden p-0">
+                            {/* Make ActivityLogChat occupy the full height of this container */}
+                            <div className="h-full">
+                                <ActivityLogChat
+                                    entityId={chatDeal.id.toString()}
+                                    entityType="deal"
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Overlay background for Chat */}
+            {chatDeal && (
+                <div
+                    className="fixed inset-0 bg-black/20 z-[90] animate-in fade-in duration-300"
+                    onClick={() => setChatDeal(null)}
                 />
             )}
         </div>

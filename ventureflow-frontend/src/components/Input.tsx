@@ -23,18 +23,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           style={customBorder}
           className={cn(
-            "w-full px-4 py-2 rounded-md text-sm placeholder:text-[#8a8a8a] transition-shadow",
+            "w-full px-4 py-2 rounded text-sm placeholder:text-[#8a8a8a] transition-all",
             "focus:outline-none",
             "font-poppins",
             leftIcon && "pl-10",
             rightIcon && "pr-10",
             error
-              ? "border border-red-500 focus:shadow-[0_0_0_4px_rgba(255,0,0,0.2)]"
+              ? "border border-red-500 focus:ring-1 focus:ring-red-500"
               : !isDisabled && !isReadOnly &&
-                "border border-[#E2E8F0] focus:shadow-[0_0_0_4px_#E1F9FF] focus:border-[#0C5577]",
+              "border border-[#E2E8F0] focus:ring-1 focus:ring-[#064771] focus:border-[#064771]",
             (isDisabled || isReadOnly) && "bg-gray-200 text-gray-600",
             isDisabled && "cursor-not-allowed",
-            isReadOnly && !isDisabled && "cursor-default focus:shadow-none",
+            isReadOnly && !isDisabled && "cursor-default focus:ring-0",
             className
           )}
           disabled={isDisabled}
