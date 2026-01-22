@@ -118,6 +118,7 @@ const ProspectsPortal: React.FC = () => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importType, setImportType] = useState<'investors' | 'targets'>('investors');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -328,7 +329,7 @@ const ProspectsPortal: React.FC = () => {
         formData.append('excel_file', selectedFile);
 
         try {
-            const endpoint = activeTab === 'investors'
+            const endpoint = importType === 'investors'
                 ? '/api/import/buyers-company-overview'
                 : '/api/import/sellers-company-overview';
 
@@ -464,19 +465,42 @@ const ProspectsPortal: React.FC = () => {
         let headers = [];
         if (type === 'investor') {
             headers = [
-                "Project Code",
+                "Code",
                 "Rank",
-                "Company Name",
-                "Target Business & Industry",
+                "Company name",
+                "HQ",
+                "Target countries",
+                "Target industries",
+                "Budget Min",
+                "Budget Max",
+                "Budget Currency",
+                "Website / LP URL",
                 "Purpose of M&A",
-                "Target county and area",
-                "Investment budget",
-                "Investment Condition",
-                "URL (website)",
-                "Investor's Profile Download Link"
+                "Investment condition",
+                "Contact person",
+                "Position",
+                "Email",
+                "Investor's Profile"
             ];
         } else {
-            headers = ["Project Code", "Company Name", "Industry", "HQ Country", "Revenue", "EBITDA"];
+            headers = [
+                "Code",
+                "Rank",
+                "Company name",
+                "HQ",
+                "Industry",
+                "Details",
+                "Reason for M&A",
+                "Planned Sale Share Ratio",
+                "Budget Min",
+                "Budget Max",
+                "Budget Currency",
+                "Website URL",
+                "Teaser Link",
+                "Contact person",
+                "Position",
+                "Email"
+            ];
         }
 
         const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
@@ -502,8 +526,8 @@ const ProspectsPortal: React.FC = () => {
                                         <Upload className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Import Data</h2>
-                                        <p className="text-sm text-gray-500">Bulk upload your {activeTab} list</p>
+                                        <h2 className="text-2xl font-bold text-gray-900">Import {importType === 'investors' ? 'Investors' : 'Targets'}</h2>
+                                        <p className="text-sm text-gray-500">Bulk upload your {importType} list</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded transition-colors">
@@ -559,7 +583,7 @@ const ProspectsPortal: React.FC = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                downloadCsvTemplate(activeTab === 'investors' ? 'investor' : 'target');
+                                                downloadCsvTemplate(importType === 'investors' ? 'investor' : 'target');
                                             }}
                                             className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                                         >
@@ -789,8 +813,11 @@ const ProspectsPortal: React.FC = () => {
                                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500" /> Add Target
                                         </button>
                                         <div className="h-px bg-gray-100 my-1 mx-2" />
-                                        <button className="w-full text-left px-4 py-2.5 text-sm text-[#064771] font-bold hover:bg-blue-50 flex items-center gap-3 transition-colors" onClick={() => { setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                            <Upload className="w-4 h-4" /> Import Data
+                                        <button className="w-full text-left px-4 py-2.5 text-sm text-[#064771] font-bold hover:bg-blue-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                            <Upload className="w-4 h-4" /> Import Investors
+                                        </button>
+                                        <button className="w-full text-left px-4 py-2.5 text-sm text-[#064771] font-bold hover:bg-blue-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                            <Upload className="w-4 h-4" /> Import Targets
                                         </button>
                                     </div>
                                 )}

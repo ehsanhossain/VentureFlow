@@ -30,6 +30,7 @@ class Seller extends Model
         'partnership_detail_id',
         'teaser_center_id',
         'image',
+        'status',
     ];
 
     /**

@@ -79,128 +79,108 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
     public function onRow(Row $row)
     {
         $rowIndex = $row->getIndex();
-        $row = $row->toArray(); // Converted by WithMapping already
+        $row = $row->toArray();
 
         $commaSeparatedToArray = function ($value) {
-            if (is_null($value) || trim($value) === '') {
-                return [];
-            }
-            if (is_array($value)) {
-                return $value;
-            }
-            return array_map('trim', explode(',', (string) $value));
+            if (is_null($value) || trim($value) === '') return [];
+            if (is_array($value)) return $value;
+            // Support both comma and semicolon
+            $delimiters = [',', ';'];
+            $escaped_delimiters = array_map(function($d) { return preg_quote($d, '/'); }, $delimiters);
+            $pattern = '/' . implode('|', $escaped_delimiters) . '/';
+            return array_map('trim', preg_split($pattern, (string)$value));
         };
 
-        $stringToBoolean = function ($value) {
-            if (is_null($value)) return null;
-            if (is_bool($value)) return $value;
-            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-        };
-
-        // Support both "Company Registered Name" and "Company Name" headers
-        $companyRegName = $row['company_registered_name'] ?? $row['company_name'] ?? null;
-
+        // 1. Company Name (Required)
+        $companyRegName = $row['company_name'] ?? $row['company_registered_name'] ?? null;
         if (empty($companyRegName)) {
-            Log::warning('Skipping row due to empty Company Name.', ['row_data' => $row]);
+            Log::warning("Skipping row $rowIndex: Empty Company Name.");
             return;
         }
 
-        // Skip rows where company name is "N/A" or similar placeholder values
-        $companyNameLower = trim(strtolower((string)$companyRegName));
-        if (in_array($companyNameLower, ['n/a', 'na', 'n\\a', 'n\\/a', '', '-', 'null', 'undefined'])) {
-            Log::info('Skipping row with placeholder Company Name: ' . $companyRegName);
-            return;
+        // 2. Code Validation (XX-B-XXX)
+        $projectCode = $row['code'] ?? $row['project_code'] ?? null;
+        if ($projectCode) {
+            if (!preg_match('/^[A-Z]{2}-B-\d{2,3}$/', strtoupper($projectCode))) {
+                Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-B-XXX.");
+                return; // Or throw ValidationException
+            }
+            // Check Duplicates
+            if (Buyer::where('buyer_id', $projectCode)->exists()) {
+                Log::error("Validation Error Row $rowIndex: Duplicate Project Code '$projectCode'.");
+                return;
+            }
         }
 
-        $ebitdaTimesData = $this->parseJsonColumn($row['ebitda_multiples'] ?? null);
+        // 3. Rank Handling (A, B, C)
+        $rank = strtoupper(trim($row['rank'] ?? 'B'));
+        if (!in_array($rank, ['A', 'B', 'C'])) {
+            $rank = 'B'; // Default
+        }
 
-        // --- ID Generation Logic ---
-        $countryName = $row['hq_origin_country'] ?? $row['hq_country'] ?? null;
+        // 4. HQ Country Lookup
+        $countryName = $row['hq'] ?? $row['hq_country'] ?? $row['origin_country'] ?? null;
         $hqCountryId = null;
-        $buyerId = null;
-
         if ($countryName) {
-            // Find Country by Name to get Alpha Code and ID
-            $country = Country::where('name', $countryName)->first();
-
+            $country = Country::where('name', 'LIKE', trim($countryName))->first();
             if ($country) {
                 $hqCountryId = $country->id;
-                $countryAlpha = strtoupper($country->alpha_2_code ?? substr($countryName, 0, 2));
-
-                // Generate Buyer ID only if we have a valid Alpha Code
-                if ($countryAlpha) {
-                    $prefix = $countryAlpha . '-B-';
-                    
-                    // Find max existing sequence
-                    // Implementation mimics BuyerController::getLastSequence
-                    $lastBuyer = Buyer::where('buyer_id', 'LIKE', $prefix . '%')
-                        ->select('buyer_id')
-                        ->get()
-                        ->map(function ($item) use ($prefix) {
-                            $numericPart = str_replace($prefix, '', $item->buyer_id);
-                            return (int) $numericPart;
-                        })
-                        ->max();
-
-                    $nextSequence = ($lastBuyer ? $lastBuyer : 0) + 1;
-                    $formattedSequence = str_pad($nextSequence, 3, '0', STR_PAD_LEFT); // Ensure e.g. 001 or 01 based on preference, here using 3 digits as per example XX-B-XXX
-                    // Note: User image showed XX-B-XXX (3 digits). Adjusting to that.
-                    $buyerId = $prefix . $formattedSequence;
-                }
             } else {
-                 Log::warning("Country '{$countryName}' not found in database. Buyer ID generation skipped.");
+                Log::warning("Row $rowIndex: Country '$countryName' not found. Please fix in system.");
+                // User requirement: Software will ask user to fix it. 
+                // For now, we log it and maybe keep it null or skip.
             }
         }
+
+        // 5. Target Countries & Industries
+        $targetCountries = $commaSeparatedToArray($row['target_countries'] ?? '');
+        $targetIndustries = $commaSeparatedToArray($row['target_industries'] ?? '');
+
+        // 6. Budget (Min, Max, Currency)
+        $budgetMin = filter_var($row['budget_min'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $budgetMax = filter_var($row['budget_max'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $budgetCurrency = strtoupper(trim($row['budget_currency'] ?? $row['default_currency'] ?? 'USD'));
+
+        // 7. Purpose of M&A
+        $purpose = $row['purpose_of_mna'] ?? $row['reason_ma'] ?? null;
 
         // Create Company Overview
         $overview = BuyersCompanyOverview::create([
-            'reg_name'                 => $companyRegName,
-            'hq_country'               => $hqCountryId, // Store ID, not name
-            'company_type'             => $row['company_type'] ?? null,
-            'year_founded'             => $row['year_founded'] ?? null,
-            'industry_ops'             => $row['broader_industry_operations'] ?? $row['target_business_industry'] ?? null,
-            'main_industry_operations' => $commaSeparatedToArray($row['main_industry_operations'] ?? null),
-            'niche_industry'           => $commaSeparatedToArray($row['niche_priority_industry'] ?? null),
-            'emp_count'                => $row['current_employee_counts'] ?? null,
-            'reason_ma'                => $row['reason_ma'] ?? $row['purpose_of_ma'] ?? null,
-            'proj_start_date'          => $this->transformDate($row['project_start_date'] ?? null),
-            'txn_timeline'             => $row['expected_transaction_timeline'] ?? null,
-            'incharge_name'            => $row['our_person_in_charge'] ?? null,
-            'no_pic_needed'            => $stringToBoolean($row['no_pic_needed'] ?? false),
-            'status'                   => $row['status'] ?? null,
-            'details'                  => $row['details'] ?? null,
-            'email'                    => $row['company_s_email'] ?? $row['url_website'] ?? null, 
-            'phone'                    => $row['company_s_phone_number'] ?? null,
-            'hq_address'               => $this->parseAddress($row['hq_address'] ?? null),
-            'shareholder_name'         => $commaSeparatedToArray($row['shareholder_name'] ?? null),
-            'seller_contact_name'      => $row['seller_side_contact_person_name'] ?? null,
-            'seller_designation'       => $row['designation_position'] ?? null,
-            'seller_email'             => $row['email_address'] ?? null,
-            'seller_phone'             => $commaSeparatedToArray($row['phone_number'] ?? null),
-            'website'                  => $row['website_link'] ?? $row['url_website'] ?? null,
-            'linkedin'                 => $row['linkedin_link'] ?? null,
-            'twitter'                  => $row['x_twitter_link'] ?? null,
-            'facebook'                 => $row['facebook_link'] ?? null,
-            'instagram'                => $row['instagram_link'] ?? null,
-            'youtube'                  => $row['youtube_link'] ?? null,
-            // 'ebitda_times'             => $ebitdaTimesData, // Not in fillable of model currently shown, relying on model def.
-            'buyer_id'                 => $buyerId, // Store localized ID in overview if field exists (it does in fillable)
+            'reg_name'             => $companyRegName,
+            'hq_country'           => $hqCountryId,
+            'company_type'         => $row['company_type'] ?? 'Corporate',
+            'year_founded'         => $row['year_founded'] ?? null,
+            'rank'                 => $rank,
+            'reason_ma'            => $purpose,
+            'status'               => 'Active',
+            'email'                => $row['email'] ?? $row['company_s_email'] ?? null,
+            'phone'                => $row['phone'] ?? $row['company_s_phone_number'] ?? null,
+            'website'              => $row['website_lp_url'] ?? $row['website'] ?? null,
+            'investment_condition' => $row['investment_condition'] ?? null,
+            'investor_profile_link'=> $row['investor_profile'] ?? null,
+            'investment_budget'    => [
+                'min' => $budgetMin,
+                'max' => $budgetMax,
+                'currency' => $budgetCurrency
+            ],
+            'target_countries'     => $targetCountries,
+            'main_industry_operations' => $targetIndustries,
+            'contacts'             => [
+                [
+                    'name' => $row['contact_person'] ?? '',
+                    'designation' => $row['position'] ?? '',
+                    'email' => $row['email'] ?? '',
+                    'isPrimary' => true
+                ]
+            ],
         ]);
 
         // Create Parent Buyer Record
-        $buyer = Buyer::create([
-            'buyer_id' => $buyerId,
+        Buyer::create([
+            'buyer_id' => $projectCode,
             'company_overview_id' => $overview->id,
-            // Other IDs (target_preference, etc) can be null initially
+            'status' => 'Active'
         ]);
-
-        // Link Overview back to Buyer (optional but good for bi-directionality if needed)
-        // $overview->buyer_id = $buyer->id; // The fillable has 'buyer_id' which usually stores the STRING ID, not the FK.
-        // Actually buyers_company_overviews table structure usually has a foreign key or just the string ID? 
-        // Based on BuyerController lines 291-292: 
-        // $buyer->company_overview_id = $overview->id; 
-        // $buyer->buyer_id = ...
-        // So Buyer -> Overview is the main link.
     }
 
     public function chunkSize(): int
@@ -211,39 +191,22 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
     public function rules(): array
     {
         return [
-            'company_registered_name'       => 'nullable|string|max:255',
-            'hq_origin_country'             => 'nullable|string|max:100',
-            'company_type'                  => 'nullable|string|max:100',
-            'year_founded'                  => 'nullable|digits:4|integer|min:1000|max:' . date('Y'),
-            'broader_industry_operations'   => 'nullable|string|max:255',
-            'main_industry_operations'      => 'nullable|string',
-            'niche_priority_industry'       => 'nullable|string',
-            'current_employee_counts'       => 'nullable',
-            'reason_ma'                     => 'nullable|string',
-            'project_start_date'            => 'nullable',
-            'expected_transaction_timeline' => 'nullable|string',
-            'our_person_in_charge'          => 'nullable|string|max:100',
-            'no_pic_needed'                 => 'nullable',
-            'status'                        => 'nullable|string|max:50',
-            'details'                       => 'nullable|string',
-            'company_s_email'               => 'nullable|email|max:150',
-            'company_s_phone_number'        => 'nullable|string|max:50',
-            'hq_address'                    => 'nullable|string', 
-            'shareholder_name'              => 'nullable|string',
-            'seller_side_contact_person_name' => 'nullable|string|max:100',
-            'designation_position'          => 'nullable|string|max:100',
-            'email_address'                 => 'nullable|email|max:150',
-            'phone_number'                  => 'nullable|string',
-            'website_link'                  => 'nullable|url|max:255',
-            'linkedin_link'                 => 'nullable|url|max:255',
-            'x_twitter_link'                => 'nullable|url|max:255',
-            'facebook_link'                 => 'nullable|url|max:255',
-            'instagram_link'                => 'nullable|url|max:255',
-            'youtube_link'                  => 'nullable|url|max:255',
-            'seller_id'                     => 'nullable',
-            'seller_image'                  => 'nullable|string',
-            'profile_picture'               => 'nullable|string',
-            'ebitda_multiples'              => 'nullable|string', 
+            'code'                => 'nullable|string',
+            'rank'                => 'nullable|string|max:1',
+            'company_name'        => 'nullable|string|max:255',
+            'hq'                  => 'nullable|string',
+            'target_countries'    => 'nullable|string',
+            'target_industries'   => 'nullable|string',
+            'budget_min'          => 'nullable',
+            'budget_max'          => 'nullable',
+            'budget_currency'     => 'nullable|string|max:10',
+            'website_lp_url'      => 'nullable|string',
+            'purpose_of_mna'      => 'nullable|string',
+            'investment_condition'=> 'nullable|string',
+            'contact_person'      => 'nullable|string',
+            'position'            => 'nullable|string',
+            'email'               => 'nullable|string',
+            'investor_profile'    => 'nullable|string',
         ];
     }
 

@@ -18,6 +18,7 @@ class Buyer extends Model
         'financial_detail_id',
         'partnership_detail_id',
         'teaser_center_id',
+        'status',
     ];
 
     /**

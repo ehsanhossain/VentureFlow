@@ -42,7 +42,6 @@ class BuyersCompanyOverview extends Model
         'facebook',
         'instagram',
         'youtube',
-        'buyer_id',
         'buyer_image',
         'profile_picture',
         'rank',

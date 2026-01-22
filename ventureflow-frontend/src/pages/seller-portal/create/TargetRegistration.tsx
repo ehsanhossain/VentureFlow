@@ -7,10 +7,12 @@ import { showAlert } from '../../../components/Alert';
 import { Input } from '../../../components/Input';
 import Label from '../../../components/Label';
 import { Dropdown, Country } from '../../investor-portal/components/Dropdown';
+import { IndustryDropdown, Industry as IndustryType } from '../../investor-portal/components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { ActivityLogChat } from '../../prospects/components/ActivityLogChat';
 import { LogoUpload } from '../../../components/LogoUpload';
+import { AlertCircle } from 'lucide-react';
 
 
 interface ExtendedCountry extends Country {
@@ -20,7 +22,9 @@ interface ExtendedCountry extends Country {
 interface Industry {
     id: number;
     name: string;
+    status?: string;
     sub_industries?: Industry[];
+    [key: string]: unknown;
 }
 
 interface FormValues {
@@ -33,8 +37,7 @@ interface FormValues {
     companyName: string;
 
     // Classification
-    industryMajor: { id: number; name: string } | null;
-    industryMiddle: { id: number; name: string } | null;
+    targetIndustries: IndustryType[]; // Multi-select industries like investor side
     nicheTags: string; // comma separated or chips (simplified to string for now)
 
     // Deal Summary
@@ -79,8 +82,6 @@ export const TargetRegistration: React.FC = () => {
     const [industries, setIndustries] = useState<Industry[]>([]);
     const [users, setUsers] = useState<{ id: number; name: string }[]>([]);
 
-    // Derived state for Middle Industry
-    const [availableMiddleIndustries, setAvailableMiddleIndustries] = useState<Industry[]>([]);
     const [profileImage, setProfileImage] = useState<File | null>(null);
     const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
 
@@ -93,12 +94,12 @@ export const TargetRegistration: React.FC = () => {
             rank: 'B',
             status: 'Active',
             desiredInvestmentCurrency: 'USD',
-            nicheTags: ''
+            nicheTags: '',
+            targetIndustries: []
         }
     });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
-    const selectedMajorIndustry = useWatch({ control, name: 'industryMajor' });
     const projectCodeValue = useWatch({ control, name: 'projectCode' });
 
     // Fetch Initial Data (Countries, Industries, Users)
@@ -135,16 +136,6 @@ export const TargetRegistration: React.FC = () => {
         };
         fetchInit();
     }, []);
-
-    // Industry Logic
-    useEffect(() => {
-        if (selectedMajorIndustry && industries.length > 0) {
-            const major = industries.find(i => i.id === selectedMajorIndustry.id);
-            setAvailableMiddleIndustries(major?.sub_industries || []);
-        } else {
-            setAvailableMiddleIndustries([]);
-        }
-    }, [selectedMajorIndustry, industries]);
 
     // ID Generation (New Only)
     useEffect(() => {
@@ -237,17 +228,10 @@ export const TargetRegistration: React.FC = () => {
                 } catch (e) { }
 
                 try {
-                    // Industry Mapping
-                    // Backend stores array industry_ops
+                    // Industry Mapping - now multi-select
                     const ops = typeof ov.industry_ops === 'string' ? JSON.parse(ov.industry_ops) : ov.industry_ops;
-                    if (Array.isArray(ops) && ops.length > 0) {
-                        // Assuming first one is "Major" if we have to pick one
-                        const first = ops[0];
-                        if (first) {
-                            setValue('industryMajor', { id: first.id, name: first.name });
-                            // We can't easily know the "Middle" unless we search sub industries.
-                            // For now, let's leave middle empty or try to find it.
-                        }
+                    if (Array.isArray(ops)) {
+                        setValue('targetIndustries', ops);
                     }
                 } catch (e) { }
 
@@ -306,11 +290,8 @@ export const TargetRegistration: React.FC = () => {
                 overviewFormData.append('profilePicture', profileImage);
             }
 
-            // Industry Mapping: Send as array [Major, Middle]
-            const indArray = [];
-            if (data.industryMajor) indArray.push(data.industryMajor);
-            if (data.industryMiddle) indArray.push(data.industryMiddle);
-            overviewFormData.append('broderIndustries', JSON.stringify(indArray)); // Keeping backend name 'broderIndustries' (sic)
+            // Industry Mapping: Send selected industries
+            overviewFormData.append('broderIndustries', JSON.stringify(data.targetIndustries || []));
 
             // Contact
             overviewFormData.append('sellerSideContactPersonName', data.primaryContactName);
@@ -403,13 +384,17 @@ export const TargetRegistration: React.FC = () => {
                         <div className="relative flex items-center">
                             <input
                                 {...register('projectCode')}
-                                className={`w-full px-4 py-2 border rounded-lg ${isIdAvailable === false ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
+                                placeholder="XX-S-XXX"
                             />
-                            <div className="absolute right-3">
-                                {isCheckingId && <Loader2 className="animate-spin w-4" />}
-                                {isIdAvailable === true && <Check className="text-green-500 w-4" />}
+                            <div className="absolute right-3 flex items-center gap-2">
+                                {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                {!isCheckingId && isIdAvailable === true && <Check className="w-5 h-5 text-green-500" />}
+                                {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
                             </div>
                         </div>
+                        {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
+                        {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">Code is available.</p>}
                     </div>
 
                     <div>
@@ -454,42 +439,30 @@ export const TargetRegistration: React.FC = () => {
 
             {/* SECTION B: CLASSIFICATION */}
             <CollapsibleSection title="Classification">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                    {/* Target Industries - Multi-select with checkboxes like Investor side */}
                     <div>
-                        <Label text="Industry (Major)" required />
+                        <Label text="Target Business & Industry" required />
                         <Controller
                             control={control}
-                            name="industryMajor"
+                            name="targetIndustries"
                             rules={{ required: true }}
                             render={({ field }) => (
-                                <Dropdown
-                                    countries={industries.map(i => ({ id: i.id, name: i.name, flagSrc: '', status: 'registered' as const }))} // Reuse Dropdown generic interface
-                                    selected={field.value ? { ...field.value, flagSrc: '', status: 'registered' as const } : null}
-                                    onSelect={(val) => field.onChange(val)}
-                                    placeholder="Select industry"
-                                    searchPlaceholder="Search industry..."
+                                <IndustryDropdown
+                                    industries={industries}
+                                    selected={field.value || []}
+                                    onSelect={(selected) => field.onChange(selected)}
+                                    multiSelect={true}
                                 />
                             )}
                         />
-                        {errors.industryMajor && <span className="text-red-500 text-xs">Required</span>}
+                        {errors.targetIndustries && <span className="text-red-500 text-xs">At least one industry is required</span>}
                     </div>
 
+                    {/* Notes & Audit Log - Moved here like investor side */}
                     <div>
-                        <Label text="Industry (Middle)" />
-                        <Controller
-                            control={control}
-                            name="industryMiddle"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={availableMiddleIndustries.map(i => ({ id: i.id, name: i.name, flagSrc: '', status: 'registered' as const }))}
-                                    selected={field.value ? { ...field.value, flagSrc: '', status: 'registered' as const } : null}
-                                    onSelect={field.onChange}
-                                    disabled={!selectedMajorIndustry}
-                                    placeholder="Select sub-industry"
-                                    searchPlaceholder="Search sub-industry..."
-                                />
-                            )}
-                        />
+                        <Label text="Notes & Audit Log" />
+                        <ActivityLogChat entityId={id} entityType="seller" />
                     </div>
                 </div>
             </CollapsibleSection>
@@ -580,26 +553,30 @@ export const TargetRegistration: React.FC = () => {
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION E: LINKS & AUDIT */}
-            <CollapsibleSection title="Links & Notes">
-                <div className="space-y-4">
+            {/* SECTION E: LINKS & DOCUMENTS */}
+            <CollapsibleSection title="Relationships & Documents">
+                <div className="grid grid-cols-1 gap-6">
                     <div>
                         <Label text="Website URL" />
                         <div className="flex items-center">
-                            <span className="p-2 bg-gray-100 border border-r-0 rounded-l border-gray-300"><LinkIcon className="w-4 h-4 text-gray-500" /></span>
-                            <input {...register('websiteUrl')} className="w-full border border-gray-300 rounded-r px-3 py-2 outline-none focus:border-orange-400" placeholder="https://" />
+                            <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                <LinkIcon className="h-4 w-4" />
+                            </span>
+                            <input
+                                {...register('websiteUrl')}
+                                type="url"
+                                placeholder="https://example.com"
+                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-orange-200 focus:border-orange-400 sm:text-sm"
+                            />
                         </div>
                     </div>
 
                     <div>
-                        <Label text="Teaser / Data Room Link" />
-                        <Input {...register('teaserLink')} placeholder="Link to folder..." />
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-100 mt-4">
-                        <Label text="Audit & Activity Log" />
-                        {id && <ActivityLogChat entityId={id} entityType="seller" />}
-                        {!id && <p className="text-sm text-gray-400 italic">Audit log available after saving.</p>}
+                        <Label text="Teaser Profile Link (Doc)" />
+                        <div className="flex items-center">
+                            <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
+                            <input {...register('teaserLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded" />
+                        </div>
                     </div>
                 </div>
             </CollapsibleSection>
