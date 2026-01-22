@@ -298,6 +298,7 @@ class SellerController extends Controller
             $overview->facebook = $request->input('facebookLink');
             $overview->instagram = $request->input('instagramLink');
             $overview->youtube = $request->input('youtubeLink');
+            $overview->teaser_link = $request->input('teaser_link');
             $overview->synergies = $request->input('potentialSynergries');
             $overview->emp_full_time = $request->input('fullTimeEmployeeCounts');
             $overview->proj_start_date = $request->input('projectStartDate');

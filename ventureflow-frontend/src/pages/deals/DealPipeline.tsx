@@ -182,19 +182,31 @@ const DealPipeline = () => {
 
         if (!currentDeal || currentDeal.stage_code === newStage) return;
 
+        // Validating that the target stage exists in our current state map
+        const targetStage = deals[newStage];
+        if (!targetStage) {
+            console.warn(`Target stage ${newStage} not found in current view.`);
+            return;
+        }
+
         const oldDeals = { ...deals };
         const updatedDeals = { ...deals };
 
-        updatedDeals[currentDeal.stage_code] = {
-            ...updatedDeals[currentDeal.stage_code],
-            deals: updatedDeals[currentDeal.stage_code].deals.filter((d) => d.id !== dealId),
-        };
+        // Remove from old stage
+        if (updatedDeals[currentDeal.stage_code]) {
+            updatedDeals[currentDeal.stage_code] = {
+                ...updatedDeals[currentDeal.stage_code],
+                deals: updatedDeals[currentDeal.stage_code].deals.filter((d) => d.id !== dealId),
+            };
+        }
 
         const updatedDeal = {
             ...currentDeal,
             stage_code: newStage,
-            progress_percent: deals[newStage]?.progress || 0,
+            progress_percent: targetStage.progress || 0,
         };
+
+        // Add to new stage
         updatedDeals[newStage] = {
             ...updatedDeals[newStage],
             deals: [...updatedDeals[newStage].deals, updatedDeal],
@@ -207,10 +219,11 @@ const DealPipeline = () => {
                 stage_code: newStage,
                 pipeline_type: pipelineView
             });
-            showAlert({ type: 'success', message: `Moved to ${deals[newStage]?.name || newStage}` });
-        } catch {
+            showAlert({ type: 'success', message: `Moved to ${targetStage.name || newStage}` });
+        } catch (error) {
+            console.error("Failed to move deal:", error);
             setDeals(oldDeals);
-            showAlert({ type: 'error', message: 'Failed to update stage' });
+            showAlert({ type: 'error', message: 'Failed to update stage. Please refresh and try again.' });
         }
     };
 

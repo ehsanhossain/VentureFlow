@@ -149,6 +149,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
             await api.post('/api/deals', {
                 ...formData,
                 pic_user_id: formData.pic_user_id ? parseInt(formData.pic_user_id) : null,
+                pipeline_type: defaultView,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
             onCreated();

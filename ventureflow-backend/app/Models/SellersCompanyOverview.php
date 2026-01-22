@@ -51,6 +51,7 @@ class SellersCompanyOverview extends Model
         'facebook',
         'instagram',
         'youtube',
+        'teaser_link',
     ];
 
     /**

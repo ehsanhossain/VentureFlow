@@ -55,16 +55,28 @@ const ALL_INVESTOR_COLUMNS = [
 const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'hq', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
 
 const ALL_TARGET_COLUMNS = [
+    { id: 'addedDate', label: 'Added Date' },
     { id: 'projectCode', label: 'Project Code' },
-    { id: 'companyName', label: 'Company Name' },
     { id: 'hq', label: 'HQ Country' },
-    { id: 'industry', label: 'Industry' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
+    { id: 'industry', label: 'Industry (Major)' },
+    { id: 'industryMiddle', label: 'Industry (Middle)' },
+    { id: 'projectDetails', label: 'Project Details' },
     { id: 'desiredInvestment', label: 'Desired Investment' },
-    { id: 'ebitda', label: 'EBIRTDA' },
+    { id: 'reasonForMA', label: 'Reason for M&A' },
+    { id: 'saleShareRatio', label: 'Sale Share Ratio' },
+    { id: 'rank', label: 'Rank' },
+    { id: 'status', label: 'Status' },
+    { id: 'pipelineStatus', label: 'Pipeline' },
+    { id: 'internalOwner', label: 'Person In-Charge' },
+    { id: 'companyName', label: 'Company Name' },
+    { id: 'primaryContact', label: 'Primary Contact' },
+    { id: 'primaryEmail', label: 'Email' },
+    { id: 'primaryPhone', label: 'Phone' },
+    { id: 'website', label: 'Website' },
+    { id: 'teaserLink', label: 'Teaser Link' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'hq', 'industry', 'pipelineStatus', 'desiredInvestment', 'ebitda'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'hq', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
 
 const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
@@ -230,31 +242,69 @@ const ProspectsPortal: React.FC = () => {
                 setInvestors(mappedInvestors);
             } else {
                 const mappedTargets: TargetRowData[] = sellerDataRaw.map((s: any) => {
-                    const hqCountryId = s.company_overview?.hq_country;
-                    const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
+                    const ov = s.company_overview || {};
+                    const fin = s.financial_details || {};
+                    const hqCountry = countries.find(c => String(c.id) === String(ov.hq_country));
 
-                    const industryList = Array.isArray(s.company_overview?.industry_ops)
-                        ? s.company_overview.industry_ops.map((i: any) => i?.name || "Unknown")
-                        : [];
+                    // Industry Parsing (Major & Middle)
+                    let indMajor = "N/A";
+                    let indMiddle = "N/A";
+                    try {
+                        const ops = typeof ov.industry_ops === 'string' ? JSON.parse(ov.industry_ops) : ov.industry_ops;
+                        if (Array.isArray(ops) && ops.length > 0) {
+                            indMajor = ops[0]?.name || "N/A";
+                            if (ops.length > 1) indMiddle = ops[1]?.name || "N/A";
+                        }
+                    } catch (e) { }
 
-                    // Determine Source Currency Rate for Target (assuming financial_details has it too, otherwise default to 1)
-                    // Note: Check if seller model has financial_details.default_currency field usage
-                    const defaultCurrencyId = s.financial_details?.default_currency;
+                    const defaultCurrencyId = fin.default_currency;
                     const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
+                    // Internal Owner (PIC)
+                    let picName = "N/A";
+                    try {
+                        const pic = typeof ov.incharge_name === 'string' ? JSON.parse(ov.incharge_name) : ov.incharge_name;
+                        if (Array.isArray(pic) && pic.length > 0) picName = pic[0]?.name || "N/A";
+                        else if (pic) picName = pic.name || "N/A";
+                    } catch (e) { }
+
                     return {
                         id: s.id,
+                        addedDate: s.created_at ? new Date(s.created_at).toLocaleDateString() : "N/A",
                         projectCode: s.seller_id || "N/A",
-                        companyName: s.company_overview?.reg_name || "Unknown Company",
+                        companyName: ov.reg_name || "Unknown Company",
                         hq: {
                             name: hqCountry?.name || "Unknown",
                             flag: hqCountry?.flagSrc || ""
                         },
-                        industry: industryList,
-                        pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_name : (s.company_overview?.status || "N/A"),
-                        desiredInvestment: s.financial_details?.expected_investment_amount,
-                        ebitda: s.financial_details?.ebitda_value,
+                        industry: [indMajor], // Keeping array format for table compatibility
+                        industryMiddle: indMiddle,
+                        projectDetails: ov.details || "",
+                        pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_name : (ov.status || "N/A"), // Fallback to status if no deal? Or display both. User requested "Pipeline" and "Status".
+                        status: ov.status || "N/A",
+                        desiredInvestment: fin.expected_investment_amount, // String display
+                        reasonForMA: ov.reason_ma || "",
+                        saleShareRatio: fin.maximum_investor_shareholding_percentage || "",
+                        rank: ov.company_rank || "",
+                        internalOwner: picName,
+                        primaryContact: ov.seller_contact_name || "N/A",
+                        primaryEmail: ov.seller_email || "N/A",
+                        primaryPhone: (() => {
+                            try {
+                                if (ov.seller_phone) {
+                                    if (typeof ov.seller_phone === 'string' && ov.seller_phone.startsWith('[')) {
+                                        const parsed = JSON.parse(ov.seller_phone);
+                                        return parsed[0]?.phone || "N/A";
+                                    }
+                                    return ov.seller_phone;
+                                }
+                                return "N/A";
+                            } catch { return "N/A"; }
+                        })(),
+                        website: ov.website || "",
+                        teaserLink: ov.teaser_link || "", // Check if this field exists in backend, otherwise might need another source
+                        ebitda: fin.ebitda_value,
                         isPinned: pinnedIds.includes(s.id),
                         sourceCurrencyRate: sourceRate
                     };

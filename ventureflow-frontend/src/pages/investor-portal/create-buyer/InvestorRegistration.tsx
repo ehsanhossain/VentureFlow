@@ -11,6 +11,7 @@ import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { ActivityLogChat } from '../../prospects/components/ActivityLogChat';
+import { LogoUpload } from '../../../components/LogoUpload';
 
 // Types
 interface FormValues {
@@ -73,6 +74,8 @@ export const InvestorRegistration: React.FC = () => {
     const [countries, setCountries] = useState<ExtendedCountry[]>([]);
     const [industries, setIndustries] = useState<Industry[]>([]);
     const [isIdAvailable, setIsIdAvailable] = useState<boolean | null>(null);
+    const [profileImage, setProfileImage] = useState<File | null>(null);
+    const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
     const [isCheckingId, setIsCheckingId] = useState(false);
 
     const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -201,6 +204,13 @@ export const InvestorRegistration: React.FC = () => {
                     setValue('investmentCondition', overview.investment_condition || '');
                     setValue('investorProfileLink', overview.investor_profile_link || '');
 
+                    if (buyer.image) {
+                        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+                        const isUrl = buyer.image.startsWith('http');
+                        const imagePath = isUrl ? buyer.image : `${baseURL}/storage/${buyer.image.replace(/^\//, '')}`;
+                        setInitialProfileImage(imagePath);
+                    }
+
                     if (overview.hq_country) {
                         setValue('originCountry', {
                             id: overview.hq_country,
@@ -293,6 +303,9 @@ export const InvestorRegistration: React.FC = () => {
             }
 
             payload.append('investor_profile_link', data.investorProfileLink || '');
+            if (profileImage) {
+                payload.append('profile_picture', profileImage);
+            }
 
             await api.post('/api/buyer/company-overviews', payload);
 
@@ -324,6 +337,12 @@ export const InvestorRegistration: React.FC = () => {
 
             {/* SECTION 1: IDENTITY */}
             <CollapsibleSection title="Identity">
+                <div className="mb-6 flex justify-center">
+                    <LogoUpload
+                        initialImage={initialProfileImage}
+                        onImageSelect={(file) => setProfileImage(file)}
+                    />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Origin Country (Triggers ID) */}
                     <div>

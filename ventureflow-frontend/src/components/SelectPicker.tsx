@@ -59,7 +59,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
   };
 
   return (
-    <div className="relative w-full font-poppins" ref={containerRef}> {/* Apply font-poppins here */}
+    <div className="relative w-full" ref={containerRef}>
       <div
         onClick={() => setIsDropdownOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
@@ -78,9 +78,8 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
         )}
 
         <div
-          className={`w-full h-full flex items-center ${
-            icon ? "pl-10 pr-10" : "px-4"
-          } border rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+          className={`w-full h-full flex items-center ${icon ? "pl-10 pr-10" : "px-3"
+            } border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors`}
         >
           {selectedOption?.image && (
             <img
@@ -89,14 +88,13 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
               className="w-5 h-5 rounded-full mr-2 object-cover"
             />
           )}
-          <span className={`truncate text-[13px] ${selectedOption ? 'text-[#000000e0]' : 'text-gray-500'}`}> {/* font-poppins is inherited from parent */}
+          <span className={`truncate text-sm ${selectedOption ? 'text-gray-900' : 'text-gray-500'}`}>
             {selectedOption?.label || placeholder}
           </span>
           <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
             <svg
-              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-                isDropdownOpen ? "transform rotate-180" : ""
-              }`}
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "transform rotate-180" : ""
+                }`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -112,7 +110,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
 
       {isDropdownOpen && (
         <div
-          className="absolute top-full mt-2 w-full border border-slate-300 rounded-md bg-[#f9f9f9] z-20 shadow-md max-h-60 overflow-y-auto"
+          className="absolute top-full mt-1 w-full border border-gray-200 rounded-md bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
           role="listbox"
         >
           <div className="p-3.5">
@@ -148,9 +146,8 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                   <div
                     key={option.value}
                     id={`option-${option.value}`}
-                    className={`flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-gray-100 transition ${
-                      value === option.value ? "bg-gray-100" : ""
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-gray-100 transition ${value === option.value ? "bg-gray-100" : ""
+                      }`}
                     role="option"
                     aria-selected={value === option.value}
                     onClick={() => handleSelect(option)}

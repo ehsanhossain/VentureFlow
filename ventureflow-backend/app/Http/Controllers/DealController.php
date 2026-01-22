@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\DealStatusNotification;
+use App\Models\ActivityLog;
 
 class DealController extends Controller
 {
@@ -158,18 +159,20 @@ class DealController extends Controller
             'priority' => 'nullable|in:low,medium,high',
             'pic_user_id' => 'nullable|exists:users,id',
             'target_close_date' => 'nullable|date',
+            'pipeline_type' => 'nullable|in:buyer,seller',
         ]);
 
         // Determine stage code and look up progress from pipeline stages
         $stageCode = $validated['stage_code'] ?? null;
+        $pipelineType = $validated['pipeline_type'] ?? 'buyer';
         
         $stageQuery = \App\Models\PipelineStage::where('is_active', true);
 
         if ($stageCode) {
-             $stageQuery->where('code', $stageCode);
+             $stageQuery->where('code', $stageCode)->where('pipeline_type', $pipelineType);
         } else {
-             // Default to the first stage of the buyer pipeline if no stage provided
-             $stageQuery->where('pipeline_type', 'buyer')->orderBy('order_index', 'asc');
+             // Default to the first stage of the specific pipeline if no stage provided
+             $stageQuery->where('pipeline_type', $pipelineType)->orderBy('order_index', 'asc');
         }
         
         $stage = $stageQuery->first();

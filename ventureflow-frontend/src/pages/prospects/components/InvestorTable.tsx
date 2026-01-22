@@ -85,7 +85,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         const fetchPipelineStages = async () => {
             try {
                 const response = await api.get('/api/pipeline-stages', { params: { type: 'buyer' } });
-                setPipelineStages(response.data || []);
+                const stages = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                setPipelineStages(stages);
             } catch (error) {
                 console.error('Failed to fetch pipeline stages:', error);
             }
@@ -95,13 +96,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
     // Helper function to get stage position as "Stage X/Y"
     const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
-        if (!pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
+        if (!Array.isArray(pipelineStages) || !pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
             return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
         }
 
+        const safeStageCode = String(stageCode);
         const totalStages = pipelineStages.length;
         const stageIndex = pipelineStages.findIndex(
-            s => s.code.toUpperCase() === stageCode.toUpperCase() || s.name.toUpperCase() === stageCode.toUpperCase()
+            s => (s.code && String(s.code).toUpperCase() === safeStageCode.toUpperCase()) || (s.name && String(s.name).toUpperCase() === safeStageCode.toUpperCase())
         );
 
         if (stageIndex === -1) {

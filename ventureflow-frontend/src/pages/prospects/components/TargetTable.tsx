@@ -9,16 +9,14 @@ import {
     TableRow,
 } from '../../../components/table/table';
 import Checkbox from '../../../components/Checkbox';
-import { Tooltip } from '../../../components/Tooltip';
-import { formatCompactBudget, formatFullBudget } from '../../../utils/formatters';
+
+import { formatCompactBudget } from '../../../utils/formatters';
 import {
     MoreVertical,
     Filter,
     ArrowUpDown,
     Square,
     Bookmark,
-    Eye,
-    Zap,
     ArrowUp,
     ArrowDown,
     ListFilter,
@@ -29,15 +27,28 @@ import { showAlert } from '../../../components/Alert';
 
 export interface TargetRowData {
     id: number;
+    addedDate: string;
     projectCode: string;
     companyName: string;
     hq: { name: string; flag: string };
     industry: string[];
+    industryMiddle: string;
+    projectDetails: string;
     pipelineStatus: string;
+    status: string;
     desiredInvestment: any;
+    reasonForMA: string;
+    saleShareRatio: string;
+    rank: string;
+    internalOwner: string;
+    primaryContact: string;
+    primaryEmail: string;
+    primaryPhone: string;
+    website: string;
+    teaserLink: string;
     ebitda: any;
     isPinned?: boolean;
-    sourceCurrencyRate?: number; // Exchange rate of the target's default currency relative to base
+    sourceCurrencyRate?: number;
 }
 
 interface TargetTableProps {
@@ -72,12 +83,12 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     // Pipeline stages for target (seller) pipeline
     const [pipelineStages, setPipelineStages] = useState<{ code: string; name: string; order_index: number }[]>([]);
 
-    // Fetch pipeline stages for target (seller) pipeline
     useEffect(() => {
         const fetchPipelineStages = async () => {
             try {
                 const response = await api.get('/api/pipeline-stages', { params: { type: 'seller' } });
-                setPipelineStages(response.data || []);
+                const stages = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                setPipelineStages(stages);
             } catch (error) {
                 console.error('Failed to fetch pipeline stages:', error);
             }
@@ -85,15 +96,15 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         fetchPipelineStages();
     }, []);
 
-    // Helper function to get stage position as "Stage X/Y"
     const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
-        if (!pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
+        if (!Array.isArray(pipelineStages) || !pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
             return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
         }
 
+        const safeStageCode = String(stageCode);
         const totalStages = pipelineStages.length;
         const stageIndex = pipelineStages.findIndex(
-            s => s.code.toUpperCase() === stageCode.toUpperCase() || s.name.toUpperCase() === stageCode.toUpperCase()
+            s => (s.code && String(s.code).toUpperCase() === safeStageCode.toUpperCase()) || (s.name && String(s.name).toUpperCase() === safeStageCode.toUpperCase())
         );
 
         if (stageIndex === -1) {
@@ -107,14 +118,26 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         };
     };
 
-    // Column resizing state
     const [columnWidths, setColumnWidths] = useState<Record<string, number>>({
+        addedDate: 100,
         projectCode: 150,
         companyName: 200,
         hq: 120,
-        industry: 200,
+        industry: 150,
+        industryMiddle: 150,
+        projectDetails: 250,
         pipelineStatus: 120,
+        status: 100,
         desiredInvestment: 160,
+        reasonForMA: 150,
+        saleShareRatio: 120,
+        rank: 80,
+        internalOwner: 150,
+        primaryContact: 150,
+        primaryEmail: 200,
+        primaryPhone: 130,
+        website: 150,
+        teaserLink: 120,
         ebitda: 140,
     });
 
@@ -186,7 +209,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
             direction = 'desc';
         } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
-            direction = null; // Reset sort
+            direction = null;
         }
         setSortConfig({ key, direction });
     };
@@ -242,7 +265,6 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         const targetRate = selectedCurrency?.rate || 1;
         const sRate = sourceRate || 1;
         const conversionRate = targetRate / sRate;
-
         return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
@@ -250,11 +272,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
     const ResizeHandle = ({ column }: { column: string }) => (
         <div
-            className={`
-                absolute right-0 top-0 h-full w-[4px] cursor-col-resize 
-                select-none z-20 group/handle transition-all duration-200
-                hover:w-[6px]
-            `}
+            className={`absolute right-0 top-0 h-full w-[4px] cursor-col-resize select-none z-20 group/handle transition-all duration-200 hover:w-[6px]`}
             onMouseDown={(e) => handleMouseDown(e, column)}
         >
             <div className="absolute right-0 top-0 h-full w-[1px] bg-gray-200 transition-all" />
@@ -289,129 +307,41 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 </button>
                             </TableHead>
 
-                            {isVisible('projectCode') && (
-                                <TableHead
-                                    style={{ width: columnWidths.projectCode }}
-                                    className="relative group p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('projectCode')}
+                            {Object.keys(columnWidths).map(colKey => (
+                                isVisible(colKey) && (
+                                    <TableHead
+                                        key={colKey}
+                                        style={{ width: columnWidths[colKey as keyof typeof columnWidths] }}
+                                        className="relative group p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
                                     >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Code</span>
-                                        <SortIcon column="projectCode" />
-                                    </div>
-                                    <ResizeHandle column="projectCode" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('companyName') && (
-                                <TableHead
-                                    style={{ width: columnWidths.companyName }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('companyName')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Company</span>
-                                        <SortIcon column="companyName" />
-                                    </div>
-                                    <ResizeHandle column="companyName" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('hq') && (
-                                <TableHead
-                                    style={{ width: columnWidths.hq }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">HQ</span>
-                                    <ResizeHandle column="hq" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('industry') && (
-                                <TableHead
-                                    style={{ width: columnWidths.industry }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Industry</span>
-                                    <ResizeHandle column="industry" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('pipelineStatus') && (
-                                <TableHead
-                                    style={{ width: columnWidths.pipelineStatus }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('pipelineStatus')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pipeline</span>
-                                        <SortIcon column="pipelineStatus" />
-                                    </div>
-                                    <ResizeHandle column="pipelineStatus" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('desiredInvestment') && (
-                                <TableHead
-                                    style={{ width: columnWidths.desiredInvestment }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('desiredInvestment')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Desired Investment</span>
-                                        <SortIcon column="desiredInvestment" />
-                                    </div>
-                                    <ResizeHandle column="desiredInvestment" />
-                                </TableHead>
-                            )}
-
-                            {isVisible('ebitda') && (
-                                <TableHead
-                                    style={{ width: columnWidths.ebitda }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('ebitda')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">EBIRTDA</span>
-                                        <SortIcon column="ebitda" />
-                                    </div>
-                                    <ResizeHandle column="ebitda" />
-                                </TableHead>
-                            )}
+                                        <div
+                                            className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
+                                            onClick={() => handleSort(colKey as SortKey)}
+                                        >
+                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                                {colKey === 'hq' ? 'HQ' :
+                                                    colKey === 'ebitda' ? 'EBITDA' :
+                                                        colKey.replace(/([A-Z])/g, ' $1').trim()}
+                                            </span>
+                                            <SortIcon column={colKey as SortKey} />
+                                        </div>
+                                        <ResizeHandle column={colKey} />
+                                    </TableHead>
+                                )
+                            ))}
 
                             <TableHead className="text-right w-[120px] pr-6 sticky right-0 bg-gray-50/50 z-40 border-l border-gray-100">
                                 <div className="flex items-center justify-end gap-2">
                                     {selectedIds.size > 0 ? (
-                                        <button
-                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
-                                            onClick={handleDeleteSelected}
-                                            title="Delete Selected"
-                                        >
+                                        <button onClick={handleDeleteSelected} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-600 rounded">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     ) : (
                                         <>
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                                onClick={onOpenFilter}
-                                                title="Advanced Filters"
-                                            >
+                                            <button onClick={onOpenFilter} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded">
                                                 <Filter className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                                title="General Sorting"
-                                            >
+                                            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95" title="General Sorting">
                                                 <ListFilter className="w-4 h-4 rotate-180" />
                                             </button>
                                         </>
@@ -422,135 +352,49 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={visibleColumns.length + 2} className="h-48 text-center text-gray-400">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
-                                        <span className="text-sm font-medium">Loading targets...</span>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={100} className="text-center h-24">Loading...</TableCell></TableRow>
                         ) : sortedData.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={visibleColumns.length + 2} className="h-48 text-center text-gray-400">
-                                    <p className="text-lg font-medium">No targets found</p>
-                                    <p className="text-sm">Try adjusting your search or filters</p>
-                                </TableCell>
-                            </TableRow>
+                            <TableRow><TableCell colSpan={100} className="text-center h-24">No Data</TableCell></TableRow>
                         ) : (
                             sortedData.map((row) => (
                                 <TableRow
                                     key={row.id}
                                     onContextMenu={(e) => handleContextMenu(e, row.id)}
                                     onClick={() => navigate(`/seller-portal/view/${row.id}`)}
-                                    className={`
-                                        group transition-all duration-200 border-l-[3px] border-b border-gray-100 cursor-pointer
-                                        ${selectedIds.has(row.id) ? 'bg-blue-50/80 border-l-[#064771]' : 'hover:bg-gray-50 bg-white border-l-transparent hover:border-l-[#064771]'}
-                                        ${row.isPinned ? 'bg-amber-50/30' : ''}
-                                    `}
+                                    className={`group border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedIds.has(row.id) ? 'bg-blue-50' : ''} ${row.isPinned ? 'bg-amber-50/30' : ''}`}
                                 >
-                                    <TableCell className="text-center sticky left-0 bg-inherit z-20 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
+                                    <TableCell className="text-center sticky left-0 bg-inherit z-20 border-r border-gray-100">
                                         {isSelectMode ? (
-                                            <Checkbox
-                                                checked={selectedIds.has(row.id)}
-                                                onChange={(e) => handleSelectRow(row.id, e.target.checked)}
-                                            />
+                                            <Checkbox checked={selectedIds.has(row.id)} onChange={(e) => handleSelectRow(row.id, e.target.checked)} />
                                         ) : (
                                             row.isPinned && <Bookmark className="w-4 h-4 text-amber-500 fill-amber-500 mx-auto" />
                                         )}
                                     </TableCell>
 
-                                    {isVisible('projectCode') && (
-                                        <TableCell className="font-semibold text-[#064771] border-b border-gray-100">
-                                            <Tooltip content={row.projectCode}>
-                                                <div className="flex items-center gap-2">
-                                                    {row.projectCode}
-                                                </div>
-                                            </Tooltip>
-                                        </TableCell>
-                                    )}
+                                    {isVisible('addedDate') && <TableCell className="text-gray-600 text-xs">{row.addedDate}</TableCell>}
+                                    {isVisible('projectCode') && <TableCell className="font-semibold text-[#064771]">{row.projectCode}</TableCell>}
+                                    {isVisible('companyName') && <TableCell className="font-bold text-gray-900">{row.companyName}</TableCell>}
+                                    {isVisible('hq') && <TableCell><div className="flex items-center gap-2">{row.hq?.flag && <img src={row.hq.flag} className="w-4 h-4 rounded-full" />} {row.hq?.name || 'N/A'}</div></TableCell>}
+                                    {isVisible('industry') && <TableCell className="text-xs">{Array.isArray(row.industry) && row.industry[0] ? row.industry[0] : 'N/A'}</TableCell>}
+                                    {isVisible('industryMiddle') && <TableCell className="text-xs">{row.industryMiddle}</TableCell>}
+                                    {isVisible('projectDetails') && <TableCell><div className="truncate max-w-[200px]" title={row.projectDetails}>{row.projectDetails}</div></TableCell>}
+                                    {isVisible('pipelineStatus') && <TableCell><span className="px-2 py-0.5 rounded bg-green-50 text-green-700 text-xs border border-green-200">{getStagePosition(row.pipelineStatus).display}</span></TableCell>}
+                                    {isVisible('status') && <TableCell><span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">{row.status}</span></TableCell>}
+                                    {isVisible('desiredInvestment') && <TableCell className="font-bold">{getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate)}</TableCell>}
+                                    {isVisible('reasonForMA') && <TableCell className="text-xs">{row.reasonForMA}</TableCell>}
+                                    {isVisible('saleShareRatio') && <TableCell className="text-xs">{row.saleShareRatio}</TableCell>}
+                                    {isVisible('rank') && <TableCell><span className={`px-2 py-0.5 rounded text-xs font-bold ${row.rank === 'A' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{row.rank}</span></TableCell>}
+                                    {isVisible('internalOwner') && <TableCell className="text-xs">{row.internalOwner}</TableCell>}
+                                    {isVisible('primaryContact') && <TableCell className="text-sm font-medium">{row.primaryContact}</TableCell>}
+                                    {isVisible('primaryEmail') && <TableCell className="text-xs text-gray-500">{row.primaryEmail}</TableCell>}
+                                    {isVisible('primaryPhone') && <TableCell className="text-xs text-gray-500">{row.primaryPhone}</TableCell>}
+                                    {isVisible('website') && <TableCell><a href={row.website} target="_blank" className="text-blue-500 hover:underline text-xs" onClick={(e) => e.stopPropagation()}>Link</a></TableCell>}
+                                    {isVisible('teaserLink') && <TableCell><a href={row.teaserLink} target="_blank" className="text-blue-500 hover:underline text-xs" onClick={(e) => e.stopPropagation()}>Link</a></TableCell>}
+                                    {isVisible('ebitda') && <TableCell className="text-xs">{getBudgetDisplay(row.ebitda, row.sourceCurrencyRate)}</TableCell>}
 
-                                    {isVisible('companyName') && (
-                                        <TableCell className="text-gray-900 font-bold text-[14px] border-b border-gray-100">
-                                            <Tooltip content={row.companyName}>
-                                                <span className="truncate block">{row.companyName}</span>
-                                            </Tooltip>
-                                        </TableCell>
-                                    )}
-
-                                    {isVisible('hq') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                {row.hq.flag ? (
-                                                    <img src={row.hq.flag} alt={row.hq.name} className="w-5 h-5 rounded-full object-cover shadow-sm ring-1 ring-gray-100 shrink-0" />
-                                                ) : (
-                                                    <div className="w-5 h-5 rounded-full bg-gray-200 shrink-0" />
-                                                )}
-                                                <Tooltip content={row.hq.name}>
-                                                    <span className="text-gray-700 text-sm font-medium truncate">{row.hq.name}</span>
-                                                </Tooltip>
-                                            </div>
-                                        </TableCell>
-                                    )}
-
-                                    {isVisible('industry') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            {Array.isArray(row.industry) && row.industry.length > 0 ? (
-                                                <Tooltip content={row.industry.join(', ')}>
-                                                    <div className="flex items-center gap-1.5 max-w-full">
-                                                        <span className="text-gray-700 text-xs font-semibold bg-gray-100/80 px-2.5 py-1 rounded-full truncate">{row.industry[0]}</span>
-                                                        {row.industry.length > 1 && (
-                                                            <span className="text-[10px] font-bold text-[#064771] bg-blue-50 px-1.5 py-0.5 rounded-lg border border-blue-100 shrink-0">
-                                                                +{row.industry.length - 1}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </Tooltip>
-                                            ) : (
-                                                <span className="text-gray-400 text-xs font-medium italic pl-2">N/A</span>
-                                            )}
-                                        </TableCell>
-                                    )}
-
-                                    {isVisible('pipelineStatus') && (() => {
-                                        const stageInfo = getStagePosition(row.pipelineStatus);
-                                        return (
-                                            <TableCell className="border-b border-gray-100">
-                                                <Tooltip content={stageInfo.stageName}>
-                                                    <span className={`
-                                                        px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap cursor-help
-                                                        ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                                                            'bg-green-100/50 text-green-700 border-green-200'}
-                                                    `}>
-                                                        {stageInfo.display}
-                                                    </span>
-                                                </Tooltip>
-                                            </TableCell>
-                                        );
-                                    })()}
-
-                                    {isVisible('desiredInvestment') && (
-                                        <TableCell className="font-bold text-gray-900 text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.desiredInvestment, selectedCurrency?.symbol, (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}>
-                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate)}</span>
-                                            </Tooltip>
-                                        </TableCell>
-                                    )}
-
-                                    {isVisible('ebitda') && (
-                                        <TableCell className="font-bold text-[#064771] text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.ebitda, selectedCurrency?.symbol, (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}>
-                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.ebitda, row.sourceCurrencyRate)}</span>
-                                            </Tooltip>
-                                        </TableCell>
-                                    )}
-
-                                    <TableCell className="text-right pr-6 sticky right-0 bg-inherit z-20 border-l border-gray-100 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-400 hover:text-[#064771] transition-all"
-                                            onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
+                                    <TableCell className="text-right px-4 sticky right-0 bg-inherit z-20 border-l border-gray-100">
+                                        <button onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }} className="p-1 hover:bg-gray-200 rounded">
+                                            <MoreVertical className="w-4 h-4 text-gray-400" />
                                         </button>
                                     </TableCell>
                                 </TableRow>
@@ -559,41 +403,11 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </TableBody>
                 </Table>
             </div>
-
-            {/* Context Menu */}
-            {
-                contextMenu && (
-                    <div
-                        ref={contextMenuRef}
-                        className="fixed bg-white rounded border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-2xl"
-                        style={{ top: contextMenu.y, left: contextMenu.x }}
-                    >
-                        <button
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors group"
-                            onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
-                        >
-                            <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-gray-400 group-hover:text-amber-500'}`} />
-                            <span className="font-medium">{data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unbookmark' : 'Bookmark (Pin)'}</span>
-                        </button>
-                        <button
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#064771] flex items-center gap-3 transition-colors group"
-                            onClick={() => { navigate(`/seller-portal/view/${contextMenu.rowId}`); setContextMenu(null); }}
-                        >
-                            <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#064771]" />
-                            <span className="font-medium">View Details</span>
-                        </button>
-                        {!(selectedIds.size > 1 && selectedIds.has(contextMenu.rowId)) && (
-                            <button
-                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors group"
-                                onClick={() => { navigate(`/seller-portal/edit/${contextMenu.rowId}`); setContextMenu(null); }}
-                            >
-                                <Zap className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
-                                <span className="font-medium">Enrich Details</span>
-                            </button>
-                        )}
-                    </div>
-                )
-            }
-        </div >
+            {contextMenu && (<div ref={contextMenuRef} className="fixed bg-white border shadow-xl z-50 rounded w-48 py-1" style={{ top: contextMenu.y, left: contextMenu.x }}>
+                <button onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Toggle Pin</button>
+                <button onClick={() => { navigate(`/seller-portal/view/${contextMenu.rowId}`); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">View Details</button>
+                <button onClick={() => { navigate(`/seller-portal/edit/${contextMenu.rowId}`); setContextMenu(null); }} className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">Edit</button>
+            </div>)}
+        </div>
     );
 };
