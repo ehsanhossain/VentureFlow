@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/seller/closed', [SellerController::class, 'closedDeals']);
     Route::get('/seller/drafts', [SellerController::class, 'drafts']);
     Route::get('/seller/partnerships', [SellerController::class, 'partnerships']);
+    Route::get('/seller/delete-analyze', [SellerController::class, 'getDeleteImpact']);
     Route::delete('/sellers', [SellerController::class, 'destroy']);
     Route::apiResource('seller', SellerController::class);
     Route::post('/seller/company-overviews', [SellerController::class, 'sellerCompanyOverviewstore']);
@@ -113,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buyer/closed-deals', [BuyerController::class, 'closedDeals']);
     Route::get('/buyer/drafts', [BuyerController::class, 'drafts']);
     Route::get('/buyer/from-partners', [BuyerController::class, 'fromPartners']);
+    Route::get('/buyer/delete-analyze', [BuyerController::class, 'getDeleteImpact']);
     Route::delete('/buyers', [BuyerController::class, 'destroy']);
     Route::apiResource('buyer', BuyerController::class);
     Route::post('/buyer/company-overviews', [BuyerController::class, 'companyOverviewStore']);

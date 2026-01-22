@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use App\Models\User; // Notification recipient
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewRegistrationNotification;
+use App\Models\Deal;
 
 class SellerController extends Controller
 {
@@ -593,9 +594,43 @@ class SellerController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    public function getDeleteImpact(Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+            if (!is_array($ids)) {
+                $ids = [$ids];
+            }
+
+            if (empty($ids)) {
+                return response()->json([
+                    'message' => 'No IDs provided.'
+                ], 400);
+            }
+
+            $impact = [
+                'count' => count($ids),
+                'deals' => Deal::whereIn('seller_id', $ids)->count(),
+                'active_deals' => Deal::whereIn('seller_id', $ids)
+                    ->where('progress_percent', '<', 100)
+                    ->count(),
+                'files' => FileFolder::whereIn('seller_id', $ids)->count(),
+                'activities' => ActivityLog::where('loggable_type', Seller::class)
+                    ->whereIn('loggable_id', $ids)
+                    ->count(),
+            ];
+
+            return response()->json($impact);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to analyze impact.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function destroy(Request $request)
     {
-
         try {
             $idsToDelete = $request->input('ids');
 
@@ -613,26 +648,49 @@ class SellerController extends Controller
 
             // Use a database transaction to ensure data integrity.
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
-                // UNBREAKABLE: Manual cleanup for polymorphic logs and other relations
+                // Fetch sellers to get related record IDs before they are deleted
+                $sellers = Seller::whereIn('id', $idsToDelete)->get();
+                $overviewIds = $sellers->pluck('company_overview_id')->filter()->toArray();
+                $financialIds = $sellers->pluck('financial_detail_id')->filter()->toArray();
+                $partnershipIds = $sellers->pluck('partnership_detail_id')->filter()->toArray();
+                $teaserIds = $sellers->pluck('teaser_center_id')->filter()->toArray();
+
+                // 1. Delete polymorphic logs
                 ActivityLog::where('loggable_type', Seller::class)
                     ->whereIn('loggable_id', $idsToDelete)
                     ->delete();
 
+                // 2. Delete file associations
                 FileFolder::whereIn('seller_id', $idsToDelete)->delete();
 
-                $deletedCount = Seller::destroy($idsToDelete);
+                // 3. Delete the sellers
+                $deletedCount = Seller::whereIn('id', $idsToDelete)->delete();
+
+                // 4. Clean up the detailed records (orphaned after seller is deleted)
+                if (!empty($overviewIds)) {
+                    SellersCompanyOverview::whereIn('id', $overviewIds)->delete();
+                }
+                if (!empty($financialIds)) {
+                    SellersFinancialDetail::whereIn('id', $financialIds)->delete();
+                }
+                if (!empty($partnershipIds)) {
+                    SellersPartnershipDetail::whereIn('id', $partnershipIds)->delete();
+                }
+                if (!empty($teaserIds)) {
+                    SellersTeaserCenter::whereIn('id', $teaserIds)->delete();
+                }
             });
 
             if ($deletedCount > 0) {
                 $message = $deletedCount === 1
-                    ? 'Seller and related associations deleted successfully.'
-                    : $deletedCount . ' sellers and related associations deleted successfully.';
+                    ? 'Target and all related data deleted successfully.'
+                    : $deletedCount . ' targets and all related data deleted successfully.';
                 return response()->json([
                     'message' => $message
                 ], 200);
             } else {
                 return response()->json([
-                    'message' => 'No sellers found with the provided IDs.'
+                    'message' => 'No targets found with the provided IDs.'
                 ], 404);
             }
         } catch (\Exception $e) {
@@ -641,7 +699,7 @@ class SellerController extends Controller
                 'ids_provided' => $request->input('ids')
             ]);
             return response()->json([
-                'message' => 'Failed to delete seller(s).',
+                'message' => 'Failed to delete target(s).',
                 'error' => $e->getMessage()
             ], 500);
         }

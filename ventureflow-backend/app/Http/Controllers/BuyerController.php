@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewRegistrationNotification;
+use App\Models\Deal;
 
 
 class BuyerController extends Controller
@@ -701,6 +702,41 @@ class BuyerController extends Controller
     }
 
 
+    public function getDeleteImpact(Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+            if (!is_array($ids)) {
+                $ids = [$ids];
+            }
+
+            if (empty($ids)) {
+                return response()->json([
+                    'message' => 'No IDs provided.'
+                ], 400);
+            }
+
+            $impact = [
+                'count' => count($ids),
+                'deals' => Deal::whereIn('buyer_id', $ids)->count(),
+                'active_deals' => Deal::whereIn('buyer_id', $ids)
+                    ->where('progress_percent', '<', 100)
+                    ->count(),
+                'files' => FileFolder::whereIn('buyer_id', $ids)->count(),
+                'activities' => ActivityLog::where('loggable_type', Buyer::class)
+                    ->whereIn('loggable_id', $ids)
+                    ->count(),
+            ];
+
+            return response()->json($impact);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to analyze impact.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function destroy(Request $request)
     {
         try {
@@ -719,26 +755,55 @@ class BuyerController extends Controller
             $deletedCount = 0;
 
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
-                // UNBREAKABLE: Manual cleanup for polymorphic logs and other relations
+                // Fetch buyers to get related record IDs before they are deleted
+                $buyers = Buyer::whereIn('id', $idsToDelete)->get();
+                $overviewIds = $buyers->pluck('company_overview_id')->filter()->toArray();
+                $preferenceIds = $buyers->pluck('target_preference_id')->filter()->toArray();
+                $financialIds = $buyers->pluck('financial_detail_id')->filter()->toArray();
+                $partnershipIds = $buyers->pluck('partnership_detail_id')->filter()->toArray();
+                $teaserIds = $buyers->pluck('teaser_center_id')->filter()->toArray();
+
+                // 1. Delete polymorphic logs
                 ActivityLog::where('loggable_type', Buyer::class)
                     ->whereIn('loggable_id', $idsToDelete)
                     ->delete();
                 
+                // 2. Delete file associations
                 FileFolder::whereIn('buyer_id', $idsToDelete)->delete();
-                $deletedCount = Buyer::destroy($idsToDelete);
+
+                // 3. Delete the buyers (Deals will cascade if set in DB, but we already know they exist)
+                // Note: Buyer model doesn't have soft deletes currently.
+                $deletedCount = Buyer::whereIn('id', $idsToDelete)->delete();
+
+                // 4. Clean up the detailed records (orphaned after buyer is deleted)
+                if (!empty($overviewIds)) {
+                    BuyersCompanyOverview::whereIn('id', $overviewIds)->delete();
+                }
+                if (!empty($preferenceIds)) {
+                    BuyersTargetPreferences::whereIn('id', $preferenceIds)->delete();
+                }
+                if (!empty($financialIds)) {
+                    BuyersFinancialDetails::whereIn('id', $financialIds)->delete();
+                }
+                if (!empty($partnershipIds)) {
+                    BuyersPartnershipDetails::whereIn('id', $partnershipIds)->delete();
+                }
+                if (!empty($teaserIds)) {
+                    BuyersTeaserCenters::whereIn('id', $teaserIds)->delete();
+                }
             });
 
             if ($deletedCount > 0) {
                 $message = $deletedCount === 1
-                    ? 'Buyer and related associations deleted successfully.'
-                    : $deletedCount . ' buyers and related associations deleted successfully.';
+                    ? 'Investor and all related data deleted successfully.'
+                    : $deletedCount . ' investors and all related data deleted successfully.';
 
                 return response()->json([
                     'message' => $message
                 ], 200);
             } else {
                 return response()->json([
-                    'message' => 'No buyers found with the provided IDs.'
+                    'message' => 'No investors found with the provided IDs.'
                 ], 404);
             }
         } catch (\Exception $e) {
@@ -748,7 +813,7 @@ class BuyerController extends Controller
             ]);
 
             return response()->json([
-                'message' => 'Failed to delete buyer(s).',
+                'message' => 'Failed to delete investor(s).',
                 'error' => $e->getMessage()
             ], 500);
         }

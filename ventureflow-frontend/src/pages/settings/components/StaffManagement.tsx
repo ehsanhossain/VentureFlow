@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, Edit2, Trash2, Eye, Shield, ShieldCheck, Mail, Phone, Square, CheckSquare, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, Plus, Search, Edit2, Trash2, Eye, Shield, ShieldCheck, Mail, Phone, Square, CheckSquare, MinusSquare, ChevronUp, ChevronDown } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { useNavigate } from 'react-router-dom';
@@ -234,6 +234,14 @@ const StaffManagement: React.FC = () => {
                         Delete ({selectedIds.length})
                     </button>
                 )}
+                {isSelectMode && (
+                    <button
+                        onClick={toggleSelectMode}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all"
+                    >
+                        Exit Selection
+                    </button>
+                )}
             </div>
 
             {/* Stats */}
@@ -275,13 +283,23 @@ const StaffManagement: React.FC = () => {
                                 <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-b border-gray-100">
                                     <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">
                                         <button
-                                            onClick={toggleSelectMode}
+                                            onClick={() => {
+                                                if (!isSelectMode) {
+                                                    toggleSelectMode();
+                                                } else {
+                                                    toggleSelectAll();
+                                                }
+                                            }}
                                             className="p-1.5 hover:bg-gray-200 rounded-lg transition-all focus:outline-none active:scale-90"
                                         >
-                                            {isSelectMode ? (
+                                            {!isSelectMode ? (
+                                                <Square className="w-5 h-5 text-gray-300" />
+                                            ) : selectedIds.length === 0 ? (
+                                                <Square className="w-5 h-5 text-gray-300" />
+                                            ) : selectedIds.length === filteredStaff.length ? (
                                                 <CheckSquare className="w-5 h-5 text-[#064771]" />
                                             ) : (
-                                                <Square className="w-5 h-5 text-gray-300" />
+                                                <MinusSquare className="w-5 h-5 text-[#064771]" />
                                             )}
                                         </button>
                                     </TableHead>

@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        poppins: ['"IBM Plex Sans"', "sans-serif"], // Overriding poppins to IBM Plex Sans as user requested all fonts change
-        sans: ['"IBM Plex Sans"', "sans-serif"],
+        poppins: ["Inter", "sans-serif"],
+        sans: ["Inter", "sans-serif"],
         sf: ["SF Pro Display", "sans-serif"],
         roboto: ["Roboto", "sans-serif"],
       },

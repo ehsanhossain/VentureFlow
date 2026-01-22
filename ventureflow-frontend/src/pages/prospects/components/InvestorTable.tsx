@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import DeleteConfirmationModal from '../../../components/DeleteConfirmationModal';
 
 export interface InvestorRowData {
     id: number;
@@ -75,6 +76,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     const [isSelectMode, setIsSelectMode] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'projectCode', direction: null });
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, rowId: number } | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const contextMenuRef = useRef<HTMLDivElement>(null);
 
     // Pipeline stages for investor pipeline
@@ -176,21 +178,23 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         }
     };
 
-    const handleDeleteSelected = async () => {
+    const handleDeleteSelected = () => {
         if (selectedIds.size === 0) return;
+        setIsDeleteModalOpen(true);
+    };
 
-        if (window.confirm(`Are you sure you want to delete ${selectedIds.size} investors? This action cannot be undone.`)) {
-            try {
-                const response = await api.delete('/buyers', {
-                    data: { ids: Array.from(selectedIds) }
-                });
-                showAlert({ type: 'success', message: response.data.message });
-                setSelectedIds(new Set());
-                if (onRefresh) onRefresh();
-            } catch (error: any) {
-                console.error("Delete failed", error);
-                showAlert({ type: 'error', message: error.response?.data?.message || 'Failed to delete items' });
-            }
+    const handleConfirmDelete = async () => {
+        try {
+            const response = await api.delete('/api/buyers', {
+                data: { ids: Array.from(selectedIds) }
+            });
+            showAlert({ type: 'success', message: response.data.message });
+            setSelectedIds(new Set());
+            setIsDeleteModalOpen(false);
+            if (onRefresh) onRefresh();
+        } catch (error: any) {
+            console.error("Delete failed", error);
+            showAlert({ type: 'error', message: error.response?.data?.message || 'Failed to delete items' });
         }
     };
 
@@ -679,6 +683,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     )}
                 </div>
             )}
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title={`Delete ${selectedIds.size} Investor${selectedIds.size > 1 ? 's' : ''}`}
+                itemType="investors"
+                selectedIds={Array.from(selectedIds)}
+            />
         </div>
     );
 };
