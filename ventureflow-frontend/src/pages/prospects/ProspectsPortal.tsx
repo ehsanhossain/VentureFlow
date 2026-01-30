@@ -736,7 +736,7 @@ const ProspectsPortal: React.FC = () => {
                 </>
             )}
 
-            <div className="flex flex-col h-full bg-gray-50 font-poppins overflow-x-hidden">
+            <div className="flex flex-col h-full min-h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-x-hidden">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -882,7 +882,7 @@ const ProspectsPortal: React.FC = () => {
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col overflow-hidden relative">
-                    <div className="flex-1 overflow-auto px-4 md:px-8 py-4 md:py-6">
+                    <div className="flex-1 flex flex-col overflow-auto px-4 md:px-8 py-4 md:py-6">
                         {activeTab === 'investors' ? (
                             <InvestorTable
                                 data={investors}
