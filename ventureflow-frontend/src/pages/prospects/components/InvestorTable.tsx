@@ -54,6 +54,7 @@ interface InvestorTableProps {
     visibleColumns: string[];
     selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh: () => void;
+    isRestricted?: boolean;
 }
 
 type SortKey = keyof InvestorRowData;
@@ -65,7 +66,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     onTogglePin,
     visibleColumns,
     selectedCurrency,
-    onRefresh
+    onRefresh,
+    isRestricted = false
 }) => {
     const navigate = useNavigate();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -285,30 +287,32 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     containerClassName="overflow-visible min-w-full"
                     className="w-full table-fixed border-separate border-spacing-0"
                 >
-                    <TableHeader className="sticky top-0 z-40">
+                    <TableHeader className="sticky top-0 z-20">
                         <TableRow className="bg-slate-50/80 backdrop-blur-sm border-b border-slate-200">
-                            <TableHead className="w-[50px] text-center sticky left-0 bg-slate-50 z-50 p-2">
-                                <button
-                                    onClick={toggleSelectMode}
-                                    className="p-1.5 hover:bg-slate-200 rounded-lg transition-all focus:outline-none active:scale-90"
-                                >
-                                    {isSelectMode ? (
-                                        <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selectedIds.size === data.length && data.length > 0}
-                                                onChange={(e) => handleSelectAll(e.target.checked)}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <Square className="w-5 h-5 text-slate-300" />
-                                    )}
-                                </button>
-                            </TableHead>
+                            {!isRestricted && (
+                                <TableHead className="w-[50px] text-center sticky left-0 bg-slate-50 z-30 p-2">
+                                    <button
+                                        onClick={toggleSelectMode}
+                                        className="p-1.5 hover:bg-slate-200 rounded-[3px] transition-all focus:outline-none active:scale-90"
+                                    >
+                                        {isSelectMode ? (
+                                            <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selectedIds.size === data.length && data.length > 0}
+                                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Square className="w-5 h-5 text-slate-300" />
+                                        )}
+                                    </button>
+                                </TableHead>
+                            )}
 
                             {isVisible('projectCode') && (
                                 <TableHead style={{ width: columnWidths.projectCode }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('projectCode')}>
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Project ID</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Project ID</span>
                                         <SortIcon column="projectCode" />
                                     </div>
                                     <ResizeHandle column="projectCode" />
@@ -318,7 +322,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {isVisible('rank') && (
                                 <TableHead style={{ width: columnWidths.rank }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('rank')}>
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rank</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Rank</span>
                                         <SortIcon column="rank" />
                                     </div>
                                     <ResizeHandle column="rank" />
@@ -328,7 +332,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {isVisible('companyName') && (
                                 <TableHead style={{ width: columnWidths.companyName }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('companyName')}>
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Investor Name</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Investor Name</span>
                                         <SortIcon column="companyName" />
                                     </div>
                                     <ResizeHandle column="companyName" />
@@ -338,7 +342,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {isVisible('primaryContact') && (
                                 <TableHead style={{ width: columnWidths.primaryContact }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center h-full px-4">
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Contact</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Contact</span>
                                     </div>
                                     <ResizeHandle column="primaryContact" />
                                 </TableHead>
@@ -346,35 +350,35 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
                             {isVisible('hq') && (
                                 <TableHead style={{ width: columnWidths.hq }} className="relative p-0 border-b border-slate-100 h-11">
-                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">HQ</div>
+                                    <div className="flex items-center h-full px-4 text-[11px] font-medium text-slate-500 uppercase tracking-wider">HQ</div>
                                     <ResizeHandle column="hq" />
                                 </TableHead>
                             )}
 
                             {isVisible('targetCountries') && (
                                 <TableHead style={{ width: columnWidths.targetCountries }} className="relative p-0 border-b border-slate-100 h-11">
-                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Geo</div>
+                                    <div className="flex items-center h-full px-4 text-[11px] font-medium text-slate-500 uppercase tracking-wider">Target Geo</div>
                                     <ResizeHandle column="targetCountries" />
                                 </TableHead>
                             )}
 
                             {isVisible('targetIndustries') && (
                                 <TableHead style={{ width: columnWidths.targetIndustries }} className="relative p-0 border-b border-slate-100 h-11">
-                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Industry</div>
+                                    <div className="flex items-center h-full px-4 text-[11px] font-medium text-slate-500 uppercase tracking-wider">Target Industry</div>
                                     <ResizeHandle column="targetIndustries" />
                                 </TableHead>
                             )}
 
                             {isVisible('companyType') && (
                                 <TableHead style={{ width: columnWidths.companyType }} className="relative p-0 border-b border-slate-100 h-11">
-                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Type</div>
+                                    <div className="flex items-center h-full px-4 text-[11px] font-medium text-slate-500 uppercase tracking-wider">Type</div>
                                     <ResizeHandle column="companyType" />
                                 </TableHead>
                             )}
 
                             {isVisible('website') && (
                                 <TableHead style={{ width: columnWidths.website }} className="relative p-0 border-b border-slate-100 h-11">
-                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Website</div>
+                                    <div className="flex items-center h-full px-4 text-[11px] font-medium text-slate-500 uppercase tracking-wider">Website</div>
                                     <ResizeHandle column="website" />
                                 </TableHead>
                             )}
@@ -382,7 +386,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {isVisible('pipelineStatus') && (
                                 <TableHead style={{ width: columnWidths.pipelineStatus }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('pipelineStatus')}>
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pipeline</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Pipeline</span>
                                         <SortIcon column="pipelineStatus" />
                                     </div>
                                     <ResizeHandle column="pipelineStatus" />
@@ -392,18 +396,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {isVisible('budget') && (
                                 <TableHead style={{ width: columnWidths.budget }} className="relative p-0 border-b border-slate-100 h-11">
                                     <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('budget')}>
-                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Budget</span>
+                                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Budget</span>
                                         <SortIcon column="budget" />
                                     </div>
                                     <ResizeHandle column="budget" />
                                 </TableHead>
                             )}
 
-                            <TableHead className="w-[100px] sticky right-0 bg-slate-50 z-50 border-b border-slate-100 h-11">
+                            <TableHead className="w-[100px] sticky right-0 bg-slate-50 z-30 border-b border-slate-100 h-11">
                                 <div className="flex items-center justify-end px-6 h-full">
-                                    {selectedIds.size > 0 && (
+                                    {selectedIds.size > 0 && !isRestricted && (
                                         <button
-                                            className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all hover:scale-110"
+                                            className="p-1.5 hover:bg-red-50 rounded-[3px] text-red-500 transition-all hover:scale-110"
                                             onClick={handleDeleteSelected}
                                             title="Delete Selected"
                                         >
@@ -421,7 +425,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                 <TableCell colSpan={20} className="h-64">
                                     <div className="flex flex-col items-center justify-center gap-3">
                                         <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                                        <p className="text-sm font-bold text-slate-400">Fetching investors...</p>
+                                        <p className="text-sm font-medium text-slate-400">Fetching investors...</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -432,7 +436,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-2">
                                             <Search className="w-8 h-8 text-slate-300" />
                                         </div>
-                                        <p className="font-bold text-slate-900">No results found</p>
+                                        <p className="font-medium text-slate-900">No results found</p>
                                         <p className="text-sm text-slate-500">Try adjusting your filters or search</p>
                                     </div>
                                 </TableCell>
@@ -449,24 +453,26 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         ${row.isPinned ? 'bg-amber-50/20' : ''}
                                     `}
                                 >
-                                    <TableCell className="p-0 text-center sticky left-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-center h-14">
-                                            {isSelectMode ? (
-                                                <Checkbox
-                                                    checked={selectedIds.has(row.id)}
-                                                    onChange={(e) => handleSelectRow(row.id, e.target.checked)}
-                                                />
-                                            ) : (
-                                                <div className="w-5 h-5 flex items-center justify-center">
-                                                    {row.isPinned && <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500/10" />}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
+                                    {!isRestricted && (
+                                        <TableCell className="p-0 text-center sticky left-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center h-14">
+                                                {isSelectMode ? (
+                                                    <Checkbox
+                                                        checked={selectedIds.has(row.id)}
+                                                        onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-5 h-5 flex items-center justify-center">
+                                                        {row.isPinned && <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500/10" />}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    )}
 
                                     {isVisible('projectCode') && (
                                         <TableCell className="px-4 py-2">
-                                            <span className="text-[13px] font-extrabold text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
+                                            <span className="text-[13px] font-medium text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
                                                 {row.projectCode}
                                             </span>
                                         </TableCell>
@@ -475,7 +481,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     {isVisible('rank') && (
                                         <TableCell className="px-4 py-2 text-center">
                                             <div className={`
-                                                w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-black ring-4
+                                                w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-medium ring-4
                                                 ${row.rank === 'A' ? 'bg-emerald-50 text-emerald-700 ring-emerald-50/50' :
                                                     row.rank === 'B' ? 'bg-blue-50 text-blue-700 ring-blue-50/50' :
                                                         'bg-slate-100 text-slate-500 ring-slate-100/50'}
@@ -488,7 +494,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     {isVisible('companyName') && (
                                         <TableCell className="px-4 py-2">
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-bold text-slate-900 truncate tracking-tight">{row.companyName}</span>
+                                                <span className="text-[14px] font-medium text-slate-900 truncate tracking-tight">{row.companyName}</span>
                                             </div>
                                         </TableCell>
                                     )}
@@ -509,7 +515,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                                 ) : (
                                                     <div className="w-5 h-5 rounded-full bg-slate-100" />
                                                 )}
-                                                <span className="text-[13px] font-semibold text-slate-600 truncate">{row.hq.name}</span>
+                                                <span className="text-[13px] font-medium text-slate-600 truncate">{row.hq.name}</span>
                                             </div>
                                         </TableCell>
                                     )}
@@ -527,18 +533,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                                         ))}
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <span className="text-[12px] font-semibold text-slate-600 truncate max-w-[80px]">
+                                                        <span className="text-[12px] font-medium text-slate-600 truncate max-w-[80px]">
                                                             {row.targetCountries[0].name}
                                                         </span>
                                                         {row.targetCountries.length > 1 && (
-                                                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
+                                                            <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
                                                                 +{row.targetCountries.length - 1}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <span className="text-[11px] font-bold text-slate-300 italic uppercase">Global</span>
+                                                <span className="text-[11px] font-medium text-slate-300 italic uppercase">Global</span>
                                             )}
                                         </TableCell>
                                     )}
@@ -551,11 +557,11 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                             >
                                                 {row.targetIndustries?.length ? (
                                                     <>
-                                                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 truncate max-w-[120px]">
+                                                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-slate-600 truncate max-w-[120px]">
                                                             {row.targetIndustries[0]}
                                                         </span>
                                                         {row.targetIndustries.length > 1 && (
-                                                            <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-black text-blue-600">
+                                                            <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-medium text-blue-600">
                                                                 +{row.targetIndustries.length - 1}
                                                             </span>
                                                         )}
@@ -583,7 +589,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                         <TableCell className="px-4 py-2">
                                             <div className="flex items-center gap-2" title={getStagePosition(row.pipelineStatus).stageName}>
                                                 <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
-                                                <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter cursor-help">
+                                                <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter cursor-help">
                                                     {getStagePosition(row.pipelineStatus).display}
                                                 </span>
                                             </div>
@@ -596,7 +602,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                                 className="flex flex-col items-end pr-2 cursor-help"
                                                 title={formatFullBudget(row.budget, selectedCurrency?.symbol || '$', (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}
                                             >
-                                                <span className="text-[14px] font-black text-slate-900 leading-tight">
+                                                <span className="text-[14px] font-medium text-slate-900 leading-tight">
                                                     {getBudgetDisplay(row.budget, row.sourceCurrencyRate)}
                                                 </span>
                                             </div>
@@ -606,7 +612,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     <TableCell className="sticky right-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-end px-6">
                                             <button
-                                                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-200/50 text-slate-400 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100"
+                                                className="w-9 h-9 flex items-center justify-center rounded-[3px] hover:bg-slate-200/50 text-slate-400 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100"
                                                 onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
                                             >
                                                 <MoreVertical className="w-4 h-4" />
@@ -630,41 +636,43 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 270) }}
                     >
                         <div className="px-4 py-2 mb-1 border-b border-slate-50">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prospect Actions</p>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Prospect Actions</p>
                         </div>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
                         >
                             <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
                             {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
                         </button>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
                             <Eye className="w-4 h-4 text-slate-400" />
                             View Full Profile
                         </button>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
                             <Zap className="w-4 h-4 text-slate-400" />
                             Edit & Enrich
                         </button>
                         <div className="h-px bg-slate-50 my-1" />
-                        <button
-                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-bold"
-                            onClick={() => {
-                                setSelectedIds(new Set([contextMenu.rowId]));
-                                setIsDeleteModalOpen(true);
-                                setContextMenu(null);
-                            }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Prospect
-                        </button>
+                        {!isRestricted && (
+                            <button
+                                className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
+                                onClick={() => {
+                                    setSelectedIds(new Set([contextMenu.rowId]));
+                                    setIsDeleteModalOpen(true);
+                                    setContextMenu(null);
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete Prospect
+                            </button>
+                        )}
                     </div>
                 </>
             )}

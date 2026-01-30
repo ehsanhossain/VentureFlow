@@ -6,18 +6,26 @@ import { Loader2, User, Globe, Wallet, MessageSquare, Tag, FileText } from 'luci
 
 import Label from '../../../components/Label';
 import { ActivityLogChat } from './ActivityLogChat';
+import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
+
+const RestrictedField: React.FC<{ allowed: any, section: string | 'root', item: string, children: React.ReactNode }> = ({ allowed, section, item, children }) => {
+    if (!isBackendPropertyAllowed(allowed, section, item)) return null;
+    return <>{children}</>;
+};
 
 const TargetDetails: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [seller, setSeller] = useState<any>(null);
+    const [allowedFields, setAllowedFields] = useState<any>(null);
 
     useEffect(() => {
         const fetchSeller = async () => {
             try {
                 const response = await api.get(`/api/seller/${id}`);
                 setSeller(response.data?.data || {});
+                setAllowedFields(response.data?.meta?.allowed_fields || null);
             } catch (err) {
                 showAlert({ type: "error", message: "Failed to fetch target details" });
             } finally {
@@ -123,32 +131,40 @@ const TargetDetails: React.FC = () => {
                     <section>
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 p-1 border-b border-gray-50">Company Overview</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                            <div className="space-y-1.5">
-                                <Label text="HQ Country" />
-                                <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                    {hqCountryName}
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="hq_country">
+                                <div className="space-y-1.5">
+                                    <Label text="HQ Country" />
+                                    <div className="flex items-center gap-2 text-gray-900 font-medium">
+                                        {hqCountryName}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <Label text="Website" />
-                                {website !== 'N/A' && website ? (
-                                    <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#064771] hover:underline font-medium flex items-center gap-1.5">
-                                        <Globe className="w-4 h-4" /> {website.replace('https://', '').replace('http://', '')}
-                                    </a>
-                                ) : <span className="text-gray-400">Not specified</span>}
-                            </div>
-                            <div className="md:col-span-2 space-y-1.5">
-                                <Label text="Project Details" />
-                                <p className="text-gray-600 leading-relaxed text-sm bg-gray-50/50 p-4 rounded border border-gray-100 whitespace-pre-wrap">
-                                    {projectDetails}
-                                </p>
-                            </div>
-                            <div className="md:col-span-2 space-y-1.5">
-                                <Label text="Reason for M&A" />
-                                <p className="text-gray-600 leading-relaxed text-sm">
-                                    {reasonMA}
-                                </p>
-                            </div>
+                            </RestrictedField>
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="website">
+                                <div className="space-y-1.5">
+                                    <Label text="Website" />
+                                    {website !== 'N/A' && website ? (
+                                        <a href={website} target="_blank" rel="noopener noreferrer" className="text-[#064771] hover:underline font-medium flex items-center gap-1.5">
+                                            <Globe className="w-4 h-4" /> {website.replace('https://', '').replace('http://', '')}
+                                        </a>
+                                    ) : <span className="text-gray-400">Not specified</span>}
+                                </div>
+                            </RestrictedField>
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="details">
+                                <div className="md:col-span-2 space-y-1.5">
+                                    <Label text="Project Details" />
+                                    <p className="text-gray-600 leading-relaxed text-sm bg-gray-50/50 p-4 rounded border border-gray-100 whitespace-pre-wrap">
+                                        {projectDetails}
+                                    </p>
+                                </div>
+                            </RestrictedField>
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma">
+                                <div className="md:col-span-2 space-y-1.5">
+                                    <Label text="Reason for M&A" />
+                                    <p className="text-gray-600 leading-relaxed text-sm">
+                                        {reasonMA}
+                                    </p>
+                                </div>
+                            </RestrictedField>
                         </div>
                     </section>
 
@@ -157,48 +173,56 @@ const TargetDetails: React.FC = () => {
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 p-1 border-b border-gray-50">Classification</h2>
                         <div className="space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-1.5">
-                                    <Label text="Industries" />
-                                    <div className="flex flex-wrap gap-2">
-                                        {industries.length > 0 ? industries.map((ind: any, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                                                <Tag className="w-3 h-3 text-[#064771]" />
-                                                {ind.name || ind}
-                                            </span>
-                                        )) : <span className="text-gray-400 text-sm italic">Not classified</span>}
+                                <RestrictedField allowed={allowedFields} section="companyOverview" item="industry_ops">
+                                    <div className="space-y-1.5">
+                                        <Label text="Industries" />
+                                        <div className="flex flex-wrap gap-2">
+                                            {industries.length > 0 ? industries.map((ind: any, idx: number) => (
+                                                <span key={idx} className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                                                    <Tag className="w-3 h-3 text-[#064771]" />
+                                                    {ind.name || ind}
+                                                </span>
+                                            )) : <span className="text-gray-400 text-sm italic">Not classified</span>}
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label text="Niche / Tags" />
-                                    <div className="flex flex-wrap gap-2">
-                                        {nicheTags.length > 0 ? nicheTags.map((tag: any, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-blue-50 text-[#064771] rounded text-xs font-medium">
-                                                {tag.name || tag}
-                                            </span>
-                                        )) : <span className="text-gray-400 text-sm italic">No tags</span>}
+                                </RestrictedField>
+                                <RestrictedField allowed={allowedFields} section="companyOverview" item="niche_industry">
+                                    <div className="space-y-1.5">
+                                        <Label text="Niche / Tags" />
+                                        <div className="flex flex-wrap gap-2">
+                                            {nicheTags.length > 0 ? nicheTags.map((tag: any, idx: number) => (
+                                                <span key={idx} className="px-3 py-1 bg-blue-50 text-[#064771] rounded text-xs font-medium">
+                                                    {tag.name || tag}
+                                                </span>
+                                            )) : <span className="text-gray-400 text-sm italic">No tags</span>}
+                                        </div>
                                     </div>
-                                </div>
+                                </RestrictedField>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border border-gray-100 p-6 rounded bg-gray-50/30">
-                                <div className="space-y-1.5">
-                                    <Label text="Expected Investment" />
-                                    <div className="flex items-center gap-2.5 text-gray-900 font-bold text-lg">
-                                        <div className="p-2 bg-white rounded border border-gray-100">
-                                            <Wallet className="w-5 h-5 text-[#064771]" />
+                                <RestrictedField allowed={allowedFields} section="financialDetails" item="expected_investment_amount">
+                                    <div className="space-y-1.5">
+                                        <Label text="Expected Investment" />
+                                        <div className="flex items-center gap-2.5 text-gray-900 font-bold text-lg">
+                                            <div className="p-2 bg-white rounded border border-gray-100">
+                                                <Wallet className="w-5 h-5 text-[#064771]" />
+                                            </div>
+                                            <span>
+                                                {financial.expected_investment_amount || "Flexible"}
+                                                {financial.default_currency && <span className="text-sm font-medium text-gray-400 ml-1">{financial.default_currency_code || ''}</span>}
+                                            </span>
                                         </div>
-                                        <span>
-                                            {financial.expected_investment_amount || "Flexible"}
-                                            {financial.default_currency && <span className="text-sm font-medium text-gray-400 ml-1">{financial.default_currency_code || ''}</span>}
-                                        </span>
                                     </div>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label text="Sale Share Ratio" />
-                                    <div className="text-gray-900 font-semibold mt-1">
-                                        {financial.maximum_investor_shareholding_percentage ? `${financial.maximum_investor_shareholding_percentage}%` : "Negotiable"}
+                                </RestrictedField>
+                                <RestrictedField allowed={allowedFields} section="financialDetails" item="maximum_investor_shareholding_percentage">
+                                    <div className="space-y-1.5">
+                                        <Label text="Sale Share Ratio" />
+                                        <div className="text-gray-900 font-semibold mt-1">
+                                            {financial.maximum_investor_shareholding_percentage ? `${financial.maximum_investor_shareholding_percentage}%` : "Negotiable"}
+                                        </div>
                                     </div>
-                                </div>
+                                </RestrictedField>
                             </div>
                         </div>
                     </section>
@@ -206,32 +230,34 @@ const TargetDetails: React.FC = () => {
                     {/* Contact Section */}
                     <section>
                         <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6 p-1 border-b border-gray-50">Primary Contact</h2>
-                        <div className="p-5 rounded border bg-white border-[#064771]/20 ring-1 ring-[#064771]/5 max-w-md">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded bg-[#064771] text-white flex items-center justify-center">
-                                        <User className="w-5 h-5" />
+                        <RestrictedField allowed={allowedFields} section="companyOverview" item="seller_contact_name">
+                            <div className="p-5 rounded border bg-white border-[#064771]/20 ring-1 ring-[#064771]/5 max-w-md">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded bg-[#064771] text-white flex items-center justify-center">
+                                            <User className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-gray-900">{overview.seller_contact_name || 'N/A'}</div>
+                                            <div className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-bold text-gray-900">{overview.seller_contact_name || 'N/A'}</div>
-                                        <div className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</div>
+                                    <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded">Primary</span>
+                                </div>
+                                <div className="space-y-2.5 pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                        {overview.seller_email || 'N/A'}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                        {Array.isArray(overview.seller_phone)
+                                            ? (overview.seller_phone.find((p: any) => p.isPrimary)?.phone || overview.seller_phone[0]?.phone || 'N/A')
+                                            : (overview.seller_phone || 'N/A')}
                                     </div>
                                 </div>
-                                <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded">Primary</span>
                             </div>
-                            <div className="space-y-2.5 pt-2 border-t border-gray-100">
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    {overview.seller_email || 'N/A'}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                    {Array.isArray(overview.seller_phone)
-                                        ? (overview.seller_phone.find((p: any) => p.isPrimary)?.phone || overview.seller_phone[0]?.phone || 'N/A')
-                                        : (overview.seller_phone || 'N/A')}
-                                </div>
-                            </div>
-                        </div>
+                        </RestrictedField>
                     </section>
 
                     {/* Activity Log Section */}
@@ -253,26 +279,28 @@ const TargetDetails: React.FC = () => {
                     <div className="bg-gray-50/50 rounded p-8 border border-gray-100 space-y-6">
                         <h3 className="text-sm font-bold text-gray-900">Documents & Links</h3>
                         <div className="space-y-3">
-                            {teaserLink ? (
-                                <a
-                                    href={teaserLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-between p-4 bg-white rounded border border-gray-100 hover:border-[#064771] transition-all group"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-50 rounded group-hover:bg-[#064771] transition-colors">
-                                            <FileText className="w-4 h-4 text-[#064771] group-hover:text-white" />
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="teaser_link">
+                                {teaserLink ? (
+                                    <a
+                                        href={teaserLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-4 bg-white rounded border border-gray-100 hover:border-[#064771] transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-blue-50 rounded group-hover:bg-[#064771] transition-colors">
+                                                <FileText className="w-4 h-4 text-[#064771] group-hover:text-white" />
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-700">Teaser Document</span>
                                         </div>
-                                        <span className="text-sm font-semibold text-gray-700">Teaser Document</span>
+                                        <svg className="w-4 h-4 text-gray-300 group-hover:text-[#064771]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    </a>
+                                ) : (
+                                    <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded">
+                                        <span className="text-xs text-gray-400">No teaser uploaded</span>
                                     </div>
-                                    <svg className="w-4 h-4 text-gray-300 group-hover:text-[#064771]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                </a>
-                            ) : (
-                                <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded">
-                                    <span className="text-xs text-gray-400">No teaser uploaded</span>
-                                </div>
-                            )}
+                                )}
+                            </RestrictedField>
                         </div>
 
                         <div className="pt-6 border-t border-gray-100 italic text-xs text-gray-400 leading-relaxed">

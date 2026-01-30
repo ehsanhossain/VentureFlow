@@ -59,6 +59,7 @@ class AuthController extends Controller
     public function user(Request $request) {
         $user = $request->user();
         $employee = \App\Models\Employee::where('user_id', $user->id)->first();
+        $partner = \App\Models\Partner::with('partnerOverview')->where('user_id', $user->id)->first();
         $role = $user->getRoleNames()->first();
         $isPartner = $role === 'partner' || $user->is_partner === true;
         
@@ -66,7 +67,8 @@ class AuthController extends Controller
             'user' => $user,
             'role' => $role,
             'is_partner' => $isPartner,
-            'employee' => $employee
+            'employee' => $employee,
+            'partner' => $partner
         ]);
     }
 

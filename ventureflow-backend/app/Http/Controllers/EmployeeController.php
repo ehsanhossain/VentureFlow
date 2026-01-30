@@ -134,26 +134,49 @@ class EmployeeController extends Controller
                 $role = Role::firstOrCreate(['name' => 'Partner']);
                 $user->assignRole($role);
 
-                // 2. Create Partner Overview
+                // 2. Create/Update Partner Record
+                $partner = null;
+                $overview = null;
+                $message = 'Partner created successfully';
+
+                $existingId = $request->input('id');
+                if ($existingId) {
+                    $partner = Partner::find($existingId);
+                    if ($partner) {
+                        $overview = PartnersPartnerOverview::find($partner->partner_overview_id);
+                        $message = 'Partner updated successfully';
+                    }
+                }
+
+                // 2. Create/Update Partner Overview
                 $overviewData = [
                     'reg_name' => $validated['reg_name'],
                     'hq_country' => $validated['hq_country'] ?? null,
                 ];
-                $overview = PartnersPartnerOverview::create($overviewData);
+                
+                if ($overview) {
+                    $overview->update($overviewData);
+                } else {
+                    $overview = PartnersPartnerOverview::create($overviewData);
+                }
 
-                // 3. Create Partner Record
+                // 3. Create/Update Partner Record
                 $partnerData = [
                     'partner_id' => $validated['partner_id'],
                     'partner_overview_id' => $overview->id,
                     'user_id' => $user->id,
                 ];
                 
-                $partner = Partner::create($partnerData);
+                if ($partner) {
+                    $partner->update($partnerData);
+                } else {
+                    $partner = Partner::create($partnerData);
+                }
 
                 DB::commit();
 
                 return response()->json([
-                    'message' => 'Partner created successfully',
+                    'message' => $message,
                     'partner' => $partner,
                     'user' => $user,
                 ], 201);
@@ -260,9 +283,29 @@ class EmployeeController extends Controller
 
 
 
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
         try {
+            $type = $request->query('type');
+            
+            if ($type === 'partner') {
+                $partner = Partner::with(['user.roles', 'partnerOverview'])->findOrFail($id);
+                // Map Partner to a structure CreateEmployee.tsx can understand
+                $data = [
+                    'id' => $partner->id,
+                    'is_partner' => true,
+                    'reg_name' => $partner->partnerOverview->reg_name ?? '',
+                    'partner_id' => $partner->partner_id,
+                    'nationality' => $partner->partnerOverview->hq_country ?? null,
+                    'user' => [
+                        'email' => $partner->user->email ?? '',
+                    ],
+                    'image' => $partner->image, // Assuming Partner might have image later
+                    'role' => ($partner->user && $partner->user->roles) ? $partner->user->roles->pluck('name')->first() : 'Partner',
+                ];
+                return response()->json($data);
+            }
+
             $employee = Employee::with([
                 'country',
                 'user.roles',
@@ -271,16 +314,37 @@ class EmployeeController extends Controller
                 'branch_data',
                 'team_data',
                 'designation_data',
-            ])->findOrFail($id);
+            ])->find($id);
+
+            if (!$employee) {
+                // If not found as employee, try as partner as a fallback
+                $partner = Partner::with(['user.roles', 'partnerOverview'])->find($id);
+                if ($partner) {
+                     $data = [
+                        'id' => $partner->id,
+                        'is_partner' => true,
+                        'reg_name' => $partner->partnerOverview->reg_name ?? '',
+                        'partner_id' => $partner->partner_id,
+                        'nationality' => $partner->partnerOverview->hq_country ?? null,
+                        'user' => [
+                            'email' => $partner->user->email ?? '',
+                        ],
+                        'image' => $partner->image,
+                        'role' => ($partner->user && $partner->user->roles) ? $partner->user->roles->pluck('name')->first() : 'Partner',
+                    ];
+                    return response()->json($data);
+                }
+                return response()->json(['message' => 'User not found'], 404);
+            }
 
             $employee->role = ($employee->user && $employee->user->roles) ? $employee->user->roles->pluck('name')->first() : null;
 
             return response()->json($employee);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Employee not found',
+                'message' => 'Error retrieving user details',
                 'error' => $e->getMessage(),
-            ], 404);
+            ], 500);
         }
     }
 

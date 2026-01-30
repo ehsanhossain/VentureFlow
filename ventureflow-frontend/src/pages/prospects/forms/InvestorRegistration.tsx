@@ -384,22 +384,16 @@ export const InvestorRegistration: React.FC = () => {
     };
 
     return (
-        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full max-w-5xl mx-auto pb-20">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{id ? 'Edit Investor' : 'Investor Registration'}</h2>
-                    <p className="text-sm text-gray-500">{id ? 'Update existing investor record' : 'Create a new investor record'}</p>
-                </div>
-                <div className="flex gap-3">
-                    <button type="button" onClick={() => navigate('/prospects?tab=investors')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                    <button type="button" onClick={handleSubmit(data => onSubmit(data, true))} disabled={isSubmitting} className="px-4 py-2 text-[#064771] bg-white border border-[#064771] rounded-lg hover:bg-gray-50">
-                        Save as Draft
-                    </button>
-                    <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#064771] rounded-lg hover:bg-[#053a5c]">
-                        {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
-                    </button>
-                </div>
+        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-20">
+            {/* Action Buttons (Top Right corner style or similar) */}
+            <div className="flex justify-end gap-3 mb-6">
+                <button type="button" onClick={() => navigate('/prospects?tab=investors')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                <button type="button" onClick={handleSubmit(data => onSubmit(data, true))} disabled={isSubmitting} className="px-4 py-2 text-[#064771] bg-white border border-[#064771] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
+                    Save as Draft
+                </button>
+                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#064771] rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all">
+                    {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
+                </button>
             </div>
 
             {/* SECTION 1: IDENTITY */}
@@ -433,7 +427,7 @@ export const InvestorRegistration: React.FC = () => {
                         <div className="relative flex items-center">
                             <input
                                 {...register('projectCode')}
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-2 border rounded-[3px] focus:ring-2 focus:ring-blue-500 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
                                 placeholder="XX-B-XXX"
                             />
                             <div className="absolute right-3 flex items-center gap-2">
@@ -485,7 +479,7 @@ export const InvestorRegistration: React.FC = () => {
                                 {...register('website')}
                                 type="url"
                                 placeholder="https://example.com"
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-[3px] border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                             />
                         </div>
                     </div>
@@ -504,14 +498,14 @@ export const InvestorRegistration: React.FC = () => {
                                     <input
                                         {...register(`hqAddresses.${index}.label` as const)}
                                         placeholder="Label (e.g. Head Office)"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     />
                                 </div>
                                 <div className="flex-[2] w-full flex gap-2">
                                     <input
                                         {...register(`hqAddresses.${index}.address` as const)}
                                         placeholder="Full Address"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     />
                                     <button type="button" onClick={() => removeAddress(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
                                         <Trash2 className="w-4 h-4" />
@@ -589,10 +583,10 @@ export const InvestorRegistration: React.FC = () => {
                         <div>
                             <Label text="Investment Budget" />
                             <div className="flex gap-2">
-                                <input {...register('budgetMin')} type="number" placeholder="Min" className="w-1/3 border px-2 py-1 rounded" />
+                                <input {...register('budgetMin')} type="number" placeholder="Min" className="w-1/3 border px-2 py-1 rounded-[3px]" />
                                 <span className="self-center">-</span>
-                                <input {...register('budgetMax')} type="number" placeholder="Max" className="w-1/3 border px-2 py-1 rounded" />
-                                <select {...register('budgetCurrency')} className="w-1/4 border px-2 py-1 rounded bg-white">
+                                <input {...register('budgetMax')} type="number" placeholder="Max" className="w-1/3 border px-2 py-1 rounded-[3px]" />
+                                <select {...register('budgetCurrency')} className="w-1/4 border px-2 py-1 rounded-[3px] bg-white">
                                     {currencies.map(c => (
                                         <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
                                     ))}
@@ -601,7 +595,7 @@ export const InvestorRegistration: React.FC = () => {
                         </div>
                         <div>
                             <Label text="Investment Condition" />
-                            <input {...register('investmentCondition')} className="w-full border px-3 py-2 rounded" placeholder="e.g. Majority stake only" />
+                            <input {...register('investmentCondition')} className="w-full border px-3 py-2 rounded-[3px]" placeholder="e.g. Majority stake only" />
                         </div>
                     </div>
                 </div>
@@ -611,7 +605,7 @@ export const InvestorRegistration: React.FC = () => {
             <CollapsibleSection title="Contacts">
                 <div className="space-y-4">
                     {contactFields.map((field, index) => (
-                        <div key={field.id} className="p-4 border border-gray-100 rounded bg-gray-50 relative">
+                        <div key={field.id} className="p-4 border border-gray-100 rounded-[3px] bg-gray-50 relative">
                             <div className="absolute right-2 top-2">
                                 <button type="button" onClick={() => removeContact(index)} className="text-red-400 hover:text-red-600">
                                     <Trash2 className="w-4 h-4" />
@@ -676,7 +670,7 @@ export const InvestorRegistration: React.FC = () => {
                         <Label text="Investor Profile Link (Teaser/Doc)" />
                         <div className="flex items-center">
                             <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
-                            <input {...register('investorProfileLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded" />
+                            <input {...register('investorProfileLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded-[3px]" />
                         </div>
                     </div>
 

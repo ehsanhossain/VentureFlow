@@ -99,7 +99,7 @@ const Dashboard = () => {
 
       <div className="flex flex-col md:flex-row gap-6 overflow-x-hidden ">
         <div className="flex-1 min-w-[300px] max-w-full min-h-[400px] p-[12px_7px] md:w-[491px] md:h-[718px] bg-[#FBFBFB]">
-          <p className="text-[22px] font-semibold mb-4 text-[#30313D] leading-[33.214px] font-poppins pb-[25px]">
+          <p className="text-[22px] font-medium mb-4 text-[#30313D] leading-[33.214px] font-poppins pb-[25px]">
             {t('dashboard.projectStatus', 'Project Status')}
           </p>
 
@@ -112,8 +112,8 @@ const Dashboard = () => {
               </thead>
 
               <tbody>
-                {rows.map((row) => (
-                  <tr key={`${row.type}-${row.id}`}>
+                {rows.map((row, idx) => (
+                  <tr key={`${row.type}-${row.id}-${idx}`}>
                     <td
                       className="border-b border-[#e0e0e0] pt-2 pb-2 w-full"
                       colSpan={columns.length}

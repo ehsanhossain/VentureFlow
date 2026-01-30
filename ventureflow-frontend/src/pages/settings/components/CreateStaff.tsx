@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Upload, Camera, X, RefreshCw, Eye, EyeOff, Shield, ShieldCheck, Check, Mail, User } from 'lucide-react';
+import { ChevronLeft, Camera, X, RefreshCw, Eye, EyeOff, Shield, ShieldCheck, Check, Mail, User } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 
@@ -198,7 +198,7 @@ const CreateStaff: React.FC = () => {
     if (isFetching) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
+                <div className="animate-spin rounded-[3px] h-8 w-8 border-b-2 border-[#064771]"></div>
             </div>
         );
     }
@@ -210,12 +210,12 @@ const CreateStaff: React.FC = () => {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/settings/staff')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 rounded-[3px] transition-colors"
                     >
                         <ChevronLeft className="w-5 h-5 text-gray-600" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">
+                        <h1 className="text-xl font-medium text-gray-900">
                             {isEditing ? 'Edit Staff Member' : 'Create New Staff Member'}
                         </h1>
                         <p className="text-sm text-gray-500">
@@ -233,22 +233,22 @@ const CreateStaff: React.FC = () => {
                             <div className="flex flex-col items-center gap-4 lg:w-[180px] flex-shrink-0">
                                 <div
                                     onClick={handleAvatarClick}
-                                    className="relative w-32 h-32 rounded-full border-2 border-dashed border-[#064771]/30 bg-[#F0F8FF] flex items-center justify-center cursor-pointer hover:border-[#064771]/60 hover:bg-[#E6F4FF] transition-all group"
+                                    className="relative w-32 h-32 rounded-[3px] border-2 border-dashed border-[#064771]/30 bg-[#F0F8FF] flex items-center justify-center cursor-pointer hover:border-[#064771]/60 hover:bg-[#E6F4FF] transition-all group"
                                 >
                                     {avatarPreview ? (
                                         <>
                                             <img
                                                 src={avatarPreview}
                                                 alt="Avatar"
-                                                className="w-full h-full rounded-full object-cover"
+                                                className="w-full h-full rounded-[3px] object-cover"
                                             />
-                                            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-black/50 rounded-[3px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                 <Camera className="w-6 h-6 text-white" />
                                             </div>
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.stopPropagation(); removeAvatar(); }}
-                                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
+                                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-[3px] flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
@@ -289,7 +289,7 @@ const CreateStaff: React.FC = () => {
                                             required
                                             value={formData.first_name}
                                             onChange={(e) => handleChange('first_name', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                             placeholder="Enter first name"
                                         />
                                     </div>
@@ -302,7 +302,7 @@ const CreateStaff: React.FC = () => {
                                             required
                                             value={formData.last_name}
                                             onChange={(e) => handleChange('last_name', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                             placeholder="Enter last name"
                                         />
                                     </div>
@@ -311,7 +311,7 @@ const CreateStaff: React.FC = () => {
                                         <select
                                             value={formData.gender}
                                             onChange={(e) => handleChange('gender', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all bg-white"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all bg-white"
                                         >
                                             <option value="">Select</option>
                                             <option value="Male">Male</option>
@@ -332,13 +332,13 @@ const CreateStaff: React.FC = () => {
                                                 required
                                                 value={formData.employee_id}
                                                 onChange={(e) => handleChange('employee_id', e.target.value)}
-                                                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                                 placeholder="VF123456"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={generateEmployeeId}
-                                                className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                                className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-[3px] transition-colors"
                                                 title="Generate ID"
                                             >
                                                 <RefreshCw className="w-4 h-4 text-gray-600" />
@@ -350,7 +350,7 @@ const CreateStaff: React.FC = () => {
                                         <select
                                             value={formData.nationality}
                                             onChange={(e) => handleChange('nationality', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all bg-white"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all bg-white"
                                         >
                                             <option value="">Select Nationality</option>
                                             {countries.map(country => (
@@ -366,7 +366,7 @@ const CreateStaff: React.FC = () => {
                                             type="text"
                                             value={formData.contact_number}
                                             onChange={(e) => handleChange('contact_number', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                             placeholder="e.g., +66 081 091 87"
                                         />
                                     </div>
@@ -384,7 +384,7 @@ const CreateStaff: React.FC = () => {
                                                 required
                                                 value={formData.work_email}
                                                 onChange={(e) => handleChange('work_email', e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                                 placeholder="name@company.com"
                                             />
                                         </div>
@@ -393,7 +393,7 @@ const CreateStaff: React.FC = () => {
 
                                 {/* User Login & Permission Section */}
                                 <div className="pt-4 border-t border-gray-100">
-                                    <h3 className="text-sm font-bold text-gray-900 mb-4">User Login & Permission</h3>
+                                    <h3 className="text-sm font-medium text-gray-900 mb-4">User Login & Permission</h3>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                                         <div>
@@ -407,7 +407,7 @@ const CreateStaff: React.FC = () => {
                                                     required
                                                     value={formData.login_email}
                                                     onChange={(e) => handleChange('login_email', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
+                                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
                                                     placeholder="employee's email to login"
                                                 />
                                             </div>
@@ -423,7 +423,7 @@ const CreateStaff: React.FC = () => {
                                                         required={!isEditing}
                                                         value={formData.password}
                                                         onChange={(e) => handleChange('password', e.target.value)}
-                                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all pr-12"
+                                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all pr-12"
                                                         placeholder={isEditing ? 'Leave empty to keep current' : '••••••••••••'}
                                                     />
                                                     <button
@@ -437,7 +437,7 @@ const CreateStaff: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={generatePassword}
-                                                    className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                                    className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-[3px] transition-colors"
                                                     title="Generate Password"
                                                 >
                                                     <RefreshCw className="w-4 h-4 text-gray-600" />
@@ -455,9 +455,9 @@ const CreateStaff: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => handleChange('role', 'Staff')}
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-2 transition-all ${formData.role === 'Staff'
-                                                        ? 'border-[#064771] bg-[#E6F4FF] text-[#064771]'
-                                                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-[3px] border-2 transition-all ${formData.role === 'Staff'
+                                                    ? 'border-[#064771] bg-[#E6F4FF] text-[#064771]'
+                                                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
                                                     }`}
                                             >
                                                 {formData.role === 'Staff' && <Check className="w-4 h-4" />}
@@ -467,9 +467,9 @@ const CreateStaff: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => handleChange('role', 'System Admin')}
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-2 transition-all ${formData.role === 'System Admin'
-                                                        ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-[3px] border-2 transition-all ${formData.role === 'System Admin'
+                                                    ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
                                                     }`}
                                             >
                                                 {formData.role === 'System Admin' && <Check className="w-4 h-4" />}
@@ -488,7 +488,7 @@ const CreateStaff: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => navigate('/settings/staff')}
-                            className="flex items-center gap-2 px-5 py-2.5 text-red-600 font-medium rounded-full border border-red-200 hover:bg-red-50 transition-colors"
+                            className="flex items-center gap-2 px-5 py-2.5 text-red-600 font-medium rounded-[3px] border border-red-200 hover:bg-red-50 transition-colors"
                         >
                             <X className="w-4 h-4" />
                             Cancel
@@ -496,7 +496,7 @@ const CreateStaff: React.FC = () => {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-[#064771] hover:bg-[#053a5e] text-white font-medium rounded-full transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-[#064771] hover:bg-[#053a5e] text-white font-medium rounded-[3px] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -175,7 +175,7 @@ const PartnerManagement: React.FC = () => {
                         <Users className="w-8 h-8 text-[#064771]" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-[#064771]">{t('settings.partners.title')}</h1>
+                        <h1 className="text-2xl font-medium text-[#064771]">{t('settings.partners.title')}</h1>
                         <p className="text-sm text-gray-500">{t('settings.partners.summary')}</p>
                     </div>
                 </div>
@@ -247,12 +247,12 @@ const PartnerManagement: React.FC = () => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.partner')}</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.contactId')}</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.country')}</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.structure')}</th>
-                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.status')}</th>
-                                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.actions')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.partner')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.contactId')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.country')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.structure')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.status')}</th>
+                                        <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings.partners.table.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -265,11 +265,11 @@ const PartnerManagement: React.FC = () => {
                                             <tr key={partner.id} className="hover:bg-gray-50/80 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-[#064771] to-[#0a6fb1] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-[#064771] to-[#0a6fb1] flex items-center justify-center text-white font-medium text-sm shadow-sm">
                                                             {(partner.user?.name || partner.partner_overview?.reg_name || 'U').charAt(0).toUpperCase()}
                                                         </div>
                                                         <div className="ml-4">
-                                                            <div className="text-sm font-bold text-gray-900">
+                                                            <div className="text-sm font-medium text-gray-900">
                                                                 {partner.user?.name || partner.partner_overview?.reg_name || t('common.unnamed')}
                                                             </div>
                                                             <div className="text-xs text-gray-500">{t('settings.partners.registeredPartner')}</div>
@@ -279,7 +279,7 @@ const PartnerManagement: React.FC = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-900">{partner.user?.email || 'N/A'}</div>
                                                     <div className="mt-1 flex items-center">
-                                                        <span className="bg-blue-50 text-[#064771] px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-blue-100 uppercase">
+                                                        <span className="bg-blue-50 text-[#064771] px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-blue-100 uppercase">
                                                             {partner.partner_id}
                                                         </span>
                                                     </div>
@@ -293,7 +293,7 @@ const PartnerManagement: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${partner.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${partner.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                         {(partner.status || 'active').toUpperCase()}
                                                     </span>
                                                 </td>
@@ -340,7 +340,7 @@ const PartnerManagement: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden scale-100 transform transition-all border border-gray-100">
                         <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
                             <div>
-                                <h3 className="text-xl font-bold text-[#064771]">
+                                <h3 className="text-xl font-medium text-[#064771]">
                                     {editingPartner ? t('settings.partners.updateTitle') : t('settings.partners.addTitle')}
                                 </h3>
                                 <p className="text-sm text-gray-500 mt-1">
@@ -353,7 +353,7 @@ const PartnerManagement: React.FC = () => {
                         </div>
                         <div className="p-8 space-y-6">
                             <div className="space-y-1.5">
-                                <label className="block text-sm font-bold text-gray-700">{t('settings.partners.form.businessName')}</label>
+                                <label className="block text-sm font-medium text-gray-700">{t('settings.partners.form.businessName')}</label>
                                 <input
                                     type="text"
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
@@ -363,7 +363,7 @@ const PartnerManagement: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="block text-sm font-bold text-gray-700">{t('settings.partners.form.email')}</label>
+                                <label className="block text-sm font-medium text-gray-700">{t('settings.partners.form.email')}</label>
                                 <input
                                     type="email"
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] transition-all"
@@ -374,7 +374,7 @@ const PartnerManagement: React.FC = () => {
                             </div>
                             {!editingPartner && (
                                 <div className="space-y-1.5">
-                                    <label className="block text-sm font-bold text-gray-700">{t('settings.partners.form.country')}</label>
+                                    <label className="block text-sm font-medium text-gray-700">{t('settings.partners.form.country')}</label>
                                     <Dropdown
                                         countries={countries}
                                         selected={countries.find(c => c.alpha_2_code === formData.country)}
@@ -395,13 +395,13 @@ const PartnerManagement: React.FC = () => {
                         <div className="px-8 py-5 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
                             <button
                                 onClick={() => { setIsAddModalOpen(false); setEditingPartner(null); }}
-                                className="px-5 py-2.5 text-gray-600 font-bold hover:bg-white hover:shadow-sm rounded-xl transition"
+                                className="px-5 py-2.5 text-gray-600 font-medium hover:bg-white hover:shadow-sm rounded-xl transition"
                             >
                                 {t('common.cancel')}
                             </button>
                             <button
                                 onClick={handleCreateOrUpdate}
-                                className="px-6 py-2.5 bg-[#064771] text-white font-bold rounded-xl hover:bg-[#053a5c] transition-all shadow-md shadow-[#064771]/20"
+                                className="px-6 py-2.5 bg-[#064771] text-white font-medium rounded-xl hover:bg-[#053a5c] transition-all shadow-md shadow-[#064771]/20"
                             >
                                 {editingPartner ? t('settings.partners.updateButton') : t('settings.partners.createButton')}
                             </button>

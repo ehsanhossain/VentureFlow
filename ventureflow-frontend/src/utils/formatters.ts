@@ -71,11 +71,17 @@ export const formatCompactNumber = (number: number): string => {
  */
 export const formatCompactBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
-    if (typeof budget === 'string') return budget;
-    if (typeof budget === 'number' || (typeof budget === 'string' && !isNaN(Number(budget.replace(/,/g, ''))))) {
-        const val = typeof budget === 'number' ? budget : Number(budget.replace(/,/g, ''));
-        const converted = exchangeRate ? val * exchangeRate : val;
-        return `${currencySymbol}${formatCompactNumber(converted)}`;
+    if (typeof budget === 'string') {
+        const rangeMatch = budget.match(/^([\d.,]+)\s*-\s*([\d.,]+)$/);
+        if (rangeMatch) {
+            budget = { min: rangeMatch[1].replace(/,/g, ''), max: rangeMatch[2].replace(/,/g, '') };
+        } else if (!isNaN(Number(budget.replace(/,/g, '')))) {
+            const val = Number(budget.replace(/,/g, ''));
+            const converted = exchangeRate ? val * exchangeRate : val;
+            return `${currencySymbol}${formatCompactNumber(converted)}`;
+        } else {
+            return budget;
+        }
     }
 
     try {
@@ -116,7 +122,14 @@ export const formatCompactBudget = (budget: any, currencySymbol: string = '$', e
  */
 export const formatFullBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
-    if (typeof budget === 'string') return budget;
+    if (typeof budget === 'string') {
+        const rangeMatch = budget.match(/^([\d.,]+)\s*-\s*([\d.,]+)$/);
+        if (rangeMatch) {
+            budget = { min: rangeMatch[1].replace(/,/g, ''), max: rangeMatch[2].replace(/,/g, '') };
+        } else {
+            return budget;
+        }
+    }
 
     try {
         let min = budget.min !== undefined && budget.min !== '' ? budget.min : (budget.minimum !== undefined && budget.minimum !== '' ? budget.minimum : undefined);

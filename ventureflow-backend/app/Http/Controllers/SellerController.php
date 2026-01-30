@@ -214,6 +214,7 @@ class SellerController extends Controller
                 'current_page' => $sellers->currentPage(),
                 'last_page' => $sellers->lastPage(),
                 'per_page' => $sellers->perPage(),
+                'allowed_fields' => isset($allowedFields) ? $allowedFields : null,
             ]
         ]);
         } catch (\Throwable $e) {
@@ -656,16 +657,72 @@ class SellerController extends Controller
      */
     public function show(Seller $seller)
     {
-        $seller->load([
-            'companyOverview.hqCountry',
-            'financialDetails',
-            'partnershipDetails',
-            'teaserCenter',
-        ]);
+        $request = request();
+        $user = $request->user();
+        $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
-        return response()->json([
-            'data' => $seller
-        ]);
+        if ($isPartner) {
+            $allowedFields = $this->getParsedAllowedFields('target');
+            $query = Seller::where('id', $seller->id);
+
+            $rootFields = array_unique(array_merge(
+                 ['id', 'seller_id', 'pinned', 'created_at', 'status', 'updated_at'], 
+                 $allowedFields['root'] ?? [],
+                 ['company_overview_id', 'financial_detail_id', 'partnership_detail_id', 'teaser_center_id']
+            ));
+            $query->select($rootFields);
+
+            $query->with([
+                'companyOverview' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['companyOverview'])) {
+                        $q->select(array_merge(['id', 'hq_country'], $allowedFields['relationships']['companyOverview']));
+                    } else { $q->select('id'); }
+                    $q->with('hqCountry');
+                },
+                'financialDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['financialDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['financialDetails']));
+                    } else { $q->select('id'); }
+                },
+                'partnershipDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['partnershipDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['partnershipDetails']));
+                    } else { $q->select('id'); }
+                },
+                'teaserCenter' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['teaserCenter'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['teaserCenter']));
+                    } else { $q->select('id'); }
+                },
+                'deals' => function($q) {
+                     $q->select('id', 'seller_id', 'stage_code', 'progress_percent', 'created_at');
+                }
+            ]);
+
+            $result = $query->first();
+
+            if (!$result) {
+                return response()->json(['message' => 'Seller not found or access denied.'], 404);
+            }
+
+            return response()->json([
+                'data' => $result,
+                'meta' => ['allowed_fields' => $allowedFields]
+            ]);
+
+        } else {
+             $seller->load([
+                'companyOverview.hqCountry',
+                'financialDetails',
+                'partnershipDetails',
+                'teaserCenter',
+                'deals'
+            ]);
+
+            return response()->json([
+                'data' => $seller
+            ]);
+        }
     }
 
 

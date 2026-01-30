@@ -60,6 +60,7 @@ interface TargetTableProps {
     visibleColumns: string[];
     selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh?: () => void;
+    isRestricted?: boolean;
 }
 
 type SortKey = keyof TargetRowData;
@@ -71,7 +72,8 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     onTogglePin,
     visibleColumns,
     selectedCurrency,
-    onRefresh
+    onRefresh,
+    isRestricted = false
 }) => {
     const navigate = useNavigate();
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -290,25 +292,27 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     containerClassName="overflow-visible min-w-full"
                     className="w-full table-fixed border-separate border-spacing-0"
                 >
-                    <TableHeader className="sticky top-0 z-40">
+                    <TableHeader className="sticky top-0 z-20">
                         <TableRow className="bg-slate-50/80 backdrop-blur-sm border-b border-slate-200">
-                            <TableHead className="w-[50px] text-center sticky left-0 bg-slate-50 z-50 p-2">
-                                <button
-                                    onClick={toggleSelectMode}
-                                    className="p-1.5 hover:bg-slate-200 rounded-lg transition-all focus:outline-none active:scale-90"
-                                >
-                                    {isSelectMode ? (
-                                        <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox
-                                                checked={selectedIds.size === data.length && data.length > 0}
-                                                onChange={(e) => handleSelectAll(e.target.checked)}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <Square className="w-5 h-5 text-slate-300" />
-                                    )}
-                                </button>
-                            </TableHead>
+                            {!isRestricted && (
+                                <TableHead className="w-[50px] text-center sticky left-0 bg-slate-50 z-30 p-2">
+                                    <button
+                                        onClick={toggleSelectMode}
+                                        className="p-1.5 hover:bg-slate-200 rounded-[3px] transition-all focus:outline-none active:scale-90"
+                                    >
+                                        {isSelectMode ? (
+                                            <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selectedIds.size === data.length && data.length > 0}
+                                                    onChange={(e) => handleSelectAll(e.target.checked)}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Square className="w-5 h-5 text-slate-300" />
+                                        )}
+                                    </button>
+                                </TableHead>
+                            )}
 
                             {Object.keys(columnWidths).map(colKey => (
                                 isVisible(colKey) && (
@@ -321,7 +325,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                             className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors"
                                             onClick={() => handleSort(colKey as SortKey)}
                                         >
-                                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                                            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 {colKey === 'hq' ? 'HQ' :
                                                     colKey === 'ebitda' ? 'EBITDA' :
                                                         colKey === 'projectCode' ? 'Project ID' :
@@ -336,11 +340,11 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 )
                             ))}
 
-                            <TableHead className="w-[100px] sticky right-0 bg-slate-50 z-50 border-b border-slate-100 h-11">
+                            <TableHead className="w-[100px] sticky right-0 bg-slate-50 z-30 border-b border-slate-100 h-11">
                                 <div className="flex items-center justify-end px-6 h-full">
-                                    {selectedIds.size > 0 && (
+                                    {selectedIds.size > 0 && !isRestricted && (
                                         <button
-                                            className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all hover:scale-110"
+                                            className="p-1.5 hover:bg-red-50 rounded-[3px] text-red-500 transition-all hover:scale-110"
                                             onClick={handleDeleteSelected}
                                             title="Delete Selected"
                                         >
@@ -358,7 +362,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 <TableCell colSpan={20} className="h-64">
                                     <div className="flex flex-col items-center justify-center gap-3">
                                         <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-                                        <p className="text-sm font-bold text-slate-400">Fetching targets...</p>
+                                        <p className="text-sm font-medium text-slate-400">Fetching targets...</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -369,7 +373,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-2">
                                             <Search className="w-8 h-8 text-slate-300" />
                                         </div>
-                                        <p className="font-bold text-slate-900">No results found</p>
+                                        <p className="font-medium text-slate-900">No results found</p>
                                         <p className="text-sm text-slate-500">Try adjusting your filters or search</p>
                                     </div>
                                 </TableCell>
@@ -386,20 +390,22 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         ${row.isPinned ? 'bg-amber-50/20' : ''}
                                     `}
                                 >
-                                    <TableCell className="p-0 text-center sticky left-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex items-center justify-center h-14">
-                                            {isSelectMode ? (
-                                                <Checkbox
-                                                    checked={selectedIds.has(row.id)}
-                                                    onChange={(e) => handleSelectRow(row.id, e.target.checked)}
-                                                />
-                                            ) : (
-                                                <div className="w-5 h-5 flex items-center justify-center">
-                                                    {row.isPinned && <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500/10" />}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </TableCell>
+                                    {!isRestricted && (
+                                        <TableCell className="p-0 text-center sticky left-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center h-14">
+                                                {isSelectMode ? (
+                                                    <Checkbox
+                                                        checked={selectedIds.has(row.id)}
+                                                        onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-5 h-5 flex items-center justify-center">
+                                                        {row.isPinned && <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500/10" />}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    )}
 
                                     {isVisible('addedDate') && (
                                         <TableCell className="px-4 py-2">
@@ -409,7 +415,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
                                     {isVisible('projectCode') && (
                                         <TableCell className="px-4 py-2">
-                                            <span className="text-[13px] font-extrabold text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
+                                            <span className="text-[13px] font-medium text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
                                                 {row.projectCode}
                                             </span>
                                         </TableCell>
@@ -418,7 +424,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     {isVisible('companyName') && (
                                         <TableCell className="px-4 py-2">
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-bold text-slate-900 truncate tracking-tight">{row.companyName}</span>
+                                                <span className="text-[14px] font-medium text-slate-900 truncate tracking-tight">{row.companyName}</span>
                                             </div>
                                         </TableCell>
                                     )}
@@ -431,7 +437,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                                 ) : (
                                                     <div className="w-5 h-5 rounded-full bg-slate-100" />
                                                 )}
-                                                <span className="text-[13px] font-semibold text-slate-600 truncate">{row.hq?.name || 'N/A'}</span>
+                                                <span className="text-[13px] font-medium text-slate-600 truncate">{row.hq?.name || 'N/A'}</span>
                                             </div>
                                         </TableCell>
                                     )}
@@ -439,7 +445,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     {isVisible('industry') && (
                                         <TableCell className="px-4 py-2">
                                             <span
-                                                className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 truncate max-w-[150px] inline-block cursor-help"
+                                                className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-slate-600 truncate max-w-[150px] inline-block cursor-help"
                                                 title={Array.isArray(row.industry) ? row.industry.join(', ') : row.industry || ''}
                                             >
                                                 {Array.isArray(row.industry) ? row.industry[0] : row.industry || 'N/A'}
@@ -465,7 +471,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         <TableCell className="px-4 py-2">
                                             <div className="flex items-center gap-2" title={getStagePosition(row.pipelineStatus).stageName}>
                                                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200" />
-                                                <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter cursor-help">
+                                                <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter cursor-help">
                                                     {getStagePosition(row.pipelineStatus).display}
                                                 </span>
                                             </div>
@@ -474,7 +480,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
                                     {isVisible('status') && (
                                         <TableCell className="px-4 py-2">
-                                            <span className="text-[12px] font-semibold text-slate-500 capitalize">{row.status}</span>
+                                            <span className="text-[12px] font-medium text-slate-500 capitalize">{row.status}</span>
                                         </TableCell>
                                     )}
 
@@ -484,7 +490,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                                 className="flex flex-col items-end pr-2 cursor-help"
                                                 title={formatFullBudget(row.desiredInvestment, selectedCurrency?.symbol || '$', (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}
                                             >
-                                                <span className="text-[14px] font-black text-slate-900 leading-tight">
+                                                <span className="text-[14px] font-medium text-slate-900 leading-tight">
                                                     {getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate)}
                                                 </span>
                                             </div>
@@ -499,14 +505,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
                                     {isVisible('saleShareRatio') && (
                                         <TableCell className="px-4 py-2">
-                                            <span className="text-[12px] font-bold text-slate-600">{row.saleShareRatio || 'N/A'}</span>
+                                            <span className="text-[12px] font-medium text-slate-600">{row.saleShareRatio || 'N/A'}</span>
                                         </TableCell>
                                     )}
 
                                     {isVisible('rank') && (
                                         <TableCell className="px-4 py-2 text-center">
                                             <div className={`
-                                                w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-black ring-4
+                                                w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-medium ring-4
                                                 ${row.rank === 'A' ? 'bg-rose-50 text-rose-700 ring-rose-50/50' :
                                                     row.rank === 'B' ? 'bg-blue-50 text-blue-700 ring-blue-50/50' :
                                                         'bg-slate-100 text-slate-500 ring-slate-100/50'}
@@ -552,7 +558,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
                                     {isVisible('teaserLink') && (
                                         <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                                            <a href={row.teaserLink} target="_blank" className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-emerald-100 transition-colors">
+                                            <a href={row.teaserLink} target="_blank" className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-emerald-100 transition-colors">
                                                 <Eye className="w-3 h-3" /> Teaser
                                             </a>
                                         </TableCell>
@@ -561,7 +567,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     {isVisible('ebitda') && (
                                         <TableCell className="px-4 py-2">
                                             <span
-                                                className="text-[13px] font-bold text-slate-700 cursor-help"
+                                                className="text-[13px] font-medium text-slate-700 cursor-help"
                                                 title={formatFullBudget(row.ebitda, selectedCurrency?.symbol || '$', (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}
                                             >
                                                 {getBudgetDisplay(row.ebitda, row.sourceCurrencyRate)}
@@ -572,7 +578,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     <TableCell className="sticky right-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-end px-6">
                                             <button
-                                                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-200/50 text-slate-400 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100"
+                                                className="w-9 h-9 flex items-center justify-center rounded-[3px] hover:bg-slate-200/50 text-slate-400 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100"
                                                 onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
                                             >
                                                 <MoreVertical className="w-4 h-4" />
@@ -596,41 +602,43 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                         style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 270) }}
                     >
                         <div className="px-4 py-2 mb-1 border-b border-slate-50">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target Actions</p>
+                            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Target Actions</p>
                         </div>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
                         >
                             <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
                             {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
                         </button>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { navigate(`/prospects/target/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
                             <Eye className="w-4 h-4 text-slate-400" />
                             View Detailed Profile
                         </button>
                         <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-semibold"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-medium"
                             onClick={() => { navigate(`/prospects/edit-target/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
                             <Zap className="w-4 h-4 text-slate-400" />
                             Edit Project Data
                         </button>
                         <div className="h-px bg-slate-50 my-1" />
-                        <button
-                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-bold"
-                            onClick={() => {
-                                setSelectedIds(new Set([contextMenu.rowId]));
-                                setIsDeleteModalOpen(true);
-                                setContextMenu(null);
-                            }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Target
-                        </button>
+                        {!isRestricted && (
+                            <button
+                                className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
+                                onClick={() => {
+                                    setSelectedIds(new Set([contextMenu.rowId]));
+                                    setIsDeleteModalOpen(true);
+                                    setContextMenu(null);
+                                }}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete Target
+                            </button>
+                        )}
                     </div>
                 </>
             )}

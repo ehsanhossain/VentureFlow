@@ -141,7 +141,7 @@ const StaffManagement: React.FC = () => {
         const isAdmin = role === 'System Admin';
 
         return (
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${isAdmin
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${isAdmin
                 ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 border border-amber-200'
                 : 'bg-blue-50 text-blue-700 border border-blue-200'
                 }`}>
@@ -196,7 +196,7 @@ const StaffManagement: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                    <h1 className="text-2xl font-medium text-gray-900 flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-[#064771] to-[#0a5c8f] rounded-xl flex items-center justify-center shadow-lg">
                             <Users className="w-5 h-5 text-white" />
                         </div>
@@ -206,7 +206,7 @@ const StaffManagement: React.FC = () => {
                 </div>
                 <button
                     onClick={() => navigate('/settings/staff/create')}
-                    className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-95"
+                    className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                     <Plus className="w-4 h-4" />
                     Add Staff
@@ -247,17 +247,17 @@ const StaffManagement: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-                    <div className="text-2xl font-bold text-gray-900">{staff.length}</div>
+                    <div className="text-2xl font-medium text-gray-900">{staff.length}</div>
                     <div className="text-xs text-gray-500 font-medium">Total Staff</div>
                 </div>
                 <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100 p-4">
-                    <div className="text-2xl font-bold text-amber-800">
+                    <div className="text-2xl font-medium text-amber-800">
                         {staff.filter(s => s.user?.roles?.[0]?.name === 'System Admin').length}
                     </div>
                     <div className="text-xs text-amber-600 font-medium">Administrators</div>
                 </div>
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4">
-                    <div className="text-2xl font-bold text-blue-800">
+                    <div className="text-2xl font-medium text-blue-800">
                         {staff.filter(s => s.user?.roles?.[0]?.name !== 'System Admin').length}
                     </div>
                     <div className="text-xs text-blue-600 font-medium">Staff Members</div>
@@ -313,7 +313,7 @@ const StaffManagement: React.FC = () => {
                                             className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
                                             onClick={() => handleSort('name')}
                                         >
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Staff Member</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</span>
                                             <SortIcon column="name" />
                                         </div>
                                         <ResizeHandle column="name" />
@@ -328,7 +328,7 @@ const StaffManagement: React.FC = () => {
                                             className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
                                             onClick={() => handleSort('employeeId')}
                                         >
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Employee ID</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Employee ID</span>
                                             <SortIcon column="employeeId" />
                                         </div>
                                         <ResizeHandle column="employeeId" />
@@ -343,7 +343,7 @@ const StaffManagement: React.FC = () => {
                                             className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
                                             onClick={() => handleSort('email')}
                                         >
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</span>
                                             <SortIcon column="email" />
                                         </div>
                                         <ResizeHandle column="email" />
@@ -358,14 +358,14 @@ const StaffManagement: React.FC = () => {
                                             className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
                                             onClick={() => handleSort('role')}
                                         >
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Role</span>
+                                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Role</span>
                                             <SortIcon column="role" />
                                         </div>
                                         <ResizeHandle column="role" />
                                     </TableHead>
 
                                     <TableHead className="text-right w-[120px] pr-6 sticky right-0 bg-gray-50/50 z-40 border-l border-gray-100">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</span>
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</span>
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -403,7 +403,7 @@ const StaffManagement: React.FC = () => {
                                                     className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-sm"
                                                 />
                                                 <div>
-                                                    <div className="font-bold text-gray-900">{member.first_name} {member.last_name}</div>
+                                                    <div className="font-medium text-gray-900">{member.first_name} {member.last_name}</div>
                                                     <div className="text-xs text-gray-500">{member.designation?.title || 'No designation'}</div>
                                                 </div>
                                             </div>

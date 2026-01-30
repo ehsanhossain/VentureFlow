@@ -109,7 +109,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
   return (
     <>
-      <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 z-40 transition-all duration-300
+      <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 z-[60] transition-all duration-300
             ${sidebarExpanded ? 'left-64' : 'left-0 md:left-16'}
         `}>
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
@@ -156,7 +156,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                         className={`
                         px-2 py-1 rounded transition-all whitespace-nowrap
                         ${isLast
-                            ? 'text-[#064771] bg-blue-50/50 font-semibold'
+                            ? 'text-[#064771] bg-blue-50/50 font-medium'
                             : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                           }
                       `}
@@ -192,7 +192,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             <div className="relative hidden md:block" ref={createDropdownRef}>
               <button
                 onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-bold"
+                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-[3px] hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium"
               >
                 <Plus className="w-4 h-4 text-gray-500" />
                 <span>Create</span>
@@ -246,7 +246,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded border border-gray-100 py-1 max-h-[400px] overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
                   <div className="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
-                    <h3 className="font-semibold text-gray-700 text-sm">{t('header.notifications')}</h3>
+                    <h3 className="font-medium text-gray-700 text-sm">{t('header.notifications')}</h3>
                     {unreadCount > 0 && (
                       <button
                         onClick={() => markAllAsRead()}
@@ -276,7 +276,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                           }
                         >
                           <div className="flex justify-between items-start mb-1">
-                            <h4 className={`text-sm ${!notification.read_at ? 'font-semibold text-[#064771]' : 'font-medium text-gray-700'}`}>
+                            <h4 className={`text-sm ${!notification.read_at ? 'font-medium text-[#064771]' : 'font-medium text-gray-700'}`}>
                               {notification.data.title}
                             </h4>
                             {!notification.read_at && (
@@ -354,7 +354,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Deals */}
                 {results.deals.length > 0 && (
                   <div key="deals-section">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">Deals</div>
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Deals</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.deals.map((deal) => (
                         <li key={`deal-${deal.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100" onClick={() => { navigate('/deal-pipeline'); closeSearch(); }}>
@@ -370,7 +370,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Companies */}
                 {results.companies.length > 0 && (
                   <div key="companies-section">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">Companies</div>
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Companies</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.companies.map((company) => (
                         <li key={`company-${company.id}-${company.type}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
@@ -387,7 +387,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Contacts */}
                 {results.contacts.length > 0 && (
                   <div key="contacts-section">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">Contacts</div>
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Contacts</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.contacts.map((contact) => (
                         <li key={`contact-${contact.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
@@ -404,7 +404,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Documents */}
                 {results.documents.length > 0 && (
                   <div key="documents-section">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 bg-gray-50">Documents</div>
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Documents</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.documents.map((doc) => (
                         <li key={`doc-${doc.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100">
@@ -422,7 +422,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               query.length <= 1 ? (
                 <div className="py-14 px-6 text-center text-sm sm:px-14">
                   <Command className="mx-auto h-6 w-6 text-gray-400" />
-                  <p className="mt-4 font-semibold text-gray-900">Search the entire platform</p>
+                  <p className="mt-4 font-medium text-gray-900">Search the entire platform</p>
                   <p className="mt-2 text-gray-500">
                     Search for active deals, buyer profiles, sellers, or documents.
                   </p>

@@ -13,7 +13,12 @@ interface UserData {
 
 interface Employee {
   image: string;
-  id: string;
+  id: string | number;
+}
+
+interface Partner {
+  image: string;
+  id: string | number;
 }
 
 const ProfileDropdown: React.FC = () => {
@@ -27,6 +32,7 @@ const ProfileDropdown: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<UserData | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const [partner, setPartner] = useState<Partner | null>(null);
   const baseURL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
@@ -46,6 +52,7 @@ const ProfileDropdown: React.FC = () => {
         const { data } = await api.get("/api/user");
         setUser(data.user);
         setEmployee(data.employee);
+        setPartner(data.partner);
       } catch (error) {
         console.error("Failed to fetch user data", error);
       }
@@ -53,8 +60,8 @@ const ProfileDropdown: React.FC = () => {
     fetchUser();
   }, []);
 
-  const profileImageUrl = employee && employee.image
-    ? `${baseURL}/storage/${employee.image}`
+  const profileImageUrl = (employee?.image || partner?.image)
+    ? `${baseURL}/storage/${employee?.image || partner?.image}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=064771&color=fff`;
 
   return (
@@ -104,8 +111,8 @@ const ProfileDropdown: React.FC = () => {
           <div className="p-2">
             <button
               onClick={() => {
-                if (employee?.id) {
-                  navigate(`/employee/details/${employee.id}`);
+                if (employee?.id || partner?.id) {
+                  navigate(`/profile`);
                   setIsOpen(false);
                 } else {
                   showAlert({ type: "error", message: t('profile.profileNotFound') });

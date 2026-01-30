@@ -302,9 +302,15 @@ const CreateEmployee: React.FC = () => {
   const currentUser = context?.user as any;
   const isProfilePage = location.pathname === '/profile';
 
-  // If on profile page, use the logged-in user's employee ID, otherwise use param ID
-  const id = isProfilePage ? currentUser?.employee?.id : paramId;
+  // If on profile page, use the logged-in user's employee or partner ID, otherwise use param ID
+  const id = isProfilePage ? (currentUser?.employee?.id || currentUser?.partner?.id) : paramId;
   const canEditRole = currentUser?.role === 'System Admin' && !isProfilePage;
+
+  useEffect(() => {
+    if (isProfilePage && currentUser?.partner && !currentUser?.employee) {
+      setAccountType('partner');
+    }
+  }, [isProfilePage, currentUser]);
 
   interface EmployeeData {
     first_name: string;
@@ -324,6 +330,9 @@ const CreateEmployee: React.FC = () => {
     joining_date: string;
     dob: string;
     user: { email: string };
+    is_partner?: boolean;
+    reg_name?: string;
+    partner_id?: string;
   }
 
   const [employeeData, setemployeeData] = useState<EmployeeData | null>(null);
@@ -365,8 +374,14 @@ const CreateEmployee: React.FC = () => {
     setValue('workEmail', employeeData?.work_email || '');
     setValue('contact', employeeData?.contact_number || '');
     setValue('role', employeeData?.role || '');
+    // If it's a partner, set partner fields
+    if (employeeData.is_partner) {
+      setAccountType('partner');
+      setValue('regName', employeeData.reg_name || '');
+      setValue('partnerID', employeeData.partner_id || '');
+    }
 
-    if (employeeData && companyOptions.length > 0) {
+    if (employeeData && companyOptions.length > 0 && employeeData.company) {
       const selectedCompany = companyOptions.find(
         (opt) => opt.value === String(employeeData.company.id)
       );

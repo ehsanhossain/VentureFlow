@@ -233,8 +233,8 @@ class DealController extends Controller
                 'buyer.companyOverview',
                 'seller.companyOverview',
                 'pic',
-                'stageHistory.changedBy',
-                'comments.author',
+                'stageHistory.changedBy.employee',
+                'activityLogs.user.employee',
                 'documents',
             ]),
         ]);

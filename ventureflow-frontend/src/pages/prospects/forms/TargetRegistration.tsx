@@ -260,9 +260,13 @@ export const TargetRegistration: React.FC = () => {
                     }
                 } catch (e) { }
 
-                setValue('desiredInvestmentMin', fin.expected_investment_amount || '');
+                const invAmount = typeof fin.expected_investment_amount === 'string' ? { min: fin.expected_investment_amount, max: '' } : (fin.expected_investment_amount || { min: '', max: '' });
+                setValue('desiredInvestmentMin', invAmount.min || '');
+                setValue('desiredInvestmentMax', invAmount.max || '');
                 setValue('desiredInvestmentCurrency', fin.default_currency || 'USD');
-                setValue('ebitdaMin', fin.ebitda_value || fin.ttm_profit || '');
+
+                const ebitdaVal = typeof fin.ebitda_value === 'string' ? { min: fin.ebitda_value, max: '' } : (fin.ebitda_value || { min: '', max: '' });
+                setValue('ebitdaMin', ebitdaVal.min || fin.ttm_profit || '');
                 setValue('plannedSaleShareRatio', fin.maximum_investor_shareholding_percentage || '');
 
                 setValue('primaryContactName', ov.seller_contact_name || '');
@@ -329,10 +333,16 @@ export const TargetRegistration: React.FC = () => {
             // STEP 2: Financial Details
             const financePayload = {
                 seller_id: savedSellerId,
-                expected_investment_amount: data.desiredInvestmentMin + (data.desiredInvestmentMax ? ` - ${data.desiredInvestmentMax}` : ''), // Combining min-max to string
+                expected_investment_amount: {
+                    min: data.desiredInvestmentMin,
+                    max: data.desiredInvestmentMax
+                },
                 default_currency: data.desiredInvestmentCurrency,
                 maximum_investor_shareholding_percentage: data.plannedSaleShareRatio,
-                ebitda_value: data.ebitdaMin,
+                ebitda_value: {
+                    min: data.ebitdaMin,
+                    max: ''
+                },
                 is_draft: isDraft ? '2' : '1' // 1: Active, 2: Draft
             };
             await api.post('/api/seller/financial-details', financePayload);
@@ -351,22 +361,16 @@ export const TargetRegistration: React.FC = () => {
     };
 
     return (
-        <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full max-w-4xl mx-auto pb-24 font-sans text-gray-900">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{id ? 'Edit Target' : 'Target Registration'}</h2>
-                    <p className="text-sm text-gray-500">Minimal intake form for new targets</p>
-                </div>
-                <div className="flex gap-3">
-                    <button type="button" onClick={() => navigate('/prospects?tab=targets')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                    <button type="button" onClick={handleSubmit(d => onSubmit(d, true))} disabled={isSubmitting} className="px-4 py-2 text-[#ECA234] bg-white border border-[#ECA234] rounded-lg hover:bg-orange-50">
-                        Save Draft
-                    </button>
-                    <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#ECA234] rounded-lg hover:bg-[#d8922b]">
-                        {isSubmitting ? 'Saving...' : 'Save Target'}
-                    </button>
-                </div>
+        <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 font-sans text-gray-900">
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mb-6">
+                <button type="button" onClick={() => navigate('/prospects?tab=targets')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                <button type="button" onClick={handleSubmit(d => onSubmit(d, true))} disabled={isSubmitting} className="px-4 py-2 text-[#ECA234] bg-white border border-[#ECA234] rounded-[3px] text-sm font-medium hover:bg-orange-50 transition-all">
+                    Save Draft
+                </button>
+                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#ECA234] rounded-[3px] text-sm font-medium hover:bg-[#d8922b] transition-all">
+                    {isSubmitting ? 'Saving...' : 'Save Target'}
+                </button>
             </div>
 
             {/* SECTION A: SYSTEM & IDENTITY */}
@@ -402,7 +406,7 @@ export const TargetRegistration: React.FC = () => {
                         <div className="relative flex items-center">
                             <input
                                 {...register('projectCode')}
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-200 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
+                                className={`w-full px-4 py-2 border rounded-[3px] focus:ring-2 focus:ring-orange-200 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
                                 placeholder="XX-S-XXX"
                             />
                             <div className="absolute right-3 flex items-center gap-2">
@@ -450,7 +454,7 @@ export const TargetRegistration: React.FC = () => {
 
                     <div className="md:col-span-2">
                         <Label text="Company Name (Optional at intake, required for active)" />
-                        <Input {...register('companyName')} placeholder="Registered Company Entity Name" />
+                        <Input {...register('companyName')} placeholder="Registered Company Entity Name" className="rounded-[3px]" />
                     </div>
                 </div>
             </CollapsibleSection>
@@ -492,7 +496,7 @@ export const TargetRegistration: React.FC = () => {
                         <Label text="Project Details (Teaser)" required />
                         <textarea
                             {...register('projectDetails', { required: true })}
-                            className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
+                            className="w-full border border-gray-300 rounded-[3px] p-3 min-h-[100px] focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
                             placeholder="Brief description of the deal..."
                         />
                         {errors.projectDetails && <span className="text-red-500 text-xs">Required</span>}
@@ -536,7 +540,7 @@ export const TargetRegistration: React.FC = () => {
                         <div className="md:col-span-3"><Label text="Desired Investment Range" required /></div>
                         <Input {...register('desiredInvestmentMin')} type="number" placeholder="Min Amount" />
                         <Input {...register('desiredInvestmentMax')} type="number" placeholder="Max Amount" />
-                        <select {...register('desiredInvestmentCurrency')} className="border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                        <select {...register('desiredInvestmentCurrency')} className="border border-gray-300 rounded-[3px] px-3 py-2 bg-white">
                             {currencies.map(c => (
                                 <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
                             ))}
@@ -548,7 +552,7 @@ export const TargetRegistration: React.FC = () => {
                         <div className="md:col-span-2">
                             <Input {...register('ebitdaMin')} type="number" placeholder="Value" />
                         </div>
-                        <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 rounded-lg border border-gray-200">
+                        <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 rounded-[3px] border border-gray-200">
                             {watch('desiredInvestmentCurrency') || 'USD'}
                         </div>
                     </div>

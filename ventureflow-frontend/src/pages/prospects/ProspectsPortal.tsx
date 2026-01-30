@@ -20,6 +20,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { showAlert } from '../../components/Alert';
+import { isFieldAllowed } from '../../utils/permissionUtils';
 
 interface Country {
     id: number;
@@ -78,6 +79,8 @@ const ALL_TARGET_COLUMNS = [
 
 const DEFAULT_TARGET_COLUMNS = ['projectCode', 'hq', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
 
+
+
 const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -99,6 +102,8 @@ const ProspectsPortal: React.FC = () => {
         const saved = localStorage.getItem('prospects_pinned_ids_targets');
         return saved ? JSON.parse(saved) : [];
     });
+
+    const [serverAllowedFields, setServerAllowedFields] = useState<any>(null);
 
     // Tools & Selection States
     const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
@@ -173,6 +178,10 @@ const ProspectsPortal: React.FC = () => {
                 investors: buyerRes.data?.meta?.total ?? buyerData.length,
                 targets: sellerRes.data?.meta?.total ?? sellerDataRaw.length
             });
+
+            // Set allowed fields based on active tab
+            const meta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
+            setServerAllowedFields(meta?.allowed_fields || null);
 
             if (activeTab === 'investors') {
                 const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
@@ -531,6 +540,11 @@ const ProspectsPortal: React.FC = () => {
         document.body.removeChild(link);
     };
 
+
+    const effectiveVisibleColumns = visibleColumns.filter(col =>
+        isFieldAllowed(col, serverAllowedFields, activeTab)
+    );
+
     return (
         <>
             {/* Import Modal */}
@@ -538,7 +552,7 @@ const ProspectsPortal: React.FC = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 max-w-lg w-full transform transition-all animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-semibold text-gray-900">Import Data</h3>
+                            <h3 className="text-xl font-medium text-gray-900">Import Data</h3>
                             <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X className="w-5 h-5 text-gray-400" />
                             </button>
@@ -548,13 +562,13 @@ const ProspectsPortal: React.FC = () => {
                             <div className="flex bg-gray-100 p-1 rounded-xl">
                                 <button
                                     onClick={() => setImportType('investors')}
-                                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${importType === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Investors
                                 </button>
                                 <button
                                     onClick={() => setImportType('targets')}
-                                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${importType === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Targets
                                 </button>
@@ -565,7 +579,7 @@ const ProspectsPortal: React.FC = () => {
                                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                     onDrop={handleDrop}
                                     onClick={() => document.getElementById('csv-upload')?.click()}
-                                    className={`relative group cursor-pointer border-2 border-dashed rounded-2xl p-8 transition-all duration-300 flex flex-col items-center gap-4 ${selectedFile ? 'border-green-400 bg-green-50/30' : 'border-gray-200 hover:border-[#064771] hover:bg-gray-50'
+                                    className={`relative group cursor-pointer border-2 border-dashed rounded-[3px] p-8 transition-all duration-300 flex flex-col items-center gap-4 ${selectedFile ? 'border-green-400 bg-green-50/30' : 'border-gray-200 hover:border-[#064771] hover:bg-gray-50'
                                         }`}
                                 >
                                     <input
@@ -581,7 +595,7 @@ const ProspectsPortal: React.FC = () => {
                                         <FileSpreadsheet className="w-8 h-8" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-semibold text-gray-900">
+                                        <p className="text-sm font-medium text-gray-900">
                                             {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
@@ -591,11 +605,11 @@ const ProspectsPortal: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
+                                    <div className="p-4 bg-amber-50 rounded-[3px] border border-amber-100">
                                         <div className="flex gap-3">
                                             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
                                             <div className="space-y-1">
-                                                <p className="text-sm font-semibold text-amber-900">Important Note</p>
+                                                <p className="text-sm font-medium text-amber-900">Important Note</p>
                                                 <p className="text-xs text-amber-700 leading-relaxed">
                                                     Please download and use our template to ensure your data is correctly formatted.
                                                 </p>
@@ -609,7 +623,7 @@ const ProspectsPortal: React.FC = () => {
                                                 e.stopPropagation();
                                                 downloadCsvTemplate(importType === 'investors' ? 'investor' : 'target');
                                             }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-[3px] text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                                         >
                                             <Download className="w-4 h-4" />
                                             Download Template
@@ -620,7 +634,7 @@ const ProspectsPortal: React.FC = () => {
                                                 startImport();
                                             }}
                                             disabled={!selectedFile}
-                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-xl text-sm font-semibold hover:bg-[#053a5c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             Start Import
                                         </button>
@@ -629,7 +643,7 @@ const ProspectsPortal: React.FC = () => {
                             </div>
                         </div>
                         <div className="mt-8 pt-4 border-t border-gray-100 flex gap-3">
-                            <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
+                            <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -647,7 +661,7 @@ const ProspectsPortal: React.FC = () => {
                                     <Filter className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-semibold text-gray-900">Advanced Filters</h2>
+                                    <h2 className="text-xl font-medium text-gray-900">Advanced Filters</h2>
                                     <p className="text-xs text-gray-500 mt-0.5 font-medium">Refine your prospects list</p>
                                 </div>
                             </div>
@@ -663,7 +677,7 @@ const ProspectsPortal: React.FC = () => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
                             <div className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2.5 ml-1">Status</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2.5 ml-1">Status</label>
                                     <div className="relative group">
                                         <select
                                             className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
@@ -684,10 +698,10 @@ const ProspectsPortal: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2.5 ml-1">HQ Country</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2.5 ml-1">HQ Country</label>
                                     <div className="relative group">
                                         <select
-                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
+                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-[3px] text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
                                             value={filters.country}
                                             onChange={(e) => setFilters({ ...filters, country: e.target.value })}
                                         >
@@ -705,13 +719,13 @@ const ProspectsPortal: React.FC = () => {
                         {/* Footer Actions */}
                         <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
                             <button
-                                className="w-full py-4 bg-[#064771] text-white rounded font-semibold hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-[#064771] text-white rounded-[3px] font-medium hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
                                 onClick={() => setIsFilterOpen(false)}
                             >
                                 Apply Filters
                             </button>
                             <button
-                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded font-semibold flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
+                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded-[3px] font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                                 onClick={() => setFilters({ status: '', country: '', industry: '' })}
                             >
                                 <RotateCcw className="w-4 h-4" />
@@ -724,17 +738,17 @@ const ProspectsPortal: React.FC = () => {
 
             <div className="flex flex-col h-full bg-gray-50 font-poppins overflow-x-hidden">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2.5 bg-white border-b gap-4">
+                <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                        <h1 className="text-xl md:text-2xl font-semibold text-gray-900 w-full md:w-auto whitespace-nowrap">Prospects</h1>
+                        <h1 className="text-xl md:text-2xl font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
 
-                        <div className="flex bg-gray-100 rounded-lg p-1">
+                        <div className="flex bg-gray-100 rounded-[3px] p-1">
                             <button
                                 onClick={() => {
                                     setActiveTab('investors');
                                     setSearchParams({ tab: 'investors' });
                                 }}
-                                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${activeTab === 'investors'
+                                className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'investors'
                                     ? 'bg-white text-[#064771] shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                     }`}
@@ -746,7 +760,7 @@ const ProspectsPortal: React.FC = () => {
                                     setActiveTab('targets');
                                     setSearchParams({ tab: 'targets' });
                                 }}
-                                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${activeTab === 'targets'
+                                className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'targets'
                                     ? 'bg-white text-[#064771] shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                     }`}
@@ -755,7 +769,7 @@ const ProspectsPortal: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="relative group w-full md:w-80">
+                        <div className="relative group w-full md:w-72">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#064771] transition-colors" />
                             <input
                                 ref={searchInputRef}
@@ -763,7 +777,7 @@ const ProspectsPortal: React.FC = () => {
                                 placeholder={`Search for ${activeTab}...`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-10 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]"
+                                className="w-full pl-9 pr-10 py-2 bg-white border border-gray-300 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]"
                             />
                             <div className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px] font-medium text-gray-400 select-none pointer-events-none">
                                 <span className="text-xs">⌘</span> F
@@ -774,7 +788,7 @@ const ProspectsPortal: React.FC = () => {
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setFilters(prev => ({ ...prev, status: prev.status === 'Draft' ? '' : 'Draft' }))}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all shadow-sm ${filters.status === 'Draft'
+                            className={`flex items-center gap-2 px-4 py-2 rounded-[3px] border text-sm font-medium transition-all ${filters.status === 'Draft'
                                 ? 'bg-orange-50 border-orange-200 text-orange-900'
                                 : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                                 }`}
@@ -786,7 +800,7 @@ const ProspectsPortal: React.FC = () => {
                         <div className="relative" ref={toolsDropdownRef}>
                             <button
                                 onClick={() => setIsToolsOpen(!isToolsOpen)}
-                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium transition-all shadow-sm active:scale-95"
+                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
                                 <Settings2 className="w-4 h-4 text-gray-400" />
                                 Tools
@@ -795,7 +809,7 @@ const ProspectsPortal: React.FC = () => {
                                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right shadow-2xl">
                                     <div className="space-y-4">
                                         <div className="pb-3 border-b border-gray-50">
-                                            <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 <DollarSign className="w-3 h-3" /> Currency
                                             </div>
                                             <select
@@ -810,7 +824,7 @@ const ProspectsPortal: React.FC = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 <Layout className="w-3 h-3" /> Visible Columns
                                             </div>
                                             <div className="space-y-1 max-h-56 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-100">
@@ -837,7 +851,7 @@ const ProspectsPortal: React.FC = () => {
                         <div className="relative" ref={createDropdownRef}>
                             <button
                                 onClick={() => setIsCreateOpen(!isCreateOpen)}
-                                className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-[#053a5c] shadow-sm active:scale-95"
+                                className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all hover:bg-[#053a5c] active:scale-95"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span>Create</span>
@@ -854,10 +868,10 @@ const ProspectsPortal: React.FC = () => {
                                         Add Target
                                     </button>
                                     <div className="h-px bg-gray-50 my-1.5 mx-3" />
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-semibold hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
                                         <Upload className="w-4 h-4 text-gray-400" /> Import Investors
                                     </button>
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-semibold hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
                                         <Upload className="w-4 h-4 text-gray-400" /> Import Targets
                                     </button>
                                 </div>
@@ -868,24 +882,26 @@ const ProspectsPortal: React.FC = () => {
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col overflow-hidden relative">
-                    <div className="flex-1 overflow-auto p-4 md:p-6">
+                    <div className="flex-1 overflow-auto px-4 md:px-8 py-4 md:py-6">
                         {activeTab === 'investors' ? (
                             <InvestorTable
                                 data={investors}
                                 isLoading={isLoading}
                                 onTogglePin={handleTogglePin}
-                                visibleColumns={visibleColumns}
+                                visibleColumns={effectiveVisibleColumns}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
+                                isRestricted={!!serverAllowedFields}
                             />
                         ) : (
                             <TargetTable
                                 data={targets}
                                 isLoading={isLoading}
                                 onTogglePin={handleTogglePin}
-                                visibleColumns={visibleColumns}
+                                visibleColumns={effectiveVisibleColumns}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
+                                isRestricted={!!serverAllowedFields}
                             />
                         )}
                     </div>

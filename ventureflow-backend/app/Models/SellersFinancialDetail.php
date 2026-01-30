@@ -23,6 +23,10 @@ class SellersFinancialDetail extends Model
         'ebitda_times',
     ];
 
+    protected $casts = [
+        'expected_investment_amount' => 'array',
+        'ebitda_value' => 'array',
+    ];
 
     // Relationship to Seller (One-to-One)
     public function seller()

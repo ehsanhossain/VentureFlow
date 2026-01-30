@@ -18,6 +18,7 @@ import {
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
+import DealDetailsModal from './components/DealDetailsModal';
 import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
 
 interface PipelineStage {
@@ -87,6 +88,7 @@ const DealPipeline = () => {
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
+    const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [countries, setCountries] = useState<Country[]>([]);
     const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
@@ -290,9 +292,9 @@ const DealPipeline = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                 <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                    <h1 className="text-xl md:text-2xl font-semibold text-gray-900 w-full md:w-auto">Deal Pipeline</h1>
+                    <h1 className="text-xl md:text-2xl font-medium text-gray-900 w-full md:w-auto">Deal Pipeline</h1>
 
-                    <div className="w-full md:w-80">
+                    <div className="w-full md:w-72">
                         <Dropdown
                             countries={countries}
                             selected={selectedCountries}
@@ -308,7 +310,7 @@ const DealPipeline = () => {
                             placeholder="Search deals..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full md:w-64 px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#064771]"
+                            className="w-full md:w-72 px-4 py-2 pl-10 text-sm border border-gray-200 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-[#064771] transition-all"
                         />
                         <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -317,7 +319,7 @@ const DealPipeline = () => {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] transition-colors"
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#064771] rounded-[3px] hover:bg-[#053a5c] transition-all"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -343,7 +345,7 @@ const DealPipeline = () => {
                         {/* Header with Collapse Toggle */}
                         <div className={`flex items-center mb-4 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
                             {!sidebarCollapsed && (
-                                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                <h2 className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                                     Pipeline Workflow
                                 </h2>
                             )}
@@ -392,7 +394,7 @@ const DealPipeline = () => {
                                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-3 mb-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium text-gray-500">Total Deals</span>
-                                        <span className={`text-lg font-bold ${pipelineView === 'buyer' ? 'text-[#064771]' : 'text-green-600'}`}>
+                                        <span className={`text-lg font-medium ${pipelineView === 'buyer' ? 'text-[#064771]' : 'text-green-600'}`}>
                                             {Object.values(deals).reduce((sum, s) => sum + (s.deals?.length || 0), 0)}
                                         </span>
                                     </div>
@@ -450,7 +452,7 @@ const DealPipeline = () => {
                                             >
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                        <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected
+                                                        <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${isSelected
                                                             ? pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-green-600 text-white'
                                                             : stageDeals.length > 0
                                                                 ? pipelineView === 'buyer' ? 'bg-blue-100 text-[#064771]' : 'bg-green-100 text-green-700'
@@ -515,7 +517,7 @@ const DealPipeline = () => {
                                             }`}
                                         title="Investor's Pipeline"
                                     >
-                                        <span className="font-bold text-sm">B</span>
+                                        <span className="font-medium text-sm">B</span>
                                     </button>
                                     <button
                                         onClick={() => setPipelineView('seller')}
@@ -525,7 +527,7 @@ const DealPipeline = () => {
                                             }`}
                                         title="Target Pipeline"
                                     >
-                                        <span className="font-bold text-sm">S</span>
+                                        <span className="font-medium text-sm">S</span>
                                     </button>
                                 </div>
 
@@ -539,7 +541,7 @@ const DealPipeline = () => {
                                         <button
                                             key={code}
                                             onClick={() => setSelectedStage(isSelected ? null : code)}
-                                            className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-all relative ${isSelected
+                                            className={`w-10 h-10 rounded-lg flex items-center justify-center font-medium text-sm transition-all relative ${isSelected
                                                 ? pipelineView === 'buyer' ? 'bg-[#064771] text-white shadow-md' : 'bg-green-600 text-white shadow-md'
                                                 : stageDeals.length > 0
                                                     ? pipelineView === 'buyer' ? 'bg-blue-50 text-[#064771] border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'
@@ -604,7 +606,7 @@ const DealPipeline = () => {
                                                     code={stage.code}
                                                     name={stage.name}
                                                     deals={deals[stage.code]?.deals || []}
-                                                    onDealClick={(deal) => navigate(`/deals/${deal.id}`)}
+                                                    onDealClick={(deal) => setSelectedDeal(deal)}
                                                     onMove={handleMove}
                                                     onMarkLost={setLostDeal}
                                                     pipelineView={pipelineView}
@@ -624,12 +626,12 @@ const DealPipeline = () => {
                             <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Deal Name</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Investor' : 'Target'}</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stage</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Value</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Possibility</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Updated</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deal Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Investor' : 'Target'}</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Possibility</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -640,7 +642,7 @@ const DealPipeline = () => {
                                             <tr
                                                 key={deal.id}
                                                 className="hover:bg-gray-50 transition-colors cursor-pointer"
-                                                onClick={() => navigate(`/deals/${deal.id}`)}
+                                                onClick={() => setSelectedDeal(deal)}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                     {deal.name}
@@ -695,12 +697,20 @@ const DealPipeline = () => {
                 />
             )}
 
+            {selectedDeal && (
+                <DealDetailsModal
+                    dealId={selectedDeal.id}
+                    onClose={() => setSelectedDeal(null)}
+                    onUpdate={fetchDeals}
+                />
+            )}
+
             {/* Lost Remarks Modal */}
             {lostDeal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="px-6 py-4 border-b flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Mark Deal as Lost</h3>
+                            <h3 className="text-lg font-medium text-gray-900">Mark Deal as Lost</h3>
                             <button onClick={() => setLostDeal(null)} className="text-gray-400 hover:text-gray-600 focus:outline-none">
                                 <X className="w-5 h-5" />
                             </button>
@@ -753,17 +763,17 @@ const DealPipeline = () => {
                         </div>
 
                         <div className="space-y-2">
-                            <h2 className="text-3xl font-bold text-gray-900">Congratulations! 🎉</h2>
+                            <h2 className="text-3xl font-medium text-gray-900">Congratulations! 🎉</h2>
                             <p className="text-gray-500 text-lg">Amazing work! This deal has been officially won.</p>
                         </div>
 
                         <div className="py-4 px-6 bg-blue-50 rounded-xl border border-blue-100 w-full">
-                            <p className="text-blue-800 text-sm font-medium">The deal has been moved to the <span className="font-bold">Won</span> tab.</p>
+                            <p className="text-blue-800 text-sm font-medium">The deal has been moved to the <span className="font-medium">Won</span> tab.</p>
                         </div>
 
                         <button
                             onClick={() => { setShowWonCelebration(false); fetchDeals(); }}
-                            className="w-full py-3 bg-[#064771] text-white rounded-xl font-semibold shadow-lg hover:shadow-blue-200/50 hover:-translate-y-0.5 transition-all text-lg"
+                            className="w-full py-3 bg-[#064771] text-white rounded-xl font-medium shadow-lg hover:shadow-blue-200/50 hover:-translate-y-0.5 transition-all text-lg"
                         >
                             Awesome!
                         </button>
@@ -777,8 +787,8 @@ const DealPipeline = () => {
                     <>
                         <div className="flex items-center justify-between p-4 border-b bg-gray-50/50">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">{chatDeal.name}</h3>
-                                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Deal Activity & Audit Logs</p>
+                                <h3 className="text-lg font-medium text-gray-900">{chatDeal.name}</h3>
+                                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Deal Activity & Audit Logs</p>
                             </div>
                             <button
                                 onClick={() => setChatDeal(null)}

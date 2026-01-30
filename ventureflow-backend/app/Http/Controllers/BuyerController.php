@@ -251,6 +251,7 @@ class BuyerController extends Controller
                 'current_page' => $buyers->currentPage(),
                 'last_page' => $buyers->lastPage(),
                 'per_page' => $buyers->perPage(),
+                'allowed_fields' => isset($allowedFields) ? $allowedFields : null,
             ]
         ]);
         } catch (\Throwable $e) {
@@ -781,23 +782,79 @@ class BuyerController extends Controller
 
     public function show(Buyer $buyer)
     {
-        $buyer = Buyer::with([
-            'companyOverview.hqCountry',
-            'targetPreference',
-            'financialDetails',
-            'partnershipDetails',
-            'teaserCenter',
-        ])->find($buyer->id);
+        $request = request();
+        $user = $request->user();
+        $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
-        if (!$buyer) {
+        if ($isPartner) {
+            $allowedFields = $this->getParsedAllowedFields('investor');
+            $query = Buyer::where('id', $buyer->id);
+
+            $rootFields = array_unique(array_merge(
+                ['id', 'buyer_id', 'pinned', 'created_at', 'pipeline_status', 'updated_at'], 
+                $allowedFields['root'] ?? [],
+                ['company_overview_id', 'target_preference_id', 'financial_detail_id', 'partnership_detail_id', 'teaser_center_id']
+            ));
+            $query->select($rootFields);
+
+            $query->with([
+                'companyOverview' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['companyOverview'])) {
+                        $q->select(array_merge(['id', 'hq_country'], $allowedFields['relationships']['companyOverview']));
+                    } else { $q->select('id'); }
+                    $q->with('hqCountry');
+                },
+                'targetPreference' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['targetPreference'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['targetPreference']));
+                    } else { $q->select('id'); }
+                },
+                'financialDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['financialDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['financialDetails']));
+                    } else { $q->select('id'); }
+                },
+                'partnershipDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['partnershipDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['partnershipDetails']));
+                    } else { $q->select('id'); }
+                },
+                'teaserCenter' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['teaserCenter'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['teaserCenter']));
+                    } else { $q->select('id'); }
+                },
+                'deals' => function($q) {
+                     $q->select('id', 'buyer_id', 'stage_code', 'progress_percent', 'created_at');
+                }
+            ]);
+
+            $result = $query->first();
+
+            if (!$result) {
+                return response()->json(['message' => 'Buyer not found or access denied.'], 404);
+            }
+
             return response()->json([
-                'message' => 'Buyer not found.'
-            ], 404);
-        }
+                'data' => $result,
+                'meta' => ['allowed_fields' => $allowedFields]
+            ]);
 
-        return response()->json([
-            'data' => $buyer
-        ]);
+        } else {
+            // Admin
+            $buyer->load([
+                'companyOverview.hqCountry',
+                'targetPreference',
+                'financialDetails',
+                'partnershipDetails',
+                'teaserCenter',
+                'deals'
+            ]);
+
+            return response()->json([
+                'data' => $buyer
+            ]);
+        }
     }
 
 

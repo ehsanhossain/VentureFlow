@@ -65,6 +65,18 @@ const Content: React.FC<ContentProps> = ({
   const location = useLocation();
   const hideLayout = location.pathname === "/login" || location.pathname === "/change-password";
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
+        e.preventDefault();
+        setSidebarExpanded(!sidebarExpanded);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarExpanded, setSidebarExpanded]);
+
   return (
     <div className="min-h-screen bg-white">
       {!hideLayout && mobileMenuOpen && (
