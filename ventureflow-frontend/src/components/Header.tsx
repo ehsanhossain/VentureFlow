@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Menu, X, Check, Bell, Search, Command, Loader2, FileText, Building, User, Briefcase, Home, Plus, ChevronDown } from "lucide-react";
+import { useContext } from "react";
+import { AuthContext } from "../routes/AuthContext";
 import ProfileDropdown from "../components/dashboard/ProfileDropdown";
 import { useNotifications } from "../context/NotificationContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -21,6 +23,8 @@ interface SearchResults {
 
 export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: HeaderProps) {
   const { t } = useTranslation();
+  const auth = useContext(AuthContext);
+  const isPartner = auth?.isPartner;
   const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
@@ -189,39 +193,41 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
           <div className="flex items-center gap-3">
 
             {/* Create Button (Desktop) */}
-            <div className="relative hidden md:block" ref={createDropdownRef}>
-              <button
-                onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-[3px] hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium"
-              >
-                <Plus className="w-4 h-4 text-gray-500" />
-                <span>Create</span>
-                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${createDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
+            {!isPartner && (
+              <div className="relative hidden md:block" ref={createDropdownRef}>
+                <button
+                  onClick={() => setCreateDropdownOpen(!createDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-[3px] hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4 text-gray-500" />
+                  <span>Create</span>
+                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${createDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-              {createDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
-                  <button
-                    onClick={() => { navigate('/prospects/add-investor'); setCreateDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
-                  >
-                    Create Investor
-                  </button>
-                  <button
-                    onClick={() => { navigate('/prospects/add-target'); setCreateDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
-                  >
-                    Create Target
-                  </button>
-                  <button
-                    onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
-                  >
-                    New Deal
-                  </button>
-                </div>
-              )}
-            </div>
+                {createDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
+                    <button
+                      onClick={() => { navigate('/prospects/add-investor'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                    >
+                      Create Investor
+                    </button>
+                    <button
+                      onClick={() => { navigate('/prospects/add-target'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                    >
+                      Create Target
+                    </button>
+                    <button
+                      onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                    >
+                      New Deal
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Mobile Search Icon */}
             <button

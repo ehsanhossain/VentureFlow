@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthContext } from '../../routes/AuthContext';
 import api from '../../config/api';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
@@ -83,6 +85,8 @@ const DEFAULT_TARGET_COLUMNS = ['projectCode', 'hq', 'industry', 'desiredInvestm
 
 const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
+    const auth = useContext(AuthContext);
+    const isPartner = auth?.isPartner;
     const [searchParams, setSearchParams] = useSearchParams();
     const initialTab = (searchParams.get('tab') as 'investors' | 'targets') || 'investors';
     const [activeTab, setActiveTab] = useState<'investors' | 'targets'>(initialTab);
@@ -848,35 +852,37 @@ const ProspectsPortal: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="relative" ref={createDropdownRef}>
-                            <button
-                                onClick={() => setIsCreateOpen(!isCreateOpen)}
-                                className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all hover:bg-[#053a5c] active:scale-95"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Create</span>
-                                <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {isCreateOpen && (
-                                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl">
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-investor')}>
-                                        <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
-                                        Add Investor
-                                    </button>
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-target')}>
-                                        <div className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" />
-                                        Add Target
-                                    </button>
-                                    <div className="h-px bg-gray-50 my-1.5 mx-3" />
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                        <Upload className="w-4 h-4 text-gray-400" /> Import Investors
-                                    </button>
-                                    <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                        <Upload className="w-4 h-4 text-gray-400" /> Import Targets
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {!isPartner && (
+                            <div className="relative" ref={createDropdownRef}>
+                                <button
+                                    onClick={() => setIsCreateOpen(!isCreateOpen)}
+                                    className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all hover:bg-[#053a5c] active:scale-95"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Create</span>
+                                    <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                {isCreateOpen && (
+                                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl">
+                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-investor')}>
+                                            <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
+                                            Add Investor
+                                        </button>
+                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-target')}>
+                                            <div className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" />
+                                            Add Target
+                                        </button>
+                                        <div className="h-px bg-gray-50 my-1.5 mx-3" />
+                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                            <Upload className="w-4 h-4 text-gray-400" /> Import Investors
+                                        </button>
+                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
+                                            <Upload className="w-4 h-4 text-gray-400" /> Import Targets
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 

@@ -618,13 +618,15 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             <Eye className="w-4 h-4 text-slate-400" />
                             View Detailed Profile
                         </button>
-                        <button
-                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-medium"
-                            onClick={() => { navigate(`/prospects/edit-target/${contextMenu.rowId}`); setContextMenu(null); }}
-                        >
-                            <Zap className="w-4 h-4 text-slate-400" />
-                            Edit Project Data
-                        </button>
+                        {!isRestricted && (
+                            <button
+                                className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-medium"
+                                onClick={() => { navigate(`/prospects/edit-target/${contextMenu.rowId}`); setContextMenu(null); }}
+                            >
+                                <Zap className="w-4 h-4 text-slate-400" />
+                                Edit Project Data
+                            </button>
+                        )}
                         <div className="h-px bg-slate-50 my-1" />
                         {!isRestricted && (
                             <button

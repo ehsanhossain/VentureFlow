@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { AuthContext } from '../../routes/AuthContext';
 import { X } from 'lucide-react';
 import api from '../../config/api';
 import { Country, Dropdown } from '../currency/components/Dropdown';
@@ -81,6 +82,8 @@ interface GroupedDeals {
 
 const DealPipeline = () => {
     const navigate = useNavigate();
+    const auth = useContext(AuthContext);
+    const isPartner = auth?.isPartner;
     const [deals, setDeals] = useState<GroupedDeals>({});
     const [stages, setStages] = useState<PipelineStage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +93,10 @@ const DealPipeline = () => {
     const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    if (isPartner) {
+        return <Navigate to="/" replace />;
+    }
     const [countries, setCountries] = useState<Country[]>([]);
     const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
     const [pipelineView, setPipelineView] = useState<PipelineView>('buyer');

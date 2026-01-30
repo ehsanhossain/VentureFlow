@@ -45,6 +45,7 @@ export function Sidebar({
   };
 
   const filteredMenuItems = menuItems.filter((item) => {
+    if (context?.isPartner && item.label === "Deal Pipeline") return false;
     if (!item.roles) return true;
     return item.roles.includes(userRole);
   });
