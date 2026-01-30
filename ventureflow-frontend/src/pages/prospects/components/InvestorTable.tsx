@@ -9,20 +9,18 @@ import {
     TableRow,
 } from '../../../components/table/table';
 import Checkbox from '../../../components/Checkbox';
-import { Tooltip } from '../../../components/Tooltip';
 import { formatCompactBudget, formatFullBudget } from '../../../utils/formatters';
 import {
     MoreVertical,
-    Filter,
-    ArrowUpDown,
+    Search,
     Square,
     Bookmark,
     Eye,
     Zap,
+    Trash2,
+    ArrowUpDown,
     ArrowUp,
-    ArrowDown,
-    ListFilter,
-    Trash2
+    ArrowDown
 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -53,7 +51,6 @@ interface InvestorTableProps {
     data: InvestorRowData[];
     isLoading: boolean;
     onTogglePin: (id: number) => void;
-    onOpenFilter: () => void;
     visibleColumns: string[];
     selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh: () => void;
@@ -66,7 +63,6 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     data,
     isLoading,
     onTogglePin,
-    onOpenFilter,
     visibleColumns,
     selectedCurrency,
     onRefresh
@@ -256,8 +252,11 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         return sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-[#064771]" /> : <ArrowDown className="w-3 h-3 text-[#064771]" />;
     };
 
-    const getBudgetDisplay = (budget: any) => {
-        return formatCompactBudget(budget, selectedCurrency?.symbol || '$', selectedCurrency?.rate);
+    const getBudgetDisplay = (budget: any, sourceRate?: number) => {
+        const targetRate = selectedCurrency?.rate || 1;
+        const sRate = sourceRate || 1;
+        const conversionRate = targetRate / sRate;
+        return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
     const isVisible = (col: string) => visibleColumns.includes(col);
@@ -280,18 +279,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     );
 
     return (
-        <div className="w-full h-full bg-white rounded border border-gray-100 overflow-hidden relative group/table flex flex-col">
-            <div className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-gray-300/40 hover:scrollbar-thumb-gray-300/60 scrollbar-track-transparent transition-colors">
+        <div className="w-full h-full bg-white flex flex-col min-h-0">
+            <div className="flex-1 overflow-auto scrollbar-premium">
                 <Table
-                    containerClassName="overflow-visible"
-                    className="min-w-full min-h-full table-fixed border-separate border-spacing-0"
+                    containerClassName="overflow-visible min-w-full"
+                    className="w-full table-fixed border-separate border-spacing-0"
                 >
-                    <TableHeader>
-                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-b border-gray-100">
-                            <TableHead className="w-[60px] text-center sticky left-0 bg-gray-50/50 z-40 border-r border-gray-100">
+                    <TableHeader className="sticky top-0 z-40">
+                        <TableRow className="bg-slate-50/80 backdrop-blur-sm border-b border-slate-200">
+                            <TableHead className="w-[50px] text-center sticky left-0 bg-slate-50 z-50 p-2">
                                 <button
                                     onClick={toggleSelectMode}
-                                    className="p-1.5 hover:bg-gray-200 rounded transition-all focus:outline-none active:scale-90"
+                                    className="p-1.5 hover:bg-slate-200 rounded-lg transition-all focus:outline-none active:scale-90"
                                 >
                                     {isSelectMode ? (
                                         <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -301,21 +300,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                             />
                                         </div>
                                     ) : (
-                                        <Square className="w-5 h-5 text-gray-300" />
+                                        <Square className="w-5 h-5 text-slate-300" />
                                     )}
                                 </button>
                             </TableHead>
 
                             {isVisible('projectCode') && (
-                                <TableHead
-                                    style={{ width: columnWidths.projectCode }}
-                                    className="relative group p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('projectCode')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Code</span>
+                                <TableHead style={{ width: columnWidths.projectCode }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('projectCode')}>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Project ID</span>
                                         <SortIcon column="projectCode" />
                                     </div>
                                     <ResizeHandle column="projectCode" />
@@ -323,12 +316,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             )}
 
                             {isVisible('rank') && (
-                                <TableHead style={{ width: columnWidths.rank }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('rank')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Rank</span>
+                                <TableHead style={{ width: columnWidths.rank }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('rank')}>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rank</span>
                                         <SortIcon column="rank" />
                                     </div>
                                     <ResizeHandle column="rank" />
@@ -336,15 +326,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             )}
 
                             {isVisible('companyName') && (
-                                <TableHead
-                                    style={{ width: columnWidths.companyName }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('companyName')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Company</span>
+                                <TableHead style={{ width: columnWidths.companyName }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('companyName')}>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Investor Name</span>
                                         <SortIcon column="companyName" />
                                     </div>
                                     <ResizeHandle column="companyName" />
@@ -352,65 +336,53 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             )}
 
                             {isVisible('primaryContact') && (
-                                <TableHead style={{ width: columnWidths.primaryContact }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Primary Contact</span>
+                                <TableHead style={{ width: columnWidths.primaryContact }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4">
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Contact</span>
+                                    </div>
                                     <ResizeHandle column="primaryContact" />
                                 </TableHead>
                             )}
 
                             {isVisible('hq') && (
-                                <TableHead
-                                    style={{ width: columnWidths.hq }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">HQ</span>
+                                <TableHead style={{ width: columnWidths.hq }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">HQ</div>
                                     <ResizeHandle column="hq" />
                                 </TableHead>
                             )}
 
                             {isVisible('targetCountries') && (
-                                <TableHead
-                                    style={{ width: columnWidths.targetCountries }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Target Countries</span>
+                                <TableHead style={{ width: columnWidths.targetCountries }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Geo</div>
                                     <ResizeHandle column="targetCountries" />
                                 </TableHead>
                             )}
 
                             {isVisible('targetIndustries') && (
-                                <TableHead
-                                    style={{ width: columnWidths.targetIndustries }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Target Industries</span>
+                                <TableHead style={{ width: columnWidths.targetIndustries }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Target Industry</div>
                                     <ResizeHandle column="targetIndustries" />
                                 </TableHead>
                             )}
 
                             {isVisible('companyType') && (
-                                <TableHead style={{ width: columnWidths.companyType }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Type</span>
+                                <TableHead style={{ width: columnWidths.companyType }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Type</div>
                                     <ResizeHandle column="companyType" />
                                 </TableHead>
                             )}
+
                             {isVisible('website') && (
-                                <TableHead style={{ width: columnWidths.website }} className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 block h-full">Website</span>
+                                <TableHead style={{ width: columnWidths.website }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center h-full px-4 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Website</div>
                                     <ResizeHandle column="website" />
                                 </TableHead>
                             )}
 
                             {isVisible('pipelineStatus') && (
-                                <TableHead
-                                    style={{ width: columnWidths.pipelineStatus }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('pipelineStatus')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pipeline</span>
+                                <TableHead style={{ width: columnWidths.pipelineStatus }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('pipelineStatus')}>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pipeline</span>
                                         <SortIcon column="pipelineStatus" />
                                     </div>
                                     <ResizeHandle column="pipelineStatus" />
@@ -418,231 +390,228 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             )}
 
                             {isVisible('budget') && (
-                                <TableHead
-                                    style={{ width: columnWidths.budget }}
-                                    className="relative p-0 border-r border-gray-100 transition-colors hover:bg-gray-100/50"
-                                >
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer group select-none px-4 py-3 h-full"
-                                        onClick={() => handleSort('budget')}
-                                    >
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Budget</span>
+                                <TableHead style={{ width: columnWidths.budget }} className="relative p-0 border-b border-slate-100 h-11">
+                                    <div className="flex items-center gap-2 cursor-pointer px-4 select-none h-full hover:bg-slate-100/50 transition-colors" onClick={() => handleSort('budget')}>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Budget</span>
                                         <SortIcon column="budget" />
                                     </div>
                                     <ResizeHandle column="budget" />
                                 </TableHead>
                             )}
 
-                            <TableHead className="text-right w-[120px] pr-6 sticky right-0 bg-gray-50/50 z-40 border-l border-gray-100">
-                                <div className="flex items-center justify-end gap-2">
-                                    {selectedIds.size > 0 ? (
+                            <TableHead className="w-[100px] sticky right-0 bg-slate-50 z-50 border-b border-slate-100 h-11">
+                                <div className="flex items-center justify-end px-6 h-full">
+                                    {selectedIds.size > 0 && (
                                         <button
-                                            className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 rounded text-red-600 border border-red-200 transition-all active:scale-95 animate-in fade-in zoom-in-90"
+                                            className="p-1.5 hover:bg-red-50 rounded-lg text-red-500 transition-all hover:scale-110"
                                             onClick={handleDeleteSelected}
                                             title="Delete Selected"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
-                                    ) : (
-                                        <>
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                                onClick={onOpenFilter}
-                                                title="Advanced Filters"
-                                            >
-                                                <Filter className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded text-gray-500 border border-gray-100 transition-all active:scale-95"
-                                                title="General Sorting"
-                                            >
-                                                <ListFilter className="w-4 h-4 rotate-180" />
-                                            </button>
-                                        </>
                                     )}
                                 </div>
                             </TableHead>
                         </TableRow>
                     </TableHeader>
+
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={visibleColumns.length + 2} className="h-48 text-center text-gray-400">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
-                                        <span className="text-sm font-medium">Loading investors...</span>
+                                <TableCell colSpan={20} className="h-64">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+                                        <p className="text-sm font-bold text-slate-400">Fetching investors...</p>
                                     </div>
                                 </TableCell>
                             </TableRow>
                         ) : sortedData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={visibleColumns.length + 2} className="h-48 text-center text-gray-400">
-                                    <p className="text-lg font-medium">No investors found</p>
-                                    <p className="text-sm">Try adjusting your search or filters</p>
+                                <TableCell colSpan={20} className="h-64">
+                                    <div className="flex flex-col items-center justify-center gap-2 opacity-40">
+                                        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-2">
+                                            <Search className="w-8 h-8 text-slate-300" />
+                                        </div>
+                                        <p className="font-bold text-slate-900">No results found</p>
+                                        <p className="text-sm text-slate-500">Try adjusting your filters or search</p>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ) : (
                             sortedData.map((row) => (
                                 <TableRow
                                     key={row.id}
-                                    onContextMenu={(e) => handleContextMenu(e, row.id)}
                                     onClick={() => navigate(`/prospects/investor/${row.id}`)}
+                                    onContextMenu={(e) => handleContextMenu(e, row.id)}
                                     className={`
-                                        group transition-all duration-200 border-l-[3px] border-b border-gray-100 cursor-pointer
-                                        ${selectedIds.has(row.id) ? 'bg-blue-50/80 border-l-[#064771]' : 'hover:bg-gray-50 bg-white border-l-transparent hover:border-l-[#064771]'}
-                                        ${row.isPinned ? 'bg-amber-50/30' : ''}
+                                        group transition-all duration-300 cursor-pointer border-b border-slate-50
+                                        ${selectedIds.has(row.id) ? 'bg-blue-50/50' : 'hover:bg-slate-50/70'}
+                                        ${row.isPinned ? 'bg-amber-50/20' : ''}
                                     `}
                                 >
-                                    <TableCell className="text-center sticky left-0 bg-inherit z-20 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
-                                        {isSelectMode ? (
-                                            <Checkbox
-                                                checked={selectedIds.has(row.id)}
-                                                onChange={(e) => handleSelectRow(row.id, e.target.checked)}
-                                            />
-                                        ) : (
-                                            row.isPinned && <Bookmark className="w-4 h-4 text-amber-500 fill-amber-500 mx-auto" />
-                                        )}
+                                    <TableCell className="p-0 text-center sticky left-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-center h-14">
+                                            {isSelectMode ? (
+                                                <Checkbox
+                                                    checked={selectedIds.has(row.id)}
+                                                    onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                                                />
+                                            ) : (
+                                                <div className="w-5 h-5 flex items-center justify-center">
+                                                    {row.isPinned && <Bookmark className="w-5 h-5 text-amber-500 fill-amber-500/10" />}
+                                                </div>
+                                            )}
+                                        </div>
                                     </TableCell>
 
                                     {isVisible('projectCode') && (
-                                        <TableCell className="font-semibold text-[#064771] border-b border-gray-100">
-                                            <Tooltip content={row.projectCode}>
-                                                <div className="flex items-center gap-2">
-                                                    {row.projectCode}
-                                                </div>
-                                            </Tooltip>
-                                        </TableCell>
-                                    )}
-
-                                    {isVisible('rank') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${row.rank === 'A' ? 'bg-green-100 text-green-800' :
-                                                row.rank === 'B' ? 'bg-blue-100 text-blue-800' :
-                                                    row.rank ? 'bg-gray-100 text-gray-800' : 'text-gray-400 italic'
-                                                }`}>
-                                                {row.rank || 'N/A'}
+                                        <TableCell className="px-4 py-2">
+                                            <span className="text-[13px] font-extrabold text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
+                                                {row.projectCode}
                                             </span>
                                         </TableCell>
                                     )}
 
+                                    {isVisible('rank') && (
+                                        <TableCell className="px-4 py-2 text-center">
+                                            <div className={`
+                                                w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-black ring-4
+                                                ${row.rank === 'A' ? 'bg-emerald-50 text-emerald-700 ring-emerald-50/50' :
+                                                    row.rank === 'B' ? 'bg-blue-50 text-blue-700 ring-blue-50/50' :
+                                                        'bg-slate-100 text-slate-500 ring-slate-100/50'}
+                                            `}>
+                                                {row.rank || '-'}
+                                            </div>
+                                        </TableCell>
+                                    )}
+
                                     {isVisible('companyName') && (
-                                        <TableCell className="text-gray-900 font-bold text-[14px] border-b border-gray-100">
-                                            <Tooltip content={row.companyName}>
-                                                <span className="truncate block">{row.companyName}</span>
-                                            </Tooltip>
+                                        <TableCell className="px-4 py-2">
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[14px] font-bold text-slate-900 truncate tracking-tight">{row.companyName}</span>
+                                            </div>
                                         </TableCell>
                                     )}
 
                                     {isVisible('primaryContact') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <Tooltip content={row.primaryContact}>
-                                                <span className="text-gray-700 text-sm truncate block">{row.primaryContact || 'N/A'}</span>
-                                            </Tooltip>
+                                        <TableCell className="px-4 py-2">
+                                            <div className="flex items-center gap-2 group-hover:translate-x-1 transition-transform">
+                                                <span className="text-[13px] font-medium text-slate-700 truncate">{row.primaryContact || 'No Contact'}</span>
+                                            </div>
                                         </TableCell>
                                     )}
 
                                     {isVisible('hq') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <div className="flex items-center gap-2 overflow-hidden">
+                                        <TableCell className="px-4 py-2">
+                                            <div className="flex items-center gap-2 cursor-help" title={row.hq.name}>
                                                 {row.hq.flag ? (
-                                                    <img src={row.hq.flag} alt={row.hq.name} className="w-5 h-5 rounded-full object-cover shadow-sm ring-1 ring-gray-100 shrink-0" />
+                                                    <img src={row.hq.flag} className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" alt={row.hq.name} />
                                                 ) : (
-                                                    <div className="w-5 h-5 rounded-full bg-gray-200 shrink-0" />
+                                                    <div className="w-5 h-5 rounded-full bg-slate-100" />
                                                 )}
-                                                <Tooltip content={row.hq.name}>
-                                                    <span className="text-gray-700 text-sm font-medium truncate">{row.hq.name}</span>
-                                                </Tooltip>
+                                                <span className="text-[13px] font-semibold text-slate-600 truncate">{row.hq.name}</span>
                                             </div>
                                         </TableCell>
                                     )}
 
                                     {isVisible('targetCountries') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            {Array.isArray(row.targetCountries) && row.targetCountries.length > 0 ? (
-                                                <Tooltip content={row.targetCountries.map(c => c.name).join(', ')}>
-                                                    <div className="flex items-center gap-1.5 bg-gray-100/50 px-2.5 py-1 rounded-full border border-gray-200 w-fit max-w-full overflow-hidden">
-                                                        <img src={row.targetCountries[0].flag || ""} alt={row.targetCountries[0].name} className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" />
-                                                        <span className="text-gray-700 text-xs font-semibold truncate">{row.targetCountries[0].name}</span>
+                                        <TableCell className="px-4 py-2">
+                                            {row.targetCountries?.length ? (
+                                                <div
+                                                    className="flex items-center gap-1.5 cursor-help"
+                                                    title={row.targetCountries.map(c => c.name).join(', ')}
+                                                >
+                                                    <div className="flex -space-x-1.5 overflow-hidden">
+                                                        {row.targetCountries.slice(0, 3).map((c, i) => (
+                                                            <img key={i} src={c.flag} className="w-5 h-5 rounded-full border border-white object-cover shadow-sm" alt={c.name} />
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-[12px] font-semibold text-slate-600 truncate max-w-[80px]">
+                                                            {row.targetCountries[0].name}
+                                                        </span>
                                                         {row.targetCountries.length > 1 && (
-                                                            <span className="text-[10px] font-bold text-gray-400 ml-0.5 shrink-0">
+                                                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
                                                                 +{row.targetCountries.length - 1}
                                                             </span>
                                                         )}
                                                     </div>
-                                                </Tooltip>
+                                                </div>
                                             ) : (
-                                                <span className="text-gray-400 text-xs font-medium italic pl-2">Global</span>
+                                                <span className="text-[11px] font-bold text-slate-300 italic uppercase">Global</span>
                                             )}
                                         </TableCell>
                                     )}
 
                                     {isVisible('targetIndustries') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            {Array.isArray(row.targetIndustries) && row.targetIndustries.length > 0 ? (
-                                                <Tooltip content={row.targetIndustries.join(', ')}>
-                                                    <div className="flex items-center gap-1.5 max-w-full">
-                                                        <span className="text-gray-700 text-xs font-semibold bg-gray-100/80 px-2.5 py-1 rounded-full truncate">{row.targetIndustries[0]}</span>
+                                        <TableCell className="px-4 py-2">
+                                            <div
+                                                className="flex flex-wrap gap-1 cursor-help"
+                                                title={row.targetIndustries?.join(', ')}
+                                            >
+                                                {row.targetIndustries?.length ? (
+                                                    <>
+                                                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-bold text-slate-600 truncate max-w-[120px]">
+                                                            {row.targetIndustries[0]}
+                                                        </span>
                                                         {row.targetIndustries.length > 1 && (
-                                                            <span className="text-[10px] font-bold text-[#064771] bg-blue-50 px-1.5 py-0.5 rounded-lg border border-blue-100 shrink-0">
+                                                            <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-black text-blue-600">
                                                                 +{row.targetIndustries.length - 1}
                                                             </span>
                                                         )}
-                                                    </div>
-                                                </Tooltip>
-                                            ) : (
-                                                <span className="text-gray-400 text-xs font-medium italic pl-2">N/A</span>
-                                            )}
+                                                    </>
+                                                ) : <span className="text-[11px] font-medium text-slate-300">N/A</span>}
+                                            </div>
                                         </TableCell>
                                     )}
 
                                     {isVisible('companyType') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <Tooltip content={row.companyType}>
-                                                <span className="text-gray-600 text-sm truncate block">{row.companyType || 'N/A'}</span>
-                                            </Tooltip>
+                                        <TableCell className="px-4 py-2">
+                                            <span className="text-[13px] font-medium text-slate-500">{row.companyType || 'N/A'}</span>
                                         </TableCell>
                                     )}
 
                                     {isVisible('website') && (
-                                        <TableCell className="border-b border-gray-100">
-                                            <Tooltip content={row.website}>
-                                                <span className="text-blue-600 text-sm truncate block underline decoration-blue-200">{row.website || 'N/A'}</span>
-                                            </Tooltip>
+                                        <TableCell className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                                            <a href={row.website?.startsWith('http') ? row.website : `https://${row.website}`} target="_blank" className="text-blue-600 hover:text-blue-700 hover:underline transition-all text-sm block truncate max-w-[150px]">
+                                                {row.website?.replace(/^https?:\/\//, '') || 'N/A'}
+                                            </a>
                                         </TableCell>
                                     )}
 
-                                    {isVisible('pipelineStatus') && (() => {
-                                        const stageInfo = getStagePosition(row.pipelineStatus);
-                                        return (
-                                            <TableCell className="border-b border-gray-100">
-                                                <Tooltip content={stageInfo.stageName}>
-                                                    <span className={`
-                                                        px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap cursor-help
-                                                        ${row.pipelineStatus === 'N/A' || row.pipelineStatus === 'Unknown' ? 'bg-gray-100 text-gray-500 border-gray-200' :
-                                                            'bg-[#064771]/10 text-[#064771] border-[#064771]/20'}
-                                                    `}>
-                                                        {stageInfo.display}
-                                                    </span>
-                                                </Tooltip>
-                                            </TableCell>
-                                        );
-                                    })()}
+                                    {isVisible('pipelineStatus') && (
+                                        <TableCell className="px-4 py-2">
+                                            <div className="flex items-center gap-2" title={getStagePosition(row.pipelineStatus).stageName}>
+                                                <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
+                                                <span className="text-[11px] font-black text-slate-700 uppercase tracking-tighter cursor-help">
+                                                    {getStagePosition(row.pipelineStatus).display}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    )}
 
                                     {isVisible('budget') && (
-                                        <TableCell className="font-bold text-gray-900 text-sm border-b border-gray-100">
-                                            <Tooltip content={formatFullBudget(row.budget, selectedCurrency?.symbol, selectedCurrency?.rate)}>
-                                                <span className="whitespace-nowrap">{getBudgetDisplay(row.budget)}</span>
-                                            </Tooltip>
+                                        <TableCell className="px-4 py-2">
+                                            <div
+                                                className="flex flex-col items-end pr-2 cursor-help"
+                                                title={formatFullBudget(row.budget, selectedCurrency?.symbol || '$', (selectedCurrency?.rate || 1) / (row.sourceCurrencyRate || 1))}
+                                            >
+                                                <span className="text-[14px] font-black text-slate-900 leading-tight">
+                                                    {getBudgetDisplay(row.budget, row.sourceCurrencyRate)}
+                                                </span>
+                                            </div>
                                         </TableCell>
                                     )}
 
-                                    <TableCell className="text-right pr-6 sticky right-0 bg-inherit z-20 border-l border-gray-100 border-b border-gray-100" onClick={(e) => e.stopPropagation()}>
-                                        <button
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded text-gray-400 hover:text-[#064771] transition-all"
-                                            onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
-                                        >
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
+                                    <TableCell className="sticky right-0 bg-inherit z-20" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-end px-6">
+                                            <button
+                                                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-200/50 text-slate-400 hover:text-slate-900 transition-all opacity-0 group-hover:opacity-100"
+                                                onClick={(e) => { e.stopPropagation(); handleContextMenu(e, row.id); }}
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -653,42 +622,59 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
             {/* Context Menu */}
             {contextMenu && (
-                <div
-                    ref={contextMenuRef}
-                    className="fixed bg-white rounded border border-gray-100 py-2 w-56 z-[100] animate-in fade-in zoom-in-95 duration-100 shadow-2xl"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
-                    <button
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors group"
-                        onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
+                <>
+                    <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} />
+                    <div
+                        ref={contextMenuRef}
+                        className="fixed bg-white rounded-2xl border border-slate-100 py-2 w-64 z-[100] animate-in fade-in zoom-in-95 duration-200 shadow-2xl overflow-hidden"
+                        style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 270) }}
                     >
-                        <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-gray-400 group-hover:text-amber-500'}`} />
-                        <span className="font-medium">{data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unbookmark' : 'Bookmark (Pin)'}</span>
-                    </button>
-                    <button
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#064771] flex items-center gap-3 transition-colors group"
-                        onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
-                    >
-                        <Eye className="w-4 h-4 text-gray-400 group-hover:text-[#064771]" />
-                        <span className="font-medium">View Details</span>
-                    </button>
-                    {!(selectedIds.size > 1 && selectedIds.has(contextMenu.rowId)) && (
+                        <div className="px-4 py-2 mb-1 border-b border-slate-50">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Prospect Actions</p>
+                        </div>
                         <button
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors group"
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors font-semibold"
+                            onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
+                        >
+                            <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+                            {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
+                        </button>
+                        <button
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors font-semibold"
+                            onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
+                        >
+                            <Eye className="w-4 h-4 text-slate-400" />
+                            View Full Profile
+                        </button>
+                        <button
+                            className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors font-semibold"
                             onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
-                            <Zap className="w-4 h-4 text-gray-400 group-hover:text-indigo-600" />
-                            <span className="font-medium">Enrich Details</span>
+                            <Zap className="w-4 h-4 text-slate-400" />
+                            Edit & Enrich
                         </button>
-                    )}
-                </div>
+                        <div className="h-px bg-slate-50 my-1" />
+                        <button
+                            className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-bold"
+                            onClick={() => {
+                                setSelectedIds(new Set([contextMenu.rowId]));
+                                setIsDeleteModalOpen(true);
+                                setContextMenu(null);
+                            }}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Prospect
+                        </button>
+                    </div>
+                </>
             )}
+
             {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleConfirmDelete}
-                title={`Delete ${selectedIds.size} Investor${selectedIds.size > 1 ? 's' : ''}`}
+                title={`Delete ${selectedIds.size} Prospect${selectedIds.size > 1 ? 's' : ''}`}
                 itemType="investors"
                 selectedIds={Array.from(selectedIds)}
             />

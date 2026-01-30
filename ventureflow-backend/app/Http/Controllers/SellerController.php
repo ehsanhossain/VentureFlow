@@ -27,6 +27,7 @@ class SellerController extends Controller
 
     public function index(Request $request)
     {
+        try {
         $search = $request->input('search', '');
         $country = $request->input('country');
         $registeredAfter = $request->input('registered_after');
@@ -45,14 +46,80 @@ class SellerController extends Controller
 
         $statusValue = $status !== null ? ($status == 1 ? '1' : '0') : null;
 
-        $query = Seller::with([
-            'companyOverview',
-            'financialDetails',
-            'partnershipDetails',
-            'teaserCenter',
-            'deals'
-        ])
-            ->when($status === 'Draft', function ($query) {
+        // --- Check User Role ---
+        $user = $request->user();
+        $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
+
+        $allowedFields = null;
+        if ($isPartner) {
+            $allowedFields = $this->getParsedAllowedFields('seller');
+        }
+
+        $query = Seller::query();
+
+        // --- Select Fields & Eager Load ---
+        if ($isPartner && $allowedFields) {
+             // Select allowed root fields + necessary foreign keys
+             $rootFields = array_unique(array_merge(
+                 ['id', 'pinned', 'created_at', 'status'], 
+                 $allowedFields['root'],
+                 [
+                     'company_overview_id',
+                     'financial_detail_id',
+                     'partnership_detail_id',
+                     'teaser_center_id',
+                 ]
+             ));
+ 
+             $query->select($rootFields);
+
+             $query->with([
+                'companyOverview' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['companyOverview'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['companyOverview']));
+                    } else {
+                        $q->select('id'); 
+                    }
+                },
+                'financialDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['financialDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['financialDetails']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                'partnershipDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['partnershipDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['partnershipDetails']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                'teaserCenter' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['teaserCenter'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['teaserCenter']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                // Hide sensitive deals for partners
+                'deals' => function($q) use ($isPartner) {
+                     $q->select('id', 'seller_id', 'stage_code', 'progress_percent', 'created_at');
+                }
+            ]);
+
+        } else {
+             $query->with([
+                'companyOverview',
+                'financialDetails',
+                'partnershipDetails',
+                'teaserCenter',
+                'deals'
+            ]);
+        }
+
+            // --- Filters ---
+            $query->when($status === 'Draft', function ($query) {
                 $query->where('status', 2);
             }, function ($query) {
                 $query->where('status', 1);
@@ -138,7 +205,7 @@ class SellerController extends Controller
         }
 
         $sellers = $query->paginate(10);
-        $data = ($search && $sellers->isEmpty()) ? [] : $sellers->items();
+        $data = ($search && $sellers->isEmpty()) ? [] : $sellers->items();  
 
         return response()->json([
             'data' => $data,
@@ -149,7 +216,55 @@ class SellerController extends Controller
                 'per_page' => $sellers->perPage(),
             ]
         ]);
+        } catch (\Throwable $e) {
+             \Illuminate\Support\Facades\Log::error('Seller Index Error: ' . $e->getMessage());
+             return response()->json([
+                'message' => 'Internal Error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);       
+        }
     }
+    
+    private function getParsedAllowedFields($type)
+    {
+        $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
+        
+        $parsed = [
+            'root' => ['id'], 
+            'relationships' => []
+        ];
+
+        if (!$setting || !is_array($setting->setting_value)) {
+            \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
+            return $parsed;
+        }
+
+        $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
+            return $val === true;
+        }));
+
+        foreach ($enabledFields as $field) {
+            if (str_contains($field, '.')) {
+                $parts = explode('.', $field);
+                $relation = \Illuminate\Support\Str::camel($parts[0]);
+                $attribute = $parts[1];
+
+                if (!isset($parsed['relationships'][$relation])) {
+                    $parsed['relationships'][$relation] = ['id'];
+                }
+                
+                $parsed['relationships'][$relation][] = $attribute;
+            } else {
+                $parsed['root'][] = $field;
+            }
+        }
+
+        return $parsed;
+    }
+
+
+
 
 
 
@@ -281,7 +396,7 @@ class SellerController extends Controller
 
             // Set overview data
             $overview->reg_name = $request->input('companyName');
-            $overview->hq_country = json_decode($request->input('originCountry'), true)['id'] ?? null;
+            $overview->hq_country = $request->input('hq_country') ?? (json_decode($request->input('originCountry'), true)['id'] ?? null);
             $overview->company_type = $request->input('companyType');
             $overview->year_founded = $request->input('yearFounded');
             $overview->niche_industry = json_decode($request->input('priorityIndustries'), true);
@@ -314,6 +429,8 @@ class SellerController extends Controller
             $overview->status = is_array($request->input('status')) ? implode(', ', $request->input('status')) : $request->input('status');
             $overview->details = $request->input('details');
             $overview->incharge_name = json_decode($request->input('our_person_incharge'), true);
+            $overview->financial_advisor = json_decode($request->input('financial_advisor'), true);
+            $overview->internal_pic = json_decode($request->input('internal_pic'), true);
 
 
 
@@ -540,7 +657,7 @@ class SellerController extends Controller
     public function show(Seller $seller)
     {
         $seller->load([
-            'companyOverview',
+            'companyOverview.hqCountry',
             'financialDetails',
             'partnershipDetails',
             'teaserCenter',

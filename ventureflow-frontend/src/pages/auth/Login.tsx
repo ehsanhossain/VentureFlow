@@ -53,11 +53,13 @@ const Login = () => {
 
       showAlert({ type: 'success', message: 'Login successful!' });
 
-      const intendedUrl = localStorage.getItem('intended_url') || '/dashboard';
+      // All users go to the same dashboard
+      const intendedUrl = localStorage.getItem('intended_url') || '/';
       localStorage.removeItem('intended_url');
 
       navigate(intendedUrl);
-    } catch {
+    } catch (error) {
+      console.error(error);
       showAlert({ type: "error", message: "Login failed" });
 
       setLoading(false);
@@ -167,7 +169,7 @@ const Login = () => {
           <form onSubmit={handleLogin} className="flex flex-col w-full mt-10">
 
             <label className="my-5 mb-1 font-poppins text-base font-normal text-[16px]">
-              <span className="text-red-500 font-poppins">*</span> Email
+              <span className="text-red-500 font-poppins">*</span> Email or Partner ID
             </label>
 
             <div className="flex items-center border border-gray-300 rounded-md p-2.5 mb-5">
@@ -194,8 +196,8 @@ const Login = () => {
               </svg>
 
               <input
-                type="email"
-                placeholder="Write your email"
+                type="text"
+                placeholder="Write your email or Partner ID"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

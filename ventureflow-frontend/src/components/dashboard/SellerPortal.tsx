@@ -89,7 +89,7 @@ const SellerPortal: React.FC = () => {
         {/* Portal header */}
         <div
           className="flex items-center space-x-2 cursor-pointer"
-          onClick={() => navigate("/seller-portal")}
+          onClick={() => navigate("/prospects?tab=targets")}
         >
           <div className="text-[#064771] text-xl font-semibold underline">
             {t('dashboard.sellerPortal', 'Seller Portal')}

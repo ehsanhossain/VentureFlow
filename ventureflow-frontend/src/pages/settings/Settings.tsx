@@ -3,13 +3,21 @@ import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CurrencyIcon, SettingsIcon } from '../../assets/icons';
 import { Users, ChevronLeft, ChevronRight, GitFork, UserCog } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { AuthContext } from '../../routes/AuthContext';
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const auth = useContext(AuthContext);
+  const isPartner = auth?.isPartner;
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Redirect partners to dashboard (they don't have access to settings)
+  if (isPartner) {
+    return <Navigate to="/" replace />;
+  }
 
   // Redirect to general if on root settings page
   if (location.pathname === '/settings') {

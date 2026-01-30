@@ -17,21 +17,27 @@ class Deal extends Model
         'name',
         'industry',
         'region',
+        'ticket_size',
         'estimated_ev_value',
         'estimated_ev_currency',
         'stage_code',
         'progress_percent',
         'priority',
+        'possibility',
         'pic_user_id',
+        'internal_pic',
         'target_close_date',
         'status',
+        'lost_reason',
         'comment_count',
         'attachment_count',
     ];
 
     protected $casts = [
         'estimated_ev_value' => 'decimal:2',
+        'ticket_size' => 'decimal:2',
         'target_close_date' => 'date',
+        'internal_pic' => 'array',
     ];
 
     protected $appends = ['stage_name', 'stage_progress'];
@@ -76,7 +82,7 @@ class Deal extends Model
         return $this->hasMany(DealComment::class)->orderBy('created_at', 'desc');
     }
 
-    public function getStageName(?string $side = null): string
+    public function getStageName(?string $side = null)
     {
         if (!$side) {
             $side = $this->buyer_id ? 'buyer' : 'seller'; 
@@ -86,10 +92,10 @@ class Deal extends Model
                              ->where('code', $this->stage_code)
                              ->first();
 
-        return $stage ? $stage->name : $this->stage_code;
+        return $stage ? $stage->name : ($this->stage_code ?? '');
     }
 
-    public function getStageProgress(?string $side = null): int
+    public function getStageProgress(?string $side = null)
     {
         if (!$side) {
             $side = $this->buyer_id ? 'buyer' : 'seller';
@@ -99,7 +105,7 @@ class Deal extends Model
                              ->where('code', $this->stage_code)
                              ->first();
 
-        return $stage ? $stage->progress : $this->progress_percent;
+        return $stage ? $stage->progress : ($this->progress_percent ?? 0);
     }
 
     public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany

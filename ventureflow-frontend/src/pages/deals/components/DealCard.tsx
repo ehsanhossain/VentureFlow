@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { MoreVertical, MessageSquare, Clock } from 'lucide-react';
+import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
 
 interface DealCardProps {
     deal: Deal;
     isDragging?: boolean;
     onClick?: () => void;
+    onMove?: (deal: Deal, direction: 'forward' | 'backward') => void;
+    onMarkLost?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
 }
 
-const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }: DealCardProps) => {
+const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipelineView = 'buyer' }: DealCardProps) => {
     const { attributes, listeners, setNodeRef, transform } = useDraggable({
         id: deal.id,
     });
@@ -41,15 +44,34 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
     };
 
 
-    const formatValue = (value: number | null, currency: string) => {
+    const formatValue = (value: number | string | null, currency: string) => {
         if (!value) return 'N/A';
-        if (value >= 1000000) {
-            return `~$${(value / 1000000).toFixed(0)}M`;
+        const num = typeof value === 'string' ? parseFloat(value) : value;
+        const symbol = getCurrencySymbol(currency);
+        return `${symbol}${formatCompactNumber(num)}`;
+    };
+
+    // Parse internal PIC to get name
+    const getPICName = (): string => {
+        const internalPic = (deal as any).internal_pic;
+        if (internalPic) {
+            try {
+                const parsed = typeof internalPic === 'string' ? JSON.parse(internalPic) : internalPic;
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed[0]?.name || parsed[0]?.full_name || 'N/A';
+                }
+                if (typeof parsed === 'object' && (parsed as any)?.name) {
+                    return (parsed as any).name;
+                }
+            } catch {
+                // Fall through to default
+            }
         }
-        if (value >= 1000) {
-            return `~$${(value / 1000).toFixed(0)}K`;
+        // Fallback to pic relation
+        if (deal.pic && (deal.pic?.name || (deal.pic as any)?.full_name)) {
+            return deal.pic.name || (deal.pic as any).full_name;
         }
-        return `~${currency}${value}`;
+        return 'N/A';
     };
 
     const buyerName = deal.buyer?.company_overview?.reg_name || 'Unknown Buyer';
@@ -107,14 +129,30 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
                         </button>
                         {showMenu && (
                             <div className="absolute right-0 mt-1 w-32 bg-white border rounded shadow-lg z-50 py-1">
-                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
+                                {deal.status === 'active' && (
+                                    <>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onMove?.(deal, 'forward'); setShowMenu(false); }}
+                                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            Move Forward
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onMove?.(deal, 'backward'); setShowMenu(false); }}
+                                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2"
+                                        >
+                                            Move Backward
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onMarkLost?.(deal); setShowMenu(false); }}
+                                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 flex items-center gap-2"
+                                        >
+                                            Mark as Lost
+                                        </button>
+                                    </>
+                                )}
+                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 border-t">
                                     View Details
-                                </button>
-                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2">
-                                    Edit Deal
-                                </button>
-                                <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 flex items-center gap-2">
-                                    Archive
                                 </button>
                             </div>
                         )}
@@ -133,12 +171,15 @@ const DealCard = ({ deal, isDragging = false, onClick, pipelineView = 'buyer' }:
                     <div className="truncate">Industry: {deal.industry}</div>
                 )}
                 <div className="font-medium text-gray-800">
-                    {formatValue(deal.estimated_ev_value, deal.estimated_ev_currency)}
+                    {formatValue((deal as any).ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency)}
                 </div>
-                {deal.pic && (
-                    <div className="truncate">
-                        PIC: {deal.pic.name}
-                        {deal.target_close_date && ` / Target: ${new Date(deal.target_close_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
+                <div className="truncate">
+                    PIC: {getPICName()}
+                    {deal.target_close_date && ` / Target: ${new Date(deal.target_close_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
+                </div>
+                {(deal as any).possibility && (
+                    <div className="text-[10px] text-blue-600 font-medium">
+                        Possibility: {(deal as any).possibility}
                     </div>
                 )}
             </div>

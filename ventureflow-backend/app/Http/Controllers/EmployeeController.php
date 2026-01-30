@@ -66,8 +66,27 @@ class EmployeeController extends Controller
     public function fetchAllEmployees()
     {
         try {
+            // Get all employees
             $employees = Employee::with('country')->get();
-            return response()->json($employees);
+            
+            // Get all users who aren't employees but have roles (like seed admin)
+            $employeeUserIds = $employees->pluck('user_id')->filter()->toArray();
+            $otherUsers = User::whereNotIn('id', $employeeUserIds)->get();
+            
+            // Map users to employee-like structure for the frontend
+            $mappedUsers = $otherUsers->map(function($user) {
+                return (object)[
+                    'id' => null, // No employee record
+                    'user_id' => $user->id,
+                    'first_name' => $user->name,
+                    'last_name' => '',
+                    'name' => $user->name,
+                    'work_email' => $user->email,
+                    'nationality' => null,
+                ];
+            });
+
+            return response()->json($employees->concat($mappedUsers));
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to fetch employees',

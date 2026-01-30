@@ -28,19 +28,16 @@ class SearchController extends Controller
         // Search Deals
         $deals = Deal::where('name', 'like', "%{$query}%")
             ->take(5)
-            ->get(['id', 'name', 'status']); // Select necessary fields
+            ->get();
 
         // Search Sellers
         $sellers = Seller::whereHas('companyOverview', function ($q) use ($query) {
                 $q->where('reg_name', 'like', "%{$query}%");
             })
-            ->with(['companyOverview' => function ($q) {
-                $q->select('id', 'reg_name'); // Need to check if I can select fields in relationship like this or if it needs foreign key
-            }])
+            ->with('companyOverview')
             ->take(5)
             ->get();
-        // Post-process to flatten structure if needed, or just return as is.
-        // Doing simple selection for now.
+
         $mappedSellers = $sellers->map(function ($seller) {
             return [
                 'id' => $seller->id,
@@ -66,17 +63,17 @@ class SearchController extends Controller
 
         $companies = $mappedSellers->merge($mappedBuyers);
 
-        // Search Documents
+        // Search Documents (Files)
         $documents = File::where('filename', 'like', "%{$query}%")
             ->take(5)
-            ->get(['id', 'filename', 'size', 'mime_type']);
+            ->get();
 
         // Search Contacts (Employees)
         $contacts = Employee::where('first_name', 'like', "%{$query}%")
             ->orWhere('last_name', 'like', "%{$query}%")
             ->orWhere('work_email', 'like', "%{$query}%")
             ->take(5)
-            ->get(['id', 'first_name', 'last_name', 'work_email', 'image']);
+            ->get();
 
         return response()->json([
             'deals' => $deals,

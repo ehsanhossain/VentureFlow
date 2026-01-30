@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { Dropdown } from '../../prospects/components/Dropdown';
 
 interface CreateDealModalProps {
     onClose: () => void;
@@ -12,6 +13,7 @@ interface Buyer {
     id: number;
     company_overview?: {
         reg_name: string;
+        financial_advisor?: string | any[];
     };
 }
 
@@ -19,12 +21,15 @@ interface Seller {
     id: number;
     company_overview?: {
         reg_name: string;
+        financial_advisor?: string | any[];
     };
 }
 
 interface User {
     id: number;
     name: string;
+    flagSrc: string;
+    status: 'registered' | 'unregistered';
 }
 
 const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDealModalProps) => {
@@ -41,9 +46,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         buyer_id: 0,
         seller_id: 0,
         name: '',
-        industry: '',
+        ticket_size: '',
+        estimated_ev_currency: 'USD',
         priority: 'medium',
-        pic_user_id: '',
+        possibility: 'Medium',
+        internal_pic: [] as any[],
         target_close_date: '',
         stage_code: '',
     });
@@ -99,14 +106,23 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             const response = await api.get('/api/employees/fetch');
             const employees = response.data || [];
-            setUsers(employees.map((e: { user_id: number; full_name: string }) => ({
-                id: e.user_id,
-                name: e.full_name,
-            })).filter((u: User) => u.id));
+            setUsers(employees.map((e: any) => ({
+                id: e.id,
+                name: e.first_name && e.last_name ? `${e.first_name} ${e.last_name}` : (e.first_name || e.last_name || e.name || e.full_name || 'Unknown'),
+                flagSrc: '',
+                status: 'registered'
+            })));
         } catch {
             console.error('Failed to fetch users');
         }
     };
+
+    const [systemCurrencies, setSystemCurrencies] = useState<{ id: number; currency_code: string }[]>([]);
+    useEffect(() => {
+        api.get('/api/currencies').then(res => {
+            setSystemCurrencies(Array.isArray(res.data) ? res.data : (res.data?.data || []));
+        });
+    }, []);
 
     const handleSelectBuyer = (buyer: Buyer) => {
         setSelectedBuyer(buyer);
@@ -124,14 +140,21 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         setFormData((prev) => ({ ...prev, seller_id: seller.id }));
         // Auto-generate deal name
         if (selectedBuyer) {
-            const buyerName = selectedBuyer.company_overview?.reg_name || 'Buyer';
-            const sellerName = seller.company_overview?.reg_name || 'Seller';
+            const buyerName = selectedBuyer.company_overview?.reg_name || 'Investor';
+            const sellerName = seller.company_overview?.reg_name || 'Target';
             setFormData((prev) => ({
                 ...prev,
                 name: `${buyerName} – ${sellerName}`,
-                industry: '', // Could pull from seller
             }));
         }
+    };
+
+    const getFANames = (fa: any) => {
+        try {
+            const parsed = typeof fa === 'string' ? JSON.parse(fa) : fa;
+            if (Array.isArray(parsed)) return parsed.map(f => f.name || f.reg_name).join(', ');
+            return parsed?.name || parsed?.reg_name || 'None';
+        } catch (e) { return 'None'; }
     };
 
     const handleSubmit = async () => {
@@ -148,7 +171,6 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             await api.post('/api/deals', {
                 ...formData,
-                pic_user_id: formData.pic_user_id ? parseInt(formData.pic_user_id) : null,
                 pipeline_type: defaultView,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
@@ -193,9 +215,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
                             <span className={`ml-2 text-sm ${step >= s ? 'text-gray-900' : 'text-gray-500'}`}>
                                 {s === 1
-                                    ? (defaultView === 'seller' ? 'Select Seller' : 'Select Buyer')
+                                    ? (defaultView === 'seller' ? 'Select Target' : 'Select Investor')
                                     : s === 2
-                                        ? (defaultView === 'seller' ? 'Select Buyer' : 'Select Seller')
+                                        ? (defaultView === 'seller' ? 'Select Investor' : 'Select Target')
                                         : 'Deal Details'}
                             </span>
                             {s < 3 && <div className="w-12 h-0.5 mx-4 bg-gray-200" />}
@@ -209,7 +231,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                         <div>
                             <input
                                 type="text"
-                                placeholder="Search buyers..."
+                                placeholder="Search investors..."
                                 value={searchBuyer}
                                 onChange={(e) => setSearchBuyer(e.target.value)}
                                 className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -233,7 +255,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     </button>
                                 ))}
                                 {filteredBuyers.length === 0 && (
-                                    <p className="text-center text-gray-500 py-4">No buyers found</p>
+                                    <p className="text-center text-gray-500 py-4">No investors found</p>
                                 )}
                             </div>
                         </div>
@@ -243,7 +265,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                         <div>
                             <input
                                 type="text"
-                                placeholder="Search sellers..."
+                                placeholder="Search targets..."
                                 value={searchSeller}
                                 onChange={(e) => setSearchSeller(e.target.value)}
                                 className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -267,7 +289,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     </button>
                                 ))}
                                 {filteredSellers.length === 0 && (
-                                    <p className="text-center text-gray-500 py-4">No sellers found</p>
+                                    <p className="text-center text-gray-500 py-4">No targets found</p>
                                 )}
                             </div>
                         </div>
@@ -287,14 +309,23 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
-                                    <input
-                                        type="text"
-                                        value={formData.industry}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, industry: e.target.value }))}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g., Technology"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Size</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            value={formData.ticket_size}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, ticket_size: e.target.value }))}
+                                            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Amount"
+                                        />
+                                        <select
+                                            value={formData.estimated_ev_currency}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
+                                            className="w-24 px-2 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
@@ -313,15 +344,15 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Possibility</label>
                                     <select
-                                        value={formData.priority}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, priority: e.target.value }))}
+                                        value={formData.possibility}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, possibility: e.target.value }))}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
                                     </select>
                                 </div>
                                 <div>
@@ -335,19 +366,32 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Person in Charge (PIC)</label>
-                                <select
-                                    value={formData.pic_user_id}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, pic_user_id: e.target.value }))}
-                                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">Select PIC...</option>
-                                    {users.map((user) => (
-                                        <option key={user.id} value={user.id}>
-                                            {user.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Internal PIC (Assigned Staff)</label>
+                                <Dropdown
+                                    countries={users}
+                                    selected={formData.internal_pic}
+                                    onSelect={(selected: any) => setFormData(prev => ({ ...prev, internal_pic: selected as any[] }))}
+                                    multiSelect={true}
+                                    placeholder="Select Staff"
+                                />
+                            </div>
+
+                            {/* FA Info Section */}
+                            <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-xs text-blue-800 border border-blue-100">
+                                <p className="font-semibold flex items-center gap-1">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Financial Advisor (FA) Information
+                                </p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span className="opacity-70">Investor FA:</span>
+                                        <p className="font-medium">{selectedBuyer ? getFANames(selectedBuyer.company_overview?.financial_advisor) : 'None'}</p>
+                                    </div>
+                                    <div>
+                                        <span className="opacity-70">Target FA:</span>
+                                        <p className="font-medium">{selectedSeller ? getFANames(selectedSeller.company_overview?.financial_advisor) : 'None'}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

@@ -113,7 +113,7 @@ const Dashboard = () => {
 
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id}>
+                  <tr key={`${row.type}-${row.id}`}>
                     <td
                       className="border-b border-[#e0e0e0] pt-2 pb-2 w-full"
                       colSpan={columns.length}

@@ -63,7 +63,7 @@ const Content: React.FC<ContentProps> = ({
   toggleMobileMenu,
 }) => {
   const location = useLocation();
-  const hideLayout = location.pathname === "/login";
+  const hideLayout = location.pathname === "/login" || location.pathname === "/change-password";
 
   return (
     <div className="min-h-screen bg-white">

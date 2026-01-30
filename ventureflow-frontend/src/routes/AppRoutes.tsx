@@ -4,18 +4,15 @@ import CreateEmployee from "../pages/employee/create/CreateEmployee";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import Login from "../pages/auth/Login";
 import CurrencyTable from "../pages/currency/CurrencyTable";
-import IndexEmployee from "../pages/employee/IndexEmployee";
 import Register from "../pages/currency/Register";
 
 import EmployeeDetails from "../pages/employee/details/EmployeeDetails";
 
-import SellerPortal from "../pages/seller-portal/index/SellerPortal";
-import AddSeller from "../pages/seller-portal/create/AddSeller";
-
-import AddBuyer from "../pages/investor-portal/create-buyer/AddBuyer";
-import BuyerPortalDetails from "../pages/investor-portal/buyer-portal-view/BuyerPortalDetails";
+import AddSeller from "../pages/prospects/forms/AddSeller";
+import AddBuyer from "../pages/prospects/forms/AddBuyer";
+import InvestorDetails from "../pages/prospects/components/InvestorDetails";
 import Dashboard from "../pages/Dashboard";
-import SellerPortalDetails from "../pages/seller-portal/seller-portal-view/SellerPortalDetails";
+import TargetDetails from "../pages/prospects/components/TargetDetails";
 import Settings from "../pages/settings/Settings";
 import ProspectsPortal from "../pages/prospects/ProspectsPortal";
 import DealPipeline from "../pages/deals/DealPipeline";
@@ -32,6 +29,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/change-password" element={<ChangePassword />} />
+
+      {/* Dashboard */}
       <Route
         path="/"
         element={
@@ -40,6 +39,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Prospects */}
       <Route
         path="/prospects"
         element={
@@ -57,15 +58,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/seller-portal"
-        element={
-          <ProtectedRoute>
-            <SellerPortal />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/seller-portal/add"
+        path="/prospects/add-target"
         element={
           <ProtectedRoute>
             <AddSeller />
@@ -73,7 +66,7 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/seller-portal/edit/:id"
+        path="/prospects/edit-target/:id"
         element={
           <ProtectedRoute>
             <AddSeller />
@@ -81,10 +74,10 @@ const AppRoutes = () => {
         }
       />
       <Route
-        path="/seller-portal/view/:id"
+        path="/prospects/target/:id"
         element={
           <ProtectedRoute>
-            <SellerPortalDetails />
+            <TargetDetails />
           </ProtectedRoute>
         }
       />
@@ -109,45 +102,12 @@ const AppRoutes = () => {
         path="/prospects/investor/:id"
         element={
           <ProtectedRoute>
-            <BuyerPortalDetails />
+            <InvestorDetails />
           </ProtectedRoute>
         }
       />
 
-      <Route
-        path="/employee"
-        element={
-          <ProtectedRoute>
-            <IndexEmployee />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/employee/edit/:id"
-        element={
-          <ProtectedRoute>
-            <CreateEmployee />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/employee/add"
-        element={
-          <ProtectedRoute>
-            <CreateEmployee />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/employee/details/:id"
-        element={
-          <ProtectedRoute>
-            <EmployeeDetails />
-          </ProtectedRoute>
-        }
-      />
-
+      {/* Settings */}
       <Route
         path="/settings"
         element={
@@ -167,6 +127,8 @@ const AppRoutes = () => {
         <Route path="partners/:id" element={<PartnerPortalDetails />} />
         <Route path="pipeline" element={<PipelineSettings />} />
       </Route>
+
+      {/* Profile & Employee Edit */}
       <Route
         path="/profile"
         element={
@@ -175,6 +137,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/employee/details/:id"
+        element={
+          <ProtectedRoute>
+            <EmployeeDetails />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Notifications */}
       <Route
         path="/notifications"
         element={

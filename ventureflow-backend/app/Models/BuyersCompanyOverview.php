@@ -51,6 +51,8 @@ class BuyersCompanyOverview extends Model
         'target_countries',
         'investor_profile_link',
         'introduced_projects',
+        'financial_advisor',
+        'internal_pic',
     ];
 
     protected $casts = [
@@ -64,6 +66,8 @@ class BuyersCompanyOverview extends Model
         'investment_budget' => 'array',
         'target_countries' => 'array',
         'introduced_projects' => 'array',
+        'financial_advisor' => 'array',
+        'internal_pic' => 'array',
     ];
 
     // Relationship with the Buyer (assuming buyer_id references buyers table)

@@ -18,6 +18,7 @@ import {
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
+import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
 
 interface PipelineStage {
     code: string;
@@ -82,7 +83,7 @@ const DealPipeline = () => {
     const [deals, setDeals] = useState<GroupedDeals>({});
     const [stages, setStages] = useState<PipelineStage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'board' | 'table'>('board');
+    const [activeTab, setActiveTab] = useState<'board' | 'table' | 'lost' | 'won'>('board');
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
@@ -92,6 +93,9 @@ const DealPipeline = () => {
     const [pipelineView, setPipelineView] = useState<PipelineView>('buyer');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [chatDeal, setChatDeal] = useState<Deal | null>(null);
+    const [lostDeal, setLostDeal] = useState<Deal | null>(null);
+    const [lostReason, setLostReason] = useState('');
+    const [showWonCelebration, setShowWonCelebration] = useState<boolean>(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -118,11 +122,13 @@ const DealPipeline = () => {
 
     const fetchDeals = async () => {
         try {
+            const status = activeTab === 'lost' ? 'lost' : activeTab === 'won' ? 'won' : 'active';
             const response = await api.get('/api/deals', {
                 params: {
                     search: searchQuery || undefined,
                     countries: selectedCountries.length > 0 ? selectedCountries.map(c => c.id) : undefined,
                     view: pipelineView,
+                    status: status,
                 }
             });
             const enhancedGrouped = { ...response.data.grouped };
@@ -150,7 +156,7 @@ const DealPipeline = () => {
             setIsLoading(false);
         };
         loadData();
-    }, [searchQuery, selectedCountries, pipelineView]);
+    }, [searchQuery, selectedCountries, pipelineView, activeTab]);
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
@@ -224,6 +230,52 @@ const DealPipeline = () => {
             console.error("Failed to move deal:", error);
             setDeals(oldDeals);
             showAlert({ type: 'error', message: 'Failed to update stage. Please refresh and try again.' });
+        }
+    };
+
+    const handleMove = async (deal: Deal, direction: 'forward' | 'backward') => {
+        const currentIndex = stages.findIndex(s => s.code === deal.stage_code);
+        if (currentIndex === -1) return;
+
+        let nextIndex = direction === 'forward' ? currentIndex + 1 : currentIndex - 1;
+        if (nextIndex < 0 || nextIndex >= stages.length) return;
+
+        const nextStage = stages[nextIndex];
+
+        try {
+            await api.patch(`/api/deals/${deal.id}/stage`, {
+                stage_code: nextStage.code,
+                pipeline_type: pipelineView
+            });
+
+            // Check for Won state
+            if (direction === 'forward' && nextIndex === stages.length - 1) {
+                setShowWonCelebration(true);
+                // Also update status to won on backend automatically? 
+                // The user said: "when mark as won ... take to Won" and "automatically mark as won deal if any deal reach the latest stage"
+                await api.patch(`/api/deals/${deal.id}`, { status: 'won' });
+            }
+
+            showAlert({ type: 'success', message: `Moved to ${nextStage.name}` });
+            fetchDeals();
+        } catch {
+            showAlert({ type: 'error', message: 'Failed to move deal' });
+        }
+    };
+
+    const handleConfirmLost = async () => {
+        if (!lostDeal) return;
+        try {
+            await api.patch(`/api/deals/${lostDeal.id}`, {
+                status: 'lost',
+                lost_reason: lostReason
+            });
+            showAlert({ type: 'success', message: 'Deal marked as lost' });
+            setLostDeal(null);
+            setLostReason('');
+            fetchDeals();
+        } catch {
+            showAlert({ type: 'error', message: 'Failed to update deal status' });
         }
     };
 
@@ -513,16 +565,16 @@ const DealPipeline = () => {
                 <div className="flex-1 flex flex-col overflow-hidden">
 
                     <div className="flex items-center gap-4 px-4 py-2 bg-white border-b">
-                        {(['board', 'table'] as const).map((tab) => (
+                        {(['board', 'table', 'lost', 'won'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab
-                                    ? 'bg-blue-50 text-[#064771]'
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${activeTab === tab
+                                    ? tab === 'lost' ? 'bg-red-50 text-red-700' : tab === 'won' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-[#064771]'
                                     : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                             >
-                                {tab === 'board' ? 'Deal Board' : 'Table View'}
+                                {tab === 'board' ? 'Deal Board' : tab === 'table' ? 'Table View' : tab}
                             </button>
                         ))}
                     </div>
@@ -553,6 +605,8 @@ const DealPipeline = () => {
                                                     name={stage.name}
                                                     deals={deals[stage.code]?.deals || []}
                                                     onDealClick={(deal) => navigate(`/deals/${deal.id}`)}
+                                                    onMove={handleMove}
+                                                    onMarkLost={setLostDeal}
                                                     pipelineView={pipelineView}
                                                 />
                                             ))}
@@ -565,7 +619,7 @@ const DealPipeline = () => {
                         </div>
                     )}
 
-                    {activeTab === 'table' && (
+                    {(activeTab === 'table' || activeTab === 'lost' || activeTab === 'won') && (
                         <div className="flex-1 w-full px-4 md:px-8 overflow-auto py-6">
                             <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -574,13 +628,13 @@ const DealPipeline = () => {
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Investor' : 'Target'}</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stage</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Value</th>
-                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Priority</th>
+                                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Possibility</th>
                                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Updated</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {Object.values(deals).flatMap(d => d.deals).length === 0 ? (
-                                        <tr><td colSpan={6} className="text-center py-8 text-gray-500">No deals found.</td></tr>
+                                        <tr><td colSpan={6} className="text-center py-8 text-gray-500">No deals found in this status.</td></tr>
                                     ) : (
                                         Object.values(deals).flatMap(d => d.deals).map(deal => (
                                             <tr
@@ -598,22 +652,26 @@ const DealPipeline = () => {
                                                     }
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${pipelineView === 'buyer' ? 'bg-blue-100 text-[#064771]' : 'bg-green-100 text-green-800'
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${deal.status === 'won' ? 'bg-green-100 text-green-800' :
+                                                        deal.status === 'lost' ? 'bg-red-100 text-red-800' :
+                                                            pipelineView === 'buyer' ? 'bg-blue-100 text-[#064771]' : 'bg-green-100 text-green-800'
                                                         }`}>
                                                         {deals[deal.stage_code]?.name || deal.stage_code}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {deal.estimated_ev_value
-                                                        ? `${deal.estimated_ev_currency} ${deal.estimated_ev_value.toLocaleString()}`
-                                                        : '-'}
+                                                    {(deal as any).ticket_size
+                                                        ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(Number((deal as any).ticket_size))}`
+                                                        : deal.estimated_ev_value
+                                                            ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(deal.estimated_ev_value)}`
+                                                            : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <span className={`px-2 py-1 rounded-full text-xs ${deal.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                                        deal.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${(deal as any).possibility === 'High' ? 'bg-green-100 text-green-800' :
+                                                        (deal as any).possibility === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                                                             'bg-gray-100 text-gray-800'
                                                         }`}>
-                                                        {deal.priority.charAt(0).toUpperCase() + deal.priority.slice(1)}
+                                                        {(deal as any).possibility || deal.priority}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -635,6 +693,82 @@ const DealPipeline = () => {
                     onCreated={handleDealCreated}
                     defaultView={pipelineView}
                 />
+            )}
+
+            {/* Lost Remarks Modal */}
+            {lostDeal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="px-6 py-4 border-b flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">Mark Deal as Lost</h3>
+                            <button onClick={() => setLostDeal(null)} className="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="flex flex-col items-center gap-2 py-4">
+                                <div className="text-4xl">😔</div>
+                                <p className="text-sm text-gray-500 text-center">We're sorry to hear that. Please provide a reason for marking this deal as lost.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Remarks</label>
+                                <textarea
+                                    value={lostReason}
+                                    onChange={(e) => setLostReason(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[100px]"
+                                    placeholder="Enter reason here..."
+                                />
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
+                            <button
+                                onClick={() => setLostDeal(null)}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmLost}
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                            >
+                                Mark as Lost
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Won Celebration Modal */}
+            {showWonCelebration && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[120] p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative p-8 text-center flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
+                        <div className="absolute top-4 right-4">
+                            <button onClick={() => { setShowWonCelebration(false); fetchDeals(); }} className="text-gray-400 hover:text-gray-600 p-2">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <div className="w-48 h-48 bg-yellow-50 rounded-full flex items-center justify-center">
+                            <div className="text-8xl animate-bounce">🏆</div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-bold text-gray-900">Congratulations! 🎉</h2>
+                            <p className="text-gray-500 text-lg">Amazing work! This deal has been officially won.</p>
+                        </div>
+
+                        <div className="py-4 px-6 bg-blue-50 rounded-xl border border-blue-100 w-full">
+                            <p className="text-blue-800 text-sm font-medium">The deal has been moved to the <span className="font-bold">Won</span> tab.</p>
+                        </div>
+
+                        <button
+                            onClick={() => { setShowWonCelebration(false); fetchDeals(); }}
+                            className="w-full py-3 bg-[#064771] text-white rounded-xl font-semibold shadow-lg hover:shadow-blue-200/50 hover:-translate-y-0.5 transition-all text-lg"
+                        >
+                            Awesome!
+                        </button>
+                    </div>
+                </div>
             )}
 
             {/* Chat Overlay Drawer */}

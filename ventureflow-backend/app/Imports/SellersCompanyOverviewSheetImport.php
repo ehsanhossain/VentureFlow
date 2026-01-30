@@ -91,50 +91,25 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
         };
 
         // 1. Company Name
-        $companyRegName = $row['company_name'] ?? $row['company_registered_name'] ?? null;
+        $companyRegName = $row['company_name'] ?? null;
         if (empty($companyRegName)) {
             Log::warning("Skipping row $rowIndex: Empty Company Name.");
             return;
         }
 
-        // 2. Code Validation (XX-S-XXX)
-        $projectCode = $row['code'] ?? $row['project_code'] ?? null;
-        if ($projectCode) {
-            if (!preg_match('/^[A-Z]{2}-S-\d{2,3}$/', strtoupper($projectCode))) {
-                Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-S-XXX.");
-                return;
-            }
-            if (Seller::where('seller_id', $projectCode)->exists()) {
-                Log::error("Validation Error Row $rowIndex: Duplicate Project Code '$projectCode'.");
-                return;
-            }
-        }
+        // 2. Code Validation (Already validated by rules)
+        $projectCode = isset($row['project_id']) ? strtoupper(trim($row['project_id'])) : null;
 
-        // 3. Rank
-        $rank = strtoupper(trim($row['rank'] ?? 'B'));
-        if (!in_array($rank, ['A', 'B', 'C'])) {
-            $rank = 'B';
-        }
+        // 3. Rank (Already validated by rules)
+        $rank = strtoupper(trim($row['rank']));
 
-        // 4. HQ Country
-        $countryName = $row['hq'] ?? $row['hq_country'] ?? $row['hq_origin_country'] ?? null;
-        $hqCountryId = null;
-        if ($countryName) {
-            $country = Country::where('name', 'LIKE', trim($countryName))->first();
-            if ($country) {
-                $hqCountryId = $country->id;
-            } else {
-                Log::warning("Row $rowIndex: Country '$countryName' not found.");
-            }
-        }
+        // 4. HQ Country (Already validated by rules)
+        $countryName = $row['hq'];
+        $country = Country::where('name', trim($countryName))->first();
+        $hqCountryId = $country->id;
 
         // 5. Industry
-        $industries = $commaSeparatedToArray($row['industry'] ?? '');
-
-        // 6. Budget
-        $budgetMin = filter_var($row['budget_min'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $budgetMax = filter_var($row['budget_max'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $budgetCurrency = strtoupper(trim($row['budget_currency'] ?? 'USD'));
+        $industries = $commaSeparatedToArray($row['industry_major_classification'] ?? '');
 
         // Create Overview
         $overview = SellersCompanyOverview::create([
@@ -143,22 +118,26 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
             'company_type'        => 'Corporate',
             'industry_ops'        => $industries,
             'company_rank'        => $rank,
-            'reason_ma'           => $row['reason_for_mna'] ?? null,
-            'planned_sale_share_ratio' => $row['planned_sale_share_ratio'] ?? null,
+            'reason_ma'           => $row['purpose_of_mna'] ? [$row['purpose_of_mna']] : null,
             'status'              => 'Active',
-            'details'             => $row['details'] ?? null,
-            'email'               => $row['email'] ?? null,
-            'website'             => $row['website_url'] ?? null,
-            'teaser_link'         => $row['teaser_link'] ?? null,
+            'details'             => $row['project_details'] ?? null,
+            'website'             => $row['website_lp_url'] ?? null,
+            'teaser_link'         => $row['teaser'] ?? null,
             'seller_contact_name' => $row['contact_person'] ?? null,
             'seller_designation'  => $row['position'] ?? null,
             'seller_email'        => $row['email'] ?? null,
+        ]);
+
+        // Create Financial Details for the ratio
+        $financial = \App\Models\SellersFinancialDetail::create([
+            'maximum_investor_shareholding_percentage' => $row['planned_ratio_sale'] ?? null,
         ]);
 
         // Create Parent Seller Record
         Seller::create([
             'seller_id' => $projectCode,
             'company_overview_id' => $overview->id,
+            'financial_detail_id' => $financial->id,
             'status' => 'Active',
         ]);
     }
@@ -171,22 +150,19 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
     public function rules(): array
     {
         return [
-            'code'           => 'nullable|string',
-            'rank'           => 'nullable|string|max:1',
-            'company_name'   => 'nullable|string|max:255',
-            'hq'             => 'nullable|string',
-            'industry'       => 'nullable|string',
-            'details'        => 'nullable|string',
-            'reason_for_mna' => 'nullable|string',
-            'planned_sale_share_ratio' => 'nullable|string',
-            'budget_min'     => 'nullable',
-            'budget_max'     => 'nullable',
-            'budget_currency'=> 'nullable|string|max:10',
-            'website_url'    => 'nullable|string',
-            'teaser_link'    => 'nullable|string',
+            'project_id'     => 'nullable|regex:/^[A-Z]{2}-S-\d{1,5}$/i|unique:sellers,seller_id',
+            'rank'           => 'required|in:A,B,C,a,b,c',
+            'company_name'   => 'required|string|max:255',
+            'hq'             => 'required|exists:countries,name',
+            'industry_major_classification' => 'nullable|string',
+            'project_details' => 'nullable|string',
+            'website_lp_url' => 'nullable|string',
+            'purpose_of_mna' => 'nullable|string|in:Market Expansion,Succession/Exit,Strategic Partnership,Financial Restructuring,Other',
+            'planned_ratio_sale' => 'nullable|string',
             'contact_person' => 'nullable|string',
             'position'       => 'nullable|string',
             'email'          => 'nullable|string',
+            'teaser'         => 'nullable|string',
         ];
     }
 

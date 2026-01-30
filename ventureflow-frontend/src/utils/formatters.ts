@@ -15,14 +15,52 @@ export const formatCurrency = (value: number | string): string => {
 };
 
 /**
+ * Get currency symbol from code
+ */
+export const getCurrencySymbol = (code: string): string => {
+    if (!code) return '$';
+    const cleanCode = code.trim().toUpperCase();
+    const symbols: Record<string, string> = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'JPY': '¥',
+        'CNY': '¥',
+        'THB': '฿',
+        'SGD': 'S$',
+        'MYR': 'RM',
+        'IDR': 'Rp',
+        'VND': '₫',
+        'KRW': '₩',
+        'INR': '₹',
+        'AUD': 'A$',
+        'HKD': 'HK$',
+        'PHP': '₱',
+        'BND': 'B$',
+        'KHR': '៛',
+        'LAK': '₭',
+        'MMK': 'K',
+    };
+    return symbols[cleanCode] || code || '$';
+};
+
+/**
  * Formats a number into a shorter string representation (K, M, B)
  */
 export const formatCompactNumber = (number: number): string => {
     if (number === 0) return '0';
     if (!number) return 'N/A';
 
-    const formatter = Intl.NumberFormat('en', { notation: 'compact' });
-    return formatter.format(number);
+    if (number >= 1000000000) {
+        return `${(number / 1000000000).toFixed(1)}B`;
+    }
+    if (number >= 1000000) {
+        return `${(number / 1000000).toFixed(1)}M`;
+    }
+    if (number >= 1000) {
+        return `${(number / 1000).toFixed(1)}K`;
+    }
+    return number.toLocaleString();
 };
 
 /**
@@ -34,6 +72,11 @@ export const formatCompactNumber = (number: number): string => {
 export const formatCompactBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
     if (typeof budget === 'string') return budget;
+    if (typeof budget === 'number' || (typeof budget === 'string' && !isNaN(Number(budget.replace(/,/g, ''))))) {
+        const val = typeof budget === 'number' ? budget : Number(budget.replace(/,/g, ''));
+        const converted = exchangeRate ? val * exchangeRate : val;
+        return `${currencySymbol}${formatCompactNumber(converted)}`;
+    }
 
     try {
         let min = budget.min !== undefined && budget.min !== '' ? budget.min : (budget.minimum !== undefined && budget.minimum !== '' ? budget.minimum : undefined);
@@ -51,6 +94,7 @@ export const formatCompactBudget = (budget: any, currencySymbol: string = '$', e
 
         if (min !== undefined && max !== undefined) {
             if (Number(min) === 0 && Number(max) === 0) return 'Flexible';
+            if (Number(min) === Number(max)) return `${symbol}${formatCompactNumber(Number(min))}`;
             return `${symbol}${formatCompactNumber(Number(min))} - ${symbol}${formatCompactNumber(Number(max))}`;
         } else if (min !== undefined) {
             return `From ${symbol}${formatCompactNumber(Number(min))}`;

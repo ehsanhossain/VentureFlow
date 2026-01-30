@@ -11,10 +11,31 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
+        $request->validate([
+            'email' => 'required',
             'password' => 'required',
         ]);
+
+        $input = $request->email;
+        $credentials = ['password' => $request->password];
+
+        if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
+            $credentials['email'] = $input;
+        } else {
+            // Attempt to resolve Partner ID to User Email
+            $partner = \App\Models\Partner::where('partner_id', $input)->first();
+            if ($partner && $partner->user_id) {
+                $user = \App\Models\User::find($partner->user_id);
+                if ($user) {
+                    $credentials['email'] = $user->email;
+                } else {
+                     return response()->json(['message' => 'Unauthorized'], 401);
+                }
+            } else {
+                // If not an email and not found as Partner ID, it will fail auth
+                $credentials['email'] = $input;
+            }
+        }
 
         if (!Auth::attempt($credentials, true)) {
             return response()->json(['message' => 'Unauthorized'], 401);
@@ -22,10 +43,15 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('auth-token')->plainTextToken;
+        
+        // Check if user is a partner
+        $role = $user->getRoleNames()->first();
+        $isPartner = $role === 'partner' || $user->is_partner;
 
         return response()->json([
             'user' => $user,
-            'role' => $user->getRoleNames()->first(),
+            'role' => $role,
+            'is_partner' => $isPartner,
             'token' => $token
         ]);
     }
@@ -33,21 +59,33 @@ class AuthController extends Controller
     public function user(Request $request) {
         $user = $request->user();
         $employee = \App\Models\Employee::where('user_id', $user->id)->first();
+        $role = $user->getRoleNames()->first();
+        $isPartner = $role === 'partner' || $user->is_partner === true;
+        
         return response()->json([
             'user' => $user,
-            'role' => $user->getRoleNames()->first(),
+            'role' => $role,
+            'is_partner' => $isPartner,
             'employee' => $employee
         ]);
     }
 
     public function changePassword(Request $request)
     {
+        $user = $request->user();
+        
+        // If current_password is provided, verify it
+        if ($request->has('current_password')) {
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Current password is incorrect'], 422);
+            }
+        }
+        
         $request->validate([
             'password' => 'required|min:8',
         ]);
 
-        $user = $request->user();
-        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        $user->password = Hash::make($request->password);
         $user->must_change_password = false;
         $user->save();
 

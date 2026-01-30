@@ -88,8 +88,8 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`text-sm font-semibold pb-4 -mb-4 border-b-2 transition-all ${activeTab === tab
-                                    ? 'border-[#064771] text-[#064771]'
-                                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                                ? 'border-[#064771] text-[#064771]'
+                                : 'border-transparent text-gray-400 hover:text-gray-600'
                                 }`}
                         >
                             {tab === 'all' && 'All Activity'}
@@ -177,13 +177,14 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                         }}
                     />
                     <div className="absolute right-3 bottom-3 flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Shift + Enter for new line</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Press Enter to send, Shift + Enter for new line</span>
                         <button
                             type="button"
                             onClick={handleSendMessage}
                             disabled={!newMessage.trim() || !entityId}
-                            className="p-2.5 text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] disabled:opacity-30 disabled:grayscale transition-all shadow-md active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] disabled:opacity-30 disabled:grayscale transition-all shadow-md active:scale-95 font-bold"
                         >
+                            <span>Send</span>
                             <Send className="w-4 h-4" />
                         </button>
                     </div>

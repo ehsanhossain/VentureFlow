@@ -24,8 +24,12 @@ interface PartnerUser {
     };
 }
 
+import PartnerSharingSettings from './PartnerSharingSettings';
+import { Share2 } from 'lucide-react';
+
 const PartnerManagement: React.FC = () => {
     const { t } = useTranslation();
+    const [activeTab, setActiveTab] = useState<'list' | 'sharing'>('list');
     const [partners, setPartners] = useState<PartnerUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -44,9 +48,11 @@ const PartnerManagement: React.FC = () => {
     const [countries, setCountries] = useState<Country[] & { alpha_2_code?: string }[]>([]);
 
     useEffect(() => {
-        fetchPartners();
-        fetchCountries();
-    }, []);
+        if (activeTab === 'list') {
+            fetchPartners();
+            fetchCountries();
+        }
+    }, [activeTab]);
 
     const fetchPartners = async () => {
         setLoading(true);
@@ -60,6 +66,8 @@ const PartnerManagement: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // ... (rest of the existing fetchCountries, generatePassword, handleCreateOrUpdate, handleDelete, handleEdit functions)
 
     const fetchCountries = async () => {
         try {
@@ -171,125 +179,159 @@ const PartnerManagement: React.FC = () => {
                         <p className="text-sm text-gray-500">{t('settings.partners.summary')}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder={t('settings.partners.searchPlaceholder')}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#064771] w-64 text-sm"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+
+            </div>
+
+            {/* Tabs */}
+            <div className="px-8 border-b border-gray-200 bg-white">
+                <div className="flex space-x-8">
                     <button
-                        onClick={() => {
-                            setEditingPartner(null);
-                            setFormData({ name: '', email: '', country: '' });
-                            setIsAddModalOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-all shadow-sm font-medium"
+                        onClick={() => setActiveTab('list')}
+                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${activeTab === 'list'
+                            ? 'border-[#064771] text-[#064771]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
                     >
-                        <Plus className="w-5 h-5" />
-                        <span>{t('settings.partners.addPartner')}</span>
+                        <Users className="w-4 h-4" />
+                        All Partners
                     </button>
                     <button
-                        onClick={fetchPartners}
-                        className="p-2 text-gray-400 hover:text-[#064771] hover:bg-blue-50 rounded-lg transition-colors"
-                        title={t('common.refresh')}
+                        onClick={() => setActiveTab('sharing')}
+                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${activeTab === 'sharing'
+                            ? 'border-[#064771] text-[#064771]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
                     >
-                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                        <Share2 className="w-4 h-4" />
+                        Sharing Settings
                     </button>
                 </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 w-full px-8 overflow-auto py-6 bg-gray-50/30">
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.partner')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.contactId')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.country')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.structure')}</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.status')}</th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.actions')}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {loading && partners.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-12 text-gray-500">{t('common.loading')}</td></tr>
-                            ) : filteredPartners.length === 0 ? (
-                                <tr><td colSpan={6} className="text-center py-12 text-gray-500">{t('settings.partners.noPartners')}</td></tr>
-                            ) : (
-                                filteredPartners.map(partner => (
-                                    <tr key={partner.id} className="hover:bg-gray-50/80 transition-colors group">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-[#064771] to-[#0a6fb1] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                                                    {(partner.user?.name || partner.partner_overview?.reg_name || 'U').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-bold text-gray-900">
-                                                        {partner.user?.name || partner.partner_overview?.reg_name || t('common.unnamed')}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">{t('settings.partners.registeredPartner')}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{partner.user?.email || 'N/A'}</div>
-                                            <div className="mt-1 flex items-center">
-                                                <span className="bg-blue-50 text-[#064771] px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-blue-100 uppercase">
-                                                    {partner.partner_id}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{partner.partner_overview?.hq_country || 'N/A'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-600 italic">
-                                                {partner.partnership_structure?.partnership_structure || t('common.notSet')}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${partner.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {(partner.status || 'active').toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => navigate(`/settings/partners/${partner.id}`)}
-                                                    className="p-2 text-gray-400 hover:text-[#064771] hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title={t('common.viewDetails')}
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleEdit(partner)}
-                                                    className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                                    title={t('common.edit')}
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(partner.id)}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title={t('common.delete')}
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
+                {activeTab === 'list' ? (
+                    <>
+                        <div className="flex justify-end items-center gap-4 mb-6">
+                            <div className="relative">
+                                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder={t('settings.partners.searchPlaceholder')}
+                                    className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#064771] w-64 text-sm"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setEditingPartner(null);
+                                    setFormData({ name: '', email: '', country: '' });
+                                    setIsAddModalOpen(true);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-all shadow-sm font-medium"
+                            >
+                                <Plus className="w-5 h-5" />
+                                <span>{t('settings.partners.addPartner')}</span>
+                            </button>
+                            <button
+                                onClick={fetchPartners}
+                                className="p-2 text-gray-400 hover:text-[#064771] hover:bg-blue-50 rounded-lg transition-colors"
+                                title={t('common.refresh')}
+                            >
+                                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.partner')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.contactId')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.country')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.structure')}</th>
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.status')}</th>
+                                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">{t('settings.partners.table.actions')}</th>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {loading && partners.length === 0 ? (
+                                        <tr><td colSpan={6} className="text-center py-12 text-gray-500">{t('common.loading')}</td></tr>
+                                    ) : filteredPartners.length === 0 ? (
+                                        <tr><td colSpan={6} className="text-center py-12 text-gray-500">{t('settings.partners.noPartners')}</td></tr>
+                                    ) : (
+                                        filteredPartners.map(partner => (
+                                            <tr key={partner.id} className="hover:bg-gray-50/80 transition-colors group">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gradient-to-br from-[#064771] to-[#0a6fb1] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                                                            {(partner.user?.name || partner.partner_overview?.reg_name || 'U').charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div className="ml-4">
+                                                            <div className="text-sm font-bold text-gray-900">
+                                                                {partner.user?.name || partner.partner_overview?.reg_name || t('common.unnamed')}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">{t('settings.partners.registeredPartner')}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-900">{partner.user?.email || 'N/A'}</div>
+                                                    <div className="mt-1 flex items-center">
+                                                        <span className="bg-blue-50 text-[#064771] px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-blue-100 uppercase">
+                                                            {partner.partner_id}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-900">{partner.partner_overview?.hq_country || 'N/A'}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-600 italic">
+                                                        {partner.partnership_structure?.partnership_structure || t('common.notSet')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${partner.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {(partner.status || 'active').toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => navigate(`/settings/partners/${partner.id}`)}
+                                                            className="p-2 text-gray-400 hover:text-[#064771] hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title={t('common.viewDetails')}
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleEdit(partner)}
+                                                            className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                            title={t('common.edit')}
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(partner.id)}
+                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title={t('common.delete')}
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                ) : (
+                    <PartnerSharingSettings />
+                )}
             </div>
 
             {/* Add/Edit Modal */}

@@ -28,6 +28,7 @@ class BuyerController extends Controller
 
     public function index(Request $request)
     {
+        try {
         // --- Retrieve all input parameters ---
         $search = $request->input('search', '');
         $country = $request->input('country');
@@ -44,17 +45,97 @@ class BuyerController extends Controller
         $ebitdaRequirements = $request->input('ebitda_requirements', []);
         $expectedInvestmentAmount = $request->input('expected_investment_amount', []);
 
+        // --- Check User Role ---
+        $user = $request->user();
+        $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
+
+        $allowedFields = null;
+        if ($isPartner) {
+            $allowedFields = $this->getParsedAllowedFields('buyer');
+        }
+
         // --- Build the base query ---
-        $query = Buyer::with([
-            'companyOverview',
-            'targetPreference',
-            'financialDetails',
-            'partnershipDetails',
-            'teaserCenter',
-            'deals'
-        ])
+        $query = Buyer::query();
+
+        // --- Select Fields & Eager Load ---
+        if ($isPartner && $allowedFields) {
+            // Select allowed root fields + necessary foreign keys
+            $rootFields = array_unique(array_merge(['id', 'pinned', 'created_at'], $allowedFields['root']));
+            
+            // ALWAYS include Foreign Keys to ensure Eager Loading works
+            $rootFields = array_merge($rootFields, [
+                'company_overview_id',
+                'target_preference_id',
+                'financial_detail_id',
+                'partnership_detail_id',
+                'teaser_center_id'
+            ]);
+
+            $query->select($rootFields);
+
+            // Eager load with constraints
+            $query->with([
+                'companyOverview' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['companyOverview'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['companyOverview']));
+                    } else {
+                        $q->select('id'); 
+                    }
+                },
+                'targetPreference' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['targetPreference'])) {
+                         $q->select(array_merge(['id'], $allowedFields['relationships']['targetPreference']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                'financialDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['financialDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['financialDetails']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                'partnershipDetails' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['partnershipDetails'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['partnershipDetails']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                'teaserCenter' => function($q) use ($allowedFields) {
+                    if (isset($allowedFields['relationships']['teaserCenter'])) {
+                        $q->select(array_merge(['id'], $allowedFields['relationships']['teaserCenter']));
+                    } else {
+                        $q->select('id');
+                    }
+                },
+                // Hide deals for partners unless explicitly needed (usually sensitive)
+                'deals' => function($q) use ($isPartner) {
+                     // For now, return empty or limit fields if needed. 
+                     // Assuming 'deals' contains pipeline status which might be sensitive or public?
+                     // If partner, maybe we hide detailed deal info?
+                     // The frontend uses 'stage_name' from deals. 
+                     // Let's assume we allow minimal deal info like 'stage_name' if needed, or hide it.
+                     // For safety, let's allow it but we might want to restrict fields later.
+                     $q->select('id', 'buyer_id', 'stage_code', 'progress_percent', 'created_at');
+                }
+            ]);
+
+        } else {
+            // Admin: Load everything
+            $query->with([
+                'companyOverview',
+                'targetPreference',
+                'financialDetails',
+                'partnershipDetails',
+                'teaserCenter',
+                'deals'
+            ]);
+        }
+
             // --- General search filter ---
-            ->when($search, function ($query) use ($search) {
+            $query->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('buyer_id', 'like', "%{$search}%")
                         ->orWhereHas('companyOverview', function ($q) use ($search) {
@@ -172,6 +253,55 @@ class BuyerController extends Controller
                 'per_page' => $buyers->perPage(),
             ]
         ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Buyer Index Error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Internal Error: ' . $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
+    }
+
+    private function getParsedAllowedFields($type)
+    {
+        $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
+        
+        $parsed = [
+            'root' => ['id'], // Always include base ID
+            'relationships' => []
+        ];
+
+        // If no settings exist, return minimal data
+        if (!$setting || !is_array($setting->setting_value)) {
+            \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
+            return $parsed;
+        }
+
+        // Get only explicitly enabled (true) fields
+        $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
+            return $val === true;
+        }));
+
+        foreach ($enabledFields as $field) {
+            if (str_contains($field, '.')) {
+                // Nested field (e.g., company_overview.hq_country)
+                $parts = explode('.', $field);
+                $relation = \Illuminate\Support\Str::camel($parts[0]); // Convert to camelCase
+                $attribute = $parts[1];
+
+                if (!isset($parsed['relationships'][$relation])) {
+                    $parsed['relationships'][$relation] = ['id'];
+                }
+                
+                $parsed['relationships'][$relation][] = $attribute;
+            } else {
+                // Root field (e.g., buyer_id, seller_id)
+                $parsed['root'][] = $field;
+            }
+        }
+
+        return $parsed;
     }
 
 
@@ -256,6 +386,8 @@ class BuyerController extends Controller
                 'investment_budget',
                 'target_countries',
                 'introduced_projects',
+                'financial_advisor',
+                'internal_pic',
             ];
 
             foreach ($jsonFields as $field) {
@@ -332,6 +464,8 @@ class BuyerController extends Controller
             $overview->target_countries = $data['target_countries'] ?? null;
             $overview->investor_profile_link = $data['investor_profile_link'] ?? null;
             $overview->introduced_projects = $data['introduced_projects'] ?? null;
+            $overview->financial_advisor = $data['financial_advisor'] ?? null;
+            $overview->internal_pic = $data['internal_pic'] ?? null;
 
             $overview->save();
 
@@ -648,7 +782,7 @@ class BuyerController extends Controller
     public function show(Buyer $buyer)
     {
         $buyer = Buyer::with([
-            'companyOverview',
+            'companyOverview.hqCountry',
             'targetPreference',
             'financialDetails',
             'partnershipDetails',

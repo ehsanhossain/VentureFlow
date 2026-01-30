@@ -208,10 +208,10 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     Create Investor
                   </button>
                   <button
-                    onClick={() => { navigate('/seller-portal/add'); setCreateDropdownOpen(false); }}
+                    onClick={() => { navigate('/prospects/add-target'); setCreateDropdownOpen(false); }}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
                   >
-                    Create Seller
+                    Create Target
                   </button>
                   <button
                     onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
@@ -374,7 +374,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.companies.map((company) => (
                         <li key={`company-${company.id}-${company.type}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
-                          onClick={() => { navigate(company.type === 'Seller' ? `/seller-portal/view/${company.id}` : `/prospects/investor/${company.id}`); closeSearch(); }}>
+                          onClick={() => { navigate(company.type === 'Seller' ? `/prospects/target/${company.id}` : `/prospects/investor/${company.id}`); closeSearch(); }}>
                           <Building className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
                           <span className="ml-3 flex-auto truncate">{company.name}</span>
                           <span className="ml-3 flex-none text-xs text-gray-400">{company.type}</span>

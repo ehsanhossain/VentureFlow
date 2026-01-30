@@ -27,6 +27,6 @@ class SellersFinancialDetail extends Model
     // Relationship to Seller (One-to-One)
     public function seller()
     {
-        return $this->belongsTo(Seller::class);
+        return $this->hasOne(Seller::class, 'financial_detail_id');
     }
 }

@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/api';
 import { showAlert } from '../../components/Alert';
-import coverImage from '../../assets/image/cover.svg';
+import successImage from '../../assets/image/password_change_success.png';
 
 const ChangePassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -26,8 +27,7 @@ const ChangePassword = () => {
         setLoading(true);
         try {
             await api.post('/api/user/change-password', { password });
-            showAlert({ type: 'success', message: 'Password changed successfully!' });
-            navigate('/dashboard');
+            setSuccess(true);
         } catch (error: any) {
             showAlert({ type: 'error', message: error.response?.data?.message || 'Failed to change password' });
         } finally {
@@ -35,57 +35,84 @@ const ChangePassword = () => {
         }
     };
 
-    return (
-        <div className="flex min-h-screen w-screen flex-col md:flex-row overflow-hidden bg-white font-poppins">
-            <div className="hidden md:flex flex-col md:w-2/3 w-full justify-center items-start bg-white overflow-hidden relative h-[97vh] pr-2 pl-[15px] pt-[20px] rounded-[20px]">
-                <img
-                    src={coverImage}
-                    alt="Venture Flow Cover"
-                    className="w-full h-full object-cover rounded-[20px]"
-                />
-            </div>
+    if (success) {
+        return (
+            <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-white font-poppins px-6 text-center">
+                <div className="w-full max-w-lg flex flex-col items-center">
+                    <h1 className="text-3xl font-bold text-[#064771] mb-2 flex flex-col items-center gap-2 text-center">
+                        <span className="block w-full">VentureFlow</span>
+                        <span className="block w-full">Congrats!!</span>
+                    </h1>
 
-            <div className="flex flex-col justify-center items-center px-6 sm:px-12 py-6 bg-white w-full md:w-1/3 shadow-md">
-                <div className="w-full max-w-sm">
-                    <h1 className="text-2xl font-bold text-[#064771] mb-2 font-poppins">Change Your Password</h1>
-                    <p className="text-gray-500 mb-8 font-poppins">For security reasons, you must change your password before continuing.</p>
+                    <p className="text-gray-500 mb-8 max-w-md">
+                        Great news! You've successfully reset your password. Please head to the login page to sign in now.
+                    </p>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">New Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#064771] outline-none"
-                                required
-                            />
-                        </div>
+                    <div className="mb-8 w-full flex justify-center">
+                        <img
+                            src={successImage}
+                            alt="Success"
+                            className="w-full max-w-[300px] object-contain"
+                        />
+                    </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">Confirm New Password</label>
-                            <input
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#064771] outline-none"
-                                required
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 bg-[#064771] text-white font-bold rounded-lg hover:bg-[#053a5c] transition-colors flex items-center justify-center font-poppins"
-                        >
-                            {loading ? (
-                                <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5"></span>
-                            ) : (
-                                'Reset Password & Continue'
-                            )}
-                        </button>
-                    </form>
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="px-8 py-3 bg-[#064771] text-white font-bold rounded-full hover:bg-[#053a5c] transition-colors shadow-lg text-lg"
+                    >
+                        Continue your M&A Journey
+                    </button>
                 </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen w-screen flex justify-center items-center bg-white font-poppins px-6">
+            <div className="w-full max-w-md">
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl font-bold text-[#064771] mb-2">VentureFlow</h1>
+                    <h2 className="text-xl font-bold text-gray-800">Change Your Password</h2>
+                    <p className="text-gray-500 mt-2 text-sm">For security reasons, you must change your password before continuing.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">New Password</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#064771] focus:border-[#064771] outline-none transition-all bg-gray-50"
+                            placeholder="Enter new password"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">Confirm New Password</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#064771] focus:border-[#064771] outline-none transition-all bg-gray-50"
+                            placeholder="Confirm new password"
+                            required
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 bg-[#064771] text-white font-bold rounded-xl hover:bg-[#053a5c] transition-all shadow-md mt-4 flex items-center justify-center font-medium"
+                    >
+                        {loading ? (
+                            <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5"></span>
+                        ) : (
+                            'Reset Password & Continue'
+                        )}
+                    </button>
+                </form>
             </div>
         </div>
     );

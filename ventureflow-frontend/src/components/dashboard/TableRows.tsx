@@ -136,7 +136,7 @@ const Row: React.FC<RowProps> = ({
           <span
             onClick={() =>
               type === 1
-                ? navigate(`/seller-portal/view/${id}`)
+                ? navigate(`/prospects/target/${id}`)
                 : navigate(`/prospects/investor/${id}`)
             }
             className="text-gray-800 text-sm font-medium leading-[32px] truncate cursor-pointer hover:underline"

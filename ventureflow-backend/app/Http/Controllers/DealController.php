@@ -155,9 +155,12 @@ class DealController extends Controller
             'region' => 'nullable|string|max:255',
             'estimated_ev_value' => 'nullable|numeric|min:0',
             'estimated_ev_currency' => 'nullable|string|max:3',
+            'ticket_size' => 'nullable|numeric|min:0',
             'stage_code' => 'nullable|string|max:1',
             'priority' => 'nullable|in:low,medium,high',
+            'possibility' => 'nullable|string|max:50',
             'pic_user_id' => 'nullable|exists:users,id',
+            'internal_pic' => 'nullable|array',
             'target_close_date' => 'nullable|date',
             'pipeline_type' => 'nullable|in:buyer,seller',
         ]);
@@ -248,10 +251,14 @@ class DealController extends Controller
             'region' => 'nullable|string|max:255',
             'estimated_ev_value' => 'nullable|numeric|min:0',
             'estimated_ev_currency' => 'nullable|string|max:3',
+            'ticket_size' => 'nullable|numeric|min:0',
             'priority' => 'nullable|in:low,medium,high',
+            'possibility' => 'nullable|string|max:50',
             'pic_user_id' => 'nullable|exists:users,id',
+            'internal_pic' => 'nullable|array',
             'target_close_date' => 'nullable|date',
             'status' => 'nullable|in:active,on_hold,lost,won',
+            'lost_reason' => 'nullable|string',
         ]);
 
         $deal->update($validated);

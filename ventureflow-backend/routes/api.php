@@ -37,17 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/search', [SearchController::class, 'index']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']); // Alias
 
-    Route::get('/user', function (Request $request) {
-        $user = $request->user();
-
-        $employee = Employee::where('user_id', optional($user)->id)->first();
-
-        return response()->json([
-            'user' => $user,
-            'employee' => $employee,
-        ]);
-    });
+    Route::get('/user', [AuthController::class, 'user']);
 
     //Role Routes
     Route::get('/roles', [RoleController::class, 'index']);
@@ -166,4 +158,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Activity Log Routes
     Route::get('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'store']);
+
+    // Partner Portal Configuration (Admin)
+    Route::get('/partner-settings', [\App\Http\Controllers\PartnerSettingController::class, 'index']);
+    Route::post('/partner-settings', [\App\Http\Controllers\PartnerSettingController::class, 'update']);
+
+    // Partner Portal Data (For Partners)
+    Route::prefix('partner-portal')->group(function () {
+        Route::get('/stats', [\App\Http\Controllers\PartnerDataController::class, 'getDashboardStats']);
+        Route::get('/buyers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedBuyers']);
+        Route::get('/sellers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedSellers']);
+    });
 });

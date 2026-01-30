@@ -52,6 +52,8 @@ class SellersCompanyOverview extends Model
         'instagram',
         'youtube',
         'teaser_link',
+        'financial_advisor',
+        'internal_pic',
     ];
 
     /**
@@ -67,8 +69,9 @@ class SellersCompanyOverview extends Model
         'seller_phone' => 'array',
         'no_pic_needed' => 'boolean',
         'shareholder_name' => 'array',
-        'reason_ma' => 'array',
-        'status' => 'array',
+        'incharge_name' => 'array',
+        'financial_advisor' => 'array',
+        'internal_pic' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
