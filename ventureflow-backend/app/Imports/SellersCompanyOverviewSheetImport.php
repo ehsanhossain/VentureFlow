@@ -108,29 +108,63 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
         $country = Country::where('name', trim($countryName))->first();
         $hqCountryId = $country->id;
 
-        // 5. Industry
-        $industries = $commaSeparatedToArray($row['industry_major_classification'] ?? '');
-
+        // 5. Industry & Niche
+        $industries = $commaSeparatedToArray($row['target_industries'] ?? $row['target-industries'] ?? $row['targetindustries'] ?? $row['industry_major_classification'] ?? '');
+        $nicheTags = $commaSeparatedToArray($row['niche_tags'] ?? $row['niche-tags'] ?? $row['nichetags'] ?? '');
+        
+        // 6. Internal PIC & Financial Advisor
+        $internalPic = $commaSeparatedToArray($row['internal_pic'] ?? $row['internal-pic'] ?? $row['internalpic'] ?? '');
+        $financialAdvisor = $commaSeparatedToArray($row['financial_advisor'] ?? $row['financial-advisor'] ?? $row['financialadvisor'] ?? '');
+        
+        // 7. Website Links & Teaser
+        $websiteLinks = $this->parseJsonColumn($row['website_links'] ?? $row['website-links'] ?? $row['websitelinks'] ?? null) 
+            ?? (($row['website_links'] ?? $row['website-links'] ?? $row['websitelinks'] ?? null) ? [$row['website_links'] ?? $row['website-links'] ?? $row['websitelinks']] : []);
+        $website = $row['website'] ?? null; // Fallback or separate
+        $teaserLink = $row['teaser_link'] ?? $row['teaser-link'] ?? $row['teaserlink'] ?? $row['teaser'] ?? null;
+        
+        // 8. Financials
+        $desiredInvestmentCurrency = strtoupper(trim($row['desired_investment_currency'] ?? $row['desired-investment-currency'] ?? $row['desiredinvestmentcurrency'] ?? 'USD'));
+        $desiredInvestmentMin = filter_var($row['desired_investment_min'] ?? $row['desired-investment-min'] ?? $row['desiredinvestmentmin'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $desiredInvestmentMax = filter_var($row['desired_investment_max'] ?? $row['desired-investment-max'] ?? $row['desiredinvestmentmax'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        
+        $ebitdaMin = filter_var($row['ebitda_min'] ?? $row['ebitda-min'] ?? $row['ebitdamin'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $ebitdaMax = filter_var($row['ebitda_max'] ?? $row['ebitda-max'] ?? $row['ebitdamax'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        
         // Create Overview
         $overview = SellersCompanyOverview::create([
             'reg_name'            => $companyRegName,
             'hq_country'          => $hqCountryId,
             'company_type'        => 'Corporate',
             'industry_ops'        => $industries,
+            'niche_industry'      => $nicheTags, 
             'company_rank'        => $rank,
-            'reason_ma'           => $row['purpose_of_mna'] ? [$row['purpose_of_mna']] : null,
-            'status'              => 'Active',
-            'details'             => $row['project_details'] ?? null,
-            'website'             => $row['website_lp_url'] ?? null,
-            'teaser_link'         => $row['teaser'] ?? null,
+            'reason_ma'           => $row['reason_for_ma'] ? [$row['reason_for_ma']] : ($row['purpose_of_mna'] ? [$row['purpose_of_mna']] : null), // TODO: Add variations for reason_for_ma
+            'status'              => $row['status'] ?? 'Active',
+            'details'             => $row['project_details'] ?? $row['project-details'] ?? $row['projectdetails'] ?? null,
+            'website'             => $website,
+            'website_links'       => $websiteLinks,
+            'teaser_link'         => $teaserLink,
             'seller_contact_name' => $row['contact_person'] ?? null,
             'seller_designation'  => $row['position'] ?? null,
             'seller_email'        => $row['email'] ?? null,
+            'internal_pic'        => $internalPic,
+            'financial_advisor'   => $financialAdvisor,
         ]);
 
         // Create Financial Details for the ratio
         $financial = \App\Models\SellersFinancialDetail::create([
-            'maximum_investor_shareholding_percentage' => $row['planned_ratio_sale'] ?? null,
+            'maximum_investor_shareholding_percentage' => $row['planned_sale_share_ratio'] ?? $row['planned-sale-share-ratio'] ?? $row['plannedsaleshareratio'] ?? $row['planned_ratio_sale'] ?? null,
+            'expected_investment_amount' => [
+                'min' => $desiredInvestmentMin,
+                'max' => $desiredInvestmentMax,
+                'currency' => $desiredInvestmentCurrency
+            ],
+            'ebitda_value' => [
+                'min' => $ebitdaMin,
+                'max' => $ebitdaMax,
+                'currency' => $desiredInvestmentCurrency 
+            ],
+            'default_currency' => $desiredInvestmentCurrency,
         ]);
 
         // Create Parent Seller Record
@@ -163,6 +197,15 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
             'position'       => 'nullable|string',
             'email'          => 'nullable|string',
             'teaser'         => 'nullable|string',
+            'niche_tags'     => 'nullable',
+            'desired_investment_min' => 'nullable',
+            'desired_investment_max' => 'nullable',
+            'desired_investment_currency' => 'nullable|string',
+            'ebitda_min'     => 'nullable',
+            'ebitda_max'     => 'nullable',
+            'internal_pic'   => 'nullable',
+            'financial_advisor' => 'nullable',
+            'website_links'  => 'nullable',
         ];
     }
 

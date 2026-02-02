@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Loader2, Link as LinkIcon, User } from 'lucide-react';
+import { Check, Loader2, Link as LinkIcon, User, Plus, Trash2 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { Input } from '../../../components/Input';
@@ -53,15 +53,23 @@ interface FormValues {
     ebitdaMin: string;
     ebitdaMax: string;
 
-    // Contact (Primary)
-    primaryContactName: string;
-    primaryContactDesignation: string;
-    primaryContactEmail: string;
-    primaryContactPhone: string;
+
+    // Contacts
+    contacts: {
+        name: string;
+        designation: string;
+        department?: string;
+        email: string;
+        phone: string;
+        isPrimary: boolean;
+    }[];
+    primaryContactParams?: string;
 
     // Links
-    websiteUrl: string;
+    websiteLinks: { url: string }[];
     teaserLink: string;
+    introducedProjects: { id: number; name: string }[];
+    channel: string;
 }
 
 const REASONS_MA = [
@@ -77,6 +85,13 @@ const RATIO_OPTIONS = [
     { value: 'Majority (>50%)', label: 'Majority (>50%)' },
     { value: '100% Sale', label: '100% Sale' },
     { value: 'Negotiable', label: 'Negotiable' },
+];
+
+const CHANNEL_OPTIONS = [
+    { id: 1, name: 'TCF' },
+    { id: 2, name: 'Partner' },
+    { id: 3, name: 'Website' },
+    { id: 4, name: 'Social Media' },
 ];
 
 export const TargetRegistration: React.FC = () => {
@@ -103,8 +118,27 @@ export const TargetRegistration: React.FC = () => {
             desiredInvestmentCurrency: 'USD',
             targetIndustries: [],
             internal_pic: [],
-            financialAdvisor: []
+            financialAdvisor: [],
+            introducedProjects: [],
+            contacts: [{ name: '', designation: '', department: '', email: '', phone: '', isPrimary: true }],
+            websiteLinks: [{ url: '' }],
+            channel: 'TCF'
         }
+    });
+
+    const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
+        control,
+        name: 'contacts'
+    });
+
+    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({
+        control,
+        name: 'websiteLinks'
+    });
+
+    const { fields: introProjectFields, append: appendIntroProject, remove: removeIntroProject } = useFieldArray({
+        control,
+        name: 'introducedProjects'
     });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
@@ -223,10 +257,26 @@ export const TargetRegistration: React.FC = () => {
                 setValue('status', seller.status === '1' ? 'Active' : (seller.status === '2' ? 'Draft' : 'Active'));
                 setValue('companyName', ov.reg_name || '');
                 setValue('rank', ov.company_rank || 'B');
+                setValue('channel', ov.channel || 'TCF');
                 setValue('projectDetails', ov.details || '');
                 setValue('reasonForMA', ov.reason_ma || '');
-                setValue('websiteUrl', ov.website || '');
                 setValue('teaserLink', ov.teaser_link || '');
+
+                // Website Links Load
+                try {
+                    let links = [];
+                    if (ov.website_links) {
+                        links = typeof ov.website_links === 'string' ? JSON.parse(ov.website_links) : ov.website_links;
+                    }
+
+                    if ((!links || links.length === 0) && ov.website) {
+                        links = [{ url: ov.website }];
+                    }
+
+                    if (links && links.length > 0) {
+                        setValue('websiteLinks', links);
+                    }
+                } catch (e) { console.error("Website links load error", e); }
 
                 try {
                     const iPico = typeof ov.internal_pic === 'string' ? JSON.parse(ov.internal_pic) : ov.internal_pic;
@@ -234,6 +284,12 @@ export const TargetRegistration: React.FC = () => {
 
                     const fAdv = typeof ov.financial_advisor === 'string' ? JSON.parse(ov.financial_advisor) : ov.financial_advisor;
                     setValue('financialAdvisor', Array.isArray(fAdv) ? fAdv : []);
+
+                    const intro = typeof ov.introduced_projects === 'string' ? JSON.parse(ov.introduced_projects) : ov.introduced_projects;
+                    if (intro && Array.isArray(intro)) {
+                        const formatted = intro.map((i: any) => typeof i === 'string' ? { name: i } : i);
+                        setValue('introducedProjects', formatted);
+                    }
                 } catch (e) { }
 
                 if (seller.image) {
@@ -269,15 +325,39 @@ export const TargetRegistration: React.FC = () => {
                 setValue('ebitdaMin', ebitdaVal.min || fin.ttm_profit || '');
                 setValue('plannedSaleShareRatio', fin.maximum_investor_shareholding_percentage || '');
 
-                setValue('primaryContactName', ov.seller_contact_name || '');
-                setValue('primaryContactDesignation', ov.seller_designation || '');
-                setValue('primaryContactEmail', ov.seller_email || '');
-
+                // Contacts Loading
                 try {
-                    const ph = typeof ov.seller_phone === 'string' ? JSON.parse(ov.seller_phone) : ov.seller_phone;
-                    if (Array.isArray(ph)) setValue('primaryContactPhone', ph[0]?.phone || '');
-                    else setValue('primaryContactPhone', String(ph || ''));
-                } catch (e) { setValue('primaryContactPhone', ov.seller_phone || ''); }
+                    const contactsRaw = ov.contacts || ov.contact_persons;
+                    let parsedContacts: any[] = [];
+
+                    if (typeof contactsRaw === 'string') {
+                        parsedContacts = JSON.parse(contactsRaw);
+                    } else if (Array.isArray(contactsRaw)) {
+                        parsedContacts = contactsRaw;
+                    }
+
+                    // Fallback to legacy fields if no contacts list
+                    if (!parsedContacts || parsedContacts.length === 0) {
+                        if (ov.seller_contact_name || ov.seller_email) {
+                            parsedContacts.push({
+                                name: ov.seller_contact_name || '',
+                                designation: ov.seller_designation || '',
+                                email: ov.seller_email || '',
+                                phone: ov.seller_phone || '',
+                                isPrimary: true
+                            });
+                        }
+                    }
+
+                    if (parsedContacts.length > 0) {
+                        setValue('contacts', parsedContacts);
+                        const primaryIndex = parsedContacts.findIndex((c: any) => c.isPrimary);
+                        if (primaryIndex !== -1) {
+                            setValue('primaryContactParams' as any, String(primaryIndex));
+                        }
+                    }
+                } catch (e) { console.error("Contact load error", e); }
+
 
             } catch (err) {
                 console.error(err);
@@ -302,7 +382,8 @@ export const TargetRegistration: React.FC = () => {
             overviewFormData.append('status', isDraft ? 'Draft' : 'Active');
             overviewFormData.append('details', data.projectDetails);
             overviewFormData.append('reason_for_mna', data.reasonForMA);
-            overviewFormData.append('websiteLink', data.websiteUrl);
+            overviewFormData.append('website_links', JSON.stringify(data.websiteLinks));
+            overviewFormData.append('websiteLink', data.websiteLinks[0]?.url || '');
             overviewFormData.append('teaser_link', data.teaserLink);
 
             if (profileImage) {
@@ -313,14 +394,24 @@ export const TargetRegistration: React.FC = () => {
             overviewFormData.append('broderIndustries', JSON.stringify(data.targetIndustries || []));
 
             // Contact
-            overviewFormData.append('sellerSideContactPersonName', data.primaryContactName);
-            overviewFormData.append('designationAndPosition', data.primaryContactDesignation);
-            overviewFormData.append('emailAddress', data.primaryContactEmail);
-            overviewFormData.append('contactPersons', JSON.stringify([{ phone: data.primaryContactPhone, isPrimary: true }]));
+            // Contact
+            const sanitizedContacts = data.contacts.map((c, idx) => ({
+                ...c,
+                isPrimary: String(data.primaryContactParams) === String(idx)
+            }));
+            const primaryContact = sanitizedContacts.find(c => c.isPrimary) || sanitizedContacts[0];
+
+            overviewFormData.append('sellerSideContactPersonName', primaryContact?.name || '');
+            overviewFormData.append('designationAndPosition', primaryContact?.designation || '');
+            overviewFormData.append('emailAddress', primaryContact?.email || '');
+            overviewFormData.append('contactPersons', JSON.stringify(sanitizedContacts));
+
 
             // PIC and Advisors
             overviewFormData.append('internal_pic', JSON.stringify(data.internal_pic || []));
             overviewFormData.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
+            overviewFormData.append('introduced_projects', JSON.stringify(data.introducedProjects || []));
+            overviewFormData.append('channel', data.channel || '');
 
             // Flags (Defaulting to false/empty for now to match minimal intake)
             overviewFormData.append('noPICNeeded', '0');
@@ -362,19 +453,10 @@ export const TargetRegistration: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 font-sans text-gray-900">
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mb-6">
-                <button type="button" onClick={() => navigate('/prospects?tab=targets')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                <button type="button" onClick={handleSubmit(d => onSubmit(d, true))} disabled={isSubmitting} className="px-4 py-2 text-[#ECA234] bg-white border border-[#ECA234] rounded-[3px] text-sm font-medium hover:bg-orange-50 transition-all">
-                    Save Draft
-                </button>
-                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#ECA234] rounded-[3px] text-sm font-medium hover:bg-[#d8922b] transition-all">
-                    {isSubmitting ? 'Saving...' : 'Save Target'}
-                </button>
-            </div>
 
-            {/* SECTION A: SYSTEM & IDENTITY */}
-            <CollapsibleSection title="System & Identity" defaultOpen={true}>
+
+            {/* SECTION A: IDENTITY */}
+            <CollapsibleSection title="Identity" defaultOpen={true}>
                 <div className="mb-6 flex justify-center">
                     <LogoUpload
                         initialImage={initialProfileImage}
@@ -383,7 +465,7 @@ export const TargetRegistration: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <Label text="HQ Country (Triggers Project Code)" required />
+                        <Label text="Origin Country" required />
                         <Controller
                             control={control}
                             name="originCountry"
@@ -419,23 +501,7 @@ export const TargetRegistration: React.FC = () => {
                         {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">Code is available.</p>}
                     </div>
 
-                    <div>
-                        <Label text="Internal PIC (Assigned Staff)" />
-                        <Controller
-                            control={control}
-                            name="internal_pic"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={staffList}
-                                    selected={field.value}
-                                    onSelect={(selected) => field.onChange(selected)}
-                                    multiSelect={true}
-                                    placeholder="Select Staff"
-                                    searchPlaceholder="Search staff names..."
-                                />
-                            )}
-                        />
-                    </div>
+
 
                     <div>
                         <Label text="Rank" />
@@ -447,19 +513,87 @@ export const TargetRegistration: React.FC = () => {
                                     options={[{ value: 'A', label: 'A - High Priority' }, { value: 'B', label: 'B - Standard' }, { value: 'C', label: 'C - Low' }]}
                                     value={field.value}
                                     onChange={field.onChange}
+                                    placeholder="Select Rank"
                                 />
                             )}
                         />
                     </div>
 
+                    {/* Channel */}
+                    <div>
+                        <Label text="Channel" required />
+                        <Controller
+                            control={control}
+                            name="channel"
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                                <select
+                                    className="w-full min-h-10 px-3 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors text-sm"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.value)}
+                                >
+                                    {CHANNEL_OPTIONS.map(opt => (
+                                        <option key={opt.id} value={opt.name}>{opt.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                        />
+                    </div>
+
                     <div className="md:col-span-2">
-                        <Label text="Company Name (Optional at intake, required for active)" />
-                        <Input {...register('companyName')} placeholder="Registered Company Entity Name" className="rounded-[3px]" />
+                        <Label text="Company Name" required />
+                        <Input {...register('companyName', { required: true })} placeholder="Registered Company Entity Name" className="rounded-[3px]" />
+                        {errors.companyName && <span className="text-red-500 text-xs">Required</span>}
                     </div>
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION B: CLASSIFICATION */}
+            {/* SECTION 2: COMPANY PROFILE */}
+            <CollapsibleSection title="Company Profile">
+                <div className="space-y-4">
+                    <div>
+                        <Label text="Website" />
+                        <div className="space-y-2">
+                            {websiteFields.map((field, index) => (
+                                <div key={field.id} className="flex items-center gap-2">
+                                    <div className="flex-1 flex items-center">
+                                        <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                            <LinkIcon className="h-4 w-4" />
+                                        </span>
+                                        <input
+                                            {...register(`websiteLinks.${index}.url` as const)}
+                                            type="text"
+                                            placeholder="https://example.com"
+                                            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-orange-200 focus:border-orange-400 sm:text-sm"
+                                        />
+                                    </div>
+                                    <button type="button" onClick={() => removeWebsite(index)} className="text-red-400 hover:text-red-600">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => appendWebsite({ url: '' })}
+                            className="flex items-center text-[#ECA234] font-medium hover:underline text-sm mt-2"
+                        >
+                            <Plus className="w-3 h-3 mr-1" /> Add Link
+                        </button>
+                    </div>
+
+                    <div>
+                        <Label text="Project Details" />
+                        <textarea
+                            {...register('projectDetails')}
+                            className="w-full border border-gray-300 rounded-[3px] p-3 min-h-[100px] focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
+                            placeholder="Brief description of the deal..."
+                        />
+                    </div>
+                </div>
+            </CollapsibleSection>
+
+            {/* SECTION 3: CLASSIFICATION */}
             <CollapsibleSection title="Classification">
                 <div className="space-y-6">
                     {/* Target Industries - Multi-select with checkboxes like Investor side */}
@@ -489,18 +623,10 @@ export const TargetRegistration: React.FC = () => {
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION C: DEAL SUMMARY */}
-            <CollapsibleSection title="Deal Summary">
+            {/* SECTION 4: DEAL CONTEXT */}
+            <CollapsibleSection title="Deal Context">
                 <div className="space-y-4">
-                    <div>
-                        <Label text="Project Details (Teaser)" required />
-                        <textarea
-                            {...register('projectDetails', { required: true })}
-                            className="w-full border border-gray-300 rounded-[3px] p-3 min-h-[100px] focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
-                            placeholder="Brief description of the deal..."
-                        />
-                        {errors.projectDetails && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
+
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -540,70 +666,100 @@ export const TargetRegistration: React.FC = () => {
                         <div className="md:col-span-3"><Label text="Desired Investment Range" required /></div>
                         <Input {...register('desiredInvestmentMin')} type="number" placeholder="Min Amount" />
                         <Input {...register('desiredInvestmentMax')} type="number" placeholder="Max Amount" />
-                        <select {...register('desiredInvestmentCurrency')} className="border border-gray-300 rounded-[3px] px-3 py-2 bg-white">
-                            {currencies.map(c => (
-                                <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <div className="md:col-span-3"><Label text="EBITDA / TTM Profit" /></div>
-                        <div className="md:col-span-2">
-                            <Input {...register('ebitdaMin')} type="number" placeholder="Value" />
+                        <div>
+                            <Label text="Currency" />
+                            <select {...register('desiredInvestmentCurrency')} className="w-full border border-gray-300 rounded-[3px] px-3 py-2 bg-white">
+                                {currencies.map(c => (
+                                    <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
+                                ))}
+                            </select>
                         </div>
-                        <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 rounded-[3px] border border-gray-200">
-                            {watch('desiredInvestmentCurrency') || 'USD'}
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            <div className="md:col-span-3"><Label text="EBITDA / TTM Profit" /></div>
+                            <div className="md:col-span-2">
+                                <Input {...register('ebitdaMin')} type="number" placeholder="Value" />
+                            </div>
+                            <div>
+                                <Label text="Currency" />
+                                <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-[3px] border border-gray-200">
+                                    {watch('desiredInvestmentCurrency') || 'USD'}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION D: PRIMARY CONTACT */}
-            <CollapsibleSection title="Primary Contact">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label text="Contact Name" required />
-                        <Input {...register('primaryContactName', { required: true })} leftIcon={<User className="w-4 h-4" />} />
-                        {errors.primaryContactName && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
-                    <div>
-                        <Label text="Designation" />
-                        <Input {...register('primaryContactDesignation')} placeholder="CEO, Director..." />
-                    </div>
-                    <div>
-                        <Label text="Email" required />
-                        <Input {...register('primaryContactEmail', { required: true })} type="email" />
-                        {errors.primaryContactEmail && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
-                    <div>
-                        <Label text="Phone" required />
-                        <Input {...register('primaryContactPhone', { required: true })} placeholder="+1 234..." />
-                        {errors.primaryContactPhone && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
+            {/* SECTION 5: CONTACTS */}
+            <CollapsibleSection title="Contacts">
+                <div className="space-y-4">
+                    {contactFields.map((field, index) => (
+                        <div key={field.id} className="p-4 border border-gray-100 rounded-[3px] bg-gray-50 relative">
+                            <div className="absolute right-2 top-2">
+                                <button type="button" onClick={() => removeContact(index)} className="text-red-400 hover:text-red-600">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                                    <Label text="Name" />
+                                    <div className="flex items-center">
+                                        <User className="w-4 h-4 text-gray-400 mr-2" />
+                                        <input {...register(`contacts.${index}.name` as const)} placeholder="Contact Name" className="flex-1 border-b bg-transparent focus:outline-none focus:border-blue-500" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label text="Designation" />
+                                    <input {...register(`contacts.${index}.designation` as const)} placeholder="Position / Job Title" className="w-full border-b bg-transparent focus:outline-none" />
+                                </div>
+                                <div>
+                                    <Label text="Department" />
+                                    <input {...register(`contacts.${index}.department` as const)} placeholder="Dept." className="w-full border-b bg-transparent focus:outline-none" />
+                                </div>
+                                <div>
+                                    <Label text="Phone" />
+                                    <input {...register(`contacts.${index}.phone` as const)} placeholder="+1 234..." className="w-full border-b bg-transparent focus:outline-none" />
+                                </div>
+                                <div>
+                                    <Label text="Email" />
+                                    <input {...register(`contacts.${index}.email` as const)} placeholder="email@example.com" className="w-full border-b bg-transparent focus:outline-none" />
+                                </div>
+
+                                <div className="flex items-center mt-4">
+                                    <input
+                                        type="radio"
+                                        value={index}
+                                        {...register(`contacts.${index}.isPrimary` as const)}
+                                        name="primaryContactParams"
+                                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                    />
+                                    <label className="ml-2 block text-sm text-gray-900">
+                                        Primary Contact
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    <button
+                        type="button"
+                        onClick={() => appendContact({ name: '', designation: '', department: '', email: '', phone: '', isPrimary: false })}
+                        className="flex items-center text-[#ECA234] font-medium hover:underline"
+                    >
+                        <Plus className="w-4 h-4 mr-1" /> Add Contact
+                    </button>
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION E: LINKS & DOCUMENTS */}
-            <CollapsibleSection title="Relationships & Documents">
+            {/* SECTION 6: DOCUMENTS & RELATIONSHIPS */}
+            <CollapsibleSection title="Documents & Relationships">
                 <div className="grid grid-cols-1 gap-6">
-                    <div>
-                        <Label text="Website URL" />
-                        <div className="flex items-center">
-                            <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                <LinkIcon className="h-4 w-4" />
-                            </span>
-                            <input
-                                {...register('websiteUrl')}
-                                type="url"
-                                placeholder="https://example.com"
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-orange-200 focus:border-orange-400 sm:text-sm"
-                            />
-                        </div>
-                    </div>
+
 
                     <div>
-                        <Label text="Teaser Profile Link (Doc)" />
+                        <Label text="Teaser Profile" />
                         <div className="flex items-center">
                             <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
                             <input {...register('teaserLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded" />
@@ -611,7 +767,7 @@ export const TargetRegistration: React.FC = () => {
                     </div>
 
                     <div>
-                        <Label text="Internal PIC (Assigned Staff)" />
+                        <Label text="Assigned PIC" />
                         <Controller
                             control={control}
                             name="internal_pic"
@@ -621,7 +777,7 @@ export const TargetRegistration: React.FC = () => {
                                     selected={field.value}
                                     onSelect={(selected) => field.onChange(selected)}
                                     multiSelect={true}
-                                    placeholder="Select Staff"
+                                    placeholder="Select Internal Staff"
                                     searchPlaceholder="Search staff names..."
                                 />
                             )}
@@ -629,7 +785,7 @@ export const TargetRegistration: React.FC = () => {
                     </div>
 
                     <div>
-                        <Label text="Financial Advisor Role (Partner)" />
+                        <Label text="Financial Advisor Roles" />
                         <Controller
                             control={control}
                             name="financialAdvisor"
@@ -639,15 +795,50 @@ export const TargetRegistration: React.FC = () => {
                                     selected={field.value}
                                     onSelect={(selected) => field.onChange(selected)}
                                     multiSelect={true}
-                                    placeholder="Select Advisor"
+                                    placeholder="Select Financial Advisor"
                                     searchPlaceholder="Search partner names..."
                                 />
                             )}
                         />
                     </div>
+
+                    <div>
+                        <Label text="Introduced Projects" />
+                        <div className="space-y-3">
+                            {introProjectFields.map((field, index) => (
+                                <div key={field.id} className="flex gap-2 items-center">
+                                    <input
+                                        {...register(`introducedProjects.${index}.name` as const)}
+                                        placeholder="Project Name / Code"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                    <button type="button" onClick={() => removeIntroProject(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => appendIntroProject({ id: Date.now(), name: '' })}
+                                className="flex items-center text-[#ECA234] font-medium hover:underline text-sm"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> Add Project
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </CollapsibleSection>
 
+            {/* Sticky Bottom Buttons */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-50">
+                <button type="button" onClick={() => navigate('/prospects?tab=targets')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                <button type="button" onClick={handleSubmit(d => onSubmit(d, true))} disabled={isSubmitting} className="px-4 py-2 text-[#053a5c] bg-white border border-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
+                    Save as Draft
+                </button>
+                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-[#042d48] transition-all">
+                    {isSubmitting ? 'Saving...' : 'Save Target'}
+                </button>
+            </div>
         </form>
     );
 };

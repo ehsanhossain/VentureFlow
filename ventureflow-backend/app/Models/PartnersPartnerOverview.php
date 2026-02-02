@@ -52,6 +52,11 @@ class PartnersPartnerOverview extends Model
         return $this->belongsTo(Country::class, 'hq_country');
     }
 
+    public function hqCountry()
+    {
+        return $this->country();
+    }
+
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'our_contact_person');

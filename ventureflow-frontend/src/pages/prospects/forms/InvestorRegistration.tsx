@@ -20,7 +20,7 @@ interface FormValues {
     projectCode: string; // dealroomId
     rank: 'A' | 'B' | 'C';
     companyName: string; // reg_name
-    website: string;
+    websiteLinks: { url: string }[];
     hqAddresses: { label: string; address: string }[]; // New HQ Address field
 
     // Investment Intent
@@ -52,13 +52,13 @@ interface FormValues {
     internal_pic: any[];
     financialAdvisor: any[];
     primaryContactParams?: string;
+    channel: string;
 }
 
 interface ExtendedCountry extends Country {
     alpha?: string;
 }
 
-// M&A Purpose Options
 const MNA_PURPOSES = [
     { value: 'Strategic Expansion', label: 'Strategic Expansion' },
     { value: 'Market Entry', label: 'Market Entry' },
@@ -67,6 +67,13 @@ const MNA_PURPOSES = [
     { value: 'Technology Acquisition', label: 'Technology Acquisition' },
     { value: 'Financial Investment', label: 'Financial Investment' },
     { value: 'Other', label: 'Other' },
+];
+
+const CHANNEL_OPTIONS = [
+    { id: 1, name: 'TCF' },
+    { id: 2, name: 'Partner' },
+    { id: 3, name: 'Website' },
+    { id: 4, name: 'Social Media' },
 ];
 
 export const InvestorRegistration: React.FC = () => {
@@ -88,23 +95,36 @@ export const InvestorRegistration: React.FC = () => {
             projectCode: 'XX-B-XXX',
             rank: 'B',
             budgetCurrency: 'USD',
+            websiteLinks: [{ url: '' }],
             contacts: [{ name: '', department: '', designation: '', phone: '', email: '', isPrimary: true }],
             hqAddresses: [{ label: 'Headquarters', address: '' }],
             introducedProjects: [],
             noPICNeeded: false,
             internal_pic: [],
-            financialAdvisor: []
+            financialAdvisor: [],
+            channel: 'TCF'
         }
     });
 
     const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
         control,
-        name: 'contacts'
+        name: "contacts"
     });
+
+    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({
+        control,
+        name: "websiteLinks"
+    });
+
 
     const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
         control,
         name: 'hqAddresses'
+    });
+
+    const { fields: introProjectFields, append: appendIntroProject, remove: removeIntroProject } = useFieldArray({
+        control,
+        name: 'introducedProjects'
     });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
@@ -230,7 +250,24 @@ export const InvestorRegistration: React.FC = () => {
                     setValue('companyName', overview.reg_name || '');
                     setValue('projectCode', overview.buyer_id || '');
                     setValue('rank', overview.rank || 'B');
-                    setValue('website', overview.website || '');
+                    setValue('channel', overview.channel || 'TCF');
+
+
+                    try {
+                        const links = overview.website ? JSON.parse(overview.website) : [];
+                        if (Array.isArray(links) && links.length > 0) {
+                            setValue('websiteLinks', links);
+                        } else if (overview.website && !overview.website.startsWith('[')) {
+                            // Handle legacy string data
+                            setValue('websiteLinks', [{ url: overview.website }]);
+                        } else {
+                            setValue('websiteLinks', [{ url: '' }]);
+                        }
+                    } catch (e) {
+                        // Fallback for simple string if parse fails
+                        if (overview.website) setValue('websiteLinks', [{ url: overview.website }]);
+                    }
+
                     setValue('purposeMNA', overview.reason_ma || '');
                     setValue('investmentCondition', overview.investment_condition || '');
                     setValue('investorProfileLink', overview.investor_profile_link || '');
@@ -275,6 +312,15 @@ export const InvestorRegistration: React.FC = () => {
                             setValue('budgetMin', budget.min || '');
                             setValue('budgetMax', budget.max || '');
                             setValue('budgetCurrency', budget.currency || 'USD');
+                        }
+                    } catch (e) { }
+
+                    try {
+                        const intro = typeof overview.introduced_projects === 'string' ? JSON.parse(overview.introduced_projects) : overview.introduced_projects;
+                        if (intro && Array.isArray(intro)) {
+                            // Correct mapping if items are strings
+                            const formatted = intro.map((i: any) => typeof i === 'string' ? { name: i } : i);
+                            setValue('introducedProjects', formatted);
                         }
                     } catch (e) { }
 
@@ -329,7 +375,8 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('reg_name', data.companyName);
             payload.append('hq_country', String(data.originCountry?.id));
             payload.append('buyer_id', data.projectCode);
-            payload.append('website', data.website);
+
+            payload.append('website', JSON.stringify(data.websiteLinks));
             payload.append('rank', data.rank);
             payload.append('status', isDraft ? 'Draft' : 'Active');
             payload.append('hq_address', JSON.stringify(data.hqAddresses));
@@ -340,6 +387,8 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('investment_condition', data.investmentCondition || '');
             payload.append('internal_pic', JSON.stringify(data.internal_pic || []));
             payload.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
+            payload.append('introduced_projects', JSON.stringify(data.introducedProjects || []));
+            payload.append('channel', data.channel || '');
 
             payload.append('main_industry_operations', JSON.stringify(data.targetIndustries || []));
             payload.append('target_countries', JSON.stringify(data.targetCountries || []));
@@ -385,16 +434,6 @@ export const InvestorRegistration: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-20">
-            {/* Action Buttons (Top Right corner style or similar) */}
-            <div className="flex justify-end gap-3 mb-6">
-                <button type="button" onClick={() => navigate('/prospects?tab=investors')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                <button type="button" onClick={handleSubmit(data => onSubmit(data, true))} disabled={isSubmitting} className="px-4 py-2 text-[#064771] bg-white border border-[#064771] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
-                    Save as Draft
-                </button>
-                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#064771] rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all">
-                    {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
-                </button>
-            </div>
 
             {/* SECTION 1: IDENTITY */}
             <CollapsibleSection title="Identity">
@@ -407,7 +446,7 @@ export const InvestorRegistration: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Origin Country (Triggers ID) */}
                     <div>
-                        <Label text="HQ Country (Triggers Project Code)" required />
+                        <Label text="Origin Country" required />
                         <Controller
                             control={control}
                             name="originCountry"
@@ -457,6 +496,27 @@ export const InvestorRegistration: React.FC = () => {
                         />
                     </div>
 
+                    {/* Channel */}
+                    <div>
+                        <Label text="Channel" required />
+                        <Controller
+                            control={control}
+                            name="channel"
+                            rules={{ required: true }}
+                            render={({ field }) => (
+                                <select
+                                    className="w-full min-h-10 px-3 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors text-sm"
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.target.value)}
+                                >
+                                    {CHANNEL_OPTIONS.map(opt => (
+                                        <option key={opt.id} value={opt.name}>{opt.name}</option>
+                                    ))}
+                                </select>
+                            )}
+                        />
+                    </div>
+
                     {/* Company Name */}
                     <div className="md:col-span-2">
                         <Label text="Company Name" required />
@@ -468,20 +528,46 @@ export const InvestorRegistration: React.FC = () => {
                         {errors.companyName && <span className="text-red-500 text-xs">Required</span>}
                     </div>
 
+                    {/* HQ Addresses - Moved to Company Profile */}
+
+
+
+                </div>
+            </CollapsibleSection>
+
+            {/* SECTION 2: COMPANY PROFILE (Moved from Identity) */}
+            <CollapsibleSection title="Company Profile">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Website */}
                     <div className="md:col-span-2">
-                        <Label text="Website / LP URL" />
-                        <div className="flex items-center">
-                            <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                <LinkIcon className="h-4 w-4" />
-                            </span>
-                            <input
-                                {...register('website')}
-                                type="url"
-                                placeholder="https://example.com"
-                                className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-[3px] border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            />
+                        <Label text="Website" />
+                        <div className="space-y-2">
+                            {websiteFields.map((field, index) => (
+                                <div key={field.id} className="flex items-center gap-2">
+                                    <div className="flex-1 flex items-center">
+                                        <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                            <LinkIcon className="h-4 w-4" />
+                                        </span>
+                                        <input
+                                            {...register(`websiteLinks.${index}.url` as const)}
+                                            type="text"
+                                            placeholder="https://example.com"
+                                            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-[3px] border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                        />
+                                    </div>
+                                    <button type="button" onClick={() => removeWebsite(index)} className="text-red-400 hover:text-red-600">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => appendWebsite({ url: '' })}
+                            className="flex items-center text-[#064771] font-medium hover:underline text-sm mt-2"
+                        >
+                            <Plus className="w-3 h-3 mr-1" /> Add Link
+                        </button>
                     </div>
 
                     {/* HQ Addresses */}
@@ -517,15 +603,16 @@ export const InvestorRegistration: React.FC = () => {
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION 2: INVESTMENT INTENT */}
-            <CollapsibleSection title="Investment Intent">
+            {/* SECTION 3: CLASSIFICATION */}
+            <CollapsibleSection title="Classification">
                 <div className="space-y-6">
                     {/* Target Industries */}
                     <div>
-                        <Label text="Target Business & Industry" />
+                        <Label text="Target Business & Industry" required />
                         <Controller
                             control={control}
                             name="targetIndustries"
+                            rules={{ required: true }}
                             render={({ field }) => (
                                 <IndustryDropdown
                                     industries={industries}
@@ -535,9 +622,42 @@ export const InvestorRegistration: React.FC = () => {
                                 />
                             )}
                         />
+                        {errors.targetIndustries && <span className="text-red-500 text-xs">Required</span>}
                     </div>
 
                     {/* Purpose */}
+
+
+                    {/* Notes / Audit Log System */}
+                    <div>
+                        <Label text="Notes & Audit Log" />
+                        <ActivityLogChat entityId={id} entityType="buyer" />
+                    </div>
+
+                    {/* Target Countries */}
+                    <div>
+                        <Label text="Where the investor wants to invest?" />
+                        <Controller
+                            control={control}
+                            name="targetCountries"
+                            render={({ field }) => (
+                                <Dropdown
+                                    countries={countries}
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    multiSelect
+                                />
+                            )}
+                        />
+                    </div>
+
+                </div>
+            </CollapsibleSection>
+
+            {/* SECTION 4: DEAL CONTEXT */}
+            <CollapsibleSection title="Deal Context">
+                <div className="space-y-6">
+                    {/* Purpose Moved Here */}
                     <div>
                         <Label text="Purpose of M&A" />
                         <Controller
@@ -553,31 +673,6 @@ export const InvestorRegistration: React.FC = () => {
                             )}
                         />
                     </div>
-
-                    {/* Notes / Audit Log System */}
-                    <div>
-                        <Label text="Notes & Audit Log" />
-                        <ActivityLogChat entityId={id} entityType="buyer" />
-                    </div>
-
-                    {/* Target Countries */}
-                    <div>
-                        <Label text="Target Country & Area" />
-                        <p className="text-xs text-gray-500 mb-2">Select primary target country (Multi-select enhancement pending)</p>
-                        <Controller
-                            control={control}
-                            name="targetCountries"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={countries}
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    multiSelect
-                                />
-                            )}
-                        />
-                    </div>
-
                     {/* Budget & Condition */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -601,7 +696,7 @@ export const InvestorRegistration: React.FC = () => {
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION 3: CONTACTS */}
+            {/* SECTION 5: CONTACTS */}
             <CollapsibleSection title="Contacts">
                 <div className="space-y-4">
                     {contactFields.map((field, index) => (
@@ -663,11 +758,11 @@ export const InvestorRegistration: React.FC = () => {
                 </div>
             </CollapsibleSection>
 
-            {/* SECTION 4: RELATIONSHIPS */}
-            <CollapsibleSection title="Relationships & Documents">
+            {/* SECTION 6: DOCUMENTS & RELATIONSHIPS */}
+            <CollapsibleSection title="Documents & Relationships">
                 <div className="grid grid-cols-1 gap-6">
                     <div>
-                        <Label text="Investor Profile Link (Teaser/Doc)" />
+                        <Label text="Investor Profile" />
                         <div className="flex items-center">
                             <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
                             <input {...register('investorProfileLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded-[3px]" />
@@ -676,7 +771,7 @@ export const InvestorRegistration: React.FC = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <Label text="Internal PIC (Assigned Staff)" />
+                            <Label text="Assigned PIC" />
                             <Controller
                                 control={control}
                                 name="internal_pic"
@@ -693,6 +788,32 @@ export const InvestorRegistration: React.FC = () => {
                             />
                         </div>
 
+                        {/* Introduced Projects */}
+                        <div className="md:col-span-2 space-y-3">
+                            <Label text="Introduced Projects" />
+                            {introProjectFields.map((field, index) => (
+                                <div key={field.id} className="flex gap-2 items-center">
+                                    <input
+                                        {...register(`introducedProjects.${index}.name` as const)}
+                                        placeholder="Project Name / Code"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                    <button type="button" onClick={() => removeIntroProject(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => appendIntroProject({ id: Date.now(), name: '' })}
+                                className="flex items-center text-[#064771] font-medium hover:underline text-sm"
+                            >
+                                <Plus className="w-3 h-3 mr-1" /> Add Project
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <Label text="Financial Advisor Role (Partner)" />
                             <Controller
@@ -713,7 +834,18 @@ export const InvestorRegistration: React.FC = () => {
                     </div>
                 </div>
             </CollapsibleSection>
-        </form>
+
+            {/* Sticky Bottom Buttons */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-50">
+                <button type="button" onClick={() => navigate('/prospects?tab=investors')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                <button type="button" onClick={handleSubmit(data => onSubmit(data, true))} disabled={isSubmitting} className="px-4 py-2 text-[#053a5c] bg-white border border-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
+                    Save as Draft
+                </button>
+                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-[#042d48] transition-all">
+                    {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
+                </button>
+            </div>
+        </form >
     );
 };
 

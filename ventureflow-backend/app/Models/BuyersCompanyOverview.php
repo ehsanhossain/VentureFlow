@@ -53,6 +53,7 @@ class BuyersCompanyOverview extends Model
         'introduced_projects',
         'financial_advisor',
         'internal_pic',
+        'channel',
     ];
 
     protected $casts = [

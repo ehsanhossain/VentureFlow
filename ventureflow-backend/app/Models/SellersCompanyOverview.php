@@ -54,6 +54,7 @@ class SellersCompanyOverview extends Model
         'teaser_link',
         'financial_advisor',
         'internal_pic',
+        'channel',
     ];
 
     /**

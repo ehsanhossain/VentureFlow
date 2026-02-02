@@ -432,6 +432,7 @@ class SellerController extends Controller
             $overview->incharge_name = json_decode($request->input('our_person_incharge'), true);
             $overview->financial_advisor = json_decode($request->input('financial_advisor'), true);
             $overview->internal_pic = json_decode($request->input('internal_pic'), true);
+            $overview->channel = $request->input('channel');
 
 
 

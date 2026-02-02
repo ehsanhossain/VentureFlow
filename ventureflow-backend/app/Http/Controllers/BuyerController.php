@@ -467,6 +467,7 @@ class BuyerController extends Controller
             $overview->introduced_projects = $data['introduced_projects'] ?? null;
             $overview->financial_advisor = $data['financial_advisor'] ?? null;
             $overview->internal_pic = $data['internal_pic'] ?? null;
+            $overview->channel = $data['channel'] ?? null;
 
             $overview->save();
 

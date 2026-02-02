@@ -25,6 +25,7 @@ export const INVESTOR_FIELDS: { category: string; fields: FieldDefinition[] }[] 
             { key: 'company_overview.website', label: 'Website', locked: true },
             { key: 'company_overview.hq_address', label: 'HQ Address', locked: true },
             { key: 'company_overview.rank', label: 'Rank' },
+            { key: 'company_overview.channel', label: 'Channel' },
         ]
     },
     {
@@ -57,6 +58,7 @@ export const TARGET_FIELDS: { category: string; fields: FieldDefinition[] }[] = 
             { key: 'company_overview.hq_country', label: 'HQ Country', default: true },
             { key: 'company_overview.website', label: 'Website', locked: true },
             { key: 'company_overview.company_rank', label: 'Rank' },
+            { key: 'company_overview.channel', label: 'Channel' },
         ]
     },
     {

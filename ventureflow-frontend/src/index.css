@@ -28,30 +28,212 @@ body {
   overflow-x: hidden;
 }
 
-/* Premium Scrollbar Customization */
+/* ============================================
+   GLOBAL TABLE STYLING 
+   ============================================ */
+
+/* Table Container - Fills remaining viewport space */
 @layer utilities {
-  .premium-scrollbar::-webkit-scrollbar {
+  .table-viewport {
+    height: calc(100vh - var(--table-offset, 200px));
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Table scroll container - only the body scrolls */
+  .table-scroll-container {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+  }
+}
+
+/* ============================================
+   PREMIUM SCROLLBAR STYLING
+   Thin, light, positioned correctly
+   ============================================ */
+@layer utilities {
+
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  .premium-scrollbar::-webkit-scrollbar,
+  .scrollbar-premium::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
-  .premium-scrollbar::-webkit-scrollbar-track {
+  .premium-scrollbar::-webkit-scrollbar-track,
+  .scrollbar-premium::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb,
+  .scrollbar-premium::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+    border: 1px solid #f8fafc;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb:hover,
+  .scrollbar-premium::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Scrollbar corner (where horizontal and vertical meet) */
+  .premium-scrollbar::-webkit-scrollbar-corner,
+  .scrollbar-premium::-webkit-scrollbar-corner {
+    background: #f8fafc;
+  }
+
+  /* Firefox */
+  .scrollbar-premium {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+  }
+
+  .scrollbar-premium:hover {
+    scrollbar-color: #94a3b8 #f8fafc;
+  }
+
+  /* Auto-hide scrollbar variant */
+  .scrollbar-premium-auto::-webkit-scrollbar-thumb {
     background: transparent;
   }
 
-  .premium-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    transition: background 0.2s ease;
+  .scrollbar-premium-auto:hover::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+}
+
+/* ============================================
+   TABLE HEADER STYLING
+   - Distinct background from body
+   - Text can wrap to 2 lines (no truncation)
+   - Sticky positioning
+   ============================================ */
+@layer components {
+
+  /* Table header row styling */
+  .table-header-row {
+    background-color: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
-  .premium-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
+  /* Table header cell - allow 2-line wrap */
+  .table-header-cell {
+    min-height: 48px;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: break-word;
+    background-color: inherit;
+    vertical-align: middle;
   }
 
-  /* Support for tailwind-scrollbar plugin colors */
-  .scrollbar-premium {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  /* Table body row with separator */
+  .table-body-row {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 150ms ease;
+  }
+
+  .table-body-row:hover {
+    background-color: #f8fafc;
+  }
+
+  .table-body-row.selected {
+    background-color: #eff6ff;
+  }
+
+  /* Table body cell */
+  .table-body-cell {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #334155;
+    vertical-align: middle;
+    background-color: inherit;
+  }
+}
+
+/* ============================================
+   DRAGGABLE COLUMN HEADERS
+   Smooth drag interaction
+   ============================================ */
+@layer utilities {
+  .draggable-header {
+    cursor: grab;
+    user-select: none;
+    transition: transform 200ms ease, opacity 200ms ease;
+  }
+
+  .draggable-header:active {
+    cursor: grabbing;
+  }
+
+  .draggable-header.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+
+  .draggable-header.drag-over {
+    background-color: #dbeafe;
+    border-left: 3px solid #3b82f6;
+  }
+}
+
+/* ============================================
+   COLUMN RESIZE HANDLE
+   ============================================ */
+@layer utilities {
+  .resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 20;
+    transition: all 200ms ease;
+  }
+
+  .resize-handle:hover {
+    width: 6px;
+  }
+
+  .resize-handle::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background-color: #e2e8f0;
+  }
+
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 24px;
+    width: 3px;
+    background-color: #064771;
+    border-radius: 9999px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    box-shadow: 0 0 10px rgba(6, 71, 113, 0.3);
+  }
+
+  .resize-handle:hover::after {
+    opacity: 1;
   }
 }

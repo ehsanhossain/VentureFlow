@@ -27,10 +27,17 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
         { countries, selected, onSelect, multiSelect = false, disabled = false, className, placeholder = "Select option", searchPlaceholder = "Search...", ...rest },
         ref: ForwardedRef<HTMLDivElement>
     ): JSX.Element => {
+        const getValidCountries = (val: Country | Country[] | null | undefined): Country[] => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val.filter(c => c && typeof c === 'object' && c.id !== undefined);
+            if (typeof val === 'object' && val.id !== undefined) return [val];
+            return [];
+        };
+
         const [search, setSearch] = useState("");
         const [isOpen, setIsOpen] = useState(false);
         const [selectedCountries, setSelectedCountries] = useState<Country[]>(
-            Array.isArray(selected) ? selected : selected ? [selected] : []
+            getValidCountries(selected)
         );
         const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -44,15 +51,11 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
         };
 
         useEffect(() => {
-            if (selected) {
-                setSelectedCountries(Array.isArray(selected) ? selected : [selected]);
-            } else {
-                setSelectedCountries([]);
-            }
+            setSelectedCountries(getValidCountries(selected));
         }, [selected]);
 
-        const filteredCountries = countries.filter((country) =>
-            (country.name || "").toLowerCase().includes(search.toLowerCase())
+        const filteredCountries = (countries || []).filter((country) =>
+            country && (country.name || "").toLowerCase().includes(search.toLowerCase())
         );
 
         const handleSelect = (country: Country) => {
@@ -107,7 +110,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                             <div className="flex flex-wrap gap-2 items-center overflow-hidden">
                                 {selectedCountries.map((country) => (
                                     <span
-                                        key={country.id.toString()}
+                                        key={country.id?.toString() || Math.random().toString()}
                                         className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium max-w-full truncate border border-blue-100"
                                     >
                                         {country.flagSrc && (
@@ -138,7 +141,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                     />
                                 )}
                                 <span className="text-sm text-gray-900 truncate">
-                                    {selectedCountries[0].name}
+                                    {(selectedCountries[0] as any)?.name || 'Unknown'}
                                 </span>
                             </div>
                         )
@@ -182,7 +185,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                             <div className="flex flex-col w-full max-h-60 overflow-y-auto">
                                 {filteredCountries.map((country) => (
                                     <button
-                                        key={country.id.toString()}
+                                        key={country.id?.toString() || (country as any).user_id?.toString() || Math.random().toString()}
                                         type="button"
                                         onClick={() => handleSelect(country)}
                                         className="flex items-center w-full justify-between gap-3 py-2 px-2 hover:bg-gray-100 rounded-md transition"
@@ -196,7 +199,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                                 />
                                             )}
                                             <span className="text-sm text-[#30313d] truncate">
-                                                {country.name}
+                                                {(country as any).name || 'Unknown'}
                                             </span>
                                         </div>
                                         {multiSelect && (

@@ -18,8 +18,9 @@ import {
     Layout,
     Download,
     Upload,
+    AlertCircle,
     FileSpreadsheet,
-    AlertCircle
+    Zap
 } from 'lucide-react';
 import { showAlert } from '../../components/Alert';
 import { isFieldAllowed } from '../../utils/permissionUtils';
@@ -41,42 +42,49 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
-    { id: 'primaryContact', label: 'Primary Contact' },
-    { id: 'hq', label: 'HQ Country' },
-    { id: 'targetCountries', label: 'Target Countries' },
-    { id: 'targetIndustries', label: 'Target Industries' },
-    { id: 'pipelineStatus', label: 'Pipeline Status' },
-    { id: 'budget', label: 'Budget' },
-    { id: 'companyType', label: 'Company Type' },
+    { id: 'originCountry', label: 'Origin Country' },
     { id: 'website', label: 'Website' },
+    { id: 'targetIndustries', label: 'Target Business & Industry' },
+    { id: 'targetCountries', label: 'Where the investor wants to invest?' },
+    { id: 'purposeMNA', label: 'Purpose of M&A' },
+    { id: 'budget', label: 'Investment Budget' },
+    { id: 'investmentCondition', label: 'Investment Condition' },
+    { id: 'internalPIC', label: 'Internal PIC' },
+    { id: 'financialAdvisor', label: 'Financial Advisor' },
+    { id: 'investorProfile', label: 'Investor Profile' },
+    { id: 'introducedProjects', label: 'Introduced Projects' },
+    { id: 'primaryContact', label: 'Primary Contact' },
     { id: 'email', label: 'Email' },
     { id: 'phone', label: 'Phone' },
-    { id: 'employeeCount', label: 'Employees' },
-    { id: 'yearFounded', label: 'Founded' },
+    { id: 'channel', label: 'Channel' },
+    { id: 'pipelineStatus', label: 'Pipeline Status' },
 ];
 
 const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'hq', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
 
 const ALL_TARGET_COLUMNS = [
-    { id: 'addedDate', label: 'Added Date' },
     { id: 'projectCode', label: 'Project Code' },
-    { id: 'hq', label: 'HQ Country' },
-    { id: 'industry', label: 'Industry (Major)' },
-    { id: 'industryMiddle', label: 'Industry (Middle)' },
-    { id: 'projectDetails', label: 'Project Details' },
-    { id: 'desiredInvestment', label: 'Desired Investment' },
-    { id: 'reasonForMA', label: 'Reason for M&A' },
-    { id: 'saleShareRatio', label: 'Sale Share Ratio' },
     { id: 'rank', label: 'Rank' },
-    { id: 'status', label: 'Status' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
-    { id: 'internalOwner', label: 'Person In-Charge' },
     { id: 'companyName', label: 'Company Name' },
+    { id: 'originCountry', label: 'HQ Country' },
+    { id: 'status', label: 'Status' },
+    { id: 'industry', label: 'Target Business & Industry' },
+    { id: 'projectDetails', label: 'Project Details' },
+    { id: 'reasonForMA', label: 'Purpose of M&A' },
+    { id: 'saleShareRatio', label: 'Planned Ratio Sale' },
+    { id: 'desiredInvestment', label: 'Desired Investment' },
+    { id: 'ebitda', label: 'EBITDA' },
+    { id: 'internalPIC', label: 'Assigned PIC' },
+    { id: 'financialAdvisor', label: 'Financial Advisor' },
+    { id: 'website', label: 'Website' },
+    { id: 'teaserLink', label: 'Teaser Profile' },
+    { id: 'introducedProjects', label: 'Introduced Projects' },
     { id: 'primaryContact', label: 'Primary Contact' },
     { id: 'primaryEmail', label: 'Email' },
     { id: 'primaryPhone', label: 'Phone' },
-    { id: 'website', label: 'Website' },
-    { id: 'teaserLink', label: 'Teaser Link' },
+    { id: 'channel', label: 'Channel' },
+    { id: 'pipelineStatus', label: 'Pipeline Status' },
+    { id: 'addedDate', label: 'Added Date' },
 ];
 
 const DEFAULT_TARGET_COLUMNS = ['projectCode', 'hq', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
@@ -94,6 +102,15 @@ const ProspectsPortal: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [investors, setInvestors] = useState<InvestorRowData[]>([]);
     const [targets, setTargets] = useState<TargetRowData[]>([]);
+
+    // Pagination State
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: 20
+    });
+
     const [countries, setCountries] = useState<Country[]>([]);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [counts, setCounts] = useState({ investors: 0, targets: 0 });
@@ -135,6 +152,34 @@ const ProspectsPortal: React.FC = () => {
     const [importType, setImportType] = useState<'investors' | 'targets'>('investors');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const tableContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-calculate vertical row limit
+    useEffect(() => {
+        const calculateRows = () => {
+            if (!tableContainerRef.current) return;
+            const containerHeight = tableContainerRef.current.clientHeight;
+            // More precise calculation:
+            // Top/Bottom padding: 24px each (p-6) = 48px
+            // Table Header: 48px
+            // Pagination Footer: 48px
+            // Search/Tabs Area: Already outside tableContainerRef
+            const availableHeight = containerHeight - 48 - 48 - 48;
+            const rows = Math.max(5, Math.floor(availableHeight / 56)); // 56px per row (h-14)
+
+            if (rows !== pagination.itemsPerPage && rows > 0) {
+                setPagination(prev => ({ ...prev, itemsPerPage: rows }));
+            }
+        };
+
+        // Initial calculation
+        setTimeout(calculateRows, 100);
+
+        const resizeObserver = new ResizeObserver(calculateRows);
+        if (tableContainerRef.current) resizeObserver.observe(tableContainerRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, [pagination.itemsPerPage]);
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -171,17 +216,44 @@ const ProspectsPortal: React.FC = () => {
             }
 
             const [buyerRes, sellerRes] = await Promise.all([
-                api.get('/api/buyer', { params: { search: searchQuery, ...filters } }),
-                api.get('/api/seller', { params: { search: searchQuery, ...filters } })
+                api.get('/api/buyer', {
+                    params: {
+                        search: searchQuery,
+                        ...filters,
+                        page: activeTab === 'investors' ? pagination.currentPage : undefined, // Only paginate active tab fetch effectively
+                        per_page: pagination.itemsPerPage
+                    }
+                }),
+                api.get('/api/seller', {
+                    params: {
+                        search: searchQuery,
+                        ...filters,
+                        page: activeTab === 'targets' ? pagination.currentPage : undefined,
+                        per_page: pagination.itemsPerPage
+                    }
+                })
             ]);
 
             const buyerData = Array.isArray(buyerRes.data?.data) ? buyerRes.data.data : [];
             const sellerDataRaw = Array.isArray(sellerRes.data?.data) ? sellerRes.data.data : [];
 
+            // Update Counts (total items in DB independent of page if possible, otherwise use meta.total)
             setCounts({
-                investors: buyerRes.data?.meta?.total ?? buyerData.length,
-                targets: sellerRes.data?.meta?.total ?? sellerDataRaw.length
+                investors: buyerRes.data?.meta?.total ?? 0,
+                targets: sellerRes.data?.meta?.total ?? 0
             });
+
+            // Update Pagination from Active Tab Meta
+            const activeMeta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
+            if (activeMeta) {
+                setPagination(prev => ({
+                    ...prev,
+                    currentPage: activeMeta.current_page,
+                    totalPages: activeMeta.last_page,
+                    totalItems: activeMeta.total,
+                    itemsPerPage: activeMeta.per_page
+                }));
+            }
 
             // Set allowed fields based on active tab
             const meta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
@@ -230,13 +302,27 @@ const ProspectsPortal: React.FC = () => {
                     const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
+
+                    // Parse Helper
+                    const parseArray = (data: any, key: string = 'name') => {
+                        try {
+                            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                            if (Array.isArray(parsed)) return parsed.map(i => i?.[key] || i).filter(Boolean);
+                            return [];
+                        } catch (e) { return []; }
+                    };
+
+                    const internalPICs = parseArray(overview.internal_pic, 'name');
+                    const finAdvisors = parseArray(overview.financial_advisor, 'name');
+                    const introProjects = parseArray(overview.introduced_projects, 'name');
+
                     return {
                         id: b.id,
                         projectCode: b.buyer_id || "N/A",
                         rank: overview.rank || '',
                         companyName: overview.reg_name || "Unknown Company",
                         primaryContact: primaryContactName,
-                        hq: {
+                        originCountry: {
                             name: hqCountry?.name || "Unknown",
                             flag: hqCountry?.flagSrc || ""
                         },
@@ -244,13 +330,17 @@ const ProspectsPortal: React.FC = () => {
                         targetIndustries: indMap,
                         pipelineStatus: b.deals && b.deals.length > 0 ? b.deals[b.deals.length - 1].stage_name : (b.pipeline_status || b.current_stage || "N/A"),
                         budget: overview.investment_budget,
+                        investmentCondition: overview.investment_condition || "",
+                        purposeMNA: overview.reason_ma || "",
+                        internalPIC: internalPICs,
+                        financialAdvisor: finAdvisors,
+                        introducedProjects: introProjects,
+                        investorProfile: overview.investor_profile_link || "",
                         isPinned: b.pinned || investorPinnedIds.includes(b.id),
-                        companyType: overview.company_type,
                         website: overview.website,
                         email: overview.email,
                         phone: overview.phone,
-                        employeeCount: overview.emp_count,
-                        yearFounded: overview.year_founded,
+                        channel: overview.channel,
                         sourceCurrencyRate: sourceRate
                     };
                 });
@@ -277,24 +367,31 @@ const ProspectsPortal: React.FC = () => {
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
                     // Internal Owner (PIC)
-                    let picName = "N/A";
-                    try {
-                        const pic = typeof ov.incharge_name === 'string' ? JSON.parse(ov.incharge_name) : ov.incharge_name;
-                        if (Array.isArray(pic) && pic.length > 0) picName = pic[0]?.name || "N/A";
-                        else if (pic) picName = pic.name || "N/A";
-                    } catch (e) { }
+
+
+                    // Parse Helper
+                    const parseArray = (data: any, key: string = 'name') => {
+                        try {
+                            const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+                            if (Array.isArray(parsed)) return parsed.map(i => i?.[key] || i).filter(Boolean);
+                            return [];
+                        } catch (e) { return []; }
+                    };
+
+                    const internalPICs = parseArray(ov.internal_pic || ov.incharge_name, 'name'); // Handle legacy incharge_name
+                    const finAdvisors = parseArray(ov.financial_advisor, 'name');
+                    const introProjects = parseArray(ov.introduced_projects, 'name');
 
                     return {
                         id: s.id,
                         addedDate: s.created_at ? new Date(s.created_at).toLocaleDateString() : "N/A",
                         projectCode: s.seller_id || "N/A",
                         companyName: ov.reg_name || "Unknown Company",
-                        hq: {
+                        originCountry: {
                             name: hqCountry?.name || "Unknown",
                             flag: hqCountry?.flagSrc || ""
                         },
-                        industry: [indMajor],
-                        industryMiddle: indMiddle,
+                        industry: [indMajor, indMiddle].filter(i => i !== "N/A"),
                         projectDetails: ov.details || "",
                         pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_name : (ov.status || "N/A"),
                         status: ov.status || "N/A",
@@ -302,24 +399,51 @@ const ProspectsPortal: React.FC = () => {
                         reasonForMA: ov.reason_ma || "",
                         saleShareRatio: fin.maximum_investor_shareholding_percentage || "",
                         rank: ov.company_rank || ov.rank || '',
-                        internalOwner: picName,
+                        internalPIC: internalPICs,
+                        financialAdvisor: finAdvisors,
+                        introducedProjects: introProjects,
                         primaryContact: ov.seller_contact_name || "N/A",
                         primaryEmail: ov.seller_email || "N/A",
                         primaryPhone: (() => {
                             try {
-                                if (ov.seller_phone) {
-                                    if (typeof ov.seller_phone === 'string' && ov.seller_phone.startsWith('[')) {
-                                        const parsed = JSON.parse(ov.seller_phone);
-                                        return parsed[0]?.phone || "N/A";
+                                let phoneVal = ov.seller_phone;
+                                if (!phoneVal) return "N/A";
+
+                                // If it's a string, try to parse it if it looks like JSON
+                                if (typeof phoneVal === 'string') {
+                                    if (phoneVal.trim().startsWith('[')) {
+                                        try {
+                                            const parsed = JSON.parse(phoneVal);
+                                            phoneVal = parsed;
+                                        } catch {
+                                            return phoneVal; // Return original string if parse fails
+                                        }
+                                    } else {
+                                        return phoneVal; // It's just a simple string
                                     }
-                                    return ov.seller_phone;
                                 }
-                                return "N/A";
+
+                                // If we have an array (either from original or parsed)
+                                if (Array.isArray(phoneVal)) {
+                                    const firstItem = phoneVal[0];
+                                    if (typeof firstItem === 'object' && firstItem !== null) {
+                                        return firstItem.phone || "N/A";
+                                    }
+                                    return String(firstItem || "N/A");
+                                }
+
+                                // If it's a single object
+                                if (typeof phoneVal === 'object' && phoneVal !== null) {
+                                    return (phoneVal as any).phone || "N/A";
+                                }
+
+                                return String(phoneVal);
                             } catch { return "N/A"; }
                         })(),
                         website: ov.website || "",
                         teaserLink: ov.teaser_link || "",
                         ebitda: fin.ttm_profit,
+                        channel: ov.channel,
                         isPinned: s.pinned || targetPinnedIds.includes(s.id),
                         sourceCurrencyRate: sourceRate
                     };
@@ -466,10 +590,15 @@ const ProspectsPortal: React.FC = () => {
         fetchData();
     }, []);
 
+    // Reset pagination when tab or filters change
+    useEffect(() => {
+        setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, [activeTab, searchQuery, filters]);
+
     // Fetch Investors/Targets
     useEffect(() => {
         if (countries.length > 0) fetchData();
-    }, [activeTab, searchQuery, countries, investorPinnedIds, targetPinnedIds, filters]);
+    }, [activeTab, searchQuery, countries, investorPinnedIds, targetPinnedIds, filters, pagination.currentPage, pagination.itemsPerPage]);
 
     const handleTogglePin = async (id: number) => {
         try {
@@ -496,45 +625,78 @@ const ProspectsPortal: React.FC = () => {
     };
 
     const downloadCsvTemplate = (type: 'investor' | 'target') => {
-        let headers = [];
+        let headers: string[] = [];
+        let rowExample: string[] = [];
+
         if (type === 'investor') {
             headers = [
-                "Code",
-                "Rank",
-                "Company name",
-                "HQ",
-                "Target countries",
-                "Target industries",
-                "Budget Min",
-                "Budget Max",
-                "Budget Currency",
-                "Website / LP URL",
-                "Purpose of M&A",
-                "Investment condition",
-                "Contact person",
-                "Position",
-                "Email",
-                "Investor's Profile"
+                "projectCode",
+                "rank",
+                "companyName",
+                "originCountry",
+                "websiteLinks",
+                "hqAddresses",
+                "targetIndustries",
+                "targetCountries",
+                "purposeMNA",
+                "budgetMin",
+                "budgetMax",
+                "budgetCurrency",
+                "investmentCondition",
+                "internal_pic",
+                "financialAdvisor",
+                "investorProfileLink",
+                "contacts"
+            ];
+            rowExample = [
+                "AB-B-001", "B", "Acme Invest Corp", "United States", "https://acme.com",
+                "New York, NY", "Tech, Finance", "Japan, Singapore", "Market Expansion",
+                "1000000", "5000000", "USD", "Minority Share", "John Doe", "Consultant A",
+                "https://profile.com/acme", "[{\"name\":\"Alice\",\"email\":\"alice@acme.com\"}]"
             ];
         } else {
             headers = [
-                "Project ID",
-                "Rank",
-                "Company name",
-                "HQ",
-                "Industry (major classification)",
-                "Project details",
-                "Website / LP URL",
-                "Purpose of M&A",
-                "Planned Ratio Sale",
-                "Contact person",
-                "Position",
-                "Email",
-                "Teaser"
+                "projectCode",
+                "rank",
+                "companyName",
+                "originCountry",
+                "status",
+                "targetIndustries",
+                "nicheTags",
+                "projectDetails",
+                "reasonForMA",
+                "plannedSaleShareRatio",
+                "desiredInvestmentMin",
+                "desiredInvestmentMax",
+                "desiredInvestmentCurrency",
+                "ebitdaMin",
+                "ebitdaMax",
+                "internal_pic",
+                "financialAdvisor",
+                "websiteLinks",
+                "teaserLink"
+            ];
+            rowExample = [
+                "XX-S-001", "A", "Global Tech Sellers", "Germany", "Active",
+                "SaaS, AI", "Generative AI", "Selling core business unit", "Exit",
+                "100", "500000", "2000000", "EUR", "100000", "200000",
+                "Jane Smith", "Advisor B", "https://techsellers.com", "https://doc.com/teaser"
             ];
         }
 
-        const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
+        // CSV Escape Helper
+        const escapeCsv = (val: string) => {
+            if (!val) return "";
+            if (val.includes(",") || val.includes("\"") || val.includes("\n")) {
+                return `"${val.replace(/"/g, '""')}"`;
+            }
+            return val;
+        };
+
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
+            + rowExample.map(escapeCsv).join(",");
+
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
@@ -693,7 +855,6 @@ const ProspectsPortal: React.FC = () => {
                                             <option value="In Progress">In Progress</option>
                                             <option value="Interested">Interested</option>
                                             <option value="NDA">NDA</option>
-                                            <option value="Draft">Drafts</option>
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors">
                                             <ChevronDown className="w-4 h-4" />
@@ -740,7 +901,7 @@ const ProspectsPortal: React.FC = () => {
                 </>
             )}
 
-            <div className="flex flex-col h-full min-h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-x-hidden">
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-hidden">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -781,25 +942,24 @@ const ProspectsPortal: React.FC = () => {
                                 placeholder={`Search for ${activeTab}...`}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-10 py-2 bg-white border border-gray-300 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]"
+                                className="w-full pl-9 pr-10 py-2 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771] transition-all"
                             />
-                            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px] font-medium text-gray-400 select-none pointer-events-none">
-                                <span className="text-xs">⌘</span> F
-                            </div>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                        <button
-                            onClick={() => setFilters(prev => ({ ...prev, status: prev.status === 'Draft' ? '' : 'Draft' }))}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-[3px] border text-sm font-medium transition-all ${filters.status === 'Draft'
-                                ? 'bg-orange-50 border-orange-200 text-orange-900'
-                                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                                }`}
-                        >
-                            <FileSpreadsheet className={`w-4 h-4 ${filters.status === 'Draft' ? 'text-orange-600' : 'text-gray-400'}`} />
-                            Drafts
-                        </button>
+                        {!isPartner && (
+                            <button
+                                onClick={() => navigate('/prospects/drafts')}
+                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
+                            >
+                                <Zap className="w-4 h-4 text-orange-400" />
+                                <span>Drafts</span>
+                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-100 px-1 text-[10px] font-bold text-orange-600">
+                                    0
+                                </span>
+                            </button>
+                        )}
 
                         <div className="relative" ref={toolsDropdownRef}>
                             <button
@@ -810,14 +970,14 @@ const ProspectsPortal: React.FC = () => {
                                 Tools
                             </button>
                             {isToolsOpen && (
-                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right shadow-2xl">
+                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-[3px] border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right shadow-2xl">
                                     <div className="space-y-4">
                                         <div className="pb-3 border-b border-gray-50">
                                             <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
                                                 <DollarSign className="w-3 h-3" /> Currency
                                             </div>
                                             <select
-                                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771]"
+                                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-[3px] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771]"
                                                 value={selectedCurrency?.id}
                                                 onChange={(e) => {
                                                     const curr = currencies.find(c => c.id === Number(e.target.value));
@@ -836,7 +996,7 @@ const ProspectsPortal: React.FC = () => {
                                                     <button
                                                         key={col.id}
                                                         onClick={() => toggleColumn(col.id)}
-                                                        className={`flex items-center justify-between w-full px-3 py-2 text-xs rounded-lg transition-all ${visibleColumns.includes(col.id)
+                                                        className={`flex items-center justify-between w-full px-3 py-2 text-xs rounded-[3px] transition-all ${visibleColumns.includes(col.id)
                                                             ? 'bg-blue-50/50 text-blue-700 font-medium'
                                                             : 'text-gray-500 hover:bg-gray-50'
                                                             }`}
@@ -863,7 +1023,7 @@ const ProspectsPortal: React.FC = () => {
                                     <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isCreateOpen && (
-                                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl">
+                                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-[3px] border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl border border-gray-100">
                                         <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-investor')}>
                                             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
                                             Add Investor
@@ -887,8 +1047,11 @@ const ProspectsPortal: React.FC = () => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col overflow-hidden relative">
-                    <div className="flex-1 flex flex-col overflow-auto px-4 md:px-8 py-4 md:py-6">
+                <div
+                    ref={tableContainerRef}
+                    className="flex-1 flex flex-col overflow-hidden relative"
+                >
+                    <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
                         {activeTab === 'investors' ? (
                             <InvestorTable
                                 data={investors}
@@ -898,6 +1061,13 @@ const ProspectsPortal: React.FC = () => {
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}
+                                pagination={{
+                                    currentPage: pagination.currentPage,
+                                    totalPages: pagination.totalPages,
+                                    totalItems: pagination.totalItems,
+                                    itemsPerPage: pagination.itemsPerPage,
+                                    onPageChange: (page: number) => setPagination(prev => ({ ...prev, currentPage: page }))
+                                }}
                             />
                         ) : (
                             <TargetTable
@@ -908,6 +1078,13 @@ const ProspectsPortal: React.FC = () => {
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}
+                                pagination={{
+                                    currentPage: pagination.currentPage,
+                                    totalPages: pagination.totalPages,
+                                    totalItems: pagination.totalItems,
+                                    itemsPerPage: pagination.itemsPerPage,
+                                    onPageChange: (page: number) => setPagination(prev => ({ ...prev, currentPage: page }))
+                                }}
                             />
                         )}
                     </div>

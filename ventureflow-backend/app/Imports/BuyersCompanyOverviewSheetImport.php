@@ -92,14 +92,14 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
         };
 
         // 1. Company Name (Required)
-        $companyRegName = $row['company_name'] ?? $row['company_registered_name'] ?? null;
+        $companyRegName = $row['company_name'] ?? $row['company-name'] ?? $row['companyname'] ?? null;
         if (empty($companyRegName)) {
             Log::warning("Skipping row $rowIndex: Empty Company Name.");
             return;
         }
 
         // 2. Code Validation (XX-B-XXX)
-        $projectCode = $row['code'] ?? $row['project_code'] ?? null;
+        $projectCode = $row['project_code'] ?? $row['project-code'] ?? $row['projectcode'] ?? $row['code'] ?? null;
         if ($projectCode) {
             if (!preg_match('/^[A-Z]{2}-B-\d{2,3}$/', strtoupper($projectCode))) {
                 Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-B-XXX.");
@@ -118,8 +118,8 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             $rank = 'B'; // Default
         }
 
-        // 4. HQ Country Lookup
-        $countryName = $row['hq'] ?? $row['hq_country'] ?? $row['origin_country'] ?? null;
+        // 4. Origin Country Lookup
+        $countryName = $row['origin_country'] ?? $row['origin-country'] ?? $row['origincountry'] ?? $row['hq_country'] ?? null;
         $hqCountryId = null;
         if ($countryName) {
             $country = Country::where('name', 'LIKE', trim($countryName))->first();
@@ -127,22 +127,41 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
                 $hqCountryId = $country->id;
             } else {
                 Log::warning("Row $rowIndex: Country '$countryName' not found. Please fix in system.");
-                // User requirement: Software will ask user to fix it. 
-                // For now, we log it and maybe keep it null or skip.
             }
         }
 
         // 5. Target Countries & Industries
-        $targetCountries = $commaSeparatedToArray($row['target_countries'] ?? '');
-        $targetIndustries = $commaSeparatedToArray($row['target_industries'] ?? '');
+        $targetCountries = $commaSeparatedToArray($row['target_countries'] ?? $row['target-countries'] ?? $row['targetcountries'] ?? '');
+        $targetIndustries = $commaSeparatedToArray($row['target_industries'] ?? $row['target-industries'] ?? $row['targetindustries'] ?? '');
+        $internalPic = $commaSeparatedToArray($row['internal_pic'] ?? $row['internal-pic'] ?? $row['internalpic'] ?? '');
+        $financialAdvisor = $commaSeparatedToArray($row['financial_advisor'] ?? $row['financial-advisor'] ?? $row['financialadvisor'] ?? '');
 
         // 6. Budget (Min, Max, Currency)
-        $budgetMin = filter_var($row['budget_min'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $budgetMax = filter_var($row['budget_max'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        $budgetCurrency = strtoupper(trim($row['budget_currency'] ?? $row['default_currency'] ?? 'USD'));
+        $budgetMin = filter_var($row['budget_min'] ?? $row['budget-min'] ?? $row['budgetmin'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $budgetMax = filter_var($row['budget_max'] ?? $row['budget-max'] ?? $row['budgetmax'] ?? null, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+        $budgetCurrency = strtoupper(trim($row['budget_currency'] ?? $row['budget-currency'] ?? $row['budgetcurrency'] ?? $row['default_currency'] ?? 'USD'));
 
         // 7. Purpose of M&A
-        $purpose = $row['purpose_of_mna'] ?? $row['reason_ma'] ?? null;
+        $purpose = $row['purpose_mna'] ?? $row['purpose-mna'] ?? $row['purposemna'] ?? $row['purpose_of_mna'] ?? null;
+        
+        // 8. Addresses & Website
+        $hqAddressesStr = $row['hq_addresses'] ?? $row['hq-addresses'] ?? $row['hqaddresses'] ?? null;
+        $hqAddresses = $this->parseJsonColumn($hqAddressesStr) ?? ($hqAddressesStr ? [$hqAddressesStr] : []); 
+        $website = $row['website_links'] ?? $row['website-links'] ?? $row['websitelinks'] ?? $row['website'] ?? null;
+        $profileLink = $row['investor_profile_link'] ?? $row['investor-profile-link'] ?? $row['investorprofilelink'] ?? $row['investor_profile'] ?? null;
+
+        // 9. Contacts
+        $contacts = $this->parseJsonColumn($row['contacts'] ?? null);
+        if (!$contacts && isset($row['contact_person'])) {
+             $contacts = [
+                [
+                    'name' => $row['contact_person'] ?? '',
+                    'designation' => $row['position'] ?? '',
+                    'email' => $row['email'] ?? '',
+                    'isPrimary' => true
+                ]
+            ];
+        }
 
         // Create Company Overview
         $overview = BuyersCompanyOverview::create([
@@ -153,11 +172,14 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'rank'                 => $rank,
             'reason_ma'            => $purpose,
             'status'               => 'Active',
-            'email'                => $row['email'] ?? $row['company_s_email'] ?? null,
-            'phone'                => $row['phone'] ?? $row['company_s_phone_number'] ?? null,
-            'website'              => $row['website_lp_url'] ?? $row['website'] ?? null,
+            'email'                => $row['email'] ?? null,
+            'phone'                => $row['phone'] ?? null,
+            'website'              => $website,
+            'hq_address'           => $hqAddresses,
+            'internal_pic'         => $internalPic,
+            'financial_advisor'    => $financialAdvisor,
             'investment_condition' => $row['investment_condition'] ?? null,
-            'investor_profile_link'=> $row['investor_profile'] ?? null,
+            'investor_profile_link'=> $profileLink,
             'investment_budget'    => [
                 'min' => $budgetMin,
                 'max' => $budgetMax,
@@ -165,14 +187,7 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             ],
             'target_countries'     => $targetCountries,
             'main_industry_operations' => $targetIndustries,
-            'contacts'             => [
-                [
-                    'name' => $row['contact_person'] ?? '',
-                    'designation' => $row['position'] ?? '',
-                    'email' => $row['email'] ?? '',
-                    'isPrimary' => true
-                ]
-            ],
+            'contacts'             => $contacts,
         ]);
 
         // Create Parent Buyer Record
@@ -207,6 +222,11 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             'position'            => 'nullable|string',
             'email'               => 'nullable|string',
             'investor_profile'    => 'nullable|string',
+            'hq_addresses'        => 'nullable',
+            'internal_pic'        => 'nullable',
+            'financial_advisor'   => 'nullable',
+            'website_links'       => 'nullable',
+            'contacts'            => 'nullable',
         ];
     }
 

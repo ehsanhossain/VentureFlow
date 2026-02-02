@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { MoreVertical, MessageSquare, Clock } from 'lucide-react';
+import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
 
@@ -37,13 +37,6 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
         }
         : undefined;
 
-    const priorityColors = {
-        low: 'bg-gray-100 text-gray-600',
-        medium: 'bg-yellow-100 text-yellow-700',
-        high: 'bg-red-100 text-red-700',
-    };
-
-
     const formatValue = (value: number | string | null, currency: string) => {
         if (!value) return 'N/A';
         const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -51,37 +44,67 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
         return `${symbol}${formatCompactNumber(num)}`;
     };
 
-    // Parse internal PIC to get name
-    const getPICName = (): string => {
-        const internalPic = (deal as any).internal_pic;
-        if (internalPic) {
-            try {
-                const parsed = typeof internalPic === 'string' ? JSON.parse(internalPic) : internalPic;
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed[0]?.name || parsed[0]?.full_name || 'N/A';
-                }
-                if (typeof parsed === 'object' && (parsed as any)?.name) {
-                    return (parsed as any).name;
-                }
-            } catch {
-                // Fall through to default
-            }
-        }
-        // Fallback to pic relation
-        if (deal.pic && (deal.pic?.name || (deal.pic as any)?.full_name)) {
-            return deal.pic.name || (deal.pic as any).full_name;
-        }
-        return 'N/A';
+    // Get shareholding ratio (majority percentage)
+    const getShareholdingRatio = (): string => {
+        const ratio = (deal as any).shareholding_ratio || (deal as any).share_ratio;
+        if (ratio) return ratio;
+        // Fallback to seller financial details if available
+        const sellerRatio = deal.seller?.financial_details?.maximum_investor_shareholding_percentage;
+        if (sellerRatio) return sellerRatio;
+        return '';
+    };
+
+    // Get priority label and color
+    const getPriorityInfo = () => {
+        const priority = deal.priority || 'medium';
+        const priorityMap: Record<string, { label: string; color: string }> = {
+            low: { label: 'Low', color: '#9CA3AF' },
+            medium: { label: 'Medium', color: '#064771' },
+            high: { label: 'High', color: '#DC2626' },
+        };
+        return priorityMap[priority] || priorityMap.medium;
     };
 
     const buyerName = deal.buyer?.company_overview?.reg_name || 'Unknown Buyer';
     const sellerName = deal.seller?.company_overview?.reg_name || 'Unknown Seller';
+    const buyerImage = deal.buyer?.image;
+    const sellerImage = deal.seller?.image;
 
     // For buyer view: show buyer acquiring seller
     // For seller view: show seller being acquired by buyer
     const primaryEntity = pipelineView === 'buyer' ? buyerName : sellerName;
     const secondaryEntity = pipelineView === 'buyer' ? sellerName : buyerName;
+    const primaryImage = pipelineView === 'buyer' ? buyerImage : sellerImage;
+    const secondaryImage = pipelineView === 'buyer' ? sellerImage : buyerImage;
     const relationLabel = pipelineView === 'buyer' ? 'Acquiring' : 'Being acquired by';
+
+    const priorityInfo = getPriorityInfo();
+    const shareholdingRatio = getShareholdingRatio();
+    const dealValue = formatValue((deal as any).ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
+
+    // Get base URL for images
+    const getImageUrl = (imagePath: string | undefined): string | null => {
+        if (!imagePath) return null;
+        if (imagePath.startsWith('http')) return imagePath;
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+        return `${baseURL}/storage/${imagePath.replace(/^\//, '')}`;
+    };
+
+    const primaryImageUrl = getImageUrl(primaryImage);
+    const secondaryImageUrl = getImageUrl(secondaryImage);
+
+    // Generate avatar color based on name
+    const getAvatarColor = (name: string, isPrimary: boolean) => {
+        if (isPrimary) {
+            return pipelineView === 'buyer'
+                ? { bg: '#F2B200', text: '#3E2C06' }  // Gold for buyer
+                : { bg: '#10B981', text: '#FFFFFF' }; // Green for seller
+        }
+        return { bg: '#030042', text: '#FFFFFF' }; // Dark blue for secondary
+    };
+
+    const primaryColor = getAvatarColor(primaryEntity, true);
+    const secondaryColor = getAvatarColor(secondaryEntity, false);
 
     return (
         <div
@@ -89,43 +112,57 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
             style={style}
             {...listeners}
             {...attributes}
-            onClick={onClick}
-            className={`bg-white rounded-lg border shadow-sm p-4 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isDragging
-                ? pipelineView === 'buyer'
-                    ? 'shadow-lg opacity-90 ring-2 ring-blue-400'
-                    : 'shadow-lg opacity-90 ring-2 ring-green-400'
-                : ''
-                }`}
+            className={`inline-flex flex-col w-full cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-90' : ''}`}
         >
-            {/* Primary Entity Info */}
-            <div className="flex items-center gap-2 mb-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${pipelineView === 'buyer'
-                    ? 'bg-blue-100 text-[#064771]'
-                    : 'bg-green-100 text-green-600'
-                    }`}>
-                    {primaryEntity.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{primaryEntity}</div>
-                </div>
-                <div className="flex items-center gap-1">
-                    {/* View indicator badge */}
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${pipelineView === 'buyer'
-                        ? 'bg-blue-50 text-[#064771]'
-                        : 'bg-green-50 text-green-600'
-                        }`}>
-                        {pipelineView === 'buyer' ? 'B' : 'S'}
-                    </span>
-                    {/* 3-dot Menu */}
+            {/* Main Card Body */}
+            <div
+                onClick={onClick}
+                className="flex flex-col gap-2.5 px-3 py-4 bg-white rounded-t-lg border border-gray-200 shadow-sm"
+                style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}
+            >
+                {/* Primary Entity Row */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        {/* Primary Avatar */}
+                        <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                            style={{ backgroundColor: primaryColor.bg }}
+                        >
+                            {primaryImageUrl ? (
+                                <img
+                                    src={primaryImageUrl}
+                                    alt={primaryEntity}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                />
+                            ) : (
+                                <span
+                                    className="text-xs font-bold"
+                                    style={{ color: primaryColor.text }}
+                                >
+                                    {primaryEntity.substring(0, 2).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                        {/* Primary Name */}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                            <span className="text-sm font-medium text-gray-900 truncate block">
+                                {primaryEntity}
+                            </span>
+                        </div>
+                    </div>
+                    {/* 3-Dot Menu */}
                     <div className="relative" ref={menuRef}>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShowMenu(!showMenu);
                             }}
-                            className="p-1 hover:bg-gray-100 rounded text-gray-400"
+                            className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded"
                         >
-                            <MoreVertical className="w-4 h-4" />
+                            <MoreVertical className="w-4 h-4 text-gray-400" />
                         </button>
                         {showMenu && (
                             <div className="absolute right-0 mt-1 w-32 bg-white border rounded shadow-lg z-50 py-1">
@@ -158,81 +195,112 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* Relationship label + Secondary Entity */}
-            <div className="text-xs text-gray-500 mb-2">
-                {relationLabel} <span className="font-medium text-gray-700">{secondaryEntity}</span>
-            </div>
-
-            {/* Deal Info */}
-            <div className="space-y-1 text-xs text-gray-600 mb-3">
-                {deal.industry && (
-                    <div className="truncate">Industry: {deal.industry}</div>
-                )}
-                <div className="font-medium text-gray-800">
-                    {formatValue((deal as any).ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency)}
+                {/* Relation Label */}
+                <div className="text-xs text-gray-500">
+                    {relationLabel}
                 </div>
-                <div className="truncate">
-                    PIC: {getPICName()}
-                    {deal.target_close_date && ` / Target: ${new Date(deal.target_close_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
-                </div>
-                {(deal as any).possibility && (
-                    <div className="text-[10px] text-blue-600 font-medium">
-                        Possibility: {(deal as any).possibility}
-                    </div>
-                )}
-            </div>
 
-            {/* Priority Badge */}
-            <div className="flex items-center justify-between mb-3">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${priorityColors[deal.priority]}`}>
-                    {deal.priority}
-                </span>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-3">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                    <span>Progress</span>
-                    <span>{deal.progress_percent}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                {/* Secondary Entity Row */}
+                <div className="flex items-center gap-1.5">
+                    {/* Secondary Avatar */}
                     <div
-                        className={`h-full rounded-full transition-all ${pipelineView === 'buyer' ? 'bg-blue-500' : 'bg-green-500'
-                            }`}
-                        style={{ width: `${deal.progress_percent}%` }}
-                    />
+                        className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                        style={{ backgroundColor: secondaryColor.bg }}
+                    >
+                        {secondaryImageUrl ? (
+                            <img
+                                src={secondaryImageUrl}
+                                alt={secondaryEntity}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <span
+                                className="text-xs font-bold"
+                                style={{ color: secondaryColor.text }}
+                            >
+                                {secondaryEntity.substring(0, 2).toUpperCase()}
+                            </span>
+                        )}
+                    </div>
+                    {/* Secondary Name */}
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                        <span className="text-sm font-medium text-gray-900 truncate block">
+                            {secondaryEntity}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Deal Value & Priority Row */}
+                <div className="flex items-end justify-between mt-6">
+                    <div className="flex flex-col gap-1">
+                        {shareholdingRatio && (
+                            <span className="text-xs text-gray-500">{shareholdingRatio}</span>
+                        )}
+                        <span className="text-base font-medium text-gray-800">{dealValue}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Download className="w-4 h-4" style={{ color: priorityInfo.color }} />
+                        <span
+                            className="text-[13px] font-medium"
+                            style={{ color: priorityInfo.color }}
+                        >
+                            {priorityInfo.label}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {/* Footer Icons */}
-            <div className="flex items-center justify-between text-xs text-gray-400">
-                <div className="flex items-center gap-3">
+            {/* Footer */}
+            <div
+                className="flex items-center justify-between px-3 h-[34px] bg-white rounded-b-lg border border-t-0 border-gray-200"
+            >
+                {/* Left: Comment count & navigation */}
+                <div className="flex items-center gap-1.5">
+                    {/* Comment Badge */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            // This will be handled by the parent
-                            if (deal.onChatClick) deal.onChatClick(deal);
+                            if ((deal as any).onChatClick) (deal as any).onChatClick(deal);
                         }}
-                        className="flex items-center gap-1 hover:text-[#064771] transition-colors relative"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#064771] text-white"
                     >
                         <MessageSquare className="w-4 h-4" />
-                        {deal.comment_count}
-                        {/* Notification Dot */}
+                        <span className="text-xs font-medium">{deal.comment_count || 0}</span>
                         {deal.has_new_activity && (
-                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+                            <span className="w-2 h-2 bg-red-500 rounded-full ml-1" />
                         )}
                     </button>
+                    {/* Navigation Arrows */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onMove?.(deal, 'backward'); }}
+                        className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"
+                        title="Move Backward"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onMove?.(deal, 'forward'); }}
+                        className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"
+                        title="Move Forward"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
                 </div>
-                <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
+
+                {/* Right: Date */}
+                <div className="flex items-center gap-1 text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-xs">
+                        {new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                </div>
             </div>
         </div>
     );
 };
 
 export default DealCard;
-
