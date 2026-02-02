@@ -1,9 +1,11 @@
 import axios from "axios";
-import { showAlert } from "../components/Alert";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/",
   withCredentials: true,
+  withXSRFToken: true,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -28,7 +30,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    showAlert({ type: "error", message: "API Error" });
+    // Don't show global alert for auth errors - let components handle them
     return Promise.reject(error);
   }
 );
