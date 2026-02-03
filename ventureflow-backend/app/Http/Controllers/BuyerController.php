@@ -240,7 +240,8 @@ class BuyerController extends Controller
         }
 
         // --- Paginate results ---
-        $buyers = $query->paginate(10);
+        $perPage = $request->input('per_page', 10);
+        $buyers = $query->paginate($perPage);
         $data = ($search && $buyers->isEmpty()) ? [] : $buyers->items();
 
         // --- Return JSON response ---

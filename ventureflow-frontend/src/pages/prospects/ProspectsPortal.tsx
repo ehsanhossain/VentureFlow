@@ -155,31 +155,52 @@ const ProspectsPortal: React.FC = () => {
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
     // Auto-calculate vertical row limit
+    const lastCalculatedRows = useRef<number>(pagination.itemsPerPage);
+    const resizeTimeoutRef = useRef<any>();
+
     useEffect(() => {
         const calculateRows = () => {
             if (!tableContainerRef.current) return;
-            const containerHeight = tableContainerRef.current.clientHeight;
-            // More precise calculation:
-            // Top/Bottom padding: 24px each (p-6) = 48px
-            // Table Header: 48px
-            // Pagination Footer: 48px
-            // Search/Tabs Area: Already outside tableContainerRef
-            const availableHeight = containerHeight - 48 - 48 - 48;
-            const rows = Math.max(5, Math.floor(availableHeight / 56)); // 56px per row (h-14)
 
-            if (rows !== pagination.itemsPerPage && rows > 0) {
-                setPagination(prev => ({ ...prev, itemsPerPage: rows }));
+            // Get actual height without padding
+            const containerHeight = tableContainerRef.current.offsetHeight;
+
+            // Precise overhead:
+            // Table Header: 48px
+            // Pagination Footer (px-4 py-2.5): ~48px
+            // Container Padding: ~40px
+            const overhead = 48 + 48 + 40;
+            const availableHeight = containerHeight - overhead;
+            const rows = Math.max(5, Math.floor(availableHeight / 56));
+
+            if (rows > 0 && rows !== lastCalculatedRows.current) {
+                lastCalculatedRows.current = rows;
+                setPagination(prev => {
+                    if (prev.itemsPerPage === rows) return prev;
+                    return { ...prev, itemsPerPage: rows };
+                });
             }
         };
 
-        // Initial calculation
-        setTimeout(calculateRows, 100);
+        const handleResize = () => {
+            if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+            resizeTimeoutRef.current = setTimeout(() => {
+                window.requestAnimationFrame(calculateRows);
+            }, 150); // Debounce resize events
+        };
 
-        const resizeObserver = new ResizeObserver(calculateRows);
+        // Initial trigger
+        const timer = setTimeout(calculateRows, 300);
+
+        const resizeObserver = new ResizeObserver(handleResize);
         if (tableContainerRef.current) resizeObserver.observe(tableContainerRef.current);
 
-        return () => resizeObserver.disconnect();
-    }, [pagination.itemsPerPage]);
+        return () => {
+            clearTimeout(timer);
+            if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+            resizeObserver.disconnect();
+        };
+    }, []); // Stability: dependency-free to prevent logic loops
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -246,13 +267,21 @@ const ProspectsPortal: React.FC = () => {
             // Update Pagination from Active Tab Meta
             const activeMeta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
             if (activeMeta) {
-                setPagination(prev => ({
-                    ...prev,
-                    currentPage: activeMeta.current_page,
-                    totalPages: activeMeta.last_page,
-                    totalItems: activeMeta.total,
-                    itemsPerPage: activeMeta.per_page
-                }));
+                setPagination(prev => {
+                    if (prev.currentPage === activeMeta.current_page &&
+                        prev.totalPages === activeMeta.last_page &&
+                        prev.totalItems === activeMeta.total &&
+                        prev.itemsPerPage === activeMeta.per_page) {
+                        return prev;
+                    }
+                    return {
+                        ...prev,
+                        currentPage: activeMeta.current_page,
+                        totalPages: activeMeta.last_page,
+                        totalItems: activeMeta.total,
+                        itemsPerPage: activeMeta.per_page
+                    };
+                });
             }
 
             // Set allowed fields based on active tab

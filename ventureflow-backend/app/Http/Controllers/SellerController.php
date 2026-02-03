@@ -204,7 +204,8 @@ class SellerController extends Controller
             $query->orderByDesc('pinned')->orderByDesc('created_at');
         }
 
-        $sellers = $query->paginate(10);
+        $perPage = $request->input('per_page', 10);
+        $sellers = $query->paginate($perPage);
         $data = ($search && $sellers->isEmpty()) ? [] : $sellers->items();  
 
         return response()->json([

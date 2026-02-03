@@ -125,10 +125,10 @@ const DragHandle: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => (
 const LoadingSkeleton: React.FC<{ columns: number; rows?: number }> = ({ columns, rows = 8 }) => (
     <>
         {Array.from({ length: rows }).map((_, i) => (
-            <tr key={`skeleton-${i}`} className="animate-pulse">
+            <tr key={`skeleton-${i}`} className="h-14 animate-pulse border-b border-[#f1f5f9]">
                 {Array.from({ length: columns }).map((_, j) => (
-                    <td key={j} className="px-4 py-4 border-b border-[#f1f5f9]">
-                        <div className="h-4 rounded bg-slate-100 w-full" />
+                    <td key={j} className="px-4 py-3">
+                        <div className="h-4 rounded bg-slate-100/60 w-full" />
                     </td>
                 ))}
             </tr>
@@ -522,7 +522,10 @@ function DataTable<T>({
 
                     <tbody>
                         {isLoading ? (
-                            <LoadingSkeleton columns={totalColumns} />
+                            <LoadingSkeleton
+                                columns={totalColumns}
+                                rows={pagination?.itemsPerPage || 10}
+                            />
                         ) : data.length === 0 ? (
                             <EmptyState
                                 message={emptyMessage}
