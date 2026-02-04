@@ -74,6 +74,11 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const contextMenuRef = useRef<HTMLDivElement>(null);
 
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
+        key: 'projectCode',
+        direction: 'asc'
+    });
+
     // Pipeline stages for target (seller) pipeline
     const [pipelineStages, setPipelineStages] = useState<{ code: string; name: string; order_index: number }[]>([]);
 
@@ -227,9 +232,6 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     <span className="text-[13px] font-semibold text-slate-700">
                         {getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate)}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                        {row.desiredInvestment?.currency || 'USD'}
-                    </span>
                 </div>
             ),
             width: 160,
@@ -311,22 +313,33 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         </div>
     );
 
+    const sortedData = useMemo(() => {
+        if (!sortConfig.key || !sortConfig.direction) return data;
+
+        return [...data].sort((a: any, b: any) => {
+            const aValue = a[sortConfig.key];
+            const bValue = b[sortConfig.key];
+
+            if (aValue === bValue) return 0;
+            if (aValue === null || aValue === undefined) return 1;
+            if (bValue === null || bValue === undefined) return -1;
+
+            const direction = sortConfig.direction === 'asc' ? 1 : -1;
+
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                return aValue.localeCompare(bValue) * direction;
+            }
+            return (aValue > bValue ? 1 : -1) * direction;
+        });
+    }, [data, sortConfig]);
+
     return (
         <div className="w-full h-full flex flex-col min-h-0 relative">
             <DataTable
-                data={data}
+                data={sortedData}
                 columns={filteredColumns}
                 isLoading={isLoading}
-                onRowClick={(row) => {
-                    // Trigger menu instead of navigation per user request
-                    const target = document.querySelector(`[data-row-id="${row.id}"]`) as HTMLElement;
-                    const rect = target?.getBoundingClientRect();
-                    setContextMenu({
-                        x: rect ? rect.right - 100 : window.innerWidth / 2,
-                        y: rect ? rect.top + 20 : window.innerHeight / 2,
-                        rowId: row.id
-                    });
-                }}
+                onRowClick={(row) => navigate(`/prospects/target/${row.id}`)}
                 onRowContextMenu={(e, row) => {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id });
@@ -337,6 +350,8 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 getRowId={(row) => row.id}
                 actionsColumn={ActionsColumn}
                 actionsColumnWidth={60}
+                sortConfig={sortConfig}
+                onSortChange={(key, direction) => setSortConfig({ key, direction })}
                 pagination={pagination}
                 className="flex-1 min-h-0"
                 containerClassName="h-full flex flex-col"

@@ -8,10 +8,11 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        inter: ["Inter", "sans-serif"],
         poppins: ["Inter", "sans-serif"],
         sans: ["Inter", "sans-serif"],
-        sf: ["SF Pro Display", "sans-serif"],
-        roboto: ["Roboto", "sans-serif"],
+        sf: ["Inter", "sans-serif"],
+        roboto: ["Inter", "sans-serif"],
       },
     },
   },

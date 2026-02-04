@@ -6,7 +6,6 @@ import api from '../../config/api';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
 import {
-    Search,
     Plus,
     ChevronDown,
     X,
@@ -22,6 +21,7 @@ import {
     FileSpreadsheet,
     Zap
 } from 'lucide-react';
+import DataTableSearch from '../../components/table/DataTableSearch';
 import { showAlert } from '../../components/Alert';
 import { isFieldAllowed } from '../../utils/permissionUtils';
 
@@ -933,7 +933,7 @@ const ProspectsPortal: React.FC = () => {
             <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-hidden">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
-                    <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
                         <h1 className="text-xl md:text-2xl font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
 
                         <div className="flex bg-gray-100 rounded-[3px] p-1">
@@ -963,17 +963,12 @@ const ProspectsPortal: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="relative group w-full md:w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#064771] transition-colors" />
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                placeholder={`Search for ${activeTab}...`}
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-9 pr-10 py-2 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771] transition-all"
-                            />
-                        </div>
+                        <DataTableSearch
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            placeholder={`Search for ${activeTab}...`}
+                            className="w-full md:w-72"
+                        />
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
@@ -1021,19 +1016,21 @@ const ProspectsPortal: React.FC = () => {
                                                 <Layout className="w-3 h-3" /> Visible Columns
                                             </div>
                                             <div className="space-y-1 max-h-56 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-100">
-                                                {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).map(col => (
-                                                    <button
-                                                        key={col.id}
-                                                        onClick={() => toggleColumn(col.id)}
-                                                        className={`flex items-center justify-between w-full px-3 py-2 text-xs rounded-[3px] transition-all ${visibleColumns.includes(col.id)
-                                                            ? 'bg-blue-50/50 text-blue-700 font-medium'
-                                                            : 'text-gray-500 hover:bg-gray-50'
-                                                            }`}
-                                                    >
-                                                        <span>{col.label}</span>
-                                                        {visibleColumns.includes(col.id) && <Check className="w-3 h-3" />}
-                                                    </button>
-                                                ))}
+                                                {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS)
+                                                    .filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab))
+                                                    .map(col => (
+                                                        <button
+                                                            key={col.id}
+                                                            onClick={() => toggleColumn(col.id)}
+                                                            className={`flex items-center justify-between w-full px-3 py-2 text-xs rounded-[3px] transition-all ${visibleColumns.includes(col.id)
+                                                                ? 'bg-blue-50/50 text-blue-700 font-medium'
+                                                                : 'text-gray-500 hover:bg-gray-50'
+                                                                }`}
+                                                        >
+                                                            <span>{col.label}</span>
+                                                            {visibleColumns.includes(col.id) && <Check className="w-3 h-3" />}
+                                                        </button>
+                                                    ))}
                                             </div>
                                         </div>
                                     </div>

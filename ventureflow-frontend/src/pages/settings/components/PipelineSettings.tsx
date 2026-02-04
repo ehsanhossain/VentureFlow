@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, GripVertical, Save, RefreshCw } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import DataTableSearch from '../../../components/table/DataTableSearch';
 
 interface PipelineStage {
     id?: number;
@@ -20,6 +21,7 @@ const PipelineSettings: React.FC = () => {
     const [stages, setStages] = useState<PipelineStage[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const fetchStages = async () => {
         setLoading(true);
@@ -111,145 +113,158 @@ const PipelineSettings: React.FC = () => {
         }
     };
 
+    const filteredStages = useMemo(() => {
+        return stages.filter(s =>
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.code.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [stages, searchQuery]);
+
     return (
-        <div className="bg-white flex flex-col h-[calc(100vh-64px)] overflow-hidden">
-            <div className="flex-1 overflow-auto p-8">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-semibold font-poppins text-[#064771]">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+            {/* Header */}
+            <div className="px-8 py-6">
+                <div className="flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-8 flex-1">
+                        <h1 className="text-2xl font-medium text-gray-900 whitespace-nowrap">
                             {t('settings.pipeline.title', 'Pipeline Workflow Settings')}
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1 font-poppins">
-                            Configure the stages and progress for each deal pipeline type.
-                        </p>
+                        </h1>
+                        <DataTableSearch
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            placeholder="Search stages..."
+                        />
                     </div>
                 </div>
+            </div>
 
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    {/* Tabs */}
-                    <div className="flex border-b border-gray-100 bg-gray-50/50">
-                        <button
-                            onClick={() => setActiveTab('buyer')}
-                            className={`px-8 py-4 text-sm font-medium transition-all relative ${activeTab === 'buyer'
-                                ? 'text-[#064771] bg-white'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            Investor's Pipeline
-                            {activeTab === 'buyer' && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#064771]" />
-                            )}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('seller')}
-                            className={`px-8 py-4 text-sm font-medium transition-all relative ${activeTab === 'seller'
-                                ? 'text-[#064771] bg-white'
-                                : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                        >
-                            Target Pipeline
-                            {activeTab === 'seller' && (
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#064771]" />
-                            )}
-                        </button>
-                    </div>
+            {/* Tabs */}
+            <div className="px-8 border-b border-gray-100">
+                <div className="flex space-x-8">
+                    <button
+                        onClick={() => setActiveTab('buyer')}
+                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-all flex items-center gap-2 ${activeTab === 'buyer'
+                            ? 'border-[#064771] text-[#064771]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        Investor's Pipeline
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('seller')}
+                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-all flex items-center gap-2 ${activeTab === 'seller'
+                            ? 'border-[#064771] text-[#064771]'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            }`}
+                    >
+                        Target Pipeline
+                    </button>
+                </div>
+            </div>
 
-                    <div className="p-6">
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden flex flex-col mt-6">
+                <div className="flex-1 px-8 pb-8 overflow-hidden">
+                    <div className="h-full bg-white rounded-[3px] border border-gray-100 flex flex-col overflow-hidden">
                         {loading ? (
-                            <div className="flex justify-center py-12">
+                            <div className="flex-1 flex items-center justify-center">
                                 <RefreshCw className="w-8 h-8 text-[#064771] animate-spin" />
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-12 gap-4 px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <div className="col-span-1">Order</div>
-                                    <div className="col-span-2">Code</div>
-                                    <div className="col-span-6">Stage Name</div>
-                                    <div className="col-span-2">Progress (%)</div>
-                                    <div className="col-span-1 text-center">Action</div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    {stages.map((stage, index) => (
-                                        <div
-                                            key={index}
-                                            className="grid grid-cols-12 gap-4 items-center bg-gray-50 p-3 rounded-lg border border-gray-100 group hover:border-[#064771]/30 transition-all shadow-sm"
-                                        >
-                                            <div className="col-span-1 flex items-center gap-2">
-                                                <GripVertical className="w-4 h-4 text-gray-300 group-hover:text-gray-400 cursor-grab" />
-                                                <span className="text-sm font-medium text-gray-400">{index + 1}</span>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <input
-                                                    type="text"
-                                                    value={stage.code}
-                                                    onChange={(e) => handleStageChange(index, 'code', e.target.value.toUpperCase().slice(0, 2))}
-                                                    placeholder="E.g. A"
-                                                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] outline-none"
-                                                />
-                                            </div>
-                                            <div className="col-span-6">
-                                                <input
-                                                    type="text"
-                                                    value={stage.name}
-                                                    onChange={(e) => handleStageChange(index, 'name', e.target.value)}
-                                                    placeholder="Stage Name"
-                                                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] outline-none"
-                                                />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <input
-                                                    type="number"
-                                                    value={stage.progress}
-                                                    onChange={(e) => handleStageChange(index, 'progress', parseInt(e.target.value) || 0)}
-                                                    min="0"
-                                                    max="100"
-                                                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] outline-none"
-                                                />
-                                            </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                <button
-                                                    onClick={() => handleRemoveStage(index)}
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-all"
-                                                    title="Remove Stage"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
+                            <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="flex-1 overflow-y-auto p-6">
+                                    <div className="space-y-4">
+                                        <div className="flex gap-4 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-100/50">
+                                            <div className="w-12">Order</div>
+                                            <div className="w-24">Code</div>
+                                            <div className="flex-1">Stage Name</div>
+                                            <div className="w-28 text-center">Progress %</div>
+                                            <div className="w-[60px]"></div>
                                         </div>
-                                    ))}
+
+                                        <div className="space-y-2">
+                                            {filteredStages.map((stage, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex gap-4 items-center bg-gray-50/50 p-3 rounded-[3px] border border-gray-100 transition-all hover:border-[#064771]/30"
+                                                >
+                                                    <div className="w-12 flex items-center gap-2">
+                                                        <GripVertical className="w-4 h-4 text-gray-300 cursor-grab" />
+                                                        <span className="text-sm font-medium text-gray-400">{index + 1}</span>
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <input
+                                                            type="text"
+                                                            value={stage.code}
+                                                            onChange={(e) => handleStageChange(index, 'code', e.target.value.toUpperCase().slice(0, 5))}
+                                                            placeholder="Code"
+                                                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <input
+                                                            type="text"
+                                                            value={stage.name}
+                                                            onChange={(e) => handleStageChange(index, 'name', e.target.value)}
+                                                            placeholder="Stage Name"
+                                                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                                        />
+                                                    </div>
+                                                    <div className="w-28">
+                                                        <input
+                                                            type="number"
+                                                            value={stage.progress}
+                                                            onChange={(e) => handleStageChange(index, 'progress', parseInt(e.target.value) || 0)}
+                                                            min="0"
+                                                            max="100"
+                                                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all text-center"
+                                                        />
+                                                    </div>
+                                                    <div className="w-[60px] flex justify-center">
+                                                        <button
+                                                            onClick={() => handleRemoveStage(index)}
+                                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-[3px] transition-all"
+                                                            title="Remove Stage"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={handleAddStage}
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#064771] hover:bg-[#064771]/5 border border-transparent hover:border-[#064771]/20 rounded-[3px] transition-all"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Add New Stage
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <button
-                                    onClick={handleAddStage}
-                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#064771] hover:bg-[#064771]/5 rounded-lg transition-all"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Add New Stage
-                                </button>
+                                <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex justify-end items-center gap-4">
+                                    <button
+                                        onClick={() => fetchStages()}
+                                        className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                                    >
+                                        Reset Changes
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={saving}
+                                        className="flex items-center gap-2 px-6 py-2.5 bg-[#064771] hover:bg-[#053a5e] text-white rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {saving ? (
+                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Save className="w-4 h-4" />
+                                        )}
+                                        {saving ? 'Saving...' : 'Save Pipeline'}
+                                    </button>
+                                </div>
                             </div>
                         )}
-                    </div>
-
-                    <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
-                        <button
-                            onClick={() => fetchStages()}
-                            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                            Reset Changes
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={saving}
-                            className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] transition-all shadow-md disabled:bg-gray-400"
-                        >
-                            {saving ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Save className="w-4 h-4" />
-                            )}
-                            {saving ? 'Saving...' : 'Save Pipeline'}
-                        </button>
                     </div>
                 </div>
             </div>

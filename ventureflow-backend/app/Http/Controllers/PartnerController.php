@@ -500,6 +500,22 @@ class PartnerController extends Controller
         }
     }
 
+    public function checkId(Request $request)
+    {
+        $id = $request->input('id');
+        $exclude = $request->input('exclude');
+
+        $query = Partner::where('partner_id', $id);
+
+        if ($exclude) {
+            $query->where('id', '!=', $exclude);
+        }
+
+        $exists = $query->exists();
+
+        return response()->json(['available' => !$exists]);
+    }
+
     public function sharedSellers(Partner $partner): JsonResponse
     {
         $sellers = Seller::with([

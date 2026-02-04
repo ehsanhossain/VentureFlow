@@ -96,9 +96,9 @@ class CurrencyController extends Controller
         $validated = $request->validate([
             'currency_name' => 'required|string|max:255',
             'currency_code' => 'required|string|max:10|unique:currencies,currency_code,' . $currency->id,
-            'currency_sign' => 'required|string|max:5',
-            'origin_country' => 'required|integer|exists:countries,id',
-            'dollar_unit' => 'required|string|max:10',
+            'currency_sign' => 'required|string|max:10',
+            'origin_country' => 'required|numeric|exists:countries,id',
+            'dollar_unit' => 'required|string|max:255',
             'exchange_rate' => 'required|numeric',
             'source' => 'nullable|string|max:255',
         ]);

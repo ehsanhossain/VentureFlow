@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Menu, X, Check, Bell, Search, Command, Loader2, FileText, Building, User, Briefcase, Home, Plus, ChevronDown } from "lucide-react";
+import { Menu, X, Check, Search, Command, Loader2, FileText, Home, Plus, ChevronDown } from "lucide-react";
 import { useContext } from "react";
 import { AuthContext } from "../routes/AuthContext";
 import ProfileDropdown from "../components/dashboard/ProfileDropdown";
@@ -7,6 +7,15 @@ import { useNotifications } from "../context/NotificationContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../config/api";
+import {
+  NotificationFalseIcon,
+  NotificationTrueIcon,
+  CatalystIcon,
+  ProspectsIcon,
+  StaffAccountsIcon,
+  PartnerIconCustom,
+  CurrencyIcon
+} from "../assets/icons";
 
 interface HeaderProps {
   mobileMenuOpen: boolean;
@@ -57,7 +66,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault();
         setSearchOpen(true);
       }
@@ -113,7 +122,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
   return (
     <>
-      <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 z-[60] transition-all duration-300
+      <header className={`h-16 bg-white border-b border-gray-200 fixed top-0 right-0 z-[80] transition-all duration-300
             ${sidebarExpanded ? 'left-64' : 'left-0 md:left-16'}
         `}>
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
@@ -192,7 +201,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
           {/* Right Section: Create + Notifications + Profile */}
           <div className="flex items-center gap-3">
 
-            {/* Create Button (Desktop) */}
+            {/* Add Button (Desktop) */}
             {!isPartner && (
               <div className="relative hidden md:block" ref={createDropdownRef}>
                 <button
@@ -200,29 +209,53 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                   className="flex items-center gap-2 px-3 py-2 bg-white text-gray-900 border border-gray-200 rounded-[3px] hover:bg-gray-50 hover:border-gray-300 transition-all text-sm font-medium"
                 >
                   <Plus className="w-4 h-4 text-gray-500" />
-                  <span>Create</span>
+                  <span>Add</span>
                   <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${createDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {createDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
+                    <button
+                      onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                    >
+                      <CatalystIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Deal
+                    </button>
                     <button
                       onClick={() => { navigate('/prospects/add-investor'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
                     >
-                      Create Investor
+                      <ProspectsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Investor
                     </button>
                     <button
                       onClick={() => { navigate('/prospects/add-target'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
                     >
-                      Create Target
+                      <ProspectsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Target
                     </button>
                     <button
-                      onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771]"
+                      onClick={() => { navigate('/settings/staff'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
                     >
-                      New Deal
+                      <StaffAccountsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Staff
+                    </button>
+                    <button
+                      onClick={() => { navigate('/settings/partners'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                    >
+                      <PartnerIconCustom className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Partner
+                    </button>
+                    <button
+                      onClick={() => { navigate('/settings/currency'); setCreateDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                    >
+                      <CurrencyIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                      Add Currency
                     </button>
                   </div>
                 )}
@@ -240,12 +273,16 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             {/* Notification Icon */}
             <div className="relative" ref={dropdownRef}>
               <button
-                className="p-2 hover:bg-gray-100 rounded relative transition-colors text-gray-500"
+                className="flex items-center gap-1.5 p-2 hover:bg-gray-100 rounded relative transition-colors text-gray-500"
                 onClick={() => setIsOpen(!isOpen)}
               >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                {unreadCount > 0 ? (
+                  <>
+                    <NotificationTrueIcon className="w-8 h-8 text-[#064771]" />
+                    <span className="text-base font-bold text-[#064771]">{unreadCount}</span>
+                  </>
+                ) : (
+                  <NotificationFalseIcon className="w-8 h-8 text-gray-500" />
                 )}
               </button>
 
@@ -321,7 +358,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
       {/* Global Search Modal Overlay */}
       {searchOpen && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto p-4 sm:p-6 md:p-20">
+        <div className="fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 md:p-20">
           <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onClick={closeSearch} />
 
           <div className="mx-auto max-w-2xl transform divide-y divide-gray-100 overflow-hidden rounded bg-white ring-1 ring-black ring-opacity-5 transition-all">
@@ -364,7 +401,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.deals.map((deal) => (
                         <li key={`deal-${deal.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100" onClick={() => { navigate('/deal-pipeline'); closeSearch(); }}>
-                          <Briefcase className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
+                          <CatalystIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{deal.name}</span>
                           <span className="ml-3 flex-none text-xs text-gray-400">{deal.status}</span>
                         </li>
@@ -376,12 +413,12 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Companies */}
                 {results.companies.length > 0 && (
                   <div key="companies-section">
-                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Companies</div>
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Prospects</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.companies.map((company) => (
                         <li key={`company-${company.id}-${company.type}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
                           onClick={() => { navigate(company.type === 'Seller' ? `/prospects/target/${company.id}` : `/prospects/investor/${company.id}`); closeSearch(); }}>
-                          <Building className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
+                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{company.name}</span>
                           <span className="ml-3 flex-none text-xs text-gray-400">{company.type}</span>
                         </li>
@@ -398,7 +435,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       {results.contacts.map((contact) => (
                         <li key={`contact-${contact.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
                           onClick={() => { navigate(`/employee/details/${contact.id}`); closeSearch(); }}>
-                          <User className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
+                          <StaffAccountsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{contact.first_name} {contact.last_name}</span>
                           <span className="ml-3 flex-none text-xs text-gray-400">{contact.work_email}</span>
                         </li>

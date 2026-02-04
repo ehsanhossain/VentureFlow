@@ -51,11 +51,21 @@ class SellerController extends Controller
         $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         $allowedFields = null;
+        $partnerId = null;
         if ($isPartner) {
             $allowedFields = $this->getParsedAllowedFields('seller');
+            // Get the partner_id from the user's associated partner record
+            $partnerId = $user->partner_id ?? $user->partner?->id ?? null;
         }
 
         $query = Seller::query();
+
+        // --- Partner Filtering: Only show prospects assigned to this partner ---
+        if ($isPartner && $partnerId) {
+            $query->whereHas('partnershipDetails', function ($q) use ($partnerId) {
+                $q->where('partner', $partnerId);
+            });
+        }
 
         // --- Select Fields & Eager Load ---
         if ($isPartner && $allowedFields) {

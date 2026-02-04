@@ -252,7 +252,7 @@ const InvestorDetails: React.FC = () => {
                     }`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded flex items-center justify-center ${contact.isPrimary ? 'bg-[#064771] text-white' : 'bg-white border border-gray-200 text-gray-400'
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${contact.isPrimary ? 'bg-[#064771] text-white' : 'bg-white border border-gray-200 text-gray-400'
                           }`}>
                           <User className="w-5 h-5" />
                         </div>
@@ -262,7 +262,7 @@ const InvestorDetails: React.FC = () => {
                         </div>
                       </div>
                       {contact.isPrimary && (
-                        <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded">Primary</span>
+                        <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded-full">Primary</span>
                       )}
                     </div>
                     <div className="space-y-2.5 pt-2 border-t border-gray-100">

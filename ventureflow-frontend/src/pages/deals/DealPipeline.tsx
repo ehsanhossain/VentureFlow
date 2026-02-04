@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { AuthContext } from '../../routes/AuthContext';
-import { X } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '../../config/api';
 import { Country, Dropdown } from '../currency/components/Dropdown';
 import { showAlert } from '../../components/Alert';
@@ -20,6 +20,7 @@ import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
 import DealDetailsModal from './components/DealDetailsModal';
+import DealExpandedPreview from './components/DealExpandedPreview';
 import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
 
 interface PipelineStage {
@@ -48,20 +49,31 @@ export interface Deal {
     comment_count: number;
     attachment_count: number;
     updated_at: string;
-    has_new_activity?: boolean; // For notification dot
-    onChatClick?: (deal: Deal) => void; // Callback for chat button
+    has_new_activity?: boolean;
+    onChatClick?: (deal: Deal) => void;
     buyer?: {
         id: number;
+        image?: string;
         company_overview?: {
             reg_name: string;
             hq_country?: number;
         };
+        investment_critera?: {
+            target_countries?: Array<{ id: number; name: string; svg_icon_url?: string }>;
+            target_industries?: Array<{ id: number; name: string }>;
+        };
     };
     seller?: {
         id: number;
+        image?: string;
         company_overview?: {
             reg_name: string;
             hq_country?: number;
+        };
+        financial_details?: {
+            desired_investment?: number;
+            maximum_investor_shareholding_percentage?: string;
+            ebitda?: number;
         };
     };
     pic?: {
@@ -362,13 +374,9 @@ const DealPipeline = () => {
                                 title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                             >
                                 {sidebarCollapsed ? (
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                                    </svg>
+                                    <ChevronRight className="w-5 h-5" />
                                 ) : (
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                                    </svg>
+                                    <ChevronLeft className="w-5 h-5" />
                                 )}
                             </button>
                         </div>
@@ -705,11 +713,19 @@ const DealPipeline = () => {
             )}
 
             {selectedDeal && (
-                <DealDetailsModal
-                    dealId={selectedDeal.id}
-                    onClose={() => setSelectedDeal(null)}
-                    onUpdate={fetchDeals}
-                />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setSelectedDeal(null)} />
+                    <div className="relative w-full max-w-2xl">
+                        <DealExpandedPreview
+                            deal={selectedDeal}
+                            onClose={() => setSelectedDeal(null)}
+                            onMove={(direction) => {
+                                handleMove(selectedDeal, direction);
+                                setSelectedDeal(null);
+                            }}
+                        />
+                    </div>
+                </div>
             )}
 
             {/* Lost Remarks Modal */}

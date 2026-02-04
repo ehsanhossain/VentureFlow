@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Breadcrumb from '../../assets/breadcrumb';
-import { Input } from '../../../src/components/Input';
+import { Input } from '../../components/Input';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Country, Dropdown } from './components/Dropdown';
 import api from '../../config/api';
@@ -168,7 +168,7 @@ const Register: React.FC = () => {
         currency_sign: data.currencySign,
         origin_country: data.country?.id,
         dollar_unit: 'USD',
-        exchange_rate: parseFloat(data.exchangeRate),
+        exchange_rate: data.exchangeRate ? parseFloat(data.exchangeRate) : 0,
         source: data.source,
       };
       let response;
@@ -179,11 +179,11 @@ const Register: React.FC = () => {
         response = await api.post('/api/currencies', payload);
       }
 
-      showAlert({ type: 'success', message: response.data.message });
+      showAlert({ type: 'success', message: response.data.message || t('settings.currency.saveSuccess') });
       navigate('/settings/currency');
-    } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : t('common.errorOccurred', 'Something went wrong.');
+    } catch (error: any) {
+      console.error('Currency save error:', error);
+      const errorMessage = error.response?.data?.message || error.message || t('common.errorOccurred');
       showAlert({
         type: 'error',
         message: errorMessage,
@@ -268,7 +268,7 @@ const Register: React.FC = () => {
                 <div className="flex justify-start items-start flex-col gap-[30px] w-[394px]">
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                      <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
+                      <span className="text-[#EC1D42] font-inter font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
@@ -291,7 +291,7 @@ const Register: React.FC = () => {
                   </div>
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                      <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
+                      <span className="text-[#EC1D42] font-inter font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
                       <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
@@ -349,13 +349,22 @@ const Register: React.FC = () => {
                     <Controller
                       name="country"
                       control={control}
+                      rules={{ required: t('settings.currency.countryRequired', 'Country is required') }}
                       render={({ field }) => (
-                        <Dropdown
-                          {...field}
-                          countries={countries}
-                          selected={field.value}
-                          onSelect={field.onChange}
-                        />
+                        <div className="flex flex-col gap-1 w-full">
+                          <Dropdown
+                            {...field}
+                            countries={countries}
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            placeholder={t('settings.currency.countryPlaceholder')}
+                          />
+                          {errors.country && (
+                            <span className="text-sm text-red-500 font-inter">
+                              {errors.country.message}
+                            </span>
+                          )}
+                        </div>
                       )}
                     />
                   </div>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\AuditLog;
 
 class AuthController extends Controller
 {
@@ -47,6 +48,17 @@ class AuthController extends Controller
         // Check if user is a partner
         $role = $user->getRoleNames()->first();
         $isPartner = $role === 'partner' || $user->is_partner;
+
+        // Log the login action
+        AuditLog::log(
+            'login',
+            $user->id,
+            $isPartner ? 'partner' : ($role === 'System Admin' ? 'admin' : 'staff'),
+            'User',
+            $user->id,
+            $user->name,
+            'User logged in successfully'
+        );
 
         return response()->json([
             'user' => $user,
@@ -91,14 +103,39 @@ class AuthController extends Controller
         $user->must_change_password = false;
         $user->save();
 
+        // Log the password change
+        AuditLog::log(
+            'password_change',
+            $user->id,
+            null,
+            'User',
+            $user->id,
+            $user->name,
+            'User changed their password'
+        );
+
         return response()->json(['message' => 'Password changed successfully']);
     }
 
     public function logout(Request $request)
     {
+        $user = $request->user();
+        
+        // Log the logout action
+        if ($user) {
+            AuditLog::log(
+                'logout',
+                $user->id,
+                null,
+                'User',
+                $user->id,
+                $user->name,
+                'User logged out'
+            );
+        }
 
         if ($request->bearerToken()) {
-            $request->user()->tokens()->delete();
+            $user->tokens()->delete();
             return response()->json(['message' => 'Logged out successfully (Token Revoked)']);
         }
 

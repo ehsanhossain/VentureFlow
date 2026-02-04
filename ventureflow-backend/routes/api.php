@@ -86,6 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //Partners Routes
     //Partners Routes
     Route::get('/partner/get-last-sequence', [PartnerController::class, 'getLastSequence']);
+    Route::get('/partner/check-id', [PartnerController::class, 'checkId']);
     Route::delete('/partners', [PartnerController::class, 'destroy']);
     Route::get('/partners/{partner}/shared-sellers', [PartnerController::class, 'sharedSellers']);
     Route::get('/partners/{partner}/shared-buyers', [PartnerController::class, 'sharedBuyers']);
@@ -169,4 +170,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/buyers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedBuyers']);
         Route::get('/sellers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedSellers']);
     });
+
+    // Audit Log Routes (Admin only)
+    Route::prefix('audit-logs')->group(function () {
+        Route::get('/', [\App\Http\Controllers\AuditLogController::class, 'index']);
+        Route::get('/summary', [\App\Http\Controllers\AuditLogController::class, 'actionsSummary']);
+        Route::get('/user/{userId}', [\App\Http\Controllers\AuditLogController::class, 'userActivity']);
+    });
 });
+

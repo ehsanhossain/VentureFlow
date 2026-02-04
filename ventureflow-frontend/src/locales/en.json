@@ -59,7 +59,7 @@
     },
     "navigation": {
         "dashboard": "Dashboard",
-        "companies": "Companies",
+        "companies": "Prospects",
         "sellerRegister": "Seller Register",
         "buyerRegister": "Buyer Register",
         "dealPipeline": "Deal Pipeline",
@@ -68,6 +68,7 @@
         "general": "General",
         "currency": "Currency",
         "partnerManagement": "Partner Management",
+        "staffAndAccounts": "Staff & Accounts",
         "notifications": "Notifications",
         "profile": "Profile"
     },
@@ -85,18 +86,14 @@
         "darkMode": "Dark Mode",
         "lightMode": "Light Mode",
         "general": {
-            "title": "General Settings",
+            "title": "General",
             "languagePreference": "Language Preference",
             "selectLanguageLabel": "Select interface language:",
-            "themeLabel": "Interface Theme",
-            "themeLight": "Light",
-            "themeDark": "Dark",
-            "themeSystem": "System",
             "timezoneLabel": "Timezone",
             "dateFormatLabel": "Date Format",
-            "notificationsLabel": "Notifications",
+            "notificationsLabel": "System Notifications",
             "emailNotifications": "Enable Email Notifications",
-            "summary": "Manage your basic account settings, language, and interface preferences."
+            "summary": "Manage your basic account settings, language, and localization preferences."
         },
         "currency": {
             "title": "Currency Settings",
@@ -199,6 +196,9 @@
             "success": {
                 "emailUpdated": "Email updated successfully"
             }
+        },
+        "staffAndAccounts": {
+            "title": "Staff & Accounts"
         }
     },
     "profile": {

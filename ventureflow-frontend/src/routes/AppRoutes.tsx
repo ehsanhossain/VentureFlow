@@ -19,10 +19,14 @@ import DealPipeline from "../pages/deals/DealPipeline";
 import PartnerManagement from "../pages/settings/components/PartnerManagement";
 import StaffManagement from "../pages/settings/components/StaffManagement";
 import CreateStaff from "../pages/settings/components/CreateStaff";
+import StaffDetails from "../pages/settings/components/StaffDetails";
+import PartnerDetails from "../pages/settings/components/PartnerDetails";
+import AuditLog from "../pages/settings/components/AuditLog";
 import GeneralSettings from "../pages/settings/components/GeneralSettings";
 import PipelineSettings from "../pages/settings/components/PipelineSettings";
 import ChangePassword from "../pages/auth/ChangePassword";
-import PartnerPortalDetails from "../pages/partner-portal/partner-portal-view/PartnerPortalDetails";
+import CreatePartner from '../pages/settings/components/CreatePartner';
+import PartnerProfile from '../pages/settings/components/PartnerProfile';
 
 const AppRoutes = () => {
   return (
@@ -120,12 +124,17 @@ const AppRoutes = () => {
         <Route path="staff" element={<StaffManagement />} />
         <Route path="staff/create" element={<CreateStaff />} />
         <Route path="staff/edit/:id" element={<CreateStaff />} />
+        <Route path="staff/view/:id" element={<StaffDetails />} />
         <Route path="currency" element={<CurrencyTable />} />
         <Route path="currency/add" element={<Register />} />
         <Route path="currency/edit/:id" element={<Register />} />
         <Route path="partners" element={<PartnerManagement />} />
-        <Route path="partners/:id" element={<PartnerPortalDetails />} />
+        <Route path="partners/:id" element={<PartnerDetails />} />
+        <Route path="partners/create" element={<CreatePartner />} />
+        <Route path="partners/edit/:id" element={<CreatePartner />} />
         <Route path="pipeline" element={<PipelineSettings />} />
+        <Route path="audit-log" element={<AuditLog />} />
+        <Route path="profile" element={<PartnerProfile />} />
       </Route>
 
       {/* Profile & Employee Edit */}

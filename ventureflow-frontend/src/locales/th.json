@@ -59,7 +59,7 @@
     },
     "navigation": {
         "dashboard": "แดชบอร์ด",
-        "companies": "บริษัท",
+        "companies": "ผู้มุ่งหวัง",
         "sellerRegister": "ลงทะเบียนผู้ขาย",
         "buyerRegister": "ลงทะเบียนผู้ซื้อ",
         "dealPipeline": "ไปป์ไลน์ดีล",
@@ -68,6 +68,7 @@
         "general": "ทั่วไป",
         "currency": "สกุลเงิน",
         "partnerManagement": "จัดการพันธมิตร",
+        "staffAndAccounts": "พนักงานและบัญชี",
         "notifications": "การแจ้งเตือน",
         "profile": "โปรไฟล์"
     },
@@ -85,7 +86,7 @@
         "darkMode": "โหมดมืด",
         "lightMode": "โหมดสว่าง",
         "general": {
-            "title": "การตั้งค่าทั่วไป",
+            "title": "ทั่วไป",
             "languagePreference": "การตั้งค่าภาษา",
             "selectLanguageLabel": "เลือกภาษาของอินเทอร์เฟซ:",
             "themeLabel": "ธีมของอินเทอร์เฟซ",
@@ -97,6 +98,9 @@
             "notificationsLabel": "การแจ้งเตือน",
             "emailNotifications": "เปิดใช้งานการแจ้งเตือนทางอีเมล",
             "summary": "จัดการการตั้งค่าบัญชีพื้นฐาน ภาษา และการตั้งค่าอินเทอร์เฟซของคุณ"
+        },
+        "staffAndAccounts": {
+            "title": "พนักงานและบัญชี"
         },
         "currency": {
             "title": "การตั้งค่าสกุลเงิน",

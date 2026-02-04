@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
     Search,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
+    GripVertical
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -91,33 +92,25 @@ const ResizeHandle: React.FC<{
 
 const SortIcon: React.FC<{ direction: 'asc' | 'desc' | null }> = ({ direction }) => {
     return (
-        <div className="flex flex-col items-center -space-y-1 opacity-40 group-hover:opacity-100 transition-opacity">
-            <ArrowUp className={cn("w-2.5 h-2.5", direction === 'asc' ? 'text-[#064771] opacity-100' : 'text-slate-400')} />
-            <ArrowDown className={cn("w-2.5 h-2.5", direction === 'desc' ? 'text-[#064771] opacity-100' : 'text-slate-400')} />
+        <div className="flex flex-col items-center -space-y-0.5 transition-opacity">
+            <ArrowUp className={cn(
+                "w-2.5 h-2.5 transition-all duration-200",
+                direction === 'asc' ? 'text-[#064771] scale-110' : 'text-slate-300 opacity-40 group-hover/header:opacity-80'
+            )} />
+            <ArrowDown className={cn(
+                "w-2.5 h-2.5 transition-all duration-200",
+                direction === 'desc' ? 'text-[#064771] scale-110' : 'text-slate-300 opacity-40 group-hover/header:opacity-80'
+            )} />
         </div>
     );
 };
 
 const DragHandle: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => (
     <div className={cn(
-        'w-4 h-4 text-slate-400 opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab flex items-center justify-center',
+        'w-4 h-4 text-slate-300 opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab flex items-center justify-center',
         isDragging && 'opacity-100 text-[#064771]'
     )}>
-        <svg
-            viewBox="0 0 24 24"
-            className="w-full h-full"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M18 11.5V9a2 2 0 00-2-2v0a2 2 0 00-2 2v1.4" />
-            <path d="M14 10V8a2 2 0 00-2-2v0a2 2 0 00-2 2v2" />
-            <path d="M10 9.9V9a2 2 0 00-2-2v0a2 2 0 00-2 2v5" />
-            <path d="M6 14v0a2 2 0 00-2-2v0a2 2 0 00-2 2v0" />
-            <path d="M18 11v0a2 2 0 114 0v3a8 8 0 01-8 8h-4a8 8 0 01-8-8 2 2 0 114 0" />
-        </svg>
+        <GripVertical className="w-3.5 h-3.5" />
     </div>
 );
 
@@ -431,8 +424,8 @@ function DataTable<T>({
                         <tr className="table-header-row h-12">
                             {selectable && (
                                 <th className={cn(
-                                    "w-[50px] text-center sticky left-0 z-30 p-2 border-b border-[#cbd5e1] transition-shadow",
-                                    scrolledLeft > 0 ? "bg-[#f1f5f9] border-r border-[#cbd5e1] shadow-[2px_0_5px_rgba(0,0,0,0.05)]" : "bg-[#f1f5f9]"
+                                    "w-[50px] text-center sticky top-0 left-0 z-50 p-2 border-b border-[#cbd5e1] transition-shadow bg-[#f1f5f9]",
+                                    scrolledLeft > 0 && "border-r border-[#cbd5e1] shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                 )}>
                                     <div className="flex items-center justify-center">
                                         <input
@@ -488,7 +481,7 @@ function DataTable<T>({
                                         >
                                             {canDrag && <DragHandle isDragging={isDragging} />}
                                             {typeof column.header === 'string' ? (
-                                                <span className="text-[11px] font-semibold text-[#475569] uppercase tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis px-[3px]">
+                                                <span className="text-[11px] font-medium text-[#475569] uppercase tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis px-[3px]">
                                                     {column.header}
                                                 </span>
                                             ) : (
@@ -513,7 +506,7 @@ function DataTable<T>({
                                     className="sticky right-0 bg-[#f1f5f9] z-30 border-b border-[#cbd5e1] h-12 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.15)]"
                                 >
                                     <div className="flex items-center justify-end px-4 h-full min-h-[48px]">
-                                        {/* Actions Header Text Removed per user request */}
+                                        {/* Actions Header remains blank */}
                                     </div>
                                 </th>
                             )}
@@ -554,7 +547,7 @@ function DataTable<T>({
                                             <td className={cn(
                                                 "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-shadow",
                                                 isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
-                                                scrolledLeft > 0 && "shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                                                scrolledLeft > 0 && "border-r border-slate-200/60 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]"
                                             )}>
                                                 <div className="flex items-center justify-center h-14">
                                                     <input

@@ -39,6 +39,7 @@ export function Sidebar({
       "General": "navigation.general",
       "Currency": "navigation.currency",
       "Partner Management": "navigation.partnerManagement",
+      "Staff & Accounts": "navigation.staffAndAccounts",
       "Pipeline Workflow": "navigation.pipelineWorkflow"
     };
     return mapping[label] || label;
@@ -50,8 +51,17 @@ export function Sidebar({
     return item.roles.includes(userRole);
   });
 
+  // Filter sub-items based on partner visibility
+  const getFilteredSubItems = (subItems: any[] | undefined) => {
+    if (!subItems) return [];
+    if (!context?.isPartner) return subItems;
+    // Partners only see sub-items marked as partnerVisible
+    return subItems.filter((sub: any) => sub.partnerVisible);
+  };
+
   const isSubItemActive = (subItems: any[]) => {
-    return subItems.some((sub) => location.pathname === sub.path);
+    const filtered = getFilteredSubItems(subItems);
+    return filtered.some((sub) => location.pathname === sub.path);
   };
 
   const toggleMenu = (label: string) => {
@@ -60,7 +70,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white border-r transition-all duration-300 z-[70]
+      className={`fixed left-0 top-0 h-screen bg-white border-r transition-all duration-300 z-[85]
         ${mobileMenuOpen
           ? "translate-x-0"
           : "-translate-x-full md:translate-x-0"
@@ -85,7 +95,7 @@ export function Sidebar({
           {/* Sidebar Toggle Button */}
           <button
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
-            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-[3px] hidden md:flex items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#064771] hover:border-[#064771] z-[70] focus:outline-none"
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white border border-gray-200 rounded-[3px] hidden md:flex items-center justify-center transition-all duration-300 text-gray-500 hover:text-[#064771] hover:border-[#064771] z-[90] focus:outline-none"
           >
             {sidebarExpanded ? (
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -180,7 +190,7 @@ export function Sidebar({
                     {/* Sub-items - shown when expanded (Standard Sidebar) */}
                     {sidebarExpanded && isExpanded && (
                       <div className="ml-9 mt-1 space-y-1 mb-2">
-                        {item.subItems?.map((subItem, subIndex) => (
+                        {getFilteredSubItems(item.subItems)?.map((subItem, subIndex) => (
                           <Link
                             key={subIndex}
                             to={subItem.path}
@@ -209,7 +219,7 @@ export function Sidebar({
                           <div className="px-4 py-2 text-sm font-semibold text-gray-900 border-b border-gray-50 bg-gray-50/50">
                             {t(getTranslationKey(item.label))}
                           </div>
-                          {item.subItems?.map((subItem, subIndex) => (
+                          {getFilteredSubItems(item.subItems)?.map((subItem, subIndex) => (
                             <Link
                               key={subIndex}
                               to={subItem.path}

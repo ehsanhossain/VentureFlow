@@ -234,7 +234,7 @@ const TargetDetails: React.FC = () => {
                             <div className="p-5 rounded border bg-white border-[#064771]/20 ring-1 ring-[#064771]/5 max-w-md">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded bg-[#064771] text-white flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-full bg-[#064771] text-white flex items-center justify-center">
                                             <User className="w-5 h-5" />
                                         </div>
                                         <div>
@@ -242,7 +242,7 @@ const TargetDetails: React.FC = () => {
                                             <div className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</div>
                                         </div>
                                     </div>
-                                    <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded">Primary</span>
+                                    <span className="text-[9px] font-black uppercase tracking-tighter bg-[#064771] text-white px-2 py-0.5 rounded-full">Primary</span>
                                 </div>
                                 <div className="space-y-2.5 pt-2 border-t border-gray-100">
                                     <div className="flex items-center gap-2 text-xs text-gray-600">

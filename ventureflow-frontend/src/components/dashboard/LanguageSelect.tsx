@@ -37,7 +37,7 @@ export const LanguageSelect: React.FC = () => {
     <div ref={dropdownRef} className="relative">
       {/* Language Selector */}
       <div
-        className="flex items-center gap-2 px-3 py-2 bg-[#033351] rounded-full cursor-pointer hover:bg-[#044a73] transition-colors"
+        className="flex items-center gap-2 px-3 py-2 bg-[#033351] rounded-[3px] cursor-pointer hover:bg-[#044a73] transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <img src={currentLang.flag} alt={currentLang.label} className="w-5 h-5 rounded-sm object-cover" />

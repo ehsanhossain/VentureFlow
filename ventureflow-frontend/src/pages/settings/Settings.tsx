@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CurrencyIcon, SettingsIcon } from '../../assets/icons';
-import { Users, ChevronLeft, ChevronRight, GitFork, UserCog } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, GitFork, UserCog, History, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../../routes/AuthContext';
@@ -11,49 +11,73 @@ const Settings: React.FC = () => {
   const location = useLocation();
   const auth = useContext(AuthContext);
   const isPartner = auth?.isPartner;
+  const isAdmin = auth?.role === 'System Admin';
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Redirect partners to dashboard (they don't have access to settings)
-  if (isPartner) {
-    return <Navigate to="/" replace />;
-  }
+  // Build the settings menu based on user type
+  const getSettingsMenu = () => {
+    if (isPartner) {
+      // Partners only see General and their Profile
+      return [
+        {
+          label: t('navigation.general', 'General'),
+          path: '/settings/general',
+          icon: SettingsIcon,
+        },
+        {
+          label: t('profile.myProfile', 'My Profile'),
+          path: '/settings/profile',
+          icon: User,
+        },
+      ];
+    }
 
-  // Redirect to general if on root settings page
+    // Admin/Staff see full menu
+    return [
+      {
+        label: t('navigation.general', 'General'),
+        path: '/settings/general',
+        icon: SettingsIcon,
+      },
+      {
+        label: t('navigation.staffManagement', 'Staff & Accounts'),
+        path: '/settings/staff',
+        icon: UserCog,
+      },
+      {
+        label: t('navigation.currency', 'Currency'),
+        path: '/settings/currency',
+        icon: CurrencyIcon,
+      },
+      {
+        label: t('navigation.partnerManagement', 'Partner Management'),
+        path: '/settings/partners',
+        icon: Users,
+      },
+      {
+        label: t('navigation.pipelineWorkflow', 'Pipeline Workflow'),
+        path: '/settings/pipeline',
+        icon: GitFork,
+      },
+      // Audit Log - only visible to admins
+      ...(isAdmin ? [{
+        label: t('navigation.auditLog', 'Audit Log'),
+        path: '/settings/audit-log',
+        icon: History,
+      }] : []),
+    ];
+  };
+
+  const settingsMenu = getSettingsMenu();
+
+  // Redirect to appropriate default page
   if (location.pathname === '/settings') {
     return <Navigate to="/settings/general" replace />;
   }
 
-  const settingsMenu = [
-    {
-      label: t('navigation.general', 'General'),
-      path: '/settings/general',
-      icon: SettingsIcon,
-    },
-    {
-      label: t('navigation.staffManagement', 'Staff & Accounts'),
-      path: '/settings/staff',
-      icon: UserCog,
-    },
-    {
-      label: t('navigation.currency', 'Currency'),
-      path: '/settings/currency',
-      icon: CurrencyIcon,
-    },
-    {
-      label: t('navigation.partnerManagement', 'Partner Management'),
-      path: '/settings/partners',
-      icon: Users,
-    },
-    {
-      label: t('navigation.pipelineWorkflow', 'Pipeline Workflow'),
-      path: '/settings/pipeline',
-      icon: GitFork,
-    },
-  ];
-
   return (
-    <div className="flex h-screen bg-[#F8F9FB]">
+    <div className="flex h-screen bg-[#f9fafb]">
       {/* Sidebar */}
       <aside
         className={`bg-white border-r border-gray-200 flex-shrink-0 min-h-full transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'
@@ -94,7 +118,7 @@ const Settings: React.FC = () => {
       </aside>
 
       {/* Content Area */}
-      <main className="flex-1 overflow-hidden bg-[#F8F9FB]">
+      <main className="flex-1 overflow-hidden bg-[#f9fafb]">
         <div className="h-full w-full">
           <Outlet />
         </div>
