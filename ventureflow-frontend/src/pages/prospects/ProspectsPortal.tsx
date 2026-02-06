@@ -111,6 +111,9 @@ const ProspectsPortal: React.FC = () => {
         itemsPerPage: 20
     });
 
+    // Ref to track itemsPerPage for API calls without causing refetch loops
+    const itemsPerPageRef = useRef(pagination.itemsPerPage);
+
     const [countries, setCountries] = useState<Country[]>([]);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [counts, setCounts] = useState({ investors: 0, targets: 0 });
@@ -175,6 +178,7 @@ const ProspectsPortal: React.FC = () => {
 
             if (rows > 0 && rows !== lastCalculatedRows.current) {
                 lastCalculatedRows.current = rows;
+                itemsPerPageRef.current = rows; // Keep ref in sync
                 setPagination(prev => {
                     if (prev.itemsPerPage === rows) return prev;
                     return { ...prev, itemsPerPage: rows };
@@ -242,7 +246,7 @@ const ProspectsPortal: React.FC = () => {
                         search: searchQuery,
                         ...filters,
                         page: activeTab === 'investors' ? pagination.currentPage : undefined, // Only paginate active tab fetch effectively
-                        per_page: pagination.itemsPerPage
+                        per_page: itemsPerPageRef.current
                     }
                 }),
                 api.get('/api/seller', {
@@ -250,7 +254,7 @@ const ProspectsPortal: React.FC = () => {
                         search: searchQuery,
                         ...filters,
                         page: activeTab === 'targets' ? pagination.currentPage : undefined,
-                        per_page: pagination.itemsPerPage
+                        per_page: itemsPerPageRef.current
                     }
                 })
             ]);
@@ -627,7 +631,9 @@ const ProspectsPortal: React.FC = () => {
     // Fetch Investors/Targets
     useEffect(() => {
         if (countries.length > 0) fetchData();
-    }, [activeTab, searchQuery, countries, investorPinnedIds, targetPinnedIds, filters, pagination.currentPage, pagination.itemsPerPage]);
+        // Note: pagination.itemsPerPage intentionally excluded to prevent resize-triggered refetch loops
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, searchQuery, countries, investorPinnedIds, targetPinnedIds, filters, pagination.currentPage]);
 
     const handleTogglePin = async (id: number) => {
         try {

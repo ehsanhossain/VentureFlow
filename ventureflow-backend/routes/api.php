@@ -159,6 +159,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Activity Log Routes
     Route::get('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'store']);
+    Route::delete('/activity-logs/{id}', [\App\Http\Controllers\ActivityLogController::class, 'destroy']);
 
     // Partner Portal Configuration (Admin)
     Route::get('/partner-settings', [\App\Http\Controllers\PartnerSettingController::class, 'index']);

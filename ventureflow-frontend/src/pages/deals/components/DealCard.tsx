@@ -93,8 +93,8 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
     const primaryImageUrl = getImageUrl(primaryImage);
     const secondaryImageUrl = getImageUrl(secondaryImage);
 
-    // Generate avatar color based on name
-    const getAvatarColor = (name: string, isPrimary: boolean) => {
+    // Generate avatar color based on view type
+    const getAvatarColor = (isPrimary: boolean) => {
         if (isPrimary) {
             return pipelineView === 'buyer'
                 ? { bg: '#F2B200', text: '#3E2C06' }  // Gold for buyer
@@ -103,8 +103,8 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
         return { bg: '#030042', text: '#FFFFFF' }; // Dark blue for secondary
     };
 
-    const primaryColor = getAvatarColor(primaryEntity, true);
-    const secondaryColor = getAvatarColor(secondaryEntity, false);
+    const primaryColor = getAvatarColor(true);
+    const secondaryColor = getAvatarColor(false);
 
     return (
         <div

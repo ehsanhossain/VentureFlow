@@ -11,7 +11,6 @@ import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry as IndustryType } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
-import { ActivityLogChat } from '../components/ActivityLogChat';
 import { LogoUpload } from '../../../components/LogoUpload';
 import { AlertCircle } from 'lucide-react';
 
@@ -613,12 +612,6 @@ export const TargetRegistration: React.FC = () => {
                             )}
                         />
                         {errors.targetIndustries && <span className="text-red-500 text-xs">At least one industry is required</span>}
-                    </div>
-
-                    {/* Notes & Audit Log - Moved here like investor side */}
-                    <div>
-                        <Label text="Notes & Audit Log" />
-                        <ActivityLogChat entityId={id} entityType="seller" />
                     </div>
                 </div>
             </CollapsibleSection>

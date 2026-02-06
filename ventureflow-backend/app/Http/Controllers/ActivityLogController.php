@@ -90,4 +90,31 @@ class ActivityLogController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Delete an activity log
+     */
+    public function destroy($id): JsonResponse
+    {
+        $log = ActivityLog::find($id);
+
+        if (!$log) {
+            return response()->json([
+                'message' => 'Activity log not found'
+            ], 404);
+        }
+
+        // Only allow the owner or admin to delete
+        if ($log->user_id !== Auth::id() && !Auth::user()->hasRole('System Admin')) {
+            return response()->json([
+                'message' => 'Unauthorized to delete this activity log'
+            ], 403);
+        }
+
+        $log->delete();
+
+        return response()->json([
+            'message' => 'Activity log deleted successfully'
+        ]);
+    }
 }

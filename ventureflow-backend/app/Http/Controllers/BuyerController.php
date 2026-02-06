@@ -532,6 +532,11 @@ class BuyerController extends Controller
                 'data' => $buyer->id,
             ], 201);
         } catch (\Exception $e) {
+            \Log::error('CompanyOverviewStore Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'buyer_param' => $data['buyer'] ?? null,
+                'buyer_id_param' => $data['buyer_id'] ?? null,
+            ]);
             return response()->json([
                 'message' => 'Failed to submit company overview.',
                 'error' => $e->getMessage(),
@@ -856,15 +861,72 @@ class BuyerController extends Controller
             // Admin
             $buyer->load([
                 'companyOverview.hqCountry',
+                'companyOverview.employeeDetails',
                 'targetPreference',
                 'financialDetails',
                 'partnershipDetails',
                 'teaserCenter',
-                'deals'
+                'deals.seller.companyOverview',
+                'activityLogs' => function ($q) {
+                    $q->with(['user.employee'])->orderBy('created_at', 'desc');
+                }
             ]);
 
+            // Format activity logs for frontend
+            $formattedLogs = $buyer->activityLogs->map(function ($log) {
+                $userName = 'Ventureflow';
+                $avatar = null;
+                $isSystem = $log->type === 'system';
+
+                if ($log->user) {
+                    if ($log->user->employee) {
+                        $userName = trim($log->user->employee->first_name . ' ' . $log->user->employee->last_name);
+                        $avatar = $log->user->employee->image ? asset('storage/' . $log->user->employee->image) : null;
+                    } else {
+                        $userName = $log->user->name;
+                    }
+                }
+
+                return [
+                    'id' => $log->id,
+                    'type' => $log->type,
+                    'author' => $isSystem ? 'Ventureflow' : $userName,
+                    'avatar' => $avatar,
+                    'content' => $log->content,
+                    'timestamp' => $log->created_at,
+                    'isSystem' => $isSystem,
+                    'metadata' => $log->metadata,
+                ];
+            });
+
+            // Format deals as introduced projects for frontend
+            $introducedProjects = $buyer->deals->map(function ($deal) {
+                $sellerName = 'Unknown Target';
+                $sellerCode = 'N/A';
+                
+                if ($deal->seller && $deal->seller->companyOverview) {
+                    $sellerName = $deal->seller->companyOverview->reg_name ?? 'Unknown Target';
+                }
+                if ($deal->seller) {
+                    $sellerCode = $deal->seller->seller_id ?? 'N/A';
+                }
+
+                return [
+                    'id' => $deal->id,
+                    'code' => $sellerCode,
+                    'name' => $sellerName,
+                    'stage_code' => $deal->stage_code,
+                    'stage_name' => $deal->stage_name,
+                    'progress' => $deal->progress_percent,
+                ];
+            });
+
+            $buyerData = $buyer->toArray();
+            $buyerData['formatted_activity_logs'] = $formattedLogs;
+            $buyerData['formatted_introduced_projects'] = $introducedProjects;
+
             return response()->json([
-                'data' => $buyer
+                'data' => $buyerData
             ]);
         }
     }

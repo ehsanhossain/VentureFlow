@@ -11,7 +11,6 @@ import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
 import { CollapsibleSection } from '../../../components/CollapsibleSection';
-import { ActivityLogChat } from '../components/ActivityLogChat';
 import { LogoUpload } from '../../../components/LogoUpload';
 
 // Types
@@ -413,7 +412,7 @@ export const InvestorRegistration: React.FC = () => {
             }
 
             const response = await api.post('/api/buyer/company-overviews', payload);
-            const savedId = response.data?.data?.id || id;
+            const savedId = response.data?.data || id;
 
             showAlert({ type: 'success', message: `Investor ${isDraft ? 'draft ' : ''}saved successfully` });
 
@@ -627,12 +626,6 @@ export const InvestorRegistration: React.FC = () => {
 
                     {/* Purpose */}
 
-
-                    {/* Notes / Audit Log System */}
-                    <div>
-                        <Label text="Notes & Audit Log" />
-                        <ActivityLogChat entityId={id} entityType="buyer" />
-                    </div>
 
                     {/* Target Countries */}
                     <div>

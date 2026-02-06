@@ -386,6 +386,36 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
     return (
         <div className="w-full h-full flex flex-col min-h-0 relative">
+            {/* Bulk Action Bar */}
+            {selectedIds.size > 0 && !isRestricted && (
+                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium">
+                                {selectedIds.size}
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">
+                                {selectedIds.size === 1 ? 'investor' : 'investors'} selected
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setSelectedIds(new Set())}
+                            className="text-xs text-slate-500 hover:text-slate-700 underline transition-colors"
+                        >
+                            Clear selection
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setIsDeleteModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-[3px] text-sm font-medium transition-all active:scale-95"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Selected
+                        </button>
+                    </div>
+                </div>
+            )}
             <DataTable
                 data={sortedData}
                 columns={filteredColumns}
