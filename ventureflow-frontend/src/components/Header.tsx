@@ -25,9 +25,11 @@ interface HeaderProps {
 
 interface SearchResults {
   deals: any[];
-  companies: any[];
+  investors: any[];
+  targets: any[];
+  staff: any[];
+  partners: any[];
   documents: any[];
-  contacts: any[];
 }
 
 export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: HeaderProps) {
@@ -72,15 +74,17 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
       }
       if (e.key === 'Escape') {
         if (searchOpen) {
+          e.preventDefault();
+          e.stopPropagation();
           setSearchOpen(false);
-        } else {
-          navigate(-1);
+          return; // Prevent any further ESC handling
         }
+        navigate(-1);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [searchOpen, navigate]);
 
   // Search Logic
   useEffect(() => {
@@ -388,7 +392,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             {(query.length > 1 && results) ? (
               <div className="max-h-[60vh] overflow-y-auto py-2">
                 {/* Empty State */}
-                {(!results.deals.length && !results.companies.length && !results.documents.length && !results.contacts.length) && (
+                {(!results.deals.length && !results.investors.length && !results.targets.length && !results.staff.length && !results.partners.length && !results.documents.length) && (
                   <div className="py-14 px-6 text-center text-sm sm:px-14">
                     <p className="mt-2 text-gray-500">No results found for "{query}".</p>
                   </div>
@@ -410,34 +414,70 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                   </div>
                 )}
 
-                {/* Companies */}
-                {results.companies.length > 0 && (
-                  <div key="companies-section">
-                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Prospects</div>
+                {/* Prospects: Investors */}
+                {results.investors.length > 0 && (
+                  <div key="investors-section">
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Investors</div>
                     <ul className="py-2 text-sm text-gray-700">
-                      {results.companies.map((company) => (
-                        <li key={`company-${company.id}-${company.type}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
-                          onClick={() => { navigate(company.type === 'Seller' ? `/prospects/target/${company.id}` : `/prospects/investor/${company.id}`); closeSearch(); }}>
-                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
-                          <span className="ml-3 flex-auto truncate">{company.name}</span>
-                          <span className="ml-3 flex-none text-xs text-gray-400">{company.type}</span>
+                      {results.investors.map((investor) => (
+                        <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                          onClick={() => { navigate(`/prospects/investor/${investor.id}`); closeSearch(); }}>
+                          {investor.country_flag && <img src={investor.country_flag} alt="" className="h-4 w-4 rounded-full object-cover" />}
+                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771] ml-1" />
+                          <span className="ml-3 flex-auto truncate">{investor.name}</span>
+                          {investor.project_code && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 rounded">{investor.project_code}</span>}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Contacts */}
-                {results.contacts.length > 0 && (
-                  <div key="contacts-section">
-                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Contacts</div>
+                {/* Prospects: Targets */}
+                {results.targets.length > 0 && (
+                  <div key="targets-section">
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Targets</div>
                     <ul className="py-2 text-sm text-gray-700">
-                      {results.contacts.map((contact) => (
-                        <li key={`contact-${contact.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
-                          onClick={() => { navigate(`/employee/details/${contact.id}`); closeSearch(); }}>
+                      {results.targets.map((target) => (
+                        <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                          onClick={() => { navigate(`/prospects/target/${target.id}`); closeSearch(); }}>
+                          {target.country_flag && <img src={target.country_flag} alt="" className="h-4 w-4 rounded-full object-cover" />}
+                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771] ml-1" />
+                          <span className="ml-3 flex-auto truncate">{target.name}</span>
+                          {target.project_code && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 rounded">{target.project_code}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Staff */}
+                {results.staff.length > 0 && (
+                  <div key="staff-section">
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Staff</div>
+                    <ul className="py-2 text-sm text-gray-700">
+                      {results.staff.map((employee) => (
+                        <li key={`staff-${employee.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                          onClick={() => { navigate(`/employee/details/${employee.id}`); closeSearch(); }}>
                           <StaffAccountsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
-                          <span className="ml-3 flex-auto truncate">{contact.first_name} {contact.last_name}</span>
-                          <span className="ml-3 flex-none text-xs text-gray-400">{contact.work_email}</span>
+                          <span className="ml-3 flex-auto truncate">{employee.first_name} {employee.last_name}</span>
+                          <span className="ml-3 flex-none text-xs text-gray-400">{employee.work_email}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Partners */}
+                {results.partners.length > 0 && (
+                  <div key="partners-section">
+                    <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Partners</div>
+                    <ul className="py-2 text-sm text-gray-700">
+                      {results.partners.map((partner) => (
+                        <li key={`partner-${partner.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                          onClick={() => { navigate(`/settings/partners`); closeSearch(); }}>
+                          <PartnerIconCustom className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <span className="ml-3 flex-auto truncate">{partner.name}</span>
+                          {partner.partner_id && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 bg-purple-50 rounded">{partner.partner_id}</span>}
                         </li>
                       ))}
                     </ul>

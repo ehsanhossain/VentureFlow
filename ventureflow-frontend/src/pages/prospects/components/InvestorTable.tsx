@@ -8,6 +8,8 @@ import {
     Eye,
     Zap,
     Trash2,
+    ExternalLink,
+    Copy
 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -113,6 +115,27 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
+    const parseWebsiteUrl = (website: string | undefined): string => {
+        if (!website) return '';
+        try {
+            // Handle JSON string format like [{"url":"..."}]
+            if (website.trim().startsWith('[')) {
+                const parsed = JSON.parse(website);
+                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
+                    return parsed[0].url;
+                }
+            }
+        } catch (e) {
+            // If parse fails, assume it's a plain string
+        }
+        return website;
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        showAlert({ type: 'success', message: 'Website URL copied to clipboard' });
+    };
+
     const handleConfirmDelete = async () => {
         try {
             const response = await api.delete('/api/buyers', {
@@ -149,6 +172,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => row.projectCode,
             width: 150,
             sortable: true,
             sticky: 'left'
@@ -175,6 +199,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     <span className="text-[14px] font-medium text-slate-900 truncate tracking-tight">{row.companyName}</span>
                 </div>
             ),
+            textAccessor: (row) => row.companyName,
             width: 200,
             sortable: true,
         },
@@ -191,17 +216,46 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     <span className="text-[13px] font-medium text-slate-600 truncate">{row.originCountry?.name || 'N/A'}</span>
                 </div>
             ),
+            textAccessor: (row) => row.originCountry?.name || '',
             width: 140,
             sortable: true,
         },
         {
             id: 'website',
             header: 'Website',
-            accessor: (row) => (
-                <a href={row.website?.startsWith('http') ? row.website : `https://${row.website}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm block truncate">
-                    {row.website?.replace(/^https?:\/\//, '') || 'N/A'}
-                </a>
-            ),
+            accessor: (row) => {
+                const url = parseWebsiteUrl(row.website);
+                if (!url) return <span className="text-slate-400 text-sm">N/A</span>;
+
+                const displayUrl = url.startsWith('http') ? url : `https://${url}`;
+
+                return (
+                    <div className="group flex items-center justify-between gap-2 max-w-full">
+                        <a
+                            href={displayUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium truncate"
+                        >
+                            Visit Website
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        </a>
+
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                copyToClipboard(displayUrl);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all duration-200"
+                            title="Copy URL"
+                        >
+                            <Copy className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                );
+            },
+            textAccessor: (row) => parseWebsiteUrl(row.website),
             width: 160,
         },
         {
@@ -223,6 +277,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     ) : <span className="text-[11px] font-medium text-slate-300">N/A</span>}
                 </div>
             ),
+            textAccessor: (row) => row.targetIndustries?.join(', ') || '',
             width: 200,
         },
         {
@@ -243,6 +298,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </div>
                 ) : <span className="text-[11px] font-medium text-slate-300">N/A</span>
             ),
+            textAccessor: (row) => row.targetCountries?.map(c => c.name).join(', ') || '',
             width: 200,
         },
         {
@@ -261,6 +317,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => formatCompactBudget(row.budget, '$', 1), // Approximate for sizing
             width: 150,
         },
         {
@@ -274,6 +331,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
         },
         {

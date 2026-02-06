@@ -152,6 +152,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => row.projectCode,
             width: 150,
             sortable: true,
             sticky: 'left'
@@ -178,6 +179,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     <span className="text-[14px] font-medium text-slate-900 truncate tracking-tight">{row.companyName}</span>
                 </div>
             ),
+            textAccessor: (row) => row.companyName,
             width: 200,
             sortable: true,
         },
@@ -194,6 +196,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     <span className="text-[13px] font-medium text-slate-600 truncate">{row.originCountry?.name || 'N/A'}</span>
                 </div>
             ),
+            textAccessor: (row) => row.originCountry?.name || '',
             width: 140,
             sortable: true,
         },
@@ -201,6 +204,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             id: 'status',
             header: 'Status',
             accessor: (row) => <span className="text-[12px] font-medium text-slate-500 capitalize">{row.status}</span>,
+            textAccessor: (row) => row.status,
             width: 100,
         },
         {
@@ -222,6 +226,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     ) : <span className="text-[11px] font-medium text-slate-300">N/A</span>}
                 </div>
             ),
+            textAccessor: (row) => row.industry?.join(', ') || '',
             width: 180,
         },
         {
@@ -234,6 +239,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => formatCompactBudget(row.desiredInvestment, '$', 1),
             width: 160,
         },
         {
@@ -244,12 +250,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     {getBudgetDisplay(row.ebitda, row.sourceCurrencyRate)}
                 </span>
             ),
+            textAccessor: (row) => formatCompactBudget(row.ebitda, '$', 1),
             width: 140,
         },
         {
             id: 'saleShareRatio',
             header: 'Planned Ratio Sale',
             accessor: (row) => <span className="text-[12px] font-medium text-slate-600">{row.saleShareRatio || 'N/A'}</span>,
+            textAccessor: (row) => row.saleShareRatio || '',
             width: 120,
         },
         {
@@ -269,6 +277,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </span>
                 </div>
             ),
+            textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
         },
         {
@@ -287,12 +296,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     </a>
                 ) : <span className="text-[11px] text-slate-300">N/A</span>
             ),
+            textAccessor: (row) => row.teaserLink || '',
             width: 120,
         },
         {
             id: 'addedDate',
             header: 'Added Date',
             accessor: (row) => <span className="text-[12px] text-slate-500 font-medium">{row.addedDate}</span>,
+            textAccessor: (row) => row.addedDate || '',
             width: 100,
         }
     ], [pipelineStages, selectedCurrency]);

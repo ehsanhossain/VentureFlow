@@ -21,6 +21,7 @@ export interface DataTableColumn<T> {
     className?: string;
     headerClassName?: string;
     cellClassName?: string;
+    textAccessor?: (row: T) => string; // Helper for auto-sizing logic when accessor returns JSX
 }
 
 export interface DataTableProps<T> {
@@ -237,11 +238,28 @@ function DataTable<T>({
         }
 
         data.forEach(row => {
-            const val = typeof column.accessor === 'function'
-                ? column.accessor(row)
-                : String(row[column.accessor as keyof T] || '');
-            if (typeof val === 'string') {
-                maxWidth = Math.max(maxWidth, val.length * 7.5 + 24);
+            let val = '';
+
+            // Priority 1: Use specific textAccessor if available (best for JSX columns)
+            if (column.textAccessor) {
+                val = column.textAccessor(row);
+            }
+            // Priority 2: Use accessor if it's a string
+            else if (typeof column.accessor === 'function') {
+                const result = column.accessor(row);
+                if (typeof result === 'string' || typeof result === 'number') {
+                    val = String(result);
+                }
+                // If it returns an object/JSX, we skip unless textAccessor provided
+            }
+            // Priority 3: Direct property access
+            else {
+                val = String(row[column.accessor as keyof T] || '');
+            }
+
+            if (val) {
+                // improved calculation: approx 7-8px per char for normal font
+                maxWidth = Math.max(maxWidth, val.length * 8 + 32);
             }
         });
 
