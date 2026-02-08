@@ -115,20 +115,34 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
-    const parseWebsiteUrl = (website: string | undefined): string => {
+    const parseWebsiteUrl = (website: any): string => {
         if (!website) return '';
-        try {
-            // Handle JSON string format like [{"url":"..."}]
-            if (website.trim().startsWith('[')) {
-                const parsed = JSON.parse(website);
-                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
-                    return parsed[0].url;
-                }
+
+        // Handle array format (new backend format via model cast)
+        if (Array.isArray(website)) {
+            if (website.length > 0 && website[0]?.url) {
+                return website[0].url;
             }
-        } catch (e) {
-            // If parse fails, assume it's a plain string
+            return '';
         }
-        return website;
+
+        // Handle string input
+        if (typeof website === 'string') {
+            try {
+                // Handle JSON string format like [{"url":"..."}]
+                if (website.trim().startsWith('[')) {
+                    const parsed = JSON.parse(website);
+                    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) {
+                        return parsed[0].url;
+                    }
+                }
+            } catch (e) {
+                // If parse fails, assume it's a plain string URL
+            }
+            return website;
+        }
+
+        return '';
     };
 
     const copyToClipboard = (text: string) => {

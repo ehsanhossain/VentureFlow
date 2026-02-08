@@ -298,9 +298,24 @@ export const TargetRegistration: React.FC = () => {
                     setInitialProfileImage(imagePath);
                 }
 
-                if (ov.hq_country) {
-                    const c = countries.find(x => x.id == ov.hq_country);
-                    if (c) setValue('originCountry', c);
+                // hqCountry relation is loaded by backend and serialized as 'hq_country' object
+                // When relation is loaded: hq_country is the country object
+                const countryData = ov.hq_country;
+                if (countryData) {
+                    // If it's a loaded relationship (object with name, id, etc.)
+                    if (typeof countryData === 'object' && countryData.id) {
+                        setValue('originCountry', {
+                            id: countryData.id,
+                            name: countryData.name || '',
+                            alpha: countryData.alpha_2_code || '',
+                            flagSrc: countryData.svg_icon_url || '',
+                            status: 'registered'
+                        });
+                    } else if (typeof countryData === 'number' || typeof countryData === 'string') {
+                        // If it's just the ID (relation not loaded), look it up in countries list
+                        const c = countries.find(x => x.id == countryData);
+                        if (c) setValue('originCountry', c);
+                    }
                 }
 
                 try {

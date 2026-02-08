@@ -86,10 +86,14 @@ class SellerController extends Controller
              $query->with([
                 'companyOverview' => function($q) use ($allowedFields) {
                     if (isset($allowedFields['relationships']['companyOverview'])) {
-                        $q->select(array_merge(['id'], $allowedFields['relationships']['companyOverview']));
+                        // Ensure hq_country is always included for country display
+                        $fields = array_merge(['id', 'hq_country'], $allowedFields['relationships']['companyOverview']);
+                        $q->select(array_unique($fields));
                     } else {
-                        $q->select('id'); 
+                        $q->select('id', 'hq_country'); 
                     }
+                    // Always load the hqCountry relation for country name/flag
+                    $q->with('hqCountry');
                 },
                 'financialDetails' => function($q) use ($allowedFields) {
                     if (isset($allowedFields['relationships']['financialDetails'])) {
@@ -119,8 +123,9 @@ class SellerController extends Controller
             ]);
 
         } else {
+             // Admin: Load everything including hqCountry for country display
              $query->with([
-                'companyOverview',
+                'companyOverview.hqCountry',
                 'financialDetails',
                 'partnershipDetails',
                 'teaserCenter',

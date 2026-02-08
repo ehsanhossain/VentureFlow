@@ -247,24 +247,32 @@ export const InvestorRegistration: React.FC = () => {
                 if (buyer) {
                     const overview = buyer.company_overview || {};
                     setValue('companyName', overview.reg_name || '');
-                    setValue('projectCode', overview.buyer_id || '');
+                    // buyer_id is on the buyer object, not the overview
+                    setValue('projectCode', buyer.buyer_id || '');
                     setValue('rank', overview.rank || 'B');
                     setValue('channel', overview.channel || 'TCF');
 
 
                     try {
-                        const links = overview.website ? JSON.parse(overview.website) : [];
-                        if (Array.isArray(links) && links.length > 0) {
-                            setValue('websiteLinks', links);
-                        } else if (overview.website && !overview.website.startsWith('[')) {
-                            // Handle legacy string data
-                            setValue('websiteLinks', [{ url: overview.website }]);
+                        // Handle website - could be an array (new), JSON string (legacy), or simple string (very old)
+                        let links: any[] = [];
+                        if (Array.isArray(overview.website)) {
+                            links = overview.website;
+                        } else if (typeof overview.website === 'string') {
+                            if (overview.website.startsWith('[')) {
+                                links = JSON.parse(overview.website);
+                            } else if (overview.website) {
+                                links = [{ url: overview.website }];
+                            }
+                        }
+                        setValue('websiteLinks', links.length > 0 ? links : [{ url: '' }]);
+                    } catch (e) {
+                        // Fallback for any parse failures
+                        if (overview.website) {
+                            setValue('websiteLinks', [{ url: String(overview.website) }]);
                         } else {
                             setValue('websiteLinks', [{ url: '' }]);
                         }
-                    } catch (e) {
-                        // Fallback for simple string if parse fails
-                        if (overview.website) setValue('websiteLinks', [{ url: overview.website }]);
                     }
 
                     setValue('purposeMNA', overview.reason_ma || '');
@@ -286,14 +294,31 @@ export const InvestorRegistration: React.FC = () => {
                         setInitialProfileImage(imagePath);
                     }
 
-                    if (overview.hq_country) {
-                        setValue('originCountry', {
-                            id: overview.hq_country,
-                            name: overview.country?.name || '',
-                            alpha: overview.country?.alpha_2_code || '',
-                            flagSrc: overview.country?.svg_icon_url || '',
-                            status: 'registered'
-                        });
+                    // hqCountry relation is loaded by backend and serialized as 'hq_country' object
+                    // When relation is loaded: hq_country is the country object
+                    // The raw hq_country ID may be stored separately or within the object
+                    const countryData = overview.hq_country;
+                    if (countryData) {
+                        // If it's a loaded relationship (object with name, id, etc.)
+                        if (typeof countryData === 'object' && countryData.id) {
+                            setValue('originCountry', {
+                                id: countryData.id,
+                                name: countryData.name || '',
+                                alpha: countryData.alpha_2_code || '',
+                                flagSrc: countryData.svg_icon_url || '',
+                                status: 'registered'
+                            });
+                        } else if (typeof countryData === 'number' || typeof countryData === 'string') {
+                            // If it's just the ID (relation not loaded), we need to find from countries list
+                            // For now, set ID and empty values - will be populated when countries load
+                            setValue('originCountry', {
+                                id: Number(countryData),
+                                name: '',
+                                alpha: '',
+                                flagSrc: '',
+                                status: 'registered'
+                            });
+                        }
                     }
 
                     try {

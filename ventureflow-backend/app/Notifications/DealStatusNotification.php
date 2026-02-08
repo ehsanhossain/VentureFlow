@@ -41,6 +41,7 @@ class DealStatusNotification extends Notification
             'title' => $title,
             'message' => $message,
             'type' => 'deal',
+            'entity_type' => 'deal',
             'entity_id' => $this->deal->id,
             'link' => "/deal-pipeline" // navigate to board
         ];

@@ -295,8 +295,21 @@ const ProspectsPortal: React.FC = () => {
             if (activeTab === 'investors') {
                 const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
                     const overview = b.company_overview || {};
-                    const hqCountryId = overview.hq_country;
-                    const hqCountry = countries.find(c => String(c.id) === String(hqCountryId));
+                    // hq_country can be: object (loaded relation), or number/string (ID)
+                    const hqCountryRaw = overview.hq_country;
+                    let hqCountry: { name: string; flagSrc: string } | undefined;
+
+                    if (hqCountryRaw && typeof hqCountryRaw === 'object' && hqCountryRaw.id) {
+                        // Loaded relation - use it directly
+                        hqCountry = {
+                            name: hqCountryRaw.name || 'Unknown',
+                            flagSrc: hqCountryRaw.svg_icon_url || ''
+                        };
+                    } else if (hqCountryRaw) {
+                        // Just an ID - look up in countries list
+                        const found = countries.find(c => String(c.id) === String(hqCountryRaw));
+                        hqCountry = found ? { name: found.name, flagSrc: found.flagSrc } : undefined;
+                    }
 
                     const indMap = Array.isArray(overview.main_industry_operations)
                         ? overview.main_industry_operations.map((i: any) => i?.name || "Unknown")
@@ -382,7 +395,21 @@ const ProspectsPortal: React.FC = () => {
                 const mappedTargets: TargetRowData[] = sellerDataRaw.map((s: any) => {
                     const ov = s.company_overview || {};
                     const fin = s.financial_details || {};
-                    const hqCountry = countries.find(c => String(c.id) === String(ov.hq_country));
+                    // hq_country can be: object (loaded relation), or number/string (ID)
+                    const hqCountryRaw = ov.hq_country;
+                    let hqCountry: { name: string; flagSrc: string } | undefined;
+
+                    if (hqCountryRaw && typeof hqCountryRaw === 'object' && hqCountryRaw.id) {
+                        // Loaded relation - use it directly
+                        hqCountry = {
+                            name: hqCountryRaw.name || 'Unknown',
+                            flagSrc: hqCountryRaw.svg_icon_url || ''
+                        };
+                    } else if (hqCountryRaw) {
+                        // Just an ID - look up in countries list
+                        const found = countries.find(c => String(c.id) === String(hqCountryRaw));
+                        hqCountry = found ? { name: found.name, flagSrc: found.flagSrc } : undefined;
+                    }
 
                     // Industry Parsing (Major & Middle)
                     let indMajor = "N/A";

@@ -148,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
     // Pipeline Stage Routes
     Route::post('/pipeline-stages/bulk', [PipelineStageController::class, 'updateBulk']);
@@ -177,6 +178,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [\App\Http\Controllers\AuditLogController::class, 'index']);
         Route::get('/summary', [\App\Http\Controllers\AuditLogController::class, 'actionsSummary']);
         Route::get('/user/{userId}', [\App\Http\Controllers\AuditLogController::class, 'userActivity']);
+    });
+
+    // Dashboard Routes
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/stats', [\App\Http\Controllers\DashboardController::class, 'stats']);
+        Route::get('/pipeline', [\App\Http\Controllers\DashboardController::class, 'pipeline']);
+        Route::get('/monthly-report', [\App\Http\Controllers\DashboardController::class, 'monthlyReport']);
+        Route::get('/activity', [\App\Http\Controllers\DashboardController::class, 'activity']);
+        Route::get('/recent', [\App\Http\Controllers\DashboardController::class, 'recent']);
     });
 });
 

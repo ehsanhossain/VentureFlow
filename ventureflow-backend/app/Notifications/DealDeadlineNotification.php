@@ -30,6 +30,7 @@ class DealDeadlineNotification extends Notification
             'title' => "Deal Deadline Approaching",
             'message' => "Deal '{$this->deal->name}' is due in {$this->daysLeft} days.",
             'type' => 'deadline',
+            'entity_type' => 'deadline',
             'entity_id' => $this->deal->id,
             'days_left' => $this->daysLeft,
             'link' => "/deal-pipeline"

@@ -69,6 +69,7 @@ class BuyersCompanyOverview extends Model
         'introduced_projects' => 'array',
         'financial_advisor' => 'array',
         'internal_pic' => 'array',
+        'website' => 'array',
     ];
 
     // Relationship with the Buyer (assuming buyer_id references buyers table)

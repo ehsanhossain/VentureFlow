@@ -45,13 +45,27 @@ class NewRegistrationNotification extends Notification
      */
     public function toDatabase(object $notifiable): array
     {
+        // Build the correct link based on entity type
+        $link = '/prospects';
+        $entityTypeLower = strtolower($this->type);
+        
+        if ($entityTypeLower === 'buyer') {
+            $link = "/prospects/investor/{$this->entityId}";
+            $entityTypeLower = 'investor';
+        } elseif ($entityTypeLower === 'seller') {
+            $link = "/prospects/target/{$this->entityId}";
+            $entityTypeLower = 'target';
+        } elseif ($entityTypeLower === 'partner') {
+            $link = "/management/partners";
+        }
+        
         return [
             'title' => "New {$this->type} Registered",
             'message' => "A new {$this->type} named '{$this->name}' has been registered.",
             'type' => 'registration',
-            'entity_type' => strtolower($this->type), // 'seller', 'buyer', 'partner'
+            'entity_type' => $entityTypeLower,
             'entity_id' => $this->entityId,
-            'link' => "/" . strtolower($this->type) . "-portal/view/{$this->entityId}" // e.g. /seller-portal/view/1
+            'link' => $link
         ];
     }
 }

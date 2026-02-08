@@ -87,10 +87,14 @@ class BuyerController extends Controller
             $query->with([
                 'companyOverview' => function($q) use ($allowedFields) {
                     if (isset($allowedFields['relationships']['companyOverview'])) {
-                        $q->select(array_merge(['id'], $allowedFields['relationships']['companyOverview']));
+                        // Ensure hq_country is always included for country display
+                        $fields = array_merge(['id', 'hq_country'], $allowedFields['relationships']['companyOverview']);
+                        $q->select(array_unique($fields));
                     } else {
-                        $q->select('id'); 
+                        $q->select('id', 'hq_country'); 
                     }
+                    // Always load the hqCountry relation for country name/flag
+                    $q->with('hqCountry');
                 },
                 'targetPreference' => function($q) use ($allowedFields) {
                     if (isset($allowedFields['relationships']['targetPreference'])) {
@@ -133,9 +137,9 @@ class BuyerController extends Controller
             ]);
 
         } else {
-            // Admin: Load everything
+            // Admin: Load everything including hqCountry for country display
             $query->with([
-                'companyOverview',
+                'companyOverview.hqCountry',
                 'targetPreference',
                 'financialDetails',
                 'partnershipDetails',
@@ -380,6 +384,10 @@ class BuyerController extends Controller
         try {
             $data = $request->all();
 
+            // Sanitize buyer_id - convert empty string to null, keep existing if not provided
+            if (isset($data['buyer_id']) && $data['buyer_id'] === '') {
+                $data['buyer_id'] = null;
+            }
 
             if ($request->hasFile('profile_picture')) {
                 $path = $request->file('profile_picture')->store('buyer_pics', 'public');
@@ -400,6 +408,7 @@ class BuyerController extends Controller
                 'introduced_projects',
                 'financial_advisor',
                 'internal_pic',
+                'website', // Added - frontend sends as JSON array
             ];
 
             foreach ($jsonFields as $field) {
@@ -485,7 +494,11 @@ class BuyerController extends Controller
             // Link to Buyer
             if ($buyer) {
                 $buyer->company_overview_id = $overview->id;
-                $buyer->buyer_id = $data['buyer_id'] ?? null;
+                
+                // Only update buyer_id if a valid value is provided (not null/empty)
+                if (!empty($data['buyer_id'])) {
+                    $buyer->buyer_id = $data['buyer_id'];
+                }
 
                 if (isset($data['profile_picture'])) {
                     $buyer->image = $data['profile_picture'];
@@ -503,8 +516,13 @@ class BuyerController extends Controller
                 ]);
             } else {
                 // Create new Buyer if it doesn't exist
+                // Validate buyer_id is provided for new records (database requires it)
+                if (empty($data['buyer_id'])) {
+                    return response()->json(['message' => 'Project Code is required for new investors.'], 422);
+                }
+                
                 $buyer = Buyer::create([
-                    'buyer_id' => $data['buyer_id'] ?? null,
+                    'buyer_id' => $data['buyer_id'],
                     'image' => $data['profile_picture'] ?? null,
                     'company_overview_id' => $overview->id,
                 ]);
