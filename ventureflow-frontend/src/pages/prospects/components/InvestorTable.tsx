@@ -274,7 +274,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         },
         {
             id: 'targetIndustries',
-            header: 'Target Industries',
+            header: 'Target Industry',
             accessor: (row) => (
                 <div className="flex flex-wrap gap-1">
                     {row.targetIndustries?.length ? (
@@ -336,7 +336,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         },
         {
             id: 'pipelineStatus',
-            header: 'Pipeline Status',
+            header: 'Pipeline',
             accessor: (row) => (
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
@@ -350,14 +350,29 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         },
         {
             id: 'primaryContact',
-            header: 'Primary Contact',
+            header: 'Contact',
             accessor: 'primaryContact',
             width: 150,
         },
         {
             id: 'internalPIC',
-            header: 'Internal PIC',
+            header: 'Assigned PIC',
             accessor: (row) => row.internalPIC?.join(', ') || 'N/A',
+            width: 150,
+        },
+        {
+            id: 'investmentCondition',
+            header: 'Condition',
+            accessor: (row) => (
+                <span className="text-[13px] text-slate-600">{row.investmentCondition || 'N/A'}</span>
+            ),
+            textAccessor: (row) => row.investmentCondition || '',
+            width: 150,
+        },
+        {
+            id: 'financialAdvisor',
+            header: 'Partner FA',
+            accessor: (row) => row.financialAdvisor?.join(', ') || 'N/A',
             width: 150,
         }
     ], [pipelineStages, selectedCurrency]);

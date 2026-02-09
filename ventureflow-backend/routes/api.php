@@ -181,6 +181,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Dashboard Routes
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
     Route::prefix('dashboard')->group(function () {
         Route::get('/stats', [\App\Http\Controllers\DashboardController::class, 'stats']);
         Route::get('/pipeline', [\App\Http\Controllers\DashboardController::class, 'pipeline']);

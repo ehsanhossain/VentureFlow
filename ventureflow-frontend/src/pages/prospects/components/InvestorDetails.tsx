@@ -387,7 +387,7 @@ const InvestorDetails: React.FC = () => {
               <div className="flex items-start gap-20">
                 <RestrictedField allowed={allowedFields} section="companyOverview" item="hq_country">
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">HQ Country</span>
+                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Origin Country</span>
                     <div className="flex items-center gap-2">
                       {hqCountryFlag && (
                         <img src={hqCountryFlag} alt="" className="w-3 h-3 rounded-full object-cover" />
@@ -492,7 +492,7 @@ const InvestorDetails: React.FC = () => {
 
               {/* Special Conditions */}
               <div className="flex flex-col gap-3">
-                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Special Conditions</span>
+                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Investment Condition</span>
                 <span className="text-sm font-medium text-black">{investmentCondition}</span>
               </div>
             </div>

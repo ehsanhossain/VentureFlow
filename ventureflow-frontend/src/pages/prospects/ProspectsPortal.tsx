@@ -12,14 +12,15 @@ import {
     Filter,
     RotateCcw,
     Settings2,
-    Check,
     DollarSign,
-    Layout,
     Download,
     Upload,
     AlertCircle,
     FileSpreadsheet,
-    Zap
+    Zap,
+    Eye,
+    EyeOff,
+    Columns
 } from 'lucide-react';
 import DataTableSearch from '../../components/table/DataTableSearch';
 import { showAlert } from '../../components/Alert';
@@ -44,50 +45,44 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'companyName', label: 'Company Name' },
     { id: 'originCountry', label: 'Origin Country' },
     { id: 'website', label: 'Website' },
-    { id: 'targetIndustries', label: 'Target Business & Industry' },
-    { id: 'targetCountries', label: 'Where the investor wants to invest?' },
+    { id: 'targetIndustries', label: 'Target Industry' },
+    { id: 'targetCountries', label: 'Target Countries' },
     { id: 'purposeMNA', label: 'Purpose of M&A' },
-    { id: 'budget', label: 'Investment Budget' },
-    { id: 'investmentCondition', label: 'Investment Condition' },
-    { id: 'internalPIC', label: 'Internal PIC' },
-    { id: 'financialAdvisor', label: 'Financial Advisor' },
-    { id: 'investorProfile', label: 'Investor Profile' },
-    { id: 'introducedProjects', label: 'Introduced Projects' },
-    { id: 'primaryContact', label: 'Primary Contact' },
-    { id: 'email', label: 'Email' },
-    { id: 'phone', label: 'Phone' },
-    { id: 'channel', label: 'Channel' },
-    { id: 'pipelineStatus', label: 'Pipeline Status' },
+    { id: 'budget', label: 'Budget' },
+    { id: 'investmentCondition', label: 'Condition' },
+    { id: 'primaryContact', label: 'Contact' },
+    { id: 'internalPIC', label: 'Assigned PIC' },
+    { id: 'financialAdvisor', label: 'Partner FA' },
+    { id: 'pipelineStatus', label: 'Pipeline' },
 ];
 
-const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'hq', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
+const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'originCountry', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
 
 const ALL_TARGET_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
-    { id: 'originCountry', label: 'HQ Country' },
+    { id: 'originCountry', label: 'Origin Country' },
     { id: 'status', label: 'Status' },
-    { id: 'industry', label: 'Target Business & Industry' },
+    { id: 'industry', label: 'Target Industry' },
     { id: 'projectDetails', label: 'Project Details' },
     { id: 'reasonForMA', label: 'Purpose of M&A' },
     { id: 'saleShareRatio', label: 'Planned Ratio Sale' },
     { id: 'desiredInvestment', label: 'Desired Investment' },
     { id: 'ebitda', label: 'EBITDA' },
     { id: 'internalPIC', label: 'Assigned PIC' },
-    { id: 'financialAdvisor', label: 'Financial Advisor' },
+    { id: 'financialAdvisor', label: 'Partner FA' },
     { id: 'website', label: 'Website' },
     { id: 'teaserLink', label: 'Teaser Profile' },
     { id: 'introducedProjects', label: 'Introduced Projects' },
-    { id: 'primaryContact', label: 'Primary Contact' },
+    { id: 'primaryContact', label: 'Contact' },
     { id: 'primaryEmail', label: 'Email' },
     { id: 'primaryPhone', label: 'Phone' },
-    { id: 'channel', label: 'Channel' },
-    { id: 'pipelineStatus', label: 'Pipeline Status' },
+    { id: 'pipelineStatus', label: 'Pipeline' },
     { id: 'addedDate', label: 'Added Date' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'hq', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
 
 
 
@@ -130,15 +125,22 @@ const ProspectsPortal: React.FC = () => {
     const [serverAllowedFields, setServerAllowedFields] = useState<any>(null);
 
     // Tools & Selection States
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
-        const saved = localStorage.getItem(`prospects_columns_${activeTab}`);
-        return saved ? JSON.parse(saved) : (activeTab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS);
-    });
+    const getValidColumns = (tab: 'investors' | 'targets') => {
+        const allCols = tab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS;
+        const validIds = new Set(allCols.map(c => c.id));
+        const defaults = tab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS;
+        const saved = localStorage.getItem(`prospects_columns_${tab}`);
+        if (!saved) return defaults;
+        const parsed: string[] = JSON.parse(saved);
+        const filtered = parsed.filter(id => validIds.has(id));
+        return filtered.length > 0 ? filtered : defaults;
+    };
+
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(() => getValidColumns(activeTab));
 
     // Update visible columns when tab changes
     useEffect(() => {
-        const saved = localStorage.getItem(`prospects_columns_${activeTab}`);
-        setVisibleColumns(saved ? JSON.parse(saved) : (activeTab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS));
+        setVisibleColumns(getValidColumns(activeTab));
     }, [activeTab]);
 
     useEffect(() => {
@@ -591,13 +593,10 @@ const ProspectsPortal: React.FC = () => {
             if (isFilterOpen && filterDrawerRef.current && !filterDrawerRef.current.contains(event.target as Node)) {
                 setIsFilterOpen(false);
             }
-            if (isToolsOpen && toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target as Node)) {
-                setIsToolsOpen(false);
-            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isFilterOpen, isToolsOpen, isCreateOpen]);
+    }, [isFilterOpen, isCreateOpen]);
 
     // Fetch Initial Data
     useEffect(() => {
@@ -1018,7 +1017,7 @@ const ProspectsPortal: React.FC = () => {
                             </button>
                         )}
 
-                        <div className="relative" ref={toolsDropdownRef}>
+                        <div ref={toolsDropdownRef}>
                             <button
                                 onClick={() => setIsToolsOpen(!isToolsOpen)}
                                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
@@ -1026,50 +1025,117 @@ const ProspectsPortal: React.FC = () => {
                                 <Settings2 className="w-4 h-4 text-gray-400" />
                                 Tools
                             </button>
-                            {isToolsOpen && (
-                                <div className="absolute right-0 mt-2 w-64 bg-white rounded-[3px] border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right shadow-2xl">
-                                    <div className="space-y-4">
-                                        <div className="pb-3 border-b border-gray-50">
-                                            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                                <DollarSign className="w-3 h-3" /> Currency
+                        </div>
+
+                        {/* Tools Flyover Drawer - Right Side */}
+                        {isToolsOpen && (
+                            <>
+                                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity duration-300" onClick={() => setIsToolsOpen(false)} />
+                                <div className="fixed right-0 top-0 h-full w-[380px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-[3px] bg-[#F1FBFF] text-[#064771] flex items-center justify-center">
+                                                <Settings2 className="w-5 h-5" />
                                             </div>
-                                            <select
-                                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-[3px] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771]"
-                                                value={selectedCurrency?.id}
-                                                onChange={(e) => {
-                                                    const curr = currencies.find(c => c.id === Number(e.target.value));
-                                                    if (curr) setSelectedCurrency({ id: curr.id, code: curr.code, symbol: curr.sign, rate: parseFloat(curr.exchange_rate) });
-                                                }}
-                                            >
-                                                {currencies.map(c => <option key={c.id} value={c.id}>{c.code} ({c.sign})</option>)}
-                                            </select>
+                                            <div>
+                                                <h2 className="text-lg font-medium text-gray-900">Table Settings</h2>
+                                                <p className="text-xs text-gray-500 mt-0.5 font-medium">Customize your view</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                                <Layout className="w-3 h-3" /> Visible Columns
+                                        <button
+                                            onClick={() => setIsToolsOpen(false)}
+                                            className="p-2 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="flex-1 overflow-y-auto">
+                                        {/* Currency Section */}
+                                        <div className="p-6 border-b border-gray-50">
+                                            <div className="flex items-center gap-2.5 mb-4">
+                                                <DollarSign className="w-4 h-4 text-[#064771]" />
+                                                <span className="text-sm font-medium text-gray-700">Display Currency</span>
                                             </div>
-                                            <div className="space-y-1 max-h-56 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-100">
+                                            <div className="relative">
+                                                <select
+                                                    className="w-full h-11 px-4 pr-10 bg-gray-50/80 border border-gray-200 rounded-[3px] text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] appearance-none cursor-pointer hover:border-gray-300 transition-all"
+                                                    value={selectedCurrency?.id}
+                                                    onChange={(e) => {
+                                                        const curr = currencies.find(c => c.id === Number(e.target.value));
+                                                        if (curr) setSelectedCurrency({ id: curr.id, code: curr.code, symbol: curr.sign, rate: parseFloat(curr.exchange_rate) });
+                                                    }}
+                                                >
+                                                    {currencies.map(c => <option key={c.id} value={c.id}>{c.sign}  {c.code}</option>)}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                            </div>
+                                        </div>
+
+                                        {/* Visible Columns Section */}
+                                        <div className="p-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-2.5">
+                                                    <Columns className="w-4 h-4 text-[#064771]" />
+                                                    <span className="text-sm font-medium text-gray-700">Visible Columns</span>
+                                                </div>
+                                                <span className="text-[11px] font-medium text-gray-400">
+                                                    {visibleColumns.length} of {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length} active
+                                                </span>
+                                            </div>
+                                            <div className="space-y-1">
                                                 {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS)
                                                     .filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab))
-                                                    .map(col => (
-                                                        <button
-                                                            key={col.id}
-                                                            onClick={() => toggleColumn(col.id)}
-                                                            className={`flex items-center justify-between w-full px-3 py-2 text-xs rounded-[3px] transition-all ${visibleColumns.includes(col.id)
-                                                                ? 'bg-blue-50/50 text-blue-700 font-medium'
-                                                                : 'text-gray-500 hover:bg-gray-50'
-                                                                }`}
-                                                        >
-                                                            <span>{col.label}</span>
-                                                            {visibleColumns.includes(col.id) && <Check className="w-3 h-3" />}
-                                                        </button>
-                                                    ))}
+                                                    .map(col => {
+                                                        const isActive = visibleColumns.includes(col.id);
+                                                        return (
+                                                            <button
+                                                                key={col.id}
+                                                                onClick={() => toggleColumn(col.id)}
+                                                                className={`flex items-center justify-between w-full px-4 py-3 rounded-[3px] transition-all duration-200 group ${isActive
+                                                                    ? 'bg-[#F1FBFF] text-[#064771]'
+                                                                    : 'text-gray-500 hover:bg-gray-50'
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    {isActive
+                                                                        ? <Eye className="w-4 h-4 text-[#064771]" />
+                                                                        : <EyeOff className="w-4 h-4 text-gray-300 group-hover:text-gray-400" />
+                                                                    }
+                                                                    <span className={`text-sm ${isActive ? 'font-medium' : 'font-normal'}`}>
+                                                                        {col.label}
+                                                                    </span>
+                                                                </div>
+                                                                {/* Toggle Switch */}
+                                                                <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isActive ? 'bg-[#064771]' : 'bg-gray-200'
+                                                                    }`}>
+                                                                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'
+                                                                        }`} />
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Footer */}
+                                    <div className="p-4 border-t border-gray-100">
+                                        <button
+                                            onClick={() => {
+                                                setVisibleColumns(activeTab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS);
+                                            }}
+                                            className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
+                                        >
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                            Reset to Default
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            </>
+                        )}
 
                         {!isPartner && (
                             <div className="relative" ref={createDropdownRef}>
