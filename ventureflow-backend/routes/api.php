@@ -65,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('currencies', CurrencyController::class);
 
     //Seller Routes
+    Route::get('/seller/fetch', [SellerController::class, 'fetchAll']);
     Route::get('/seller/get-last-sequence', [SellerController::class, 'getLastSequence']);
     Route::get('/seller/check-id', [SellerController::class, 'checkId']);
     Route::get('/seller/pinned', [SellerController::class, 'pinnedData']);
@@ -100,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Buyers Routes
+    Route::get('/buyer/fetch', [BuyerController::class, 'fetchAll']);
     Route::get('/buyer/get-last-sequence', [BuyerController::class, 'getLastSequence']);
     Route::get('/buyer/check-id', [BuyerController::class, 'checkId']);
     Route::get('/buyer/pinned', [BuyerController::class, 'pinnedData']);

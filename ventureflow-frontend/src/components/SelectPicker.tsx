@@ -63,7 +63,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
       <div
         onClick={() => setIsDropdownOpen((prev) => !prev)}
         onKeyDown={handleKeyDown}
-        className="h-[41px] relative cursor-pointer"
+        className="h-11 relative cursor-pointer"
         role="combobox"
         aria-expanded={isDropdownOpen}
         aria-haspopup="listbox"
@@ -79,7 +79,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
 
         <div
           className={`w-full h-full flex items-center ${icon ? "pl-10 pr-10" : "px-3"
-            } border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors`}
+            } border border-gray-300 rounded-[3px] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors`}
         >
           {selectedOption?.image && (
             <img
@@ -110,7 +110,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
 
       {isDropdownOpen && (
         <div
-          className="absolute top-full mt-1 w-full border border-gray-200 rounded-md bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
+          className="absolute top-full mt-1 w-full border border-gray-200 rounded-[3px] bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
           role="listbox"
         >
           <div className="p-3.5">

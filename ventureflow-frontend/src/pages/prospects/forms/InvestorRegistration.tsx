@@ -2,25 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Trash2, Link as LinkIcon, User, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Link as LinkIcon, Check, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Input } from '../../../components/Input';
-import Label from '../../../components/Label';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
-import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { LogoUpload } from '../../../components/LogoUpload';
 
 // Types
 interface FormValues {
     // Identity
     projectCode: string; // dealroomId
-    rank: 'A' | 'B' | 'C';
+    rank: 'A' | 'B' | 'C' | '';
     companyName: string; // reg_name
     websiteLinks: { url: string }[];
-    hqAddresses: { label: string; address: string }[]; // New HQ Address field
+    hqAddresses: { label: string; address: string }[];
 
     // Investment Intent
     targetIndustries: Industry[]; // main_industry_operations
@@ -42,16 +39,17 @@ interface FormValues {
     }[];
 
     // Relationships
-    introducedProjects: { id: number; name: string }[];
+    introducedProjects: Country[];
     investorProfileLink: string;
 
     // Internal Logic
-    originCountry: ExtendedCountry | null; // For ID generation
+    originCountry: ExtendedCountry | null;
     noPICNeeded: boolean;
     internal_pic: any[];
     financialAdvisor: any[];
     primaryContactParams?: string;
     channel: string;
+    companyIndustry: Industry[];
 }
 
 interface ExtendedCountry extends Country {
@@ -68,12 +66,36 @@ const MNA_PURPOSES = [
     { value: 'Other', label: 'Other' },
 ];
 
+const INVESTMENT_CONDITIONS = [
+    { value: 'Majority stake only', label: 'Majority stake only' },
+    { value: 'Minority stake only', label: 'Minority stake only' },
+    { value: 'Full acquisition', label: 'Full acquisition' },
+    { value: 'Joint venture', label: 'Joint venture' },
+    { value: 'Flexible', label: 'Flexible' },
+];
+
 const CHANNEL_OPTIONS = [
     { id: 1, name: 'TCF' },
     { id: 2, name: 'Partner' },
     { id: 3, name: 'Website' },
     { id: 4, name: 'Social Media' },
 ];
+
+/* ─── tiny reusable label ─── */
+const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
+    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-800 font-['Inter'] leading-5">
+        {required && <span className="text-rose-600 text-base font-medium">*</span>}
+        {text}
+    </label>
+);
+
+/* ─── section header with divider ─── */
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+    <div className="flex flex-col gap-3 mb-5">
+        <h3 className="text-base font-medium text-black font-['Inter'] capitalize">{title}</h3>
+        <div className="w-full h-px bg-gray-200" />
+    </div>
+);
 
 export const InvestorRegistration: React.FC = () => {
     const navigate = useNavigate();
@@ -88,45 +110,32 @@ export const InvestorRegistration: React.FC = () => {
     const [isCheckingId, setIsCheckingId] = useState(false);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [partnerList, setPartnerList] = useState<any[]>([]);
+    const [targetList, setTargetList] = useState<any[]>([]); // registered sellers for Introduced Projects
 
     const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {
-            projectCode: 'XX-B-XXX',
-            rank: 'B',
+            projectCode: '',
+            rank: '',
             budgetCurrency: 'USD',
             websiteLinks: [{ url: '' }],
             contacts: [{ name: '', department: '', designation: '', phone: '', email: '', isPrimary: true }],
-            hqAddresses: [{ label: 'Headquarters', address: '' }],
+            hqAddresses: [{ label: '', address: '' }],
             introducedProjects: [],
             noPICNeeded: false,
             internal_pic: [],
             financialAdvisor: [],
-            channel: 'TCF'
+            channel: '',
+            companyIndustry: [],
+            primaryContactParams: "0",
         }
     });
 
-    const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
-        control,
-        name: "contacts"
-    });
-
-    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({
-        control,
-        name: "websiteLinks"
-    });
-
-
-    const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
-        control,
-        name: 'hqAddresses'
-    });
-
-    const { fields: introProjectFields, append: appendIntroProject, remove: removeIntroProject } = useFieldArray({
-        control,
-        name: 'introducedProjects'
-    });
+    const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({ control, name: "contacts" });
+    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({ control, name: "websiteLinks" });
+    const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({ control, name: 'hqAddresses' });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
+    const primaryContactParams = useWatch({ control, name: 'primaryContactParams' });
 
     // Fetch Countries
     useEffect(() => {
@@ -174,7 +183,7 @@ export const InvestorRegistration: React.FC = () => {
                 setStaffList(sData.map((s: any) => ({
                     id: s.id,
                     name: s.full_name || s.name,
-                    flagSrc: '', // No flag for staff
+                    flagSrc: '',
                     status: 'registered'
                 })));
 
@@ -182,7 +191,17 @@ export const InvestorRegistration: React.FC = () => {
                 setPartnerList(pData.map((p: any) => ({
                     id: p.id,
                     name: p.reg_name || p.name,
-                    flagSrc: '', // No flag for partners
+                    flagSrc: '',
+                    status: 'registered'
+                })));
+
+                // Fetch registered targets (sellers) for Introduced Projects dropdown
+                const targetRes = await api.get('/api/seller/fetch');
+                const tData = Array.isArray(targetRes.data) ? targetRes.data : (targetRes.data?.data || []);
+                setTargetList(tData.map((t: any) => ({
+                    id: t.id,
+                    name: `${t.code} — ${t.name}`,
+                    flagSrc: '',
                     status: 'registered'
                 })));
             } catch {
@@ -247,14 +266,11 @@ export const InvestorRegistration: React.FC = () => {
                 if (buyer) {
                     const overview = buyer.company_overview || {};
                     setValue('companyName', overview.reg_name || '');
-                    // buyer_id is on the buyer object, not the overview
                     setValue('projectCode', buyer.buyer_id || '');
                     setValue('rank', overview.rank || 'B');
                     setValue('channel', overview.channel || 'TCF');
 
-
                     try {
-                        // Handle website - could be an array (new), JSON string (legacy), or simple string (very old)
                         let links: any[] = [];
                         if (Array.isArray(overview.website)) {
                             links = overview.website;
@@ -267,7 +283,6 @@ export const InvestorRegistration: React.FC = () => {
                         }
                         setValue('websiteLinks', links.length > 0 ? links : [{ url: '' }]);
                     } catch (e) {
-                        // Fallback for any parse failures
                         if (overview.website) {
                             setValue('websiteLinks', [{ url: String(overview.website) }]);
                         } else {
@@ -282,7 +297,6 @@ export const InvestorRegistration: React.FC = () => {
                     try {
                         const iPico = typeof overview.internal_pic === 'string' ? JSON.parse(overview.internal_pic) : overview.internal_pic;
                         setValue('internal_pic', Array.isArray(iPico) ? iPico : []);
-
                         const fAdv = typeof overview.financial_advisor === 'string' ? JSON.parse(overview.financial_advisor) : overview.financial_advisor;
                         setValue('financialAdvisor', Array.isArray(fAdv) ? fAdv : []);
                     } catch (e) { }
@@ -294,12 +308,8 @@ export const InvestorRegistration: React.FC = () => {
                         setInitialProfileImage(imagePath);
                     }
 
-                    // hqCountry relation is loaded by backend and serialized as 'hq_country' object
-                    // When relation is loaded: hq_country is the country object
-                    // The raw hq_country ID may be stored separately or within the object
                     const countryData = overview.hq_country;
                     if (countryData) {
-                        // If it's a loaded relationship (object with name, id, etc.)
                         if (typeof countryData === 'object' && countryData.id) {
                             setValue('originCountry', {
                                 id: countryData.id,
@@ -309,8 +319,6 @@ export const InvestorRegistration: React.FC = () => {
                                 status: 'registered'
                             });
                         } else if (typeof countryData === 'number' || typeof countryData === 'string') {
-                            // If it's just the ID (relation not loaded), we need to find from countries list
-                            // For now, set ID and empty values - will be populated when countries load
                             setValue('originCountry', {
                                 id: Number(countryData),
                                 name: '',
@@ -342,8 +350,12 @@ export const InvestorRegistration: React.FC = () => {
                     try {
                         const intro = typeof overview.introduced_projects === 'string' ? JSON.parse(overview.introduced_projects) : overview.introduced_projects;
                         if (intro && Array.isArray(intro)) {
-                            // Correct mapping if items are strings
-                            const formatted = intro.map((i: any) => typeof i === 'string' ? { name: i } : i);
+                            const formatted = intro.map((i: any) => ({
+                                id: i.id || Date.now() + Math.random(),
+                                name: i.name || '',
+                                flagSrc: i.flagSrc || '',
+                                status: i.status || 'registered' as const,
+                            }));
                             setValue('introducedProjects', formatted);
                         }
                     } catch (e) { }
@@ -363,6 +375,18 @@ export const InvestorRegistration: React.FC = () => {
                     } catch (e) { }
 
                     try {
+                        const companyIndustryRaw = typeof overview.company_industry === 'string' ? JSON.parse(overview.company_industry) : overview.company_industry;
+                        if (Array.isArray(companyIndustryRaw)) {
+                            const sanitized = companyIndustryRaw.map((op: any) => {
+                                if (typeof op === 'object' && op !== null) return op;
+                                const found = industries.find(i => i.name === op);
+                                return found || { id: Date.now() + Math.random(), name: op };
+                            });
+                            setValue('companyIndustry', sanitized);
+                        }
+                    } catch (e) { }
+
+                    try {
                         const targetCountries = typeof overview.target_countries === 'string' ? JSON.parse(overview.target_countries) : overview.target_countries;
                         setValue('targetCountries', targetCountries || []);
                     } catch (e) { }
@@ -371,8 +395,6 @@ export const InvestorRegistration: React.FC = () => {
                         const contacts = typeof overview.contacts === 'string' ? JSON.parse(overview.contacts) : overview.contacts;
                         if (contacts && Array.isArray(contacts)) {
                             setValue('contacts', contacts);
-
-                            // Set primary contact index for the radio button
                             const primaryIndex = contacts.findIndex((c: any) => c.isPrimary);
                             if (primaryIndex !== -1) {
                                 setValue('primaryContactParams' as any, String(primaryIndex));
@@ -399,7 +421,6 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('reg_name', data.companyName);
             payload.append('hq_country', String(data.originCountry?.id));
             payload.append('buyer_id', data.projectCode);
-
             payload.append('website', JSON.stringify(data.websiteLinks));
             payload.append('rank', data.rank);
             payload.append('status', isDraft ? 'Draft' : 'Active');
@@ -413,9 +434,9 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
             payload.append('introduced_projects', JSON.stringify(data.introducedProjects || []));
             payload.append('channel', data.channel || '');
-
             payload.append('main_industry_operations', JSON.stringify(data.targetIndustries || []));
             payload.append('target_countries', JSON.stringify(data.targetCountries || []));
+            payload.append('company_industry', JSON.stringify(data.companyIndustry || []));
 
             // Fix Primary Contact logic before sending
             const sanitizedContacts = data.contacts.map((c, idx) => ({
@@ -456,311 +477,414 @@ export const InvestorRegistration: React.FC = () => {
         }
     };
 
+    /* ─── shared input style ─── */
+    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
+    const selectClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors appearance-none cursor-pointer";
+
     return (
-        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-20">
+        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 font-['Inter']">
+            <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
-            {/* SECTION 1: IDENTITY */}
-            <CollapsibleSection title="Identity">
-                <div className="mb-6 flex justify-center">
-                    <LogoUpload
-                        initialImage={initialProfileImage}
-                        onImageSelect={(file) => setProfileImage(file)}
-                    />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Origin Country (Triggers ID) */}
-                    <div>
-                        <Label text="Origin Country" required />
-                        <Controller
-                            control={control}
-                            name="originCountry"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={countries}
-                                    selected={field.value}
-                                    onSelect={(val) => field.onChange(val)}
-                                />
-                            )}
-                        />
-                    </div>
+                {/* ═══════════════════════════════════════════════
+                    SECTION 1: IDENTITY
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Identity" />
 
-                    {/* Project Code (Read Only / Auto) */}
-                    <div>
-                        <Label text="Project Code" />
-                        <div className="relative flex items-center">
-                            <input
-                                {...register('projectCode')}
-                                className={`w-full px-4 py-2 border rounded-[3px] focus:ring-2 focus:ring-blue-500 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
-                                placeholder="XX-B-XXX"
+                    <div className="flex items-start gap-12">
+                        {/* Company Avatar - LEFT side */}
+                        <div className="flex flex-col items-center gap-3.5 shrink-0 w-36">
+                            <LogoUpload
+                                initialImage={initialProfileImage}
+                                onImageSelect={(file) => setProfileImage(file)}
                             />
-                            <div className="absolute right-3 flex items-center gap-2">
-                                {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-                                {!isCheckingId && isIdAvailable === true && <Check className="w-5 h-5 text-green-500" />}
-                                {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
+                        </div>
+
+                        {/* Identity Fields - RIGHT side */}
+                        <div className="flex-1 flex flex-col gap-10">
+                            {/* Row: Origin Country + Project Code */}
+                            <div className="flex gap-6">
+                                <div className="flex-1">
+                                    <FieldLabel text="Origin Country" required />
+                                    <Controller
+                                        control={control}
+                                        name="originCountry"
+                                        render={({ field }) => (
+                                            <Dropdown
+                                                countries={countries}
+                                                selected={field.value}
+                                                onSelect={(val) => field.onChange(val)}
+                                                placeholder="Select option"
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <FieldLabel text="Project Code" required />
+                                    <div className="relative flex items-center">
+                                        <input
+                                            {...register('projectCode')}
+                                            className={`${inputClass} ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : ''}`}
+                                            placeholder="XX-B-XXX"
+                                        />
+                                        <div className="absolute right-3 flex items-center gap-2">
+                                            {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                            {!isCheckingId && isIdAvailable === true && <Check className="w-4 h-4 text-green-500" />}
+                                            {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-4 h-4 text-red-500" />}
+                                        </div>
+                                    </div>
+                                    {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
+                                </div>
+                            </div>
+
+                            {/* Row: Rank + Lead Channel */}
+                            <div className="flex gap-6">
+                                <div className="flex-1">
+                                    <FieldLabel text="Rank" />
+                                    <Controller
+                                        control={control}
+                                        name="rank"
+                                        render={({ field }) => (
+                                            <SelectPicker
+                                                options={[
+                                                    { value: 'A', label: 'A - High Priority' },
+                                                    { value: 'B', label: 'B - Standard' },
+                                                    { value: 'C', label: 'C - Low Priority' }
+                                                ]}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="B - Standard"
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <FieldLabel text="Lead Channel" />
+                                    <Controller
+                                        control={control}
+                                        name="channel"
+                                        render={({ field }) => (
+                                            <SelectPicker
+                                                options={CHANNEL_OPTIONS.map(o => ({ value: o.name, label: o.name }))}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Where did we get the lead from?"
+                                            />
+                                        )}
+                                    />
+                                </div>
                             </div>
                         </div>
-                        {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
-                        {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">Code is available.</p>}
                     </div>
-
-                    {/* Rank */}
-                    <div>
-                        <Label text="Rank" />
-                        <Controller
-                            control={control}
-                            name="rank"
-                            render={({ field }) => (
-                                <SelectPicker
-                                    options={[{ value: 'A', label: 'A - High Priority' }, { value: 'B', label: 'B - Standard' }, { value: 'C', label: 'C - Low Priority' }]}
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    placeholder="Select Rank"
-                                />
-                            )}
-                        />
-                    </div>
-
-                    {/* Channel */}
-                    <div>
-                        <Label text="Channel" required />
-                        <Controller
-                            control={control}
-                            name="channel"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <select
-                                    className="w-full min-h-10 px-3 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors text-sm"
-                                    value={field.value}
-                                    onChange={(e) => field.onChange(e.target.value)}
-                                >
-                                    {CHANNEL_OPTIONS.map(opt => (
-                                        <option key={opt.id} value={opt.name}>{opt.name}</option>
-                                    ))}
-                                </select>
-                            )}
-                        />
-                    </div>
-
-                    {/* Company Name */}
-                    <div className="md:col-span-2">
-                        <Label text="Company Name" required />
-                        <Input
-                            {...register('companyName', { required: true })}
-                            placeholder="Enter company registered name"
-                            className="w-full"
-                        />
-                        {errors.companyName && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
-
-                    {/* HQ Addresses - Moved to Company Profile */}
-
-
-
                 </div>
-            </CollapsibleSection>
 
-            {/* SECTION 2: COMPANY PROFILE (Moved from Identity) */}
-            <CollapsibleSection title="Company Profile">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Website */}
-                    <div className="md:col-span-2">
-                        <Label text="Website" />
-                        <div className="space-y-2">
-                            {websiteFields.map((field, index) => (
-                                <div key={field.id} className="flex items-center gap-2">
-                                    <div className="flex-1 flex items-center">
-                                        <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                            <LinkIcon className="h-4 w-4" />
-                                        </span>
+                {/* ═══════════════════════════════════════════════
+                    SECTION 2: COMPANY PROFILE
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Company Profile" />
+
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Company Name + Industry */}
+                        <div className="flex gap-7">
+                            <div className="flex-1">
+                                <FieldLabel text="Company Name" required />
+                                <input
+                                    {...register('companyName', { required: true })}
+                                    className={inputClass}
+                                    placeholder="Enter company registered name"
+                                />
+                                {errors.companyName && <span className="text-red-500 text-xs mt-1">Required</span>}
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Industry" required />
+                                <Controller
+                                    control={control}
+                                    name="companyIndustry"
+                                    render={({ field }) => (
+                                        <IndustryDropdown
+                                            industries={industries}
+                                            selected={field.value || []}
+                                            onSelect={(selected) => field.onChange(selected)}
+                                            multiSelect={true}
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Website links */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2">
+                                <FieldLabel text="Website" />
+                                {websiteFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center">
+                                        <div className="w-11 h-11 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center justify-center">
+                                            <LinkIcon className="w-5 h-5 text-gray-500" />
+                                        </div>
                                         <input
                                             {...register(`websiteLinks.${index}.url` as const)}
                                             type="text"
-                                            placeholder="https://example.com"
-                                            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-[3px] border border-gray-300 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                            placeholder="www.example.com"
+                                            className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
                                         />
+                                        {websiteFields.length > 1 && (
+                                            <button type="button" onClick={() => removeWebsite(index)} className="ml-2 text-red-400 hover:text-red-600 transition-colors">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                     </div>
-                                    <button type="button" onClick={() => removeWebsite(index)} className="text-red-400 hover:text-red-600">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => appendWebsite({ url: '' })}
-                            className="flex items-center text-[#064771] font-medium hover:underline text-sm mt-2"
-                        >
-                            <Plus className="w-3 h-3 mr-1" /> Add Link
-                        </button>
-                    </div>
-
-                    {/* HQ Addresses */}
-                    <div className="md:col-span-2 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <Label text="HQ Addresses" />
-                            <button type="button" onClick={() => appendAddress({ label: 'Headquarters', address: '' })} className="text-sm text-[#064771] font-medium hover:underline flex items-center">
-                                <Plus className="w-3 h-3 mr-1" /> Add Address
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => appendWebsite({ url: '' })}
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                            >
+                                <Plus className="w-3 h-3" /> Add another Link
                             </button>
                         </div>
-                        {addressFields.map((field, index) => (
-                            <div key={field.id} className="flex flex-col md:flex-row gap-2 items-start">
-                                <div className="flex-1 w-full md:w-1/3">
+
+                        {/* Addresses / Entities */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2">
+                                <FieldLabel text="Addresses / Entities" />
+                                {addressFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-4">
+                                        <input
+                                            {...register(`hqAddresses.${index}.label` as const)}
+                                            placeholder="Entity Name/Address Name"
+                                            className={`w-1/3 ${inputClass}`}
+                                        />
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <input
+                                                {...register(`hqAddresses.${index}.address` as const)}
+                                                placeholder="Full Address"
+                                                className={`flex-1 ${inputClass}`}
+                                            />
+                                            {addressFields.length > 1 && (
+                                                <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => appendAddress({ label: '', address: '' })}
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                            >
+                                <Plus className="w-3 h-3" /> Add another Address/ Entity
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════
+                    SECTION 3: DEAL CONTEXT
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Deal Context" />
+
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Target Business & Industry + Interested Country */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="Target Business & Industry" required />
+                                <Controller
+                                    control={control}
+                                    name="targetIndustries"
+                                    rules={{ required: true }}
+                                    render={({ field }) => (
+                                        <IndustryDropdown
+                                            industries={industries}
+                                            selected={field.value || []}
+                                            onSelect={(selected) => field.onChange(selected)}
+                                            multiSelect={true}
+                                        />
+                                    )}
+                                />
+                                {errors.targetIndustries && <span className="text-red-500 text-xs mt-1">Required</span>}
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Interested Country" required />
+                                <Controller
+                                    control={control}
+                                    name="targetCountries"
+                                    render={({ field }) => (
+                                        <Dropdown
+                                            countries={countries}
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                            multiSelect
+                                            placeholder="Select Countries"
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Row: Purpose of M&A + Investment Condition */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="Purpose of M&A" />
+                                <Controller
+                                    control={control}
+                                    name="purposeMNA"
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={MNA_PURPOSES}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select Purpose of M&A"
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Investment Condition" />
+                                <Controller
+                                    control={control}
+                                    name="investmentCondition"
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={INVESTMENT_CONDITIONS}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="e.g. Majority stake only"
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Row: Investment Budget + Default Currency */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="Investment Budget" />
+                                <div className="flex items-center gap-2">
                                     <input
-                                        {...register(`hqAddresses.${index}.label` as const)}
-                                        placeholder="Label (e.g. Head Office)"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                        {...register('budgetMin')}
+                                        type="number"
+                                        placeholder="Min"
+                                        className={`flex-1 ${inputClass}`}
                                     />
-                                </div>
-                                <div className="flex-[2] w-full flex gap-2">
+                                    <span className="text-black text-base font-normal">-</span>
                                     <input
-                                        {...register(`hqAddresses.${index}.address` as const)}
-                                        placeholder="Full Address"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                        {...register('budgetMax')}
+                                        type="number"
+                                        placeholder="Max"
+                                        className={`flex-1 ${inputClass}`}
                                     />
-                                    <button type="button" onClick={() => removeAddress(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            {/* SECTION 3: CLASSIFICATION */}
-            <CollapsibleSection title="Classification">
-                <div className="space-y-6">
-                    {/* Target Industries */}
-                    <div>
-                        <Label text="Target Business & Industry" required />
-                        <Controller
-                            control={control}
-                            name="targetIndustries"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <IndustryDropdown
-                                    industries={industries}
-                                    selected={field.value || []}
-                                    onSelect={(selected) => field.onChange(selected)}
-                                    multiSelect={true}
-                                />
-                            )}
-                        />
-                        {errors.targetIndustries && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
-
-                    {/* Purpose */}
-
-
-                    {/* Target Countries */}
-                    <div>
-                        <Label text="Where the investor wants to invest?" />
-                        <Controller
-                            control={control}
-                            name="targetCountries"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={countries}
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    multiSelect
-                                />
-                            )}
-                        />
-                    </div>
-
-                </div>
-            </CollapsibleSection>
-
-            {/* SECTION 4: DEAL CONTEXT */}
-            <CollapsibleSection title="Deal Context">
-                <div className="space-y-6">
-                    {/* Purpose Moved Here */}
-                    <div>
-                        <Label text="Purpose of M&A" />
-                        <Controller
-                            control={control}
-                            name="purposeMNA"
-                            render={({ field }) => (
-                                <SelectPicker
-                                    options={MNA_PURPOSES}
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    placeholder="Select Purpose"
-                                />
-                            )}
-                        />
-                    </div>
-                    {/* Budget & Condition */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label text="Investment Budget" />
-                            <div className="flex gap-2">
-                                <input {...register('budgetMin')} type="number" placeholder="Min" className="w-1/3 border px-2 py-1 rounded-[3px]" />
-                                <span className="self-center">-</span>
-                                <input {...register('budgetMax')} type="number" placeholder="Max" className="w-1/3 border px-2 py-1 rounded-[3px]" />
-                                <select {...register('budgetCurrency')} className="w-1/4 border px-2 py-1 rounded-[3px] bg-white">
+                            <div className="flex-1">
+                                <FieldLabel text="Default Currency" />
+                                <select {...register('budgetCurrency')} className={selectClass}>
                                     {currencies.map(c => (
                                         <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
                                     ))}
                                 </select>
                             </div>
                         </div>
-                        <div>
-                            <Label text="Investment Condition" />
-                            <input {...register('investmentCondition')} className="w-full border px-3 py-2 rounded-[3px]" placeholder="e.g. Majority stake only" />
-                        </div>
                     </div>
                 </div>
-            </CollapsibleSection>
 
-            {/* SECTION 5: CONTACTS */}
-            <CollapsibleSection title="Contacts">
-                <div className="space-y-4">
+                {/* ═══════════════════════════════════════════════
+                    SECTION 4: CONTACTS
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col items-center gap-10">
+                    <div className="self-stretch">
+                        <SectionHeader title="Contacts" />
+                    </div>
+
                     {contactFields.map((field, index) => (
-                        <div key={field.id} className="p-4 border border-gray-100 rounded-[3px] bg-gray-50 relative">
-                            <div className="absolute right-2 top-2">
-                                <button type="button" onClick={() => removeContact(index)} className="text-red-400 hover:text-red-600">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                                    <Label text="Name" />
-                                    <div className="flex items-center">
-                                        <User className="w-4 h-4 text-gray-400 mr-2" />
-                                        <input {...register(`contacts.${index}.name` as const)} placeholder="Contact Name" className="flex-1 border-b bg-transparent focus:outline-none focus:border-blue-500" />
+                        <div key={field.id} className="self-stretch px-5 py-4 bg-gray-50 rounded-[3px] border border-gray-300 flex flex-col gap-5">
+                            <div className="flex flex-col gap-8">
+                                {/* Row: Name + Designation + Department */}
+                                <div className="flex gap-7">
+                                    <div className="flex-1">
+                                        <FieldLabel text="Name" />
+                                        <input
+                                            {...register(`contacts.${index}.name` as const)}
+                                            placeholder="Contact Name"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FieldLabel text="Designation" />
+                                        <input
+                                            {...register(`contacts.${index}.designation` as const)}
+                                            placeholder="Position / Job Title"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FieldLabel text="Department" />
+                                        <input
+                                            {...register(`contacts.${index}.department` as const)}
+                                            placeholder="Dept."
+                                            className={inputClass}
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                    <Label text="Designation" />
-                                    <input {...register(`contacts.${index}.designation` as const)} placeholder="Position / Job Title" className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Department" />
-                                    <input {...register(`contacts.${index}.department` as const)} placeholder="Dept." className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Phone" />
-                                    <input {...register(`contacts.${index}.phone` as const)} placeholder="+1 234..." className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Email" />
-                                    <input {...register(`contacts.${index}.email` as const)} placeholder="email@example.com" className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
 
-                                <div className="flex items-center mt-4">
-                                    <input
-                                        type="radio"
-                                        value={index}
-                                        {...register(`contacts.${index}.isPrimary` as const)}
-                                        name="primaryContactParams"
-                                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <label className="ml-2 block text-sm text-gray-900">
-                                        Primary Contact
-                                    </label>
+                                {/* Row: Phone + Email + Toggle/Delete */}
+                                <div className="flex items-end gap-7">
+                                    <div className="flex-1">
+                                        <FieldLabel text="Phone" />
+                                        <input
+                                            {...register(`contacts.${index}.phone` as const)}
+                                            placeholder="+1 234..."
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FieldLabel text="Email" />
+                                        <input
+                                            {...register(`contacts.${index}.email` as const)}
+                                            placeholder="email@example.com"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1 flex items-center gap-9 pb-2">
+                                        {/* Primary Contact Toggle */}
+                                        <label className={`flex items-center gap-2 cursor-pointer ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
+                                            <div className="relative">
+                                                <input
+                                                    type="radio"
+                                                    value={index}
+                                                    {...register('primaryContactParams')}
+                                                    className="sr-only peer"
+                                                    disabled={String(primaryContactParams) === String(index)} // Cannot uncheck primary directly
+                                                />
+                                                <div className={`w-12 h-6 rounded-3xl transition-colors ${String(primaryContactParams) === String(index) ? 'bg-[#064771]' : 'bg-gray-300'}`}>
+                                                    <div className={`w-5 h-5 bg-white rounded-full absolute top-[2px] transition-all shadow-sm ${String(primaryContactParams) === String(index) ? 'left-[26px]' : 'left-[2px]'}`} />
+                                                </div>
+                                            </div>
+                                            <span className={`text-sm font-normal font-['Inter'] ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                                {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
+                                            </span>
+                                        </label>
+
+                                        {/* Delete Button Logic */}
+                                        {contactFields.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeContact(index)}
+                                                disabled={String(primaryContactParams) === String(index)}
+                                                className={`flex items-center gap-2 transition-colors ${String(primaryContactParams) === String(index)
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : 'text-neutral-400 hover:text-red-500 cursor-pointer'
+                                                    }`}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                                <span className="text-sm font-normal font-['Inter']">Delete</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -769,101 +893,121 @@ export const InvestorRegistration: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => appendContact({ name: '', department: '', designation: '', phone: '', email: '', isPrimary: false })}
-                        className="flex items-center text-[#064771] font-medium hover:underline"
+                        className="self-stretch flex items-center gap-3 text-sky-900 text-base font-medium font-['Inter']"
                     >
-                        <Plus className="w-4 h-4 mr-1" /> Add Contact
+                        <Plus className="w-4 h-4" /> Add another Contact
                     </button>
                 </div>
-            </CollapsibleSection>
 
-            {/* SECTION 6: DOCUMENTS & RELATIONSHIPS */}
-            <CollapsibleSection title="Documents & Relationships">
-                <div className="grid grid-cols-1 gap-6">
-                    <div>
-                        <Label text="Investor Profile" />
-                        <div className="flex items-center">
-                            <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
-                            <input {...register('investorProfileLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded-[3px]" />
+                {/* ═══════════════════════════════════════════════
+                    SECTION 5: DOCUMENTS & RELATIONSHIPS
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Documents & Relationships" />
+
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Assigned PIC + Financial Advisor */}
+                        <div className="flex gap-8">
+                            <div className="flex-1">
+                                <FieldLabel text="Assigned PIC" />
+                                <Controller
+                                    control={control}
+                                    name="internal_pic"
+                                    render={({ field }) => (
+                                        <Dropdown
+                                            countries={staffList}
+                                            selected={field.value}
+                                            onSelect={(val) => field.onChange(val)}
+                                            multiSelect={true}
+                                            placeholder="Select Internal Staff"
+                                            searchPlaceholder="Search staff names..."
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Financial Advisor Role (Partner) If any" />
+                                <Controller
+                                    control={control}
+                                    name="financialAdvisor"
+                                    render={({ field }) => (
+                                        <Dropdown
+                                            countries={partnerList}
+                                            selected={field.value}
+                                            onSelect={(val) => field.onChange(val)}
+                                            multiSelect={true}
+                                            placeholder="Select Financial Advisor"
+                                            searchPlaceholder="Search partner names..."
+                                        />
+                                    )}
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <Label text="Assigned PIC" />
-                            <Controller
-                                control={control}
-                                name="internal_pic"
-                                render={({ field }) => (
-                                    <Dropdown
-                                        countries={staffList}
-                                        selected={field.value}
-                                        onSelect={(val) => field.onChange(val)}
-                                        multiSelect={true}
-                                        placeholder="Select Internal Staff"
-                                        searchPlaceholder="Search staff names..."
-                                    />
-                                )}
-                            />
+                        {/* Investor Profile Link */}
+                        <div className="flex flex-col gap-3">
+                            <FieldLabel text="Investor Profile" />
+                            <div className="flex items-center">
+                                <div className="px-4 py-3 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center">
+                                    <LinkIcon className="w-5 h-5 text-gray-500" />
+                                </div>
+                                <input
+                                    {...register('investorProfileLink')}
+                                    placeholder="https://tokyoconsultinggroup.3qcloud.jp/index.php/s/..."
+                                    className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 truncate"
+                                />
+                            </div>
                         </div>
 
                         {/* Introduced Projects */}
-                        <div className="md:col-span-2 space-y-3">
-                            <Label text="Introduced Projects" />
-                            {introProjectFields.map((field, index) => (
-                                <div key={field.id} className="flex gap-2 items-center">
-                                    <input
-                                        {...register(`introducedProjects.${index}.name` as const)}
-                                        placeholder="Project Name / Code"
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                    <button type="button" onClick={() => removeIntroProject(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => appendIntroProject({ id: Date.now(), name: '' })}
-                                className="flex items-center text-[#064771] font-medium hover:underline text-sm"
-                            >
-                                <Plus className="w-3 h-3 mr-1" /> Add Project
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <Label text="Financial Advisor Role (Partner)" />
+                        <div className="flex flex-col gap-3">
+                            <FieldLabel text="Introduced Projects" />
                             <Controller
                                 control={control}
-                                name="financialAdvisor"
+                                name="introducedProjects"
                                 render={({ field }) => (
                                     <Dropdown
-                                        countries={partnerList}
-                                        selected={field.value}
+                                        countries={targetList}
+                                        selected={field.value || []}
                                         onSelect={(val) => field.onChange(val)}
                                         multiSelect={true}
-                                        placeholder="Select Financial Advisor"
-                                        searchPlaceholder="Search partner names..."
+                                        placeholder="Search and select registered targets..."
+                                        searchPlaceholder="Search by code or name..."
+                                        dropUp={true}
                                     />
                                 )}
                             />
                         </div>
                     </div>
                 </div>
-            </CollapsibleSection>
+            </div>
 
-            {/* Sticky Bottom Buttons */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-50">
-                <button type="button" onClick={() => navigate('/prospects?tab=investors')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                <button type="button" onClick={handleSubmit(data => onSubmit(data, true))} disabled={isSubmitting} className="px-4 py-2 text-[#053a5c] bg-white border border-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
+            {/* ═══ Sticky Bottom Footer ═══ */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 flex items-center justify-end gap-3 px-8 z-50">
+                <button
+                    type="button"
+                    onClick={() => navigate('/prospects?tab=investors')}
+                    className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium font-['Inter'] hover:bg-gray-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSubmit(data => onSubmit(data, true))}
+                    disabled={isSubmitting}
+                    className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium font-['Inter'] hover:bg-sky-50 transition-colors"
+                >
                     Save as Draft
                 </button>
-                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-[#042d48] transition-all">
+                <button
+                    type="submit"
+                    disabled={isSubmitting || (isIdAvailable === false)}
+                    className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium font-['Inter'] hover:bg-[#042d48] transition-colors disabled:opacity-50"
+                >
                     {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
                 </button>
             </div>
-        </form >
+        </form>
     );
 };
 

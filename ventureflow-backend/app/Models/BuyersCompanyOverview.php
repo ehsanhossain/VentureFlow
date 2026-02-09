@@ -54,6 +54,7 @@ class BuyersCompanyOverview extends Model
         'financial_advisor',
         'internal_pic',
         'channel',
+        'company_industry',
     ];
 
     protected $casts = [
@@ -70,6 +71,7 @@ class BuyersCompanyOverview extends Model
         'financial_advisor' => 'array',
         'internal_pic' => 'array',
         'website' => 'array',
+        'company_industry' => 'array',
     ];
 
     // Relationship with the Buyer (assuming buyer_id references buyers table)

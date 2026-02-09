@@ -428,6 +428,26 @@ const InvestorDetails: React.FC = () => {
                   <span className="text-sm font-normal text-black">{rank}</span>
                 </div>
               </div>
+
+              {/* Industry (within Overview) */}
+              {(() => {
+                const companyIndustries: Industry[] = parseJSON(overview.company_industry).filter((i: any) => i && i.name);
+                return companyIndustries.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Industry</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {companyIndustries.map((ind, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1.5 bg-[#F3F4F6] rounded text-sm font-medium text-[#374151]"
+                        >
+                          {ind.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </section>
 

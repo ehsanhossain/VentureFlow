@@ -2,18 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Loader2, Link as LinkIcon, User, Plus, Trash2 } from 'lucide-react';
+import { Check, Loader2, Link as LinkIcon, Plus, Trash2, AlertCircle } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Input } from '../../../components/Input';
-import Label from '../../../components/Label';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry as IndustryType } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
-import { CollapsibleSection } from '../../../components/CollapsibleSection';
 import { LogoUpload } from '../../../components/LogoUpload';
-import { AlertCircle } from 'lucide-react';
-
 
 interface ExtendedCountry extends Country {
     alpha?: string;
@@ -29,17 +24,17 @@ interface Industry {
 
 interface FormValues {
     // Identity
-    projectCode: string; // dealroomId
+    projectCode: string;
     originCountry: ExtendedCountry | null;
     status: string;
-    rank: 'A' | 'B' | 'C';
+    rank: 'A' | 'B' | 'C' | '';
     internal_pic: any[];
     financialAdvisor: any[];
     companyName: string;
 
     // Classification
-    targetIndustries: IndustryType[]; // Multi-select industries like investor side
-    nicheTags: string; // comma separated or chips (simplified to string for now)
+    targetIndustries: IndustryType[];
+    nicheTags: string;
 
     // Deal Summary
     projectDetails: string;
@@ -48,10 +43,10 @@ interface FormValues {
     desiredInvestmentMin: string;
     desiredInvestmentMax: string;
     desiredInvestmentCurrency: string;
+    investmentCondition: string;
 
     ebitdaMin: string;
     ebitdaMax: string;
-
 
     // Contacts
     contacts: {
@@ -66,17 +61,26 @@ interface FormValues {
 
     // Links
     websiteLinks: { url: string }[];
+    hqAddresses: { label: string; address: string }[];
     teaserLink: string;
-    introducedProjects: { id: number; name: string }[];
+    introducedProjects: Country[];
     channel: string;
 }
 
 const REASONS_MA = [
-    { value: 'Market Expansion', label: 'Market Expansion' },
-    { value: 'Succession/Exit', label: 'Succession/Exit' },
+    { value: "Owner's Retirement", label: "Owner's Retirement" },
+    { value: 'Business Succession', label: 'Business Succession' },
+    { value: 'Full Exit', label: 'Full Exit' },
+    { value: 'Partial Exit', label: 'Partial Exit' },
+    { value: 'Capital Raising', label: 'Capital Raising' },
     { value: 'Strategic Partnership', label: 'Strategic Partnership' },
-    { value: 'Financial Restructuring', label: 'Financial Restructuring' },
-    { value: 'Other', label: 'Other' }
+    { value: 'Growth Acceleration', label: 'Growth Acceleration' },
+    { value: 'Debt Restructuring', label: 'Debt Restructuring' },
+    { value: 'Risk Mitigation', label: 'Risk Mitigation' },
+    { value: 'Non-Core Divestment', label: 'Non-Core Divestment' },
+    { value: 'Market Expansion', label: 'Market Expansion' },
+    { value: 'Technology Integration', label: 'Technology Integration' },
+    { value: 'Cross-Border Expansion', label: 'Cross-Border Expansion' },
 ];
 
 const RATIO_OPTIONS = [
@@ -86,6 +90,14 @@ const RATIO_OPTIONS = [
     { value: 'Negotiable', label: 'Negotiable' },
 ];
 
+const INVESTMENT_CONDITIONS = [
+    { value: 'Majority stake only', label: 'Majority stake only' },
+    { value: 'Minority stake only', label: 'Minority stake only' },
+    { value: 'Full acquisition', label: 'Full acquisition' },
+    { value: 'Joint venture', label: 'Joint venture' },
+    { value: 'Flexible', label: 'Flexible' },
+];
+
 const CHANNEL_OPTIONS = [
     { id: 1, name: 'TCF' },
     { id: 2, name: 'Partner' },
@@ -93,15 +105,32 @@ const CHANNEL_OPTIONS = [
     { id: 4, name: 'Social Media' },
 ];
 
+/* ─── tiny reusable label ─── */
+const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
+    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-800 font-['Inter'] leading-5">
+        {required && <span className="text-rose-600 text-base font-medium">*</span>}
+        {text}
+    </label>
+);
+
+/* ─── section header with divider ─── */
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+    <div className="flex flex-col gap-3 mb-5">
+        <h3 className="text-base font-medium text-black font-['Inter'] capitalize">{title}</h3>
+        <div className="w-full h-px bg-gray-200" />
+    </div>
+);
+
 export const TargetRegistration: React.FC = () => {
     const navigate = useNavigate();
-    const { id } = useParams(); // This is the PK (id), not projectCode
+    const { id } = useParams();
 
     const [countries, setCountries] = useState<ExtendedCountry[]>([]);
     const [industries, setIndustries] = useState<Industry[]>([]);
     const [currencies, setCurrencies] = useState<{ id: number; currency_code: string }[]>([]);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [partnerList, setPartnerList] = useState<any[]>([]);
+    const [investorList, setInvestorList] = useState<any[]>([]); // registered buyers for Introduced Projects
 
     const [profileImage, setProfileImage] = useState<File | null>(null);
     const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
@@ -111,39 +140,41 @@ export const TargetRegistration: React.FC = () => {
 
     const { control, handleSubmit, setValue, register, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {
-            projectCode: 'XX-S-XXX',
-            rank: 'B',
+            projectCode: '',
+            rank: '',
             status: 'Active',
-            desiredInvestmentCurrency: 'USD',
+            desiredInvestmentCurrency: '',
             targetIndustries: [],
             internal_pic: [],
             financialAdvisor: [],
             introducedProjects: [],
             contacts: [{ name: '', designation: '', department: '', email: '', phone: '', isPrimary: true }],
             websiteLinks: [{ url: '' }],
-            channel: 'TCF'
+            hqAddresses: [{ label: '', address: '' }],
+            channel: '',
+            primaryContactParams: "0",
+
+            // Deal Context Defaults
+            reasonForMA: '',
+            investmentCondition: '',
+            plannedSaleShareRatio: '',
+            desiredInvestmentMin: '',
+            desiredInvestmentMax: '',
+            ebitdaMin: '',
+            ebitdaMax: '',
+            projectDetails: '',
         }
     });
 
-    const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({
-        control,
-        name: 'contacts'
-    });
-
-    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({
-        control,
-        name: 'websiteLinks'
-    });
-
-    const { fields: introProjectFields, append: appendIntroProject, remove: removeIntroProject } = useFieldArray({
-        control,
-        name: 'introducedProjects'
-    });
+    const { fields: contactFields, append: appendContact, remove: removeContact } = useFieldArray({ control, name: 'contacts' });
+    const { fields: websiteFields, append: appendWebsite, remove: removeWebsite } = useFieldArray({ control, name: 'websiteLinks' });
+    const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({ control, name: 'hqAddresses' });
 
     const originCountry = useWatch({ control, name: 'originCountry' });
     const projectCodeValue = useWatch({ control, name: 'projectCode' });
+    const primaryContactParams = useWatch({ control, name: 'primaryContactParams' });
 
-    // Fetch Initial Data (Countries, Industries, Staff, Partners)
+    // Fetch Initial Data
     useEffect(() => {
         const fetchInit = async () => {
             try {
@@ -155,11 +186,9 @@ export const TargetRegistration: React.FC = () => {
                     api.get('/api/currencies')
                 ]);
 
-                // Currencies
                 const currData = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data?.data || []);
                 setCurrencies(currData);
 
-                // Countries
                 const cData = Array.isArray(countryRes.data) ? countryRes.data : (countryRes.data?.data || []);
                 setCountries(cData.map((c: any) => ({
                     id: c.id,
@@ -169,11 +198,9 @@ export const TargetRegistration: React.FC = () => {
                     status: 'registered' as const,
                 })));
 
-                // Industries
                 const iData = Array.isArray(indRes.data) ? indRes.data : (indRes.data?.data || []);
                 setIndustries(iData);
 
-                // Staff
                 const sData = Array.isArray(staffRes.data) ? staffRes.data : (staffRes.data?.data || []);
                 setStaffList(sData.map((s: any) => ({
                     id: s.id,
@@ -182,11 +209,20 @@ export const TargetRegistration: React.FC = () => {
                     status: 'registered'
                 })));
 
-                // Partners
                 const pData = Array.isArray(partRes.data) ? partRes.data : (partRes.data?.data || []);
                 setPartnerList(pData.map((p: any) => ({
                     id: p.id,
                     name: p.reg_name || p.name,
+                    flagSrc: '',
+                    status: 'registered'
+                })));
+
+                // Fetch registered investors (buyers) for Introduced Projects dropdown
+                const investorRes = await api.get('/api/buyer/fetch');
+                const invData = Array.isArray(investorRes.data) ? investorRes.data : (investorRes.data?.data || []);
+                setInvestorList(invData.map((b: any) => ({
+                    id: b.id,
+                    name: `${b.code} — ${b.name}`,
                     flagSrc: '',
                     status: 'registered'
                 })));
@@ -249,8 +285,8 @@ export const TargetRegistration: React.FC = () => {
             try {
                 const response = await api.get(`/api/seller/${id}`);
                 const seller = response.data?.data;
-                const ov = seller.companyOverview || {};
-                const fin = seller.financialDetails || {};
+                const ov = seller.company_overview || seller.companyOverview || {};
+                const fin = seller.financial_details || seller.financialDetails || {};
 
                 setValue('projectCode', seller.seller_id);
                 setValue('status', seller.status === '1' ? 'Active' : (seller.status === '2' ? 'Draft' : 'Active'));
@@ -261,17 +297,26 @@ export const TargetRegistration: React.FC = () => {
                 setValue('reasonForMA', ov.reason_ma || '');
                 setValue('teaserLink', ov.teaser_link || '');
 
+                try {
+                    const rawAddr = ov.hq_address;
+                    let addrs: any[] = [];
+                    if (rawAddr) {
+                        addrs = typeof rawAddr === 'string' ? JSON.parse(rawAddr) : rawAddr;
+                    }
+                    if (addrs && Array.isArray(addrs) && addrs.length > 0) {
+                        setValue('hqAddresses', addrs);
+                    }
+                } catch (e) { console.error("Address load error", e); }
+
                 // Website Links Load
                 try {
-                    let links = [];
+                    let links: any[] = [];
                     if (ov.website_links) {
                         links = typeof ov.website_links === 'string' ? JSON.parse(ov.website_links) : ov.website_links;
                     }
-
                     if ((!links || links.length === 0) && ov.website) {
                         links = [{ url: ov.website }];
                     }
-
                     if (links && links.length > 0) {
                         setValue('websiteLinks', links);
                     }
@@ -280,13 +325,16 @@ export const TargetRegistration: React.FC = () => {
                 try {
                     const iPico = typeof ov.internal_pic === 'string' ? JSON.parse(ov.internal_pic) : ov.internal_pic;
                     setValue('internal_pic', Array.isArray(iPico) ? iPico : []);
-
                     const fAdv = typeof ov.financial_advisor === 'string' ? JSON.parse(ov.financial_advisor) : ov.financial_advisor;
                     setValue('financialAdvisor', Array.isArray(fAdv) ? fAdv : []);
-
                     const intro = typeof ov.introduced_projects === 'string' ? JSON.parse(ov.introduced_projects) : ov.introduced_projects;
                     if (intro && Array.isArray(intro)) {
-                        const formatted = intro.map((i: any) => typeof i === 'string' ? { name: i } : i);
+                        const formatted = intro.map((i: any) => ({
+                            id: i.id || Date.now() + Math.random(),
+                            name: i.name || '',
+                            flagSrc: i.flagSrc || '',
+                            status: i.status || 'registered' as const,
+                        }));
                         setValue('introducedProjects', formatted);
                     }
                 } catch (e) { }
@@ -298,11 +346,8 @@ export const TargetRegistration: React.FC = () => {
                     setInitialProfileImage(imagePath);
                 }
 
-                // hqCountry relation is loaded by backend and serialized as 'hq_country' object
-                // When relation is loaded: hq_country is the country object
                 const countryData = ov.hq_country;
                 if (countryData) {
-                    // If it's a loaded relationship (object with name, id, etc.)
                     if (typeof countryData === 'object' && countryData.id) {
                         setValue('originCountry', {
                             id: countryData.id,
@@ -312,7 +357,6 @@ export const TargetRegistration: React.FC = () => {
                             status: 'registered'
                         });
                     } else if (typeof countryData === 'number' || typeof countryData === 'string') {
-                        // If it's just the ID (relation not loaded), look it up in countries list
                         const c = countries.find(x => x.id == countryData);
                         if (c) setValue('originCountry', c);
                     }
@@ -321,7 +365,7 @@ export const TargetRegistration: React.FC = () => {
                 try {
                     const ops = typeof ov.industry_ops === 'string' ? JSON.parse(ov.industry_ops) : ov.industry_ops;
                     if (Array.isArray(ops)) {
-                        const sanitized = ops.map(op => {
+                        const sanitized = ops.map((op: any) => {
                             if (typeof op === 'object' && op !== null) return op;
                             const found = industries.find(i => i.name === op);
                             return found || { id: Date.now() + Math.random(), name: op };
@@ -341,28 +385,24 @@ export const TargetRegistration: React.FC = () => {
 
                 // Contacts Loading
                 try {
-                    const contactsRaw = ov.contacts || ov.contact_persons;
+                    const contactsRaw = ov.contacts || ov.seller_phone || ov.contact_persons;
                     let parsedContacts: any[] = [];
-
                     if (typeof contactsRaw === 'string') {
                         parsedContacts = JSON.parse(contactsRaw);
                     } else if (Array.isArray(contactsRaw)) {
                         parsedContacts = contactsRaw;
                     }
-
-                    // Fallback to legacy fields if no contacts list
                     if (!parsedContacts || parsedContacts.length === 0) {
                         if (ov.seller_contact_name || ov.seller_email) {
                             parsedContacts.push({
                                 name: ov.seller_contact_name || '',
                                 designation: ov.seller_designation || '',
                                 email: ov.seller_email || '',
-                                phone: ov.seller_phone || '',
+                                phone: '',
                                 isPrimary: true
                             });
                         }
                     }
-
                     if (parsedContacts.length > 0) {
                         setValue('contacts', parsedContacts);
                         const primaryIndex = parsedContacts.findIndex((c: any) => c.isPrimary);
@@ -371,7 +411,6 @@ export const TargetRegistration: React.FC = () => {
                         }
                     }
                 } catch (e) { console.error("Contact load error", e); }
-
 
             } catch (err) {
                 console.error(err);
@@ -385,9 +424,8 @@ export const TargetRegistration: React.FC = () => {
 
     const onSubmit = async (data: FormValues, isDraft: boolean) => {
         try {
-            // STEP 1: Company Overview (Core)
             const overviewFormData = new FormData();
-            if (id) overviewFormData.append('seller_id', id); // Logic uses seller_id as PK
+            if (id) overviewFormData.append('seller_id', id);
 
             overviewFormData.append('dealroomId', data.projectCode);
             overviewFormData.append('companyName', data.companyName);
@@ -397,6 +435,7 @@ export const TargetRegistration: React.FC = () => {
             overviewFormData.append('details', data.projectDetails);
             overviewFormData.append('reason_for_mna', data.reasonForMA);
             overviewFormData.append('website_links', JSON.stringify(data.websiteLinks));
+            overviewFormData.append('hq_address', JSON.stringify(data.hqAddresses));
             overviewFormData.append('websiteLink', data.websiteLinks[0]?.url || '');
             overviewFormData.append('teaser_link', data.teaserLink);
 
@@ -404,11 +443,8 @@ export const TargetRegistration: React.FC = () => {
                 overviewFormData.append('profilePicture', profileImage);
             }
 
-            // Industry Mapping: Send selected industries
             overviewFormData.append('broderIndustries', JSON.stringify(data.targetIndustries || []));
 
-            // Contact
-            // Contact
             const sanitizedContacts = data.contacts.map((c, idx) => ({
                 ...c,
                 isPrimary: String(data.primaryContactParams) === String(idx)
@@ -420,22 +456,17 @@ export const TargetRegistration: React.FC = () => {
             overviewFormData.append('emailAddress', primaryContact?.email || '');
             overviewFormData.append('contactPersons', JSON.stringify(sanitizedContacts));
 
-
-            // PIC and Advisors
             overviewFormData.append('internal_pic', JSON.stringify(data.internal_pic || []));
             overviewFormData.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
             overviewFormData.append('introduced_projects', JSON.stringify(data.introducedProjects || []));
             overviewFormData.append('channel', data.channel || '');
-
-            // Flags (Defaulting to false/empty for now to match minimal intake)
             overviewFormData.append('noPICNeeded', '0');
 
             const overviewRes = await api.post('/api/seller/company-overviews', overviewFormData);
-            const savedSellerId = overviewRes.data.data; // The backend returns ID
+            const savedSellerId = overviewRes.data.data;
 
             if (!savedSellerId) throw new Error("Failed to retrieve Saved Seller ID");
 
-            // STEP 2: Financial Details
             const financePayload = {
                 seller_id: savedSellerId,
                 expected_investment_amount: {
@@ -448,7 +479,7 @@ export const TargetRegistration: React.FC = () => {
                     min: data.ebitdaMin,
                     max: ''
                 },
-                is_draft: isDraft ? '2' : '1' // 1: Active, 2: Draft
+                is_draft: isDraft ? '2' : '1'
             };
             await api.post('/api/seller/financial-details', financePayload);
 
@@ -458,294 +489,430 @@ export const TargetRegistration: React.FC = () => {
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || 'Failed to save Target';
             showAlert({ type: 'error', message: errorMsg });
-
             if (errorMsg.toLowerCase().includes('project code') || errorMsg.toLowerCase().includes('id')) {
                 setIsIdAvailable(false);
             }
         }
     };
 
+    /* ─── shared input styles ─── */
+    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
+    const selectClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors appearance-none cursor-pointer";
+
     return (
-        <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 font-sans text-gray-900">
+        <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 font-['Inter']">
+            <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
+                {/* ═══════════════════════════════════════════════
+                    SECTION 1: IDENTITY
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Identity" />
 
-            {/* SECTION A: IDENTITY */}
-            <CollapsibleSection title="Identity" defaultOpen={true}>
-                <div className="mb-6 flex justify-center">
-                    <LogoUpload
-                        initialImage={initialProfileImage}
-                        onImageSelect={(file) => setProfileImage(file)}
-                    />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <Label text="Origin Country" required />
-                        <Controller
-                            control={control}
-                            name="originCountry"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={countries}
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    placeholder="Select country"
-                                    searchPlaceholder="Search country..."
-                                />
-                            )}
-                        />
-                        {errors.originCountry && <span className="text-red-500 text-xs">Required</span>}
-                    </div>
-
-                    <div>
-                        <Label text="Project Code" />
-                        <div className="relative flex items-center">
-                            <input
-                                {...register('projectCode')}
-                                className={`w-full px-4 py-2 border rounded-[3px] focus:ring-2 focus:ring-orange-200 transition-all ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}
-                                placeholder="XX-S-XXX"
+                    <div className="flex items-start gap-12">
+                        {/* Company Avatar - LEFT side */}
+                        <div className="flex flex-col items-center gap-3.5 shrink-0 w-36">
+                            <LogoUpload
+                                initialImage={initialProfileImage}
+                                onImageSelect={(file) => setProfileImage(file)}
                             />
-                            <div className="absolute right-3 flex items-center gap-2">
-                                {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-                                {!isCheckingId && isIdAvailable === true && <Check className="w-5 h-5 text-green-500" />}
-                                {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
+                        </div>
+
+                        {/* Identity Fields - RIGHT side */}
+                        <div className="flex-1 flex flex-col gap-10">
+                            {/* Row: Origin Country + Project Code */}
+                            <div className="flex gap-6">
+                                <div className="flex-1">
+                                    <FieldLabel text="Origin Country" required />
+                                    <Controller
+                                        control={control}
+                                        name="originCountry"
+                                        rules={{ required: true }}
+                                        render={({ field }) => (
+                                            <Dropdown
+                                                countries={countries}
+                                                selected={field.value}
+                                                onSelect={field.onChange}
+                                                placeholder="Select option"
+                                                searchPlaceholder="Search country..."
+                                            />
+                                        )}
+                                    />
+                                    {errors.originCountry && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                </div>
+                                <div className="flex-1">
+                                    <FieldLabel text="Project Code" required />
+                                    <div className="relative flex items-center">
+                                        <input
+                                            {...register('projectCode')}
+                                            className={`${inputClass} ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : ''}`}
+                                            placeholder="XX-S-XXX"
+                                        />
+                                        <div className="absolute right-3 flex items-center gap-2">
+                                            {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                            {!isCheckingId && isIdAvailable === true && <Check className="w-4 h-4 text-green-500" />}
+                                            {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-4 h-4 text-red-500" />}
+                                        </div>
+                                    </div>
+                                    {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
+                                </div>
+                            </div>
+
+                            {/* Row: Rank + Lead Channel */}
+                            <div className="flex gap-6">
+                                <div className="flex-1">
+                                    <FieldLabel text="Rank" />
+                                    <Controller
+                                        control={control}
+                                        name="rank"
+                                        render={({ field }) => (
+                                            <SelectPicker
+                                                options={[
+                                                    { value: 'A', label: 'A - High Priority' },
+                                                    { value: 'B', label: 'B - Standard' },
+                                                    { value: 'C', label: 'C - Low' }
+                                                ]}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="B - Standard"
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <FieldLabel text="Lead Channel" />
+                                    <Controller
+                                        control={control}
+                                        name="channel"
+                                        render={({ field }) => (
+                                            <SelectPicker
+                                                options={CHANNEL_OPTIONS.map(o => ({ value: o.name, label: o.name }))}
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder="Where did we get the lead from?"
+                                            />
+                                        )}
+                                    />
+                                </div>
                             </div>
                         </div>
-                        {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
-                        {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">Code is available.</p>}
-                    </div>
-
-
-
-                    <div>
-                        <Label text="Rank" />
-                        <Controller
-                            control={control}
-                            name="rank"
-                            render={({ field }) => (
-                                <SelectPicker
-                                    options={[{ value: 'A', label: 'A - High Priority' }, { value: 'B', label: 'B - Standard' }, { value: 'C', label: 'C - Low' }]}
-                                    value={field.value}
-                                    onChange={field.onChange}
-                                    placeholder="Select Rank"
-                                />
-                            )}
-                        />
-                    </div>
-
-                    {/* Channel */}
-                    <div>
-                        <Label text="Channel" required />
-                        <Controller
-                            control={control}
-                            name="channel"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <select
-                                    className="w-full min-h-10 px-3 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors text-sm"
-                                    value={field.value}
-                                    onChange={(e) => field.onChange(e.target.value)}
-                                >
-                                    {CHANNEL_OPTIONS.map(opt => (
-                                        <option key={opt.id} value={opt.name}>{opt.name}</option>
-                                    ))}
-                                </select>
-                            )}
-                        />
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <Label text="Company Name" required />
-                        <Input {...register('companyName', { required: true })} placeholder="Registered Company Entity Name" className="rounded-[3px]" />
-                        {errors.companyName && <span className="text-red-500 text-xs">Required</span>}
                     </div>
                 </div>
-            </CollapsibleSection>
 
-            {/* SECTION 2: COMPANY PROFILE */}
-            <CollapsibleSection title="Company Profile">
-                <div className="space-y-4">
-                    <div>
-                        <Label text="Website" />
-                        <div className="space-y-2">
-                            {websiteFields.map((field, index) => (
-                                <div key={field.id} className="flex items-center gap-2">
-                                    <div className="flex-1 flex items-center">
-                                        <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                                            <LinkIcon className="h-4 w-4" />
-                                        </span>
+                {/* ═══════════════════════════════════════════════
+                    SECTION 2: COMPANY PROFILE
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Company Profile" />
+
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Company Name + Industry */}
+                        <div className="flex gap-7">
+                            <div className="flex-1">
+                                <FieldLabel text="Company Name" required />
+                                <input
+                                    {...register('companyName', { required: true })}
+                                    className={inputClass}
+                                    placeholder="Enter company registered name"
+                                />
+                                {errors.companyName && <span className="text-red-500 text-xs mt-1">Required</span>}
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Industry" required />
+                                <Controller
+                                    control={control}
+                                    name="targetIndustries"
+                                    rules={{ required: true }}
+                                    render={({ field }) => (
+                                        <IndustryDropdown
+                                            industries={industries}
+                                            selected={field.value || []}
+                                            onSelect={(selected) => field.onChange(selected)}
+                                            multiSelect={true}
+                                            placeholder="Select from the industries"
+                                        />
+                                    )}
+                                />
+                                {errors.targetIndustries && <span className="text-red-500 text-xs mt-1">At least one industry is required</span>}
+                            </div>
+                        </div>
+
+                        {/* Website links */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2">
+                                <FieldLabel text="Website" />
+                                {websiteFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center">
+                                        <div className="w-11 h-11 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center justify-center">
+                                            <LinkIcon className="w-5 h-5 text-gray-500" />
+                                        </div>
                                         <input
                                             {...register(`websiteLinks.${index}.url` as const)}
                                             type="text"
-                                            placeholder="https://example.com"
-                                            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-orange-200 focus:border-orange-400 sm:text-sm"
+                                            placeholder="www.example.com"
+                                            className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
+                                        />
+                                        {websiteFields.length > 1 && (
+                                            <button type="button" onClick={() => removeWebsite(index)} className="ml-2 text-red-400 hover:text-red-600 transition-colors">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => appendWebsite({ url: '' })}
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                            >
+                                <Plus className="w-3 h-3" /> Add another Link
+                            </button>
+                        </div>
+
+                        {/* Addresses / Entities */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2">
+                                <FieldLabel text="Addresses / Entities" />
+                                {addressFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-4">
+                                        <input
+                                            {...register(`hqAddresses.${index}.label` as const)}
+                                            placeholder="Entity Name/Address Name"
+                                            className={`w-1/3 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow`}
+                                        />
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <input
+                                                {...register(`hqAddresses.${index}.address` as const)}
+                                                placeholder="Full Address"
+                                                className={`flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow`}
+                                            />
+                                            {addressFields.length > 1 && (
+                                                <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => appendAddress({ label: '', address: '' })}
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                            >
+                                <Plus className="w-4 h-4" /> Add another Address/ Entity
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════
+                    SECTION 3: DEAL CONTEXT
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Deal Context" />
+
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Purpose of M&A + Investment Condition */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="Purpose of M&A" required />
+                                <Controller
+                                    control={control}
+                                    name="reasonForMA"
+                                    rules={{ required: true }}
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={REASONS_MA}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select Purpose of M&A"
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Investment Condition" />
+                                <Controller
+                                    control={control}
+                                    name="investmentCondition"
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={INVESTMENT_CONDITIONS}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="e.g. Majority stake only"
+                                        />
+                                    )}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Row: Planned Sale Share Ratio + Desired Investment Range */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="Planned Sale Share Ratio" required />
+                                <Controller
+                                    control={control}
+                                    name="plannedSaleShareRatio"
+                                    rules={{ required: true }}
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={RATIO_OPTIONS}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select the Percentage of share selling"
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Desired Investment Range" required />
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        {...register('desiredInvestmentMin')}
+                                        type="number"
+                                        placeholder="Min"
+                                        className={`flex-1 ${inputClass}`}
+                                    />
+                                    <span className="text-black text-base font-normal">-</span>
+                                    <input
+                                        {...register('desiredInvestmentMax')}
+                                        type="number"
+                                        placeholder="Max" // Using Max to be logical, user said 'min and max field'
+                                        className={`flex-1 ${inputClass}`}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Row: EBITDA + Default Currency */}
+                        <div className="flex gap-6">
+                            <div className="flex-1">
+                                <FieldLabel text="EBITDA" />
+                                <input
+                                    {...register('ebitdaMin')}
+                                    type="number"
+                                    placeholder="write EBITDA here"
+                                    className={inputClass}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Default Currency" />
+                                <select {...register('desiredInvestmentCurrency')} className={`${selectClass} ${!watch('desiredInvestmentCurrency') ? 'text-gray-500' : 'text-gray-900'}`}>
+                                    <option value="" disabled selected>Select default currency</option>
+                                    {currencies.map(c => (
+                                        <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Project Details */}
+                        <div>
+                            <FieldLabel text="Project Details" />
+                            <textarea
+                                {...register('projectDetails')}
+                                className="w-full px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 min-h-[100px] resize-y"
+                                placeholder="Brief description of the deal..."
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════
+                    SECTION 4: CONTACTS
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col items-center gap-10">
+                    <div className="self-stretch">
+                        <SectionHeader title="Contacts" />
+                    </div>
+
+                    {contactFields.map((field, index) => (
+                        <div key={field.id} className="self-stretch px-5 py-4 bg-gray-50 rounded-[3px] border border-gray-300 flex flex-col gap-5">
+                            <div className="flex flex-col gap-8">
+                                {/* Row: Name + Designation + Department */}
+                                <div className="flex gap-7">
+                                    <div className="flex-1">
+                                        <FieldLabel text="Name" />
+                                        <input
+                                            {...register(`contacts.${index}.name` as const)}
+                                            placeholder="Contact Name"
+                                            className={inputClass}
                                         />
                                     </div>
-                                    <button type="button" onClick={() => removeWebsite(index)} className="text-red-400 hover:text-red-600">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => appendWebsite({ url: '' })}
-                            className="flex items-center text-[#ECA234] font-medium hover:underline text-sm mt-2"
-                        >
-                            <Plus className="w-3 h-3 mr-1" /> Add Link
-                        </button>
-                    </div>
-
-                    <div>
-                        <Label text="Project Details" />
-                        <textarea
-                            {...register('projectDetails')}
-                            className="w-full border border-gray-300 rounded-[3px] p-3 min-h-[100px] focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
-                            placeholder="Brief description of the deal..."
-                        />
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            {/* SECTION 3: CLASSIFICATION */}
-            <CollapsibleSection title="Classification">
-                <div className="space-y-6">
-                    {/* Target Industries - Multi-select with checkboxes like Investor side */}
-                    <div>
-                        <Label text="Target Business & Industry" required />
-                        <Controller
-                            control={control}
-                            name="targetIndustries"
-                            rules={{ required: true }}
-                            render={({ field }) => (
-                                <IndustryDropdown
-                                    industries={industries}
-                                    selected={field.value || []}
-                                    onSelect={(selected) => field.onChange(selected)}
-                                    multiSelect={true}
-                                />
-                            )}
-                        />
-                        {errors.targetIndustries && <span className="text-red-500 text-xs">At least one industry is required</span>}
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            {/* SECTION 4: DEAL CONTEXT */}
-            <CollapsibleSection title="Deal Context">
-                <div className="space-y-4">
-
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <Label text="Reason for M&A" required />
-                            <Controller
-                                control={control}
-                                name="reasonForMA"
-                                rules={{ required: true }}
-                                render={({ field }) => (
-                                    <SelectPicker
-                                        options={REASONS_MA}
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                    />
-                                )}
-                            />
-                        </div>
-                        <div>
-                            <Label text="Planned Sale Share Ratio" required />
-                            <Controller
-                                control={control}
-                                name="plannedSaleShareRatio"
-                                rules={{ required: true }}
-                                render={({ field }) => (
-                                    <SelectPicker
-                                        options={RATIO_OPTIONS}
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        placeholder="Select Ratio"
-                                    />
-                                )}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-3"><Label text="Desired Investment Range" required /></div>
-                        <Input {...register('desiredInvestmentMin')} type="number" placeholder="Min Amount" />
-                        <Input {...register('desiredInvestmentMax')} type="number" placeholder="Max Amount" />
-                        <div>
-                            <Label text="Currency" />
-                            <select {...register('desiredInvestmentCurrency')} className="w-full border border-gray-300 rounded-[3px] px-3 py-2 bg-white">
-                                {currencies.map(c => (
-                                    <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                            <div className="md:col-span-3"><Label text="EBITDA / TTM Profit" /></div>
-                            <div className="md:col-span-2">
-                                <Input {...register('ebitdaMin')} type="number" placeholder="Value" />
-                            </div>
-                            <div>
-                                <Label text="Currency" />
-                                <div className="flex items-center text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-[3px] border border-gray-200">
-                                    {watch('desiredInvestmentCurrency') || 'USD'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </CollapsibleSection>
-
-            {/* SECTION 5: CONTACTS */}
-            <CollapsibleSection title="Contacts">
-                <div className="space-y-4">
-                    {contactFields.map((field, index) => (
-                        <div key={field.id} className="p-4 border border-gray-100 rounded-[3px] bg-gray-50 relative">
-                            <div className="absolute right-2 top-2">
-                                <button type="button" onClick={() => removeContact(index)} className="text-red-400 hover:text-red-600">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                                    <Label text="Name" />
-                                    <div className="flex items-center">
-                                        <User className="w-4 h-4 text-gray-400 mr-2" />
-                                        <input {...register(`contacts.${index}.name` as const)} placeholder="Contact Name" className="flex-1 border-b bg-transparent focus:outline-none focus:border-blue-500" />
+                                    <div className="flex-1">
+                                        <FieldLabel text="Designation" />
+                                        <input
+                                            {...register(`contacts.${index}.designation` as const)}
+                                            placeholder="Position / Job Title"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FieldLabel text="Department" />
+                                        <input
+                                            {...register(`contacts.${index}.department` as const)}
+                                            placeholder="Dept."
+                                            className={inputClass}
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                    <Label text="Designation" />
-                                    <input {...register(`contacts.${index}.designation` as const)} placeholder="Position / Job Title" className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Department" />
-                                    <input {...register(`contacts.${index}.department` as const)} placeholder="Dept." className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Phone" />
-                                    <input {...register(`contacts.${index}.phone` as const)} placeholder="+1 234..." className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
-                                <div>
-                                    <Label text="Email" />
-                                    <input {...register(`contacts.${index}.email` as const)} placeholder="email@example.com" className="w-full border-b bg-transparent focus:outline-none" />
-                                </div>
 
-                                <div className="flex items-center mt-4">
-                                    <input
-                                        type="radio"
-                                        value={index}
-                                        {...register(`contacts.${index}.isPrimary` as const)}
-                                        name="primaryContactParams"
-                                        className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                    />
-                                    <label className="ml-2 block text-sm text-gray-900">
-                                        Primary Contact
-                                    </label>
+                                {/* Row: Phone + Email + Toggle/Delete */}
+                                <div className="flex items-end gap-7">
+                                    <div className="flex-1">
+                                        <FieldLabel text="Phone" />
+                                        <input
+                                            {...register(`contacts.${index}.phone` as const)}
+                                            placeholder="+1 234..."
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <FieldLabel text="Email" />
+                                        <input
+                                            {...register(`contacts.${index}.email` as const)}
+                                            placeholder="email@example.com"
+                                            className={inputClass}
+                                        />
+                                    </div>
+                                    <div className="flex-1 flex items-center gap-9 pb-2">
+                                        {/* Primary Contact Toggle */}
+                                        <label className={`flex items-center gap-2 cursor-pointer ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
+                                            <div className="relative">
+                                                <input
+                                                    type="radio"
+                                                    value={index}
+                                                    {...register('primaryContactParams')}
+                                                    className="sr-only peer"
+                                                    disabled={String(primaryContactParams) === String(index)}
+                                                />
+                                                <div className={`w-12 h-6 rounded-3xl transition-colors ${String(primaryContactParams) === String(index) ? 'bg-[#064771]' : 'bg-gray-300'}`}>
+                                                    <div className={`w-5 h-5 bg-white rounded-full absolute top-[2px] transition-all shadow-sm ${String(primaryContactParams) === String(index) ? 'left-[26px]' : 'left-[2px]'}`} />
+                                                </div>
+                                            </div>
+                                            <span className={`text-sm font-normal font-['Inter'] ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                                {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
+                                            </span>
+                                        </label>
+
+                                        {/* Delete Button Logic */}
+                                        {contactFields.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeContact(index)}
+                                                disabled={String(primaryContactParams) === String(index)}
+                                                className={`flex items-center gap-2 transition-colors ${String(primaryContactParams) === String(index)
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : 'text-neutral-400 hover:text-red-500 cursor-pointer'
+                                                    }`}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                                <span className="text-sm font-normal font-['Inter']">Delete</span>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -754,96 +921,117 @@ export const TargetRegistration: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => appendContact({ name: '', designation: '', department: '', email: '', phone: '', isPrimary: false })}
-                        className="flex items-center text-[#ECA234] font-medium hover:underline"
+                        className="self-stretch flex items-center gap-3 text-sky-900 text-base font-medium font-['Inter']"
                     >
-                        <Plus className="w-4 h-4 mr-1" /> Add Contact
+                        <Plus className="w-4 h-4" /> Add another Contact
                     </button>
                 </div>
-            </CollapsibleSection>
 
-            {/* SECTION 6: DOCUMENTS & RELATIONSHIPS */}
-            <CollapsibleSection title="Documents & Relationships">
-                <div className="grid grid-cols-1 gap-6">
+                {/* ═══════════════════════════════════════════════
+                    SECTION 5: DOCUMENTS & RELATIONSHIPS
+                ═══════════════════════════════════════════════ */}
+                <div className="flex flex-col gap-10">
+                    <SectionHeader title="Documents & Relationships" />
 
-
-                    <div>
-                        <Label text="Teaser Profile" />
-                        <div className="flex items-center">
-                            <LinkIcon className="w-5 h-5 text-gray-400 mr-2" />
-                            <input {...register('teaserLink')} placeholder="https://docs.google.com/..." className="w-full border px-3 py-2 rounded" />
+                    <div className="flex flex-col gap-8">
+                        {/* Row: Assigned PIC + Financial Advisor */}
+                        <div className="flex gap-8">
+                            <div className="flex-1">
+                                <FieldLabel text="Assigned PIC" />
+                                <Controller
+                                    control={control}
+                                    name="internal_pic"
+                                    render={({ field }) => (
+                                        <Dropdown
+                                            countries={staffList}
+                                            selected={field.value}
+                                            onSelect={(selected) => field.onChange(selected)}
+                                            multiSelect={true}
+                                            placeholder="Select Internal Staff"
+                                            searchPlaceholder="Search staff names..."
+                                        />
+                                    )}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <FieldLabel text="Financial Advisor Roles (Partner) If any" />
+                                <Controller
+                                    control={control}
+                                    name="financialAdvisor"
+                                    render={({ field }) => (
+                                        <Dropdown
+                                            countries={partnerList}
+                                            selected={field.value}
+                                            onSelect={(selected) => field.onChange(selected)}
+                                            multiSelect={true}
+                                            placeholder="Select Financial Advisor"
+                                            searchPlaceholder="Search partner names..."
+                                        />
+                                    )}
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <Label text="Assigned PIC" />
-                        <Controller
-                            control={control}
-                            name="internal_pic"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={staffList}
-                                    selected={field.value}
-                                    onSelect={(selected) => field.onChange(selected)}
-                                    multiSelect={true}
-                                    placeholder="Select Internal Staff"
-                                    searchPlaceholder="Search staff names..."
-                                />
-                            )}
-                        />
-                    </div>
-
-                    <div>
-                        <Label text="Financial Advisor Roles" />
-                        <Controller
-                            control={control}
-                            name="financialAdvisor"
-                            render={({ field }) => (
-                                <Dropdown
-                                    countries={partnerList}
-                                    selected={field.value}
-                                    onSelect={(selected) => field.onChange(selected)}
-                                    multiSelect={true}
-                                    placeholder="Select Financial Advisor"
-                                    searchPlaceholder="Search partner names..."
-                                />
-                            )}
-                        />
-                    </div>
-
-                    <div>
-                        <Label text="Introduced Projects" />
-                        <div className="space-y-3">
-                            {introProjectFields.map((field, index) => (
-                                <div key={field.id} className="flex gap-2 items-center">
-                                    <input
-                                        {...register(`introducedProjects.${index}.name` as const)}
-                                        placeholder="Project Name / Code"
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-[3px] focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                                    />
-                                    <button type="button" onClick={() => removeIntroProject(index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                        {/* Teaser Profile Link */}
+                        <div className="flex flex-col gap-3">
+                            <FieldLabel text="Teaser Profile" />
+                            <div className="flex items-center">
+                                <div className="px-4 py-3 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center">
+                                    <LinkIcon className="w-5 h-5 text-gray-500" />
                                 </div>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => appendIntroProject({ id: Date.now(), name: '' })}
-                                className="flex items-center text-[#ECA234] font-medium hover:underline text-sm"
-                            >
-                                <Plus className="w-3 h-3 mr-1" /> Add Project
-                            </button>
+                                <input
+                                    {...register('teaserLink')}
+                                    placeholder="https://tokyoconsultinggroup.3qcloud.jp/index.php/s/..."
+                                    className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 truncate"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Introduced Projects */}
+                        <div className="flex flex-col gap-3">
+                            <FieldLabel text="Introduced Projects" />
+                            <Controller
+                                control={control}
+                                name="introducedProjects"
+                                render={({ field }) => (
+                                    <Dropdown
+                                        countries={investorList}
+                                        selected={field.value || []}
+                                        onSelect={(val) => field.onChange(val)}
+                                        multiSelect={true}
+                                        placeholder="Search and select registered investors..."
+                                        searchPlaceholder="Search by code or name..."
+                                        dropUp={true}
+                                    />
+                                )}
+                            />
                         </div>
                     </div>
                 </div>
-            </CollapsibleSection>
+            </div>
 
-            {/* Sticky Bottom Buttons */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-50">
-                <button type="button" onClick={() => navigate('/prospects?tab=targets')} className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                <button type="button" onClick={handleSubmit(d => onSubmit(d, true))} disabled={isSubmitting} className="px-4 py-2 text-[#053a5c] bg-white border border-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-gray-50 transition-all">
+            {/* ═══ Sticky Bottom Footer ═══ */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 flex items-center justify-end gap-3 px-8 z-50">
+                <button
+                    type="button"
+                    onClick={() => navigate('/prospects?tab=targets')}
+                    className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium font-['Inter'] hover:bg-gray-50 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    onClick={handleSubmit(d => onSubmit(d, true))}
+                    disabled={isSubmitting}
+                    className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium font-['Inter'] hover:bg-sky-50 transition-colors"
+                >
                     Save as Draft
                 </button>
-                <button type="submit" disabled={isSubmitting || (isIdAvailable === false)} className="px-6 py-2 text-white bg-[#053a5c] rounded-[3px] text-sm font-medium hover:bg-[#042d48] transition-all">
+                <button
+                    type="submit"
+                    disabled={isSubmitting || (isIdAvailable === false)}
+                    className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium font-['Inter'] hover:bg-[#042d48] transition-colors disabled:opacity-50"
+                >
                     {isSubmitting ? 'Saving...' : 'Save Target'}
                 </button>
             </div>

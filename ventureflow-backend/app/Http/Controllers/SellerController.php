@@ -22,6 +22,30 @@ use App\Models\Deal;
 class SellerController extends Controller
 {
     /**
+     * Lightweight fetch: returns all active sellers with just id, code, and name.
+     * Used for "Introduced Projects" dropdown in Investor Registration.
+     */
+    public function fetchAll()
+    {
+        $sellers = Seller::where(function($q) {
+                $q->where('status', '1')->orWhereNull('status');
+            })
+            ->with(['companyOverview:id,reg_name'])
+            ->select('id', 'seller_id', 'company_overview_id', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id'   => $s->id,
+                    'code' => $s->seller_id,
+                    'name' => $s->companyOverview->reg_name ?? '',
+                ];
+            });
+
+        return response()->json(['data' => $sellers]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
 
@@ -425,7 +449,10 @@ class SellerController extends Controller
             $overview->seller_designation = $request->input('designationAndPosition');
             $overview->seller_email = $request->input('emailAddress');
             $overview->seller_phone = json_decode($request->input('contactPersons'), true);
+            $overview->contacts = json_decode($request->input('contactPersons'), true);
             $overview->website = $request->input('websiteLink');
+            $overview->website_links = json_decode($request->input('website_links'), true);
+            $overview->introduced_projects = json_decode($request->input('introduced_projects'), true);
             $overview->linkedin = $request->input('linkedinLink');
             $overview->twitter = $request->input('twitterLink');
             $overview->facebook = $request->input('facebookLink');
@@ -481,7 +508,15 @@ class SellerController extends Controller
             //$seller->image = $overview->profile_picture ?? $seller->image;
             $seller->company_overview_id = $overview->id;
             $seller->seller_id = $request->input('dealroomId');
-            $seller->status = $request->input('is_draft') ?? '1'; // Default to 'active' if not provided
+            // Frontend sends 'Active' or 'Draft' in the 'status' field
+            $statusVal = $request->input('status');
+            if ($statusVal === 'Draft') {
+                $seller->status = '2';
+            } elseif ($statusVal === 'Active') {
+                $seller->status = '1';
+            } else {
+                $seller->status = $request->input('is_draft') ?? '1';
+            }
             $seller->save();
 
             // Add Activity Log

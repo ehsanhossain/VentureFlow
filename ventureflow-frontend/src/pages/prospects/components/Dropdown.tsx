@@ -18,13 +18,14 @@ type DropdownCoreProps = {
     disabled?: boolean;
     placeholder?: string;
     searchPlaceholder?: string;
+    dropUp?: boolean;
 };
 
 type DropdownProps = DropdownCoreProps & HTMLAttributes<HTMLDivElement>;
 
 export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
     (
-        { countries, selected, onSelect, multiSelect = false, disabled = false, className, placeholder = "Select option", searchPlaceholder = "Search...", ...rest },
+        { countries, selected, onSelect, multiSelect = false, disabled = false, className, placeholder = "Select option", searchPlaceholder = "Search...", dropUp = false, ...rest },
         ref: ForwardedRef<HTMLDivElement>
     ): JSX.Element => {
         const getValidCountries = (val: Country | Country[] | null | undefined): Country[] => {
@@ -103,7 +104,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                     disabled={disabled}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     aria-expanded={isOpen}
-                    className={`flex w-full min-h-10 items-center gap-2 px-3 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                    className={`flex w-full min-h-[44px] items-center gap-2 px-3 py-2 rounded-[3px] border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                 >
                     {selectedCountries.length > 0 ? (
                         multiSelect ? (
@@ -168,7 +169,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                 </button>
 
                 {isOpen && (
-                    <div className="absolute z-[100] mt-1 w-full max-h-[300px] rounded-md border border-gray-200 bg-white shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className={`absolute z-[999] w-full max-h-[250px] rounded-md border border-gray-200 bg-white shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${dropUp ? 'bottom-full mb-1' : 'mt-1'}`}>
                         <div className="flex flex-col w-full items-start gap-2 p-2">
 
                             <div className="relative w-full px-1">
@@ -182,7 +183,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                             </div>
 
 
-                            <div className="flex flex-col w-full max-h-60 overflow-y-auto">
+                            <div className="flex flex-col w-full max-h-48 overflow-y-auto">
                                 {filteredCountries.map((country) => (
                                     <button
                                         key={country.id?.toString() || (country as any).user_id?.toString() || Math.random().toString()}

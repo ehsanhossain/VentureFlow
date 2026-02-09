@@ -38,6 +38,7 @@ export interface InvestorRowData {
     primaryContact?: string;
     sourceCurrencyRate?: number;
     channel?: string;
+    companyIndustry?: string[];
 }
 
 interface InvestorTableProps {
@@ -216,6 +217,28 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             textAccessor: (row) => row.companyName,
             width: 200,
             sortable: true,
+        },
+        {
+            id: 'companyIndustry',
+            header: 'Industry',
+            accessor: (row) => (
+                <div className="flex flex-wrap gap-1">
+                    {row.companyIndustry?.length ? (
+                        <>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[11px] font-medium text-slate-600 truncate max-w-[120px]">
+                                {row.companyIndustry[0]}
+                            </span>
+                            {row.companyIndustry.length > 1 && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[10px] font-medium text-blue-600">
+                                    +{row.companyIndustry.length - 1}
+                                </span>
+                            )}
+                        </>
+                    ) : <span className="text-[11px] font-medium text-slate-300">N/A</span>}
+                </div>
+            ),
+            textAccessor: (row) => row.companyIndustry?.join(', ') || '',
+            width: 200,
         },
         {
             id: 'originCountry',

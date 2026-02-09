@@ -47,7 +47,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSel
         <div className={`flex flex-col items-center justify-center ${className}`}>
             <div
                 onClick={handleClick}
-                className={`relative w-24 h-24 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-[#064771] transition-colors group overflow-hidden bg-gray-50`}
+                className={`relative w-36 h-36 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-[#064771] transition-colors group overflow-hidden bg-gray-50`}
             >
                 {preview ? (
                     <img
@@ -57,8 +57,8 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSel
                     />
                 ) : (
                     <div className="flex flex-col items-center text-gray-400 group-hover:text-[#064771]">
-                        <Camera className="w-6 h-6 mb-1" />
-                        <span className="text-[10px] font-medium">Upload</span>
+                        <Camera className="w-8 h-8 mb-1" />
+                        <span className="text-xs font-medium">Upload</span>
                     </div>
                 )}
 

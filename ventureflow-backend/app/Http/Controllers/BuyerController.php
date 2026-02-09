@@ -25,6 +25,29 @@ use App\Models\Deal;
 class BuyerController extends Controller
 {
 
+    /**
+     * Lightweight fetch: returns all active buyers with just id, code, and name.
+     * Used for "Introduced Projects" dropdown in Target Registration.
+     */
+    public function fetchAll()
+    {
+        $buyers = Buyer::where(function($q) {
+                $q->where('status', '1')->orWhereNull('status');
+            })
+            ->with(['companyOverview:id,reg_name'])
+            ->select('id', 'buyer_id', 'company_overview_id', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($b) {
+                return [
+                    'id'   => $b->id,
+                    'code' => $b->buyer_id,
+                    'name' => $b->companyOverview->reg_name ?? '',
+                ];
+            });
+
+        return response()->json(['data' => $buyers]);
+    }
 
     public function index(Request $request)
     {
@@ -409,6 +432,7 @@ class BuyerController extends Controller
                 'financial_advisor',
                 'internal_pic',
                 'website', // Added - frontend sends as JSON array
+                'company_industry',
             ];
 
             foreach ($jsonFields as $field) {
@@ -488,6 +512,7 @@ class BuyerController extends Controller
             $overview->financial_advisor = $data['financial_advisor'] ?? null;
             $overview->internal_pic = $data['internal_pic'] ?? null;
             $overview->channel = $data['channel'] ?? null;
+            $overview->company_industry = $data['company_industry'] ?? null;
 
             $overview->save();
 
@@ -525,6 +550,7 @@ class BuyerController extends Controller
                     'buyer_id' => $data['buyer_id'],
                     'image' => $data['profile_picture'] ?? null,
                     'company_overview_id' => $overview->id,
+                    'status' => '1',
                 ]);
 
                 // Add Activity Log

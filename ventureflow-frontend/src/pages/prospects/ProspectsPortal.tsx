@@ -43,6 +43,7 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
+    { id: 'companyIndustry', label: 'Industry' },
     { id: 'originCountry', label: 'Origin Country' },
     { id: 'website', label: 'Website' },
     { id: 'targetIndustries', label: 'Target Industry' },
@@ -389,7 +390,8 @@ const ProspectsPortal: React.FC = () => {
                         email: overview.email,
                         phone: overview.phone,
                         channel: overview.channel,
-                        sourceCurrencyRate: sourceRate
+                        sourceCurrencyRate: sourceRate,
+                        companyIndustry: parseArray(overview.company_industry, 'name'),
                     };
                 });
                 setInvestors(mappedInvestors);

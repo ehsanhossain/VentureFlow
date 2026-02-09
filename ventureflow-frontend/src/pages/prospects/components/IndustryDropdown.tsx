@@ -15,6 +15,7 @@ type DropdownProps = {
     selected?: Industry | Industry[] | null;
     onSelect: (industry: Industry | Industry[]) => void;
     multiSelect?: boolean;
+    placeholder?: string;
 };
 
 export const IndustryDropdown = ({
@@ -22,6 +23,7 @@ export const IndustryDropdown = ({
     selected,
     onSelect,
     multiSelect = false,
+    placeholder,
 }: DropdownProps): JSX.Element => {
     const [search, setSearch] = useState('');
     const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +91,7 @@ export const IndustryDropdown = ({
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-expanded={isOpen}
-                className="flex w-full min-h-10 items-center gap-2 px-4 py-2 rounded-md border border-slate-300 bg-white focus:outline-none flex-wrap overflow-hidden"
+                className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 rounded-[3px] border border-slate-300 bg-white focus:outline-none flex-wrap overflow-hidden"
             >
                 {selectedIndustries.length > 0 ? (
                     multiSelect ? (
@@ -115,8 +117,9 @@ export const IndustryDropdown = ({
                     )
                 ) : (
                     <div className="flex items-center gap-2 text-sm text-gray-400">
-                        {multiSelect ? 'Select industries' : 'Select an industry'}
+                        {placeholder || (multiSelect ? 'Select industries' : 'Select an industry')}
                     </div>
+
                 )}
                 <svg
                     className={`w-4 h-4 ml-auto text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'
@@ -146,7 +149,7 @@ export const IndustryDropdown = ({
                                         setSearch('');
                                     }
                                 }}
-                                className="w-full h-10 pl-10 pr-3 py-2 rounded-lg border border-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                className="w-full h-10 pl-10 pr-3 py-2 rounded-[3px] border border-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
                                 placeholder="Search or type to add industry..."
                                 autoFocus
                             />
