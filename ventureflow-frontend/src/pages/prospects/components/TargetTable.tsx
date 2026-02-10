@@ -215,7 +215,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             accessor: (row) => (
                 <div className="flex items-center gap-2">
                     {row.originCountry?.flag ? (
-                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" alt="" />
+                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover" alt="" />
                     ) : (
                         <div className="w-5 h-5 rounded-full bg-slate-100" />
                     )}

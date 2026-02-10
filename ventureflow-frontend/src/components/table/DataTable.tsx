@@ -588,7 +588,12 @@ function DataTable<T>({
                                     <tr
                                         key={rowId}
                                         data-row-id={rowId}
-                                        onClick={() => onRowClick?.(row, index)}
+                                        onClick={(e) => {
+                                            // Don't navigate if user clicked an interactive element (link, button, input)
+                                            const target = e.target as HTMLElement;
+                                            if (target.closest('a, button, input, select, textarea, [role="button"]')) return;
+                                            onRowClick?.(row, index);
+                                        }}
                                         onContextMenu={(e) => onRowContextMenu?.(e, row, index)}
                                         className={cn(
                                             'group h-14 transition-colors duration-150 cursor-pointer',

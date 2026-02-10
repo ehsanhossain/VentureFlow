@@ -136,8 +136,15 @@ const TargetDetails: React.FC = () => {
     const defaultCurrencyCode = (() => {
         const currId = financial.default_currency;
         if (!currId) return '';
-        const found = currencies.find((c: any) => String(c.id) === String(currId));
-        return found?.currency_code || '';
+        // Try matching by ID first
+        const foundById = currencies.find((c: any) => String(c.id) === String(currId));
+        if (foundById) return foundById.currency_code || '';
+        // Try matching by currency_code (in case it was stored as a code string e.g. "USD")
+        const foundByCode = currencies.find((c: any) => c.currency_code === currId);
+        if (foundByCode) return foundByCode.currency_code || '';
+        // If it looks like a short code itself, use it directly
+        if (typeof currId === 'string' && currId.length <= 5 && /^[A-Z]+$/.test(currId)) return currId;
+        return '';
     })();
 
     // EBITDA
@@ -283,10 +290,6 @@ const TargetDetails: React.FC = () => {
                                 <div className="flex flex-col justify-between">
                                     <div className="flex items-center gap-3">
                                         <span className="text-2xl font-medium text-black capitalize">{companyName}</span>
-                                        {/* Country flag beside company name */}
-                                        {hqCountryFlag && (
-                                            <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" />
-                                        )}
                                         <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
                                             {projectCode}
                                         </span>
@@ -302,7 +305,7 @@ const TargetDetails: React.FC = () => {
                                         <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Origin Country</span>
                                         <div className="flex items-center gap-2">
                                             {hqCountryFlag && (
-                                                <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" />
+                                                <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover" />
                                             )}
                                             <span className="text-sm font-medium text-[#1F2937]">{hqCountryName}</span>
                                         </div>
