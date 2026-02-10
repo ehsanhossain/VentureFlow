@@ -55,6 +55,9 @@ class SellerController extends Controller
         $search = $request->input('search', '');
         $country = $request->input('country');
         $registeredAfter = $request->input('registered_after');
+        $registeredBefore = $request->input('registered_before');
+        $pipelineStage = $request->input('pipeline_stage');
+        $targetCountries = $request->input('target_countries', []);
         $structure = $request->input('structure');
         $status = $request->input('status');
         $source = $request->input('source');
@@ -179,12 +182,28 @@ class SellerController extends Controller
             ->when($registeredAfter, function ($query) use ($registeredAfter) {
                 try {
                     $date = Carbon::createFromFormat('Y-m-d', $registeredAfter, 'Asia/Dhaka')
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $query->where('created_at', '>=', $date);
+                } catch (\Exception $e) {
+                    // ignore invalid date
+                }
+            })
+            ->when($registeredBefore, function ($query) use ($registeredBefore) {
+                try {
+                    $date = Carbon::createFromFormat('Y-m-d', $registeredBefore, 'Asia/Dhaka')
                         ->endOfDay()
                         ->setTimezone('UTC');
                     $query->where('created_at', '<=', $date);
                 } catch (\Exception $e) {
                     // ignore invalid date
                 }
+            })
+            // --- Filter by pipeline stage ---
+            ->when($pipelineStage, function ($query) use ($pipelineStage) {
+                $query->whereHas('deals', function ($q) use ($pipelineStage) {
+                    $q->where('stage_code', $pipelineStage)->where('status', 'active');
+                });
             })
             ->when(!empty($status), function ($query) use ($status) {
                 $query->whereHas('companyOverview', function ($q) use ($status) {

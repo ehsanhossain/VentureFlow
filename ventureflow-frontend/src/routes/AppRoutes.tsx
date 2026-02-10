@@ -15,6 +15,7 @@ import Dashboard from "../pages/Dashboard";
 import TargetDetails from "../pages/prospects/components/TargetDetails";
 import Settings from "../pages/settings/Settings";
 import ProspectsPortal from "../pages/prospects/ProspectsPortal";
+import DraftsPage from "../pages/prospects/DraftsPage";
 import DealPipeline from "../pages/deals/DealPipeline";
 import PartnerManagement from "../pages/settings/components/PartnerManagement";
 import StaffManagement from "../pages/settings/components/StaffManagement";
@@ -50,6 +51,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ProspectsPortal />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/prospects/drafts"
+        element={
+          <ProtectedRoute>
+            <DraftsPage />
           </ProtectedRoute>
         }
       />

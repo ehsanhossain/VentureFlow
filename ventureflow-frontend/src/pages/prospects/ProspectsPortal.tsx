@@ -17,12 +17,17 @@ import {
     Upload,
     AlertCircle,
     FileSpreadsheet,
-    Zap,
     Eye,
     EyeOff,
     Columns
 } from 'lucide-react';
 import DataTableSearch from '../../components/table/DataTableSearch';
+import { Dropdown, Country as DropdownCountry } from './components/Dropdown';
+import { IndustryDropdown, Industry as DropdownIndustry } from './components/IndustryDropdown';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { Dayjs } from 'dayjs';
 import { showAlert } from '../../components/Alert';
 import { isFieldAllowed } from '../../utils/permissionUtils';
 
@@ -30,6 +35,7 @@ interface Country {
     id: number;
     name: string;
     flagSrc: string;
+    status: "registered" | "unregistered";
 }
 
 interface Currency {
@@ -37,6 +43,15 @@ interface Currency {
     code: string;
     sign: string;
     exchange_rate: string;
+}
+
+
+
+interface PipelineStage {
+    id: number;
+    code: string;
+    name: string;
+    type: string;
 }
 
 const ALL_INVESTOR_COLUMNS = [
@@ -251,19 +266,34 @@ const ProspectsPortal: React.FC = () => {
                 setCurrencies(currentCurrencies);
             }
 
+            // Build clean filter params (only non-empty values)
+            const filterParams: Record<string, any> = {};
+            if (filters.country) filterParams.country = filters.country;
+            if (filters.broader_industries?.length > 0) filterParams.broader_industries = filters.broader_industries;
+            if (filters.priority_industries?.length > 0) filterParams.priority_industries = filters.priority_industries;
+            if (filters.registered_after) filterParams.registered_after = filters.registered_after;
+            if (filters.registered_before) filterParams.registered_before = filters.registered_before;
+            if (filters.pipeline_stage) filterParams.pipeline_stage = filters.pipeline_stage;
+            if (filters.target_countries?.length > 0) filterParams.target_countries = filters.target_countries;
+            if (filters.expected_investment_amount?.min || filters.expected_investment_amount?.max) {
+                filterParams.expected_investment_amount = {};
+                if (filters.expected_investment_amount.min) filterParams.expected_investment_amount.min = filters.expected_investment_amount.min;
+                if (filters.expected_investment_amount.max) filterParams.expected_investment_amount.max = filters.expected_investment_amount.max;
+            }
+
             const [buyerRes, sellerRes] = await Promise.all([
                 api.get('/api/buyer', {
                     params: {
                         search: searchQuery,
-                        ...filters,
-                        page: activeTab === 'investors' ? pagination.currentPage : undefined, // Only paginate active tab fetch effectively
+                        ...filterParams,
+                        page: activeTab === 'investors' ? pagination.currentPage : undefined,
                         per_page: itemsPerPageRef.current
                     }
                 }),
                 api.get('/api/seller', {
                     params: {
                         search: searchQuery,
-                        ...filters,
+                        ...filterParams,
                         page: activeTab === 'targets' ? pagination.currentPage : undefined,
                         per_page: itemsPerPageRef.current
                     }
@@ -568,11 +598,48 @@ const ProspectsPortal: React.FC = () => {
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Advanced Filters State
-    const [filters, setFilters] = useState({
-        status: '',
-        country: '',
-        industry: '',
-    });
+    const [filterOriginCountry, setFilterOriginCountry] = useState<DropdownCountry | null>(null);
+    const [filterIndustry, setFilterIndustry] = useState<DropdownIndustry[]>([]);
+    const [filterTargetIndustry, setFilterTargetIndustry] = useState<DropdownIndustry[]>([]);
+    const [filterTargetCountries, setFilterTargetCountries] = useState<DropdownCountry[]>([]);
+    const [pipelineStageFilter, setPipelineStageFilter] = useState('');
+    const [filterDateFrom, setFilterDateFrom] = useState<Dayjs | null>(null);
+    const [filterDateTo, setFilterDateTo] = useState<Dayjs | null>(null);
+    const [filterBudgetMin, setFilterBudgetMin] = useState('');
+    const [filterBudgetMax, setFilterBudgetMax] = useState('');
+
+    // Reference data for filters
+    const [filterIndustries, setFilterIndustries] = useState<DropdownIndustry[]>([]);
+    const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
+    const [draftCounts, setDraftCounts] = useState({ investors: 0, targets: 0 });
+
+    // Build a unified filters object for the API (keeps backward compat with fetchData spread)
+    const filters = React.useMemo(() => {
+        const f: Record<string, any> = {};
+        if (filterOriginCountry) f.country = filterOriginCountry.id;
+        if (filterIndustry.length > 0) f.broader_industries = filterIndustry.map(i => i.id);
+        if (filterTargetIndustry.length > 0) f.priority_industries = filterTargetIndustry.map(i => i.id);
+        if (filterDateFrom) f.registered_after = filterDateFrom.format('YYYY-MM-DD');
+        if (filterDateTo) f.registered_before = filterDateTo.format('YYYY-MM-DD');
+        if (pipelineStageFilter) f.pipeline_stage = pipelineStageFilter;
+        if (filterTargetCountries.length > 0) f.target_countries = filterTargetCountries.map(c => c.id);
+        if (filterBudgetMin || filterBudgetMax) {
+            f.expected_investment_amount = {};
+            if (filterBudgetMin) f.expected_investment_amount.min = filterBudgetMin;
+            if (filterBudgetMax) f.expected_investment_amount.max = filterBudgetMax;
+        }
+        return f;
+    }, [filterOriginCountry, filterIndustry, filterTargetIndustry, filterDateFrom, filterDateTo, pipelineStageFilter, filterTargetCountries, filterBudgetMin, filterBudgetMax]);
+
+    const activeFilterCount = [
+        filterOriginCountry,
+        filterIndustry.length > 0,
+        filterTargetIndustry.length > 0,
+        filterTargetCountries.length > 0,
+        pipelineStageFilter,
+        filterDateFrom || filterDateTo,
+        filterBudgetMin || filterBudgetMax,
+    ].filter(Boolean).length;
 
     // Persist preferences
     useEffect(() => {
@@ -613,9 +680,13 @@ const ProspectsPortal: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [countryRes, currencyRes] = await Promise.all([
+                const [countryRes, currencyRes, industryRes, stagesRes, draftBuyerRes, draftSellerRes] = await Promise.all([
                     api.get('/api/countries'),
-                    api.get('/api/currencies')
+                    api.get('/api/currencies'),
+                    api.get('/api/industries'),
+                    api.get('/api/pipeline-stages'),
+                    api.get('/api/buyer', { params: { status: 'Draft', per_page: 1 } }),
+                    api.get('/api/seller', { params: { status: 'Draft', per_page: 1 } }),
                 ]);
 
                 if (countryRes.data) {
@@ -623,7 +694,8 @@ const ProspectsPortal: React.FC = () => {
                     setCountries(dataArray.map((c: any) => ({
                         id: c.id,
                         name: c.name,
-                        flagSrc: c.svg_icon_url
+                        flagSrc: c.svg_icon_url,
+                        status: c.status || 'registered'
                     })));
                 }
 
@@ -653,6 +725,25 @@ const ProspectsPortal: React.FC = () => {
                         });
                     }
                 }
+
+                // Industries
+                const indData = Array.isArray(industryRes.data) ? industryRes.data : (industryRes.data?.data || []);
+                setFilterIndustries(indData.map((i: any) => ({ id: i.id, name: i.name, sub_industries: i.sub_industries || [] })));
+
+                // Pipeline Stages
+                const stagesData = Array.isArray(stagesRes.data) ? stagesRes.data : (stagesRes.data?.data || []);
+                setPipelineStages(stagesData.map((s: any) => ({
+                    id: s.id,
+                    code: s.code || s.stage_code || '',
+                    name: s.name || s.stage_name || '',
+                    type: s.type || ''
+                })));
+
+                // Draft counts
+                setDraftCounts({
+                    investors: draftBuyerRes.data?.meta?.total ?? 0,
+                    targets: draftSellerRes.data?.meta?.total ?? 0,
+                });
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
             }
@@ -894,86 +985,224 @@ const ProspectsPortal: React.FC = () => {
                 </div>
             )}
 
-            {/* Filter Side Drawer */}
+            {/* Filter Side Drawer — matches Tools flyover design */}
             {isFilterOpen && (
                 <>
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => setIsFilterOpen(false)} />
-                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[380px] bg-white border-l border-gray-100 z-50 flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity duration-300" onClick={() => setIsFilterOpen(false)} />
+                    <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[440px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl overflow-x-hidden">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-gray-50">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded bg-[#F1FBFF] text-[#064771] flex items-center justify-center">
-                                    <Filter className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-medium text-gray-900">Advanced Filters</h2>
-                                    <p className="text-xs text-gray-500 mt-0.5 font-medium">Refine your prospects list</p>
-                                </div>
-                            </div>
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                            <h2 className="text-base font-medium text-gray-900 font-['Inter']">Filters</h2>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
-                                className="p-2.5 hover:bg-gray-100 rounded transition-all duration-200 text-gray-400 hover:text-gray-600"
+                                className="p-1.5 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2.5 ml-1">Status</label>
-                                    <div className="relative group">
-                                        <select
-                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
-                                            value={filters.status}
-                                            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                                        >
-                                            <option value="">All Statuses</option>
-                                            <option value="Active">Active</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Interested">Interested</option>
-                                            <option value="NDA">NDA</option>
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors">
-                                            <ChevronDown className="w-4 h-4" />
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                            {/* Origin Country */}
+                            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    Origin Country
+                                </label>
+                                <Dropdown
+                                    countries={countries as DropdownCountry[]}
+                                    selected={filterOriginCountry as DropdownCountry | null}
+                                    onSelect={((c: DropdownCountry | DropdownCountry[]) => {
+                                        if (Array.isArray(c)) {
+                                            setFilterOriginCountry(c[0] || null);
+                                        } else {
+                                            setFilterOriginCountry(filterOriginCountry?.id === c.id ? null : c);
+                                        }
+                                    }) as any}
+                                    placeholder="Select Country"
+                                />
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2.5 ml-1">HQ Country</label>
-                                    <div className="relative group">
-                                        <select
-                                            className="w-full h-12 px-4 bg-gray-50/50 border border-gray-200 rounded-[3px] text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#064771]/5 focus:border-[#064771] appearance-none transition-all cursor-pointer group-hover:border-gray-300"
-                                            value={filters.country}
-                                            onChange={(e) => setFilters({ ...filters, country: e.target.value })}
-                                        >
-                                            <option value="">All Countries</option>
-                                            {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-gray-600 transition-colors">
-                                            <ChevronDown className="w-4 h-4" />
-                                        </div>
-                                    </div>
+                            {/* Industry (investor's own industry) */}
+                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    Industry
+                                </label>
+                                <IndustryDropdown
+                                    industries={filterIndustries}
+                                    selected={filterIndustry}
+                                    onSelect={(val) => setFilterIndustry(Array.isArray(val) ? val : [val])}
+                                    multiSelect={true}
+                                    placeholder="Select Industries"
+                                />
+                            </div>
+
+                            {/* Target Business & Industry (Investors only) */}
+                            {activeTab === 'investors' && (
+                                <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                        Target Business & Industry
+                                    </label>
+                                    <IndustryDropdown
+                                        industries={filterIndustries}
+                                        selected={filterTargetIndustry}
+                                        onSelect={(val) => setFilterTargetIndustry(Array.isArray(val) ? val : [val])}
+                                        multiSelect={true}
+                                        placeholder="Select Target Industries"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Interested Country (Investors only) */}
+                            {activeTab === 'investors' && (
+                                <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                        Interested Country
+                                    </label>
+                                    <Dropdown
+                                        countries={countries as DropdownCountry[]}
+                                        selected={filterTargetCountries as DropdownCountry[]}
+                                        onSelect={((c: DropdownCountry | DropdownCountry[]) => {
+                                            if (Array.isArray(c)) {
+                                                setFilterTargetCountries(c as Country[]);
+                                            } else {
+                                                const exists = filterTargetCountries.some(tc => tc.id === c.id);
+                                                setFilterTargetCountries(
+                                                    exists
+                                                        ? filterTargetCountries.filter(tc => tc.id !== c.id)
+                                                        : [...filterTargetCountries, c as Country]
+                                                );
+                                            }
+                                        }) as any}
+                                        multiSelect
+                                        placeholder="Select Countries"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Pipeline Stage */}
+                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    Pipeline Stage
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
+                                        value={pipelineStageFilter}
+                                        onChange={(e) => setPipelineStageFilter(e.target.value)}
+                                    >
+                                        <option value="">All Stages</option>
+                                        {pipelineStages
+                                            .filter(s => activeTab === 'investors' ? s.type === 'buyer' : s.type === 'seller')
+                                            .map(s => <option key={s.id} value={s.code}>{s.name}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                 </div>
                             </div>
+
+                            {/* Registration Date (Range) */}
+                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    Registered between
+                                </label>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <div className="flex items-center gap-2">
+                                        <DatePicker
+                                            value={filterDateFrom}
+                                            onChange={(d) => setFilterDateFrom(d)}
+                                            format="DD/MM/YYYY"
+                                            slotProps={{
+                                                textField: {
+                                                    size: 'small',
+                                                    placeholder: 'From',
+                                                    fullWidth: true,
+                                                    sx: {
+                                                        '& .MuiOutlinedInput-root': {
+                                                            height: '40px',
+                                                            borderRadius: '3px',
+                                                            fontFamily: 'Inter',
+                                                            fontSize: '13px',
+                                                            '& fieldset': { borderColor: '#d1d5db' },
+                                                            '&:hover fieldset': { borderColor: '#9ca3af' },
+                                                            '&.Mui-focused fieldset': { borderColor: '#7dd3fc', borderWidth: '1px' },
+                                                        },
+                                                    },
+                                                },
+                                            }}
+                                        />
+                                        <span className="text-gray-400 text-sm font-normal shrink-0">–</span>
+                                        <DatePicker
+                                            value={filterDateTo}
+                                            onChange={(d) => setFilterDateTo(d)}
+                                            format="DD/MM/YYYY"
+                                            minDate={filterDateFrom || undefined}
+                                            slotProps={{
+                                                textField: {
+                                                    size: 'small',
+                                                    placeholder: 'To',
+                                                    fullWidth: true,
+                                                    sx: {
+                                                        '& .MuiOutlinedInput-root': {
+                                                            height: '40px',
+                                                            borderRadius: '3px',
+                                                            fontFamily: 'Inter',
+                                                            fontSize: '13px',
+                                                            '& fieldset': { borderColor: '#d1d5db' },
+                                                            '&:hover fieldset': { borderColor: '#9ca3af' },
+                                                            '&.Mui-focused fieldset': { borderColor: '#7dd3fc', borderWidth: '1px' },
+                                                        },
+                                                    },
+                                                },
+                                            }}
+                                        />
+                                    </div>
+                                </LocalizationProvider>
+                            </div>
+
+                            {/* Investment Budget (Investors only) */}
+                            {activeTab === 'investors' && (
+                                <div className="px-6 pt-4 pb-4">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                        Investment Budget
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            placeholder="Min"
+                                            className="flex-1 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            value={filterBudgetMin}
+                                            onChange={(e) => setFilterBudgetMin(e.target.value)}
+                                        />
+                                        <span className="text-gray-400 text-sm font-normal">–</span>
+                                        <input
+                                            type="number"
+                                            placeholder="Max"
+                                            className="flex-1 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            value={filterBudgetMax}
+                                            onChange={(e) => setFilterBudgetMax(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Footer Actions */}
-                        <div className="p-6 bg-gray-50/50 border-t border-gray-100 flex flex-col gap-3">
+                        {/* Footer */}
+                        <div className="p-4 border-t border-gray-100">
                             <button
-                                className="w-full py-4 bg-[#064771] text-white rounded-[3px] font-medium hover:bg-[#053a5c] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
-                                onClick={() => setIsFilterOpen(false)}
+                                onClick={() => {
+                                    setFilterOriginCountry(null);
+                                    setFilterIndustry([]);
+                                    setFilterTargetIndustry([]);
+                                    setFilterTargetCountries([]);
+                                    setPipelineStageFilter('');
+                                    setFilterDateFrom(null);
+                                    setFilterDateTo(null);
+                                    setFilterBudgetMin('');
+                                    setFilterBudgetMax('');
+                                }}
+                                className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                             >
-                                Apply Filters
-                            </button>
-                            <button
-                                className="w-full py-4 bg-white border border-gray-200 text-gray-600 rounded-[3px] font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
-                                onClick={() => setFilters({ status: '', country: '', industry: '' })}
-                            >
-                                <RotateCcw className="w-4 h-4" />
-                                Reset Filters
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Reset All Filters
                             </button>
                         </div>
                     </div>
@@ -1025,15 +1254,30 @@ const ProspectsPortal: React.FC = () => {
                         {!isPartner && (
                             <button
                                 onClick={() => navigate('/prospects/drafts')}
-                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
+                                className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
-                                <Zap className="w-4 h-4 text-orange-400" />
-                                <span>Drafts</span>
-                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-100 px-1 text-[10px] font-bold text-orange-600">
-                                    0
-                                </span>
+                                Drafts{(draftCounts.investors + draftCounts.targets) > 0 && (
+                                    <span className="text-gray-400 ml-0.5">({draftCounts.investors + draftCounts.targets})</span>
+                                )}
                             </button>
                         )}
+
+                        {/* Filter Button */}
+                        <button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-[3px] border text-sm font-medium transition-all active:scale-95 ${activeFilterCount > 0
+                                ? 'bg-[#F1FBFF] border-[#064771]/20 text-[#064771] hover:bg-[#E8F6FF]'
+                                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
+                        >
+                            <Filter className="w-4 h-4" />
+                            <span>Filter</span>
+                            {activeFilterCount > 0 && (
+                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1 text-[10px] font-bold text-white">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
 
                         <div ref={toolsDropdownRef}>
                             <button

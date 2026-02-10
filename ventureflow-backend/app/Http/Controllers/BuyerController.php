@@ -52,10 +52,12 @@ class BuyerController extends Controller
     public function index(Request $request)
     {
         try {
-        // --- Retrieve all input parameters ---
         $search = $request->input('search', '');
         $country = $request->input('country');
         $registeredAfter = $request->input('registered_after');
+        $registeredBefore = $request->input('registered_before');
+        $pipelineStage = $request->input('pipeline_stage');
+        $targetCountries = $request->input('target_countries', []);
         $status = $request->input('status');
         $source = $request->input('source');
         $broaderIndustries = $request->input('broader_industries', []);
@@ -186,16 +188,42 @@ class BuyerController extends Controller
                     $q->where('hq_country', $country);
                 });
             })
-            // --- Filter by registration date ---
+            // --- Filter by registration date range ---
             ->when($registeredAfter, function ($query) use ($registeredAfter) {
                 try {
                     $date = Carbon::createFromFormat('Y-m-d', $registeredAfter, 'Asia/Dhaka')
+                        ->startOfDay()
+                        ->setTimezone('UTC');
+                    $query->where('created_at', '>=', $date);
+                } catch (\Exception $e) {
+                    // Ignore invalid date format
+                }
+            })
+            ->when($registeredBefore, function ($query) use ($registeredBefore) {
+                try {
+                    $date = Carbon::createFromFormat('Y-m-d', $registeredBefore, 'Asia/Dhaka')
                         ->endOfDay()
                         ->setTimezone('UTC');
                     $query->where('created_at', '<=', $date);
                 } catch (\Exception $e) {
                     // Ignore invalid date format
                 }
+            })
+            // --- Filter by pipeline stage ---
+            ->when($pipelineStage, function ($query) use ($pipelineStage) {
+                $query->whereHas('deals', function ($q) use ($pipelineStage) {
+                    $q->where('stage_code', $pipelineStage)->where('status', 'active');
+                });
+            })
+            // --- Filter by target countries ---
+            ->when(!empty($targetCountries), function ($query) use ($targetCountries) {
+                $query->whereHas('targetPreference', function ($q) use ($targetCountries) {
+                    $q->where(function ($q2) use ($targetCountries) {
+                        foreach ($targetCountries as $id) {
+                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_countries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                        }
+                    });
+                });
             })
             // --- Filter by status ---
             ->when(!empty($status), function ($query) use ($status) {
