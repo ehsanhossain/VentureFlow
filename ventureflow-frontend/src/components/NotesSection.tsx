@@ -233,10 +233,10 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                                     ) : (
                                         <div
                                             className={`relative flex flex-col gap-1 px-3 py-2 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${note.isSelf
-                                                    ? 'bg-[#064771] text-white rounded-br-none'
-                                                    : note.isSystem
-                                                        ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] rounded-bl-none border border-[#BAE6FD]'
-                                                        : 'bg-white text-[#374151] rounded-bl-none border border-[#E5E7EB]'
+                                                ? 'bg-[#064771] text-white rounded-br-none'
+                                                : note.isSystem
+                                                    ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] rounded-bl-none border border-[#BAE6FD]'
+                                                    : 'bg-white text-[#374151] rounded-bl-none border border-[#E5E7EB]'
                                                 }`}
                                         >
                                             {/* Author & System Badge */}
@@ -390,17 +390,22 @@ export const parseActivityLogs = (
     // Reverse so oldest is first, newest last (chat order)
     const ordered = [...logs].reverse();
 
-    return ordered.map((log: any) => ({
-        id: log.id,
-        author: log.author || log.user || 'System',
-        avatar: log.avatar || null,
-        content: log.content,
-        timestamp: formatTimestamp(log.timestamp || log.created_at),
-        isSystem: log.isSystem ?? log.type === 'system',
-        isSelf: (log.author || log.user) === currentUserName,
-        isDeleted: log.isDeleted || false,
-        deletedBy: log.deletedBy || undefined,
-    }));
+    return ordered.map((log: any) => {
+        const isSystem = log.isSystem ?? log.type === 'system';
+        return {
+            id: log.id,
+            // System messages always show as "Ventureflow" (matches buyer side formatting)
+            author: isSystem ? 'Ventureflow' : (log.author || log.user || 'System'),
+            avatar: log.avatar || null,
+            content: log.content,
+            timestamp: formatTimestamp(log.timestamp || log.created_at),
+            isSystem,
+            // System messages are never "self" — always appear on the left
+            isSelf: !isSystem && (log.author || log.user) === currentUserName,
+            isDeleted: log.isDeleted || false,
+            deletedBy: log.deletedBy || undefined,
+        };
+    });
 };
 
 export default NotesSection;
