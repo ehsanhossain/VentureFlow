@@ -187,6 +187,25 @@ function DataTable<T>({
     const [internalColumnOrder, setInternalColumnOrder] = useState<string[]>(
         columns.map(c => c.id)
     );
+
+    // Sync internal column order when columns prop changes (e.g. toggling visibility)
+    useEffect(() => {
+        const currentColIds = new Set(columns.map(c => c.id));
+        setInternalColumnOrder(prev => {
+            // Keep existing order for columns that still exist
+            const kept = prev.filter(id => currentColIds.has(id));
+            // Add any new columns that weren't in the previous order
+            const keptSet = new Set(kept);
+            const added = columns.filter(c => !keptSet.has(c.id)).map(c => c.id);
+            const merged = [...kept, ...added];
+            // Only update if actually changed to avoid unnecessary re-renders
+            if (merged.length === prev.length && merged.every((id, i) => prev[i] === id)) {
+                return prev;
+            }
+            return merged;
+        });
+    }, [columns]);
+
     const columnOrder = externalColumnOrder || internalColumnOrder;
 
     // ============ COLUMN WIDTHS STATE ============
@@ -206,6 +225,23 @@ function DataTable<T>({
     }, [columns]);
 
     const [internalColumnWidths, setInternalColumnWidths] = useState<Record<string, number>>(defaultWidths);
+
+    // Sync widths when columns change — add widths for new columns, clean up removed ones
+    useEffect(() => {
+        setInternalColumnWidths(prev => {
+            const merged = { ...prev };
+            let changed = false;
+            // Add defaults for any new columns
+            for (const [id, width] of Object.entries(defaultWidths)) {
+                if (!(id in merged)) {
+                    merged[id] = width;
+                    changed = true;
+                }
+            }
+            return changed ? merged : prev;
+        });
+    }, [defaultWidths]);
+
     const columnWidths = externalColumnWidths || internalColumnWidths;
 
     // Synchronize CSS variables for widths

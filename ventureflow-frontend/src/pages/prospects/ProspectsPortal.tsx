@@ -54,6 +54,7 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'primaryContact', label: 'Contact' },
     { id: 'internalPIC', label: 'Assigned PIC' },
     { id: 'financialAdvisor', label: 'Partner FA' },
+    { id: 'investorProfileLink', label: 'Investor Profile' },
     { id: 'pipelineStatus', label: 'Pipeline' },
 ];
 
@@ -64,7 +65,7 @@ const ALL_TARGET_COLUMNS = [
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
     { id: 'originCountry', label: 'Origin Country' },
-    { id: 'status', label: 'Status' },
+    { id: 'website', label: 'Website' },
     { id: 'industry', label: 'Industry' },
     { id: 'reasonForMA', label: 'Purpose of M&A' },
     { id: 'saleShareRatio', label: 'Sale Ratio' },
@@ -74,12 +75,11 @@ const ALL_TARGET_COLUMNS = [
     { id: 'internalPIC', label: 'Assigned PIC' },
     { id: 'financialAdvisor', label: 'Partner FA' },
     { id: 'primaryContact', label: 'Contact' },
-    { id: 'teaserLink', label: 'Teaser Profile' },
+    { id: 'teaserLink', label: 'Teaser' },
     { id: 'pipelineStatus', label: 'Pipeline' },
-    { id: 'addedDate', label: 'Added Date' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'pipelineStatus'];
 
 
 
@@ -122,25 +122,37 @@ const ProspectsPortal: React.FC = () => {
     const [serverAllowedFields, setServerAllowedFields] = useState<any>(null);
 
     // Tools & Selection States
-    const getValidColumns = (tab: 'investors' | 'targets') => {
+    const getValidColumns = (tab: 'investors' | 'targets'): string[] => {
         const allCols = tab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS;
         const validIds = new Set(allCols.map(c => c.id));
         const defaults = tab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS;
         const saved = localStorage.getItem(`prospects_columns_${tab}`);
-        if (!saved) return defaults;
-        const parsed: string[] = JSON.parse(saved);
-        const filtered = parsed.filter(id => validIds.has(id));
-        return filtered.length > 0 ? filtered : defaults;
+        if (!saved) return [...defaults];
+        try {
+            const parsed: string[] = JSON.parse(saved);
+            const filtered = parsed.filter(id => validIds.has(id));
+            return filtered.length > 0 ? filtered : [...defaults];
+        } catch {
+            return [...defaults];
+        }
     };
 
     const [visibleColumns, setVisibleColumns] = useState<string[]>(() => getValidColumns(activeTab));
 
-    // Update visible columns when tab changes
+    // Track which tab the current visibleColumns belong to, to prevent saving cross-tab
+    const columnsTabRef = useRef<'investors' | 'targets'>(activeTab);
+
+    // When activeTab changes, load the correct columns for the new tab
     useEffect(() => {
-        setVisibleColumns(getValidColumns(activeTab));
+        const newCols = getValidColumns(activeTab);
+        columnsTabRef.current = activeTab;
+        setVisibleColumns(newCols);
     }, [activeTab]);
 
+    // Persist columns to localStorage — only when the columns actually belong to the current tab
     useEffect(() => {
+        // Guard: don't persist if visibleColumns hasn't caught up with the tab switch yet
+        if (columnsTabRef.current !== activeTab) return;
         localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(visibleColumns));
     }, [visibleColumns, activeTab]);
 
@@ -373,7 +385,7 @@ const ProspectsPortal: React.FC = () => {
                         },
                         targetCountries: targetCountriesData as { name: string; flag: string }[],
                         targetIndustries: indMap,
-                        pipelineStatus: b.deals && b.deals.length > 0 ? b.deals[b.deals.length - 1].stage_name : (b.pipeline_status || b.current_stage || "N/A"),
+                        pipelineStatus: b.deals && b.deals.length > 0 ? b.deals[b.deals.length - 1].stage_code : "N/A",
                         budget: overview.investment_budget,
                         investmentCondition: overview.investment_condition || "",
                         purposeMNA: overview.reason_ma || "",
@@ -453,7 +465,7 @@ const ProspectsPortal: React.FC = () => {
                         },
                         industry: [indMajor, indMiddle].filter(i => i !== "N/A"),
                         projectDetails: ov.details || "",
-                        pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_name : (ov.status || "N/A"),
+                        pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_code : "N/A",
                         status: ov.status || "N/A",
                         desiredInvestment: fin.expected_investment_amount,
                         reasonForMA: ov.reason_ma || "",
@@ -681,7 +693,14 @@ const ProspectsPortal: React.FC = () => {
     };
 
     const toggleColumn = (columnId: string) => {
-        setVisibleColumns(prev => prev.includes(columnId) ? prev.filter(c => c !== columnId) : [...prev, columnId]);
+        setVisibleColumns(prev => {
+            const next = prev.includes(columnId)
+                ? prev.filter(c => c !== columnId)
+                : [...prev, columnId];
+            // Immediately persist to localStorage for the current tab
+            localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(next));
+            return next;
+        });
     };
 
     const downloadCsvTemplate = (type: 'investor' | 'target') => {
@@ -1124,7 +1143,9 @@ const ProspectsPortal: React.FC = () => {
                                     <div className="p-4 border-t border-gray-100">
                                         <button
                                             onClick={() => {
-                                                setVisibleColumns(activeTab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS);
+                                                const defaults = activeTab === 'investors' ? [...DEFAULT_INVESTOR_COLUMNS] : [...DEFAULT_TARGET_COLUMNS];
+                                                setVisibleColumns(defaults);
+                                                localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(defaults));
                                             }}
                                             className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                                         >

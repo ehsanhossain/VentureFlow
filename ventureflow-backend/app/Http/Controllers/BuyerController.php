@@ -956,11 +956,14 @@ class BuyerController extends Controller
                 }
 
                 return [
-                    'id' => $deal->id,
+                    'id' => $deal->seller ? $deal->seller->id : null,
+                    'deal_id' => $deal->id,
                     'code' => $sellerCode,
                     'name' => $sellerName,
                     'stage_code' => $deal->stage_code,
                     'stage_name' => $deal->stage_name,
+                    'buyer_stage_name' => $deal->buyer_stage_name,
+                    'seller_stage_name' => $deal->seller_stage_name,
                     'progress' => $deal->progress_percent,
                 ];
             });

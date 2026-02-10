@@ -164,13 +164,32 @@ const TargetDetails: React.FC = () => {
         return String(amount);
     };
 
-    // Get deal pipeline stage from deals
-    const getDealPipelineStage = () => {
-        if (seller?.deals && seller.deals.length > 0) {
-            const latestDeal = seller.deals[0];
-            return latestDeal.stage_name || latestDeal.stage_code || 'Active';
+    // Get deal pipeline stage from deals (or formatted_introduced_projects)
+    const getDealPipelineInfo = () => {
+        // First try formatted_introduced_projects which has correct side-specific names
+        const projects = seller?.formatted_introduced_projects;
+        if (projects && projects.length > 0) {
+            const latest = projects[projects.length - 1];
+            return {
+                stageName: latest.seller_stage_name || latest.stage_code || 'Active',
+                pairedCode: latest.code || '',
+                pairedName: latest.name || '',
+                pairedId: latest.id,
+                pairedType: 'investor' as const,
+            };
         }
-        return 'N/A';
+        // Fallback to deals array
+        if (seller?.deals && seller.deals.length > 0) {
+            const latestDeal = seller.deals[seller.deals.length - 1];
+            return {
+                stageName: latestDeal.seller_stage_name || latestDeal.stage_code || 'Active',
+                pairedCode: latestDeal.buyer?.buyer_id || '',
+                pairedName: latestDeal.buyer?.company_overview?.reg_name || '',
+                pairedId: latestDeal.buyer?.id,
+                pairedType: 'investor' as const,
+            };
+        }
+        return null;
     };
 
     // Get initials from name
@@ -556,10 +575,35 @@ const TargetDetails: React.FC = () => {
                     </div>
 
                     {/* Deal Pipeline Stage */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Deal Pipeline Stage</h3>
-                        <span className="text-base font-normal text-black">{getDealPipelineStage()}</span>
-                    </div>
+                    {(() => {
+                        const pipeInfo = getDealPipelineInfo();
+                        return (
+                            <div className="space-y-3">
+                                <h3 className="text-base font-medium text-gray-500 capitalize">Deal Pipeline Stage</h3>
+                                {pipeInfo ? (
+                                    <>
+                                        <span className="text-base font-normal text-black">{pipeInfo.stageName}</span>
+                                        {pipeInfo.pairedId && (
+                                            <div
+                                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                                                onClick={() => navigate(`/prospects/investor/${pipeInfo.pairedId}`)}
+                                            >
+                                                <ExternalLink className="w-4 h-4 text-[#064771]" />
+                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                                                    {pipeInfo.pairedCode}
+                                                </span>
+                                                <span className="text-sm font-medium text-[#064771] truncate">
+                                                    {pipeInfo.pairedName}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="text-base font-normal text-black">N/A</span>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
         </div>

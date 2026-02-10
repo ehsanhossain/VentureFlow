@@ -40,7 +40,7 @@ class Deal extends Model
         'internal_pic' => 'array',
     ];
 
-    protected $appends = ['stage_name', 'stage_progress'];
+    protected $appends = ['stage_name', 'stage_progress', 'buyer_stage_name', 'seller_stage_name'];
 
     public function getStageNameAttribute()
     {
@@ -50,6 +50,16 @@ class Deal extends Model
     public function getStageProgressAttribute()
     {
         return $this->getStageProgress();
+    }
+
+    public function getBuyerStageNameAttribute()
+    {
+        return $this->getStageName('buyer');
+    }
+
+    public function getSellerStageNameAttribute()
+    {
+        return $this->getStageName('seller');
     }
 
     public function buyer(): BelongsTo

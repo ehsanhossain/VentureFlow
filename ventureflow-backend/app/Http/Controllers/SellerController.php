@@ -769,11 +769,55 @@ class SellerController extends Controller
                 'financialDetails',
                 'partnershipDetails',
                 'teaserCenter',
-                'deals'
+                'deals.buyer.companyOverview'
             ]);
 
+            // Format deals as introduced projects (paired buyers) for frontend
+            $introducedProjects = $seller->deals->map(function ($deal) {
+                $buyerName = 'Unknown Investor';
+                $buyerCode = 'N/A';
+                
+                if ($deal->buyer && $deal->buyer->companyOverview) {
+                    $buyerName = $deal->buyer->companyOverview->reg_name ?? 'Unknown Investor';
+                }
+                if ($deal->buyer) {
+                    $buyerCode = $deal->buyer->buyer_id ?? 'N/A';
+                }
+
+                return [
+                    'id' => $deal->buyer ? $deal->buyer->id : null,
+                    'deal_id' => $deal->id,
+                    'code' => $buyerCode,
+                    'name' => $buyerName,
+                    'stage_code' => $deal->stage_code,
+                    'buyer_stage_name' => $deal->buyer_stage_name,
+                    'seller_stage_name' => $deal->seller_stage_name,
+                    'progress' => $deal->progress_percent,
+                ];
+            });
+
+            // Format activity logs
+            $formattedLogs = $seller->activityLogs()
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(function ($log) {
+                    $isSystem = str_starts_with($log->description ?? '', '[System]');
+                    return [
+                        'id' => $log->id,
+                        'user_name' => $log->user_name,
+                        'description' => $log->description,
+                        'timestamp' => $log->created_at,
+                        'isSystem' => $isSystem,
+                        'metadata' => $log->metadata,
+                    ];
+                });
+
+            $sellerData = $seller->toArray();
+            $sellerData['formatted_activity_logs'] = $formattedLogs;
+            $sellerData['formatted_introduced_projects'] = $introducedProjects;
+
             return response()->json([
-                'data' => $seller
+                'data' => $sellerData
             ]);
         }
     }

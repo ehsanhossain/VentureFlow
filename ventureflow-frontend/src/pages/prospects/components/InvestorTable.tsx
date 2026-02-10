@@ -97,14 +97,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
     const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
         if (!Array.isArray(pipelineStages) || !pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
-            return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
+            return { display: 'N/A', stageName: 'N/A' };
         }
         const safeStageCode = String(stageCode);
         const totalStages = pipelineStages.length;
         const stageIndex = pipelineStages.findIndex(
             s => (s.code && String(s.code).toUpperCase() === safeStageCode.toUpperCase()) || (s.name && String(s.name).toUpperCase() === safeStageCode.toUpperCase())
         );
-        if (stageIndex === -1) return { display: stageCode, stageName: stageCode };
+        if (stageIndex === -1) return { display: 'N/A', stageName: 'N/A' };
         const stageName = pipelineStages[stageIndex].name;
         return { display: `Stage ${stageIndex + 1}/${totalStages}`, stageName: stageName };
     };
@@ -360,14 +360,17 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         {
             id: 'pipelineStatus',
             header: 'Pipeline',
-            accessor: (row) => (
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
-                    <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter">
-                        {getStagePosition(row.pipelineStatus).display}
-                    </span>
-                </div>
-            ),
+            accessor: (row) => {
+                const stageInfo = getStagePosition(row.pipelineStatus);
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${stageInfo.display === 'N/A' ? 'bg-slate-300' : 'bg-blue-500 shadow-sm shadow-blue-200'}`} />
+                        <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter">
+                            {stageInfo.display}
+                        </span>
+                    </div>
+                );
+            },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
         },
@@ -397,6 +400,19 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             header: 'Partner FA',
             accessor: (row) => row.financialAdvisor?.join(', ') || 'N/A',
             width: 150,
+        },
+        {
+            id: 'investorProfileLink',
+            header: 'Investor Profile',
+            accessor: (row) => (
+                row.investorProfile ? (
+                    <a href={row.investorProfile} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-emerald-100 transition-colors">
+                        <Eye className="w-3 h-3" /> Profile
+                    </a>
+                ) : <span className="text-[11px] text-slate-300">N/A</span>
+            ),
+            textAccessor: (row) => row.investorProfile || '',
+            width: 130,
         }
     ], [pipelineStages, selectedCurrency]);
 

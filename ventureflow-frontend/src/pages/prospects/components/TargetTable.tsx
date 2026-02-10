@@ -6,6 +6,8 @@ import {
     MoreVertical,
     Bookmark,
     Eye,
+    ExternalLink,
+    Copy,
     Zap,
     Trash2,
 } from 'lucide-react';
@@ -98,14 +100,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
     const getStagePosition = (stageCode: string): { display: string; stageName: string } => {
         if (!Array.isArray(pipelineStages) || !pipelineStages.length || !stageCode || stageCode === 'N/A' || stageCode === 'Unknown') {
-            return { display: stageCode || 'N/A', stageName: stageCode || 'N/A' };
+            return { display: 'N/A', stageName: 'N/A' };
         }
         const safeStageCode = String(stageCode);
         const totalStages = pipelineStages.length;
         const stageIndex = pipelineStages.findIndex(
             s => (s.code && String(s.code).toUpperCase() === safeStageCode.toUpperCase()) || (s.name && String(s.name).toUpperCase() === safeStageCode.toUpperCase())
         );
-        if (stageIndex === -1) return { display: stageCode, stageName: stageCode };
+        if (stageIndex === -1) return { display: 'N/A', stageName: 'N/A' };
         const stageName = pipelineStages[stageIndex].name;
         return { display: `Stage ${stageIndex + 1}/${totalStages}`, stageName: stageName };
     };
@@ -115,6 +117,29 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         const sRate = sourceRate || 1;
         const conversionRate = targetRate / sRate;
         return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
+    };
+
+    const parseWebsiteUrl = (website: any): string => {
+        if (!website) return '';
+        if (Array.isArray(website)) {
+            if (website.length > 0 && website[0]?.url) return website[0].url;
+            return '';
+        }
+        if (typeof website === 'string') {
+            try {
+                if (website.trim().startsWith('[')) {
+                    const parsed = JSON.parse(website);
+                    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) return parsed[0].url;
+                }
+            } catch (e) { /* plain string URL */ }
+            return website;
+        }
+        return '';
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        showAlert({ type: 'success', message: 'Website URL copied to clipboard' });
     };
 
     const handleConfirmDelete = async () => {
@@ -202,12 +227,41 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             sortable: true,
         },
         {
-            id: 'status',
-            header: 'Status',
-            accessor: (row) => <span className="text-[12px] font-medium text-slate-500 capitalize">{row.status}</span>,
-            textAccessor: (row) => row.status,
-            width: 100,
+            id: 'website',
+            header: 'Website',
+            accessor: (row) => {
+                const url = parseWebsiteUrl(row.website);
+                if (!url) return <span className="text-slate-400 text-sm">N/A</span>;
+                const displayUrl = url.startsWith('http') ? url : `https://${url}`;
+                return (
+                    <div className="group flex items-center justify-between gap-2 max-w-full">
+                        <a
+                            href={displayUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium truncate"
+                        >
+                            Visit Website
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        </a>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                copyToClipboard(displayUrl);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all duration-200"
+                            title="Copy URL"
+                        >
+                            <Copy className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                );
+            },
+            textAccessor: (row) => parseWebsiteUrl(row.website),
+            width: 160,
         },
+
         {
             id: 'industry',
             header: 'Industry',
@@ -278,15 +332,18 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'pipelineStatus',
-            header: 'Pipeline Status',
-            accessor: (row) => (
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm shadow-blue-200" />
-                    <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter">
-                        {getStagePosition(row.pipelineStatus).display}
-                    </span>
-                </div>
-            ),
+            header: 'Pipeline',
+            accessor: (row) => {
+                const stageInfo = getStagePosition(row.pipelineStatus);
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${stageInfo.display === 'N/A' ? 'bg-slate-300' : 'bg-blue-500 shadow-sm shadow-blue-200'}`} />
+                        <span className="text-[11px] font-medium text-slate-700 uppercase tracking-tighter">
+                            {stageInfo.display}
+                        </span>
+                    </div>
+                );
+            },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
         },
@@ -316,7 +373,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'teaserLink',
-            header: 'Teaser Profile',
+            header: 'Teaser',
             accessor: (row) => (
                 row.teaserLink ? (
                     <a href={row.teaserLink} target="_blank" rel="noreferrer" className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-emerald-100 transition-colors">
@@ -327,13 +384,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             textAccessor: (row) => row.teaserLink || '',
             width: 120,
         },
-        {
-            id: 'addedDate',
-            header: 'Added Date',
-            accessor: (row) => <span className="text-[12px] text-slate-500 font-medium">{row.addedDate}</span>,
-            textAccessor: (row) => row.addedDate || '',
-            width: 100,
-        }
+
     ], [pipelineStages, selectedCurrency]);
 
     const filteredColumns = useMemo(() =>

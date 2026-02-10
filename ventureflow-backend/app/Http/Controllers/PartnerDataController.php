@@ -97,7 +97,7 @@ class PartnerDataController extends Controller
                     
                     // If hq_country is selected, also load the country relationship
                     if (in_array('hq_country', $attributes)) {
-                        $q->with('hqCountry:id,name,svg_icon_url');
+                        $q->with('hqCountry:id,name,alpha_2_code');
                     }
                 }]);
             }
@@ -145,7 +145,7 @@ class PartnerDataController extends Controller
                     $q->select($attributes);
 
                     if (in_array('hq_country', $attributes)) {
-                        $q->with('hqCountry:id,name,svg_icon_url');
+                        $q->with('hqCountry:id,name,alpha_2_code');
                     }
                 }]);
             }

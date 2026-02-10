@@ -196,13 +196,32 @@ const InvestorDetails: React.FC = () => {
   const hqCountryName = overview.hq_country?.name || 'N/A';
   const hqCountryFlag = overview.hq_country?.svg_icon_url || '';
 
-  // Get deal pipeline stage from deals
-  const getDealPipelineStage = () => {
-    if (buyer?.deals && buyer.deals.length > 0) {
-      const latestDeal = buyer.deals[0];
-      return latestDeal.stage_name || latestDeal.stage_code || 'Active';
+  // Get deal pipeline info from deals
+  const getDealPipelineInfo = () => {
+    // Use formatted_introduced_projects which has correct side-specific names
+    const projects = buyer?.formatted_introduced_projects;
+    if (projects && projects.length > 0) {
+      const latest = projects[projects.length - 1];
+      return {
+        stageName: latest.buyer_stage_name || latest.stage_name || latest.stage_code || 'Active',
+        pairedCode: latest.code || '',
+        pairedName: latest.name || '',
+        pairedId: latest.id,
+        pairedType: 'target' as const,
+      };
     }
-    return 'N/A';
+    // Fallback to deals array
+    if (buyer?.deals && buyer.deals.length > 0) {
+      const latestDeal = buyer.deals[buyer.deals.length - 1];
+      return {
+        stageName: latestDeal.buyer_stage_name || latestDeal.stage_name || latestDeal.stage_code || 'Active',
+        pairedCode: latestDeal.seller?.seller_id || '',
+        pairedName: latestDeal.seller?.company_overview?.reg_name || '',
+        pairedId: latestDeal.seller?.id,
+        pairedType: 'target' as const,
+      };
+    }
+    return null;
   };
 
   // Get initials from name
@@ -610,10 +629,35 @@ const InvestorDetails: React.FC = () => {
           </div>
 
           {/* Deal Pipeline Stage */}
-          <div className="space-y-3">
-            <h3 className="text-base font-medium text-gray-500 capitalize">Deal Pipeline Stage</h3>
-            <span className="text-base font-normal text-black">{getDealPipelineStage()}</span>
-          </div>
+          {(() => {
+            const pipeInfo = getDealPipelineInfo();
+            return (
+              <div className="space-y-3">
+                <h3 className="text-base font-medium text-gray-500 capitalize">Deal Pipeline Stage</h3>
+                {pipeInfo ? (
+                  <>
+                    <span className="text-base font-normal text-black">{pipeInfo.stageName}</span>
+                    {pipeInfo.pairedId && (
+                      <div
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                        onClick={() => navigate(`/prospects/${pipeInfo.pairedType}/${pipeInfo.pairedId}`)}
+                      >
+                        <ExternalLink className="w-4 h-4 text-[#064771]" />
+                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                          {pipeInfo.pairedCode}
+                        </span>
+                        <span className="text-sm font-medium text-[#064771] truncate">
+                          {pipeInfo.pairedName}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-base font-normal text-black">N/A</span>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>
