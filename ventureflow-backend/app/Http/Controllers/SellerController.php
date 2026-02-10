@@ -585,6 +585,7 @@ class SellerController extends Controller
             $financialDetails->expected_investment_amount = $request->input('expected_investment_amount');
             $financialDetails->maximum_investor_shareholding_percentage = $request->input('maximum_investor_shareholding_percentage');
             $financialDetails->ebitda_value = $request->input('ebitda_value');
+            $financialDetails->investment_condition = $request->input('investment_condition');
 
 
 

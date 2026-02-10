@@ -62,24 +62,44 @@ class EmployeeController extends Controller
 
     /**
      * Fetch all employees without pagination.
+     * IMPORTANT: This endpoint is used for "Assigned PIC" dropdown.
+     * Only staff and admin users should appear — partners are strictly excluded.
      */
     public function fetchAllEmployees()
     {
         try {
-            // Get all employees
-            $employees = Employee::with('country')->get();
+            // Get all employees (these are staff created from Staff Management)
+            $employees = Employee::with('country')->get()->map(function($emp) {
+                $emp->full_name = trim(($emp->first_name ?? '') . ' ' . ($emp->last_name ?? ''));
+                if (empty(trim($emp->full_name)) && $emp->user) {
+                    $emp->full_name = $emp->user->name;
+                }
+                $emp->name = $emp->full_name;
+                return $emp;
+            });
             
-            // Get all users who aren't employees but have roles (like seed admin)
+            // Get user IDs that belong to employees
             $employeeUserIds = $employees->pluck('user_id')->filter()->toArray();
-            $otherUsers = User::whereNotIn('id', $employeeUserIds)->get();
+
+            // Get user IDs that belong to partners — these must be EXCLUDED
+            $partnerUserIds = \App\Models\Partner::whereNotNull('user_id')
+                ->pluck('user_id')
+                ->toArray();
+
+            // Combine all IDs to exclude from the "other users" query
+            $excludedUserIds = array_merge($employeeUserIds, $partnerUserIds);
+            
+            // Get admin/system users who are NOT employees and NOT partners
+            $otherUsers = User::whereNotIn('id', $excludedUserIds)->get();
             
             // Map users to employee-like structure for the frontend
             $mappedUsers = $otherUsers->map(function($user) {
                 return (object)[
-                    'id' => null, // No employee record
+                    'id' => 'user_' . $user->id,
                     'user_id' => $user->id,
                     'first_name' => $user->name,
                     'last_name' => '',
+                    'full_name' => $user->name,
                     'name' => $user->name,
                     'work_email' => $user->email,
                     'nationality' => null,

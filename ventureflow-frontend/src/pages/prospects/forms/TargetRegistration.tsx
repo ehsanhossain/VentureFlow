@@ -137,8 +137,9 @@ export const TargetRegistration: React.FC = () => {
 
     const [isIdAvailable, setIsIdAvailable] = useState<boolean | null>(null);
     const [isCheckingId, setIsCheckingId] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(!!id); // true if in edit mode
 
-    const { control, handleSubmit, setValue, register, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {
             projectCode: '',
             rank: '',
@@ -202,20 +203,21 @@ export const TargetRegistration: React.FC = () => {
                 setIndustries(iData);
 
                 const sData = Array.isArray(staffRes.data) ? staffRes.data : (staffRes.data?.data || []);
-                setStaffList(sData.map((s: any) => ({
+                setStaffList(sData.filter((s: any) => s.id).map((s: any) => ({
                     id: s.id,
-                    name: s.full_name || s.name,
+                    name: s.full_name || s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
                     flagSrc: '',
                     status: 'registered'
                 })));
 
                 const pData = Array.isArray(partRes.data) ? partRes.data : (partRes.data?.data || []);
-                setPartnerList(pData.map((p: any) => ({
+                const mappedPartners = pData.map((p: any) => ({
                     id: p.id,
                     name: p.reg_name || p.name,
                     flagSrc: '',
-                    status: 'registered'
-                })));
+                    status: 'registered' as const
+                }));
+                setPartnerList([{ id: 'na', name: 'N/A', flagSrc: '', status: 'registered' as const }, ...mappedPartners]);
 
                 // Fetch registered investors (buyers) for Introduced Projects dropdown
                 const investorRes = await api.get('/api/buyer/fetch');
@@ -282,6 +284,7 @@ export const TargetRegistration: React.FC = () => {
     useEffect(() => {
         if (!id) return;
         const fetchData = async () => {
+            setIsLoadingData(true);
             try {
                 const response = await api.get(`/api/seller/${id}`);
                 const seller = response.data?.data;
@@ -377,11 +380,12 @@ export const TargetRegistration: React.FC = () => {
                 const invAmount = typeof fin.expected_investment_amount === 'string' ? { min: fin.expected_investment_amount, max: '' } : (fin.expected_investment_amount || { min: '', max: '' });
                 setValue('desiredInvestmentMin', invAmount.min || '');
                 setValue('desiredInvestmentMax', invAmount.max || '');
-                setValue('desiredInvestmentCurrency', fin.default_currency || 'USD');
+                setValue('desiredInvestmentCurrency', fin.default_currency || '');
 
                 const ebitdaVal = typeof fin.ebitda_value === 'string' ? { min: fin.ebitda_value, max: '' } : (fin.ebitda_value || { min: '', max: '' });
                 setValue('ebitdaMin', ebitdaVal.min || fin.ttm_profit || '');
                 setValue('plannedSaleShareRatio', fin.maximum_investor_shareholding_percentage || '');
+                setValue('investmentCondition', fin.investment_condition || '');
 
                 // Contacts Loading
                 try {
@@ -418,11 +422,12 @@ export const TargetRegistration: React.FC = () => {
             }
         };
 
-        if (countries.length > 0 && industries.length > 0) fetchData();
+        if (countries.length > 0 && industries.length > 0) fetchData().finally(() => setIsLoadingData(false));
+        else if (!id) setIsLoadingData(false);
     }, [id, countries.length, industries.length, setValue]);
 
 
-    const onSubmit = async (data: FormValues, isDraft: boolean) => {
+    const onSubmit = async (data: FormValues, isDraft: boolean = false) => {
         try {
             const overviewFormData = new FormData();
             if (id) overviewFormData.append('seller_id', id);
@@ -479,6 +484,7 @@ export const TargetRegistration: React.FC = () => {
                     min: data.ebitdaMin,
                     max: ''
                 },
+                investment_condition: data.investmentCondition || '',
                 is_draft: isDraft ? '2' : '1'
             };
             await api.post('/api/seller/financial-details', financePayload);
@@ -497,7 +503,48 @@ export const TargetRegistration: React.FC = () => {
 
     /* ─── shared input styles ─── */
     const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
-    const selectClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors appearance-none cursor-pointer";
+
+    if (isLoadingData) {
+        return (
+            <div className="w-full pb-24 font-['Inter']">
+                <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
+                    <div className="flex gap-8 items-start">
+                        <div className="w-28 h-28 bg-gray-200 rounded-full" />
+                        <div className="flex-1 flex flex-col gap-6">
+                            <div className="flex gap-6">
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            </div>
+                            <div className="flex gap-6">
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-px bg-gray-200" />
+                    <div className="flex flex-col gap-6">
+                        <div className="h-6 w-40 bg-gray-200 rounded" />
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                    </div>
+                    <div className="h-px bg-gray-200" />
+                    <div className="flex flex-col gap-6">
+                        <div className="h-6 w-40 bg-gray-200 rounded" />
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 font-['Inter']">
@@ -574,7 +621,7 @@ export const TargetRegistration: React.FC = () => {
                                                 ]}
                                                 value={field.value}
                                                 onChange={field.onChange}
-                                                placeholder="B - Standard"
+                                                placeholder="Select a rank"
                                             />
                                         )}
                                     />
@@ -716,11 +763,10 @@ export const TargetRegistration: React.FC = () => {
                         {/* Row: Purpose of M&A + Investment Condition */}
                         <div className="flex gap-6">
                             <div className="flex-1">
-                                <FieldLabel text="Purpose of M&A" required />
+                                <FieldLabel text="Purpose of M&A" />
                                 <Controller
                                     control={control}
                                     name="reasonForMA"
-                                    rules={{ required: true }}
                                     render={({ field }) => (
                                         <SelectPicker
                                             options={REASONS_MA}
@@ -751,11 +797,10 @@ export const TargetRegistration: React.FC = () => {
                         {/* Row: Planned Sale Share Ratio + Desired Investment Range */}
                         <div className="flex gap-6">
                             <div className="flex-1">
-                                <FieldLabel text="Planned Sale Share Ratio" required />
+                                <FieldLabel text="Planned Sale Share Ratio" />
                                 <Controller
                                     control={control}
                                     name="plannedSaleShareRatio"
-                                    rules={{ required: true }}
                                     render={({ field }) => (
                                         <SelectPicker
                                             options={RATIO_OPTIONS}
@@ -767,7 +812,7 @@ export const TargetRegistration: React.FC = () => {
                                 />
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Desired Investment Range" required />
+                                <FieldLabel text="Desired Investment Range" />
                                 <div className="flex items-center gap-2">
                                     <input
                                         {...register('desiredInvestmentMin')}
@@ -799,12 +844,18 @@ export const TargetRegistration: React.FC = () => {
                             </div>
                             <div className="flex-1">
                                 <FieldLabel text="Default Currency" />
-                                <select {...register('desiredInvestmentCurrency')} className={`${selectClass} ${!watch('desiredInvestmentCurrency') ? 'text-gray-500' : 'text-gray-900'}`}>
-                                    <option value="" disabled selected>Select default currency</option>
-                                    {currencies.map(c => (
-                                        <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
-                                    ))}
-                                </select>
+                                <Controller
+                                    control={control}
+                                    name="desiredInvestmentCurrency"
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={currencies.map(c => ({ value: c.currency_code, label: c.currency_code }))}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select default currency"
+                                        />
+                                    )}
+                                />
                             </div>
                         </div>
 
@@ -879,7 +930,7 @@ export const TargetRegistration: React.FC = () => {
                                     </div>
                                     <div className="flex-1 flex items-center gap-9 pb-2">
                                         {/* Primary Contact Toggle */}
-                                        <label className={`flex items-center gap-2 cursor-pointer ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
+                                        <label className={`flex items-center gap-3 cursor-pointer select-none ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
                                             <div className="relative">
                                                 <input
                                                     type="radio"
@@ -888,11 +939,11 @@ export const TargetRegistration: React.FC = () => {
                                                     className="sr-only peer"
                                                     disabled={String(primaryContactParams) === String(index)}
                                                 />
-                                                <div className={`w-12 h-6 rounded-3xl transition-colors ${String(primaryContactParams) === String(index) ? 'bg-[#064771]' : 'bg-gray-300'}`}>
-                                                    <div className={`w-5 h-5 bg-white rounded-full absolute top-[2px] transition-all shadow-sm ${String(primaryContactParams) === String(index) ? 'left-[26px]' : 'left-[2px]'}`} />
+                                                <div className={`w-[44px] h-[24px] rounded-full transition-all duration-300 ease-in-out ${String(primaryContactParams) === String(index) ? 'bg-[#064771] shadow-inner' : 'bg-gray-300'}`}>
+                                                    <div className={`w-[20px] h-[20px] bg-white rounded-full absolute top-[2px] transition-all duration-300 ease-in-out shadow-md ${String(primaryContactParams) === String(index) ? 'left-[22px]' : 'left-[2px]'}`} />
                                                 </div>
                                             </div>
-                                            <span className={`text-sm font-normal font-['Inter'] ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                            <span className={`text-sm font-['Inter'] transition-colors ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500 font-normal'}`}>
                                                 {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
                                             </span>
                                         </label>
@@ -999,7 +1050,7 @@ export const TargetRegistration: React.FC = () => {
                                         selected={field.value || []}
                                         onSelect={(val) => field.onChange(val)}
                                         multiSelect={true}
-                                        placeholder="Search and select registered investors..."
+                                        placeholder="Select from investors"
                                         searchPlaceholder="Search by code or name..."
                                         dropUp={true}
                                     />
@@ -1021,7 +1072,10 @@ export const TargetRegistration: React.FC = () => {
                 </button>
                 <button
                     type="button"
-                    onClick={handleSubmit(d => onSubmit(d, true))}
+                    onClick={() => {
+                        const data = control._formValues as FormValues;
+                        onSubmit(data, true);
+                    }}
                     disabled={isSubmitting}
                     className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium font-['Inter'] hover:bg-sky-50 transition-colors"
                 >

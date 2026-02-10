@@ -108,6 +108,7 @@ export const InvestorRegistration: React.FC = () => {
     const [profileImage, setProfileImage] = useState<File | null>(null);
     const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
     const [isCheckingId, setIsCheckingId] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(!!id); // true if in edit mode
     const [staffList, setStaffList] = useState<any[]>([]);
     const [partnerList, setPartnerList] = useState<any[]>([]);
     const [targetList, setTargetList] = useState<any[]>([]); // registered sellers for Introduced Projects
@@ -116,7 +117,7 @@ export const InvestorRegistration: React.FC = () => {
         defaultValues: {
             projectCode: '',
             rank: '',
-            budgetCurrency: 'USD',
+            budgetCurrency: '',
             websiteLinks: [{ url: '' }],
             contacts: [{ name: '', department: '', designation: '', phone: '', email: '', isPrimary: true }],
             hqAddresses: [{ label: '', address: '' }],
@@ -180,20 +181,21 @@ export const InvestorRegistration: React.FC = () => {
                 setCurrencies(cData);
 
                 const sData = Array.isArray(staffRes.data) ? staffRes.data : (staffRes.data?.data || []);
-                setStaffList(sData.map((s: any) => ({
+                setStaffList(sData.filter((s: any) => s.id).map((s: any) => ({
                     id: s.id,
-                    name: s.full_name || s.name,
+                    name: s.full_name || s.name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
                     flagSrc: '',
                     status: 'registered'
                 })));
 
                 const pData = Array.isArray(partRes.data) ? partRes.data : (partRes.data?.data || []);
-                setPartnerList(pData.map((p: any) => ({
+                const mappedPartners = pData.map((p: any) => ({
                     id: p.id,
                     name: p.reg_name || p.name,
                     flagSrc: '',
-                    status: 'registered'
-                })));
+                    status: 'registered' as const
+                }));
+                setPartnerList([{ id: 'na', name: 'N/A', flagSrc: '', status: 'registered' as const }, ...mappedPartners]);
 
                 // Fetch registered targets (sellers) for Introduced Projects dropdown
                 const targetRes = await api.get('/api/seller/fetch');
@@ -260,6 +262,7 @@ export const InvestorRegistration: React.FC = () => {
     useEffect(() => {
         if (!id) return;
         const fetchBuyer = async () => {
+            setIsLoadingData(true);
             try {
                 const response = await api.get(`/api/buyer/${id}`);
                 const buyer = response.data?.data;
@@ -343,7 +346,7 @@ export const InvestorRegistration: React.FC = () => {
                         if (budget) {
                             setValue('budgetMin', budget.min || '');
                             setValue('budgetMax', budget.max || '');
-                            setValue('budgetCurrency', budget.currency || 'USD');
+                            setValue('budgetCurrency', budget.currency || '');
                         }
                     } catch (e) { }
 
@@ -406,7 +409,8 @@ export const InvestorRegistration: React.FC = () => {
                 showAlert({ type: "error", message: "Failed to load investor data" });
             }
         };
-        if (countries.length > 0 && industries.length > 0) fetchBuyer();
+        if (countries.length > 0 && industries.length > 0) fetchBuyer().finally(() => setIsLoadingData(false));
+        else if (!id) setIsLoadingData(false);
     }, [id, setValue, countries.length, industries.length]);
 
     const onSubmit = async (data: FormValues, isDraft: boolean = false) => {
@@ -479,7 +483,48 @@ export const InvestorRegistration: React.FC = () => {
 
     /* ─── shared input style ─── */
     const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
-    const selectClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors appearance-none cursor-pointer";
+
+    if (isLoadingData) {
+        return (
+            <div className="w-full pb-24 font-['Inter']">
+                <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
+                    <div className="flex gap-8 items-start">
+                        <div className="w-28 h-28 bg-gray-200 rounded-full" />
+                        <div className="flex-1 flex flex-col gap-6">
+                            <div className="flex gap-6">
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            </div>
+                            <div className="flex gap-6">
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="h-px bg-gray-200" />
+                    <div className="flex flex-col gap-6">
+                        <div className="h-6 w-40 bg-gray-200 rounded" />
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                    </div>
+                    <div className="h-px bg-gray-200" />
+                    <div className="flex flex-col gap-6">
+                        <div className="h-6 w-40 bg-gray-200 rounded" />
+                        <div className="flex gap-6">
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                            <div className="flex-1 h-11 bg-gray-200 rounded" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 font-['Inter']">
@@ -553,7 +598,7 @@ export const InvestorRegistration: React.FC = () => {
                                                 ]}
                                                 value={field.value}
                                                 onChange={field.onChange}
-                                                placeholder="B - Standard"
+                                                placeholder="Select a rank"
                                             />
                                         )}
                                     />
@@ -709,7 +754,7 @@ export const InvestorRegistration: React.FC = () => {
                                 {errors.targetIndustries && <span className="text-red-500 text-xs mt-1">Required</span>}
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Interested Country" required />
+                                <FieldLabel text="Interested Country" />
                                 <Controller
                                     control={control}
                                     name="targetCountries"
@@ -782,11 +827,18 @@ export const InvestorRegistration: React.FC = () => {
                             </div>
                             <div className="flex-1">
                                 <FieldLabel text="Default Currency" />
-                                <select {...register('budgetCurrency')} className={selectClass}>
-                                    {currencies.map(c => (
-                                        <option key={c.id} value={c.currency_code}>{c.currency_code}</option>
-                                    ))}
-                                </select>
+                                <Controller
+                                    control={control}
+                                    name="budgetCurrency"
+                                    render={({ field }) => (
+                                        <SelectPicker
+                                            options={currencies.map(c => ({ value: c.currency_code, label: c.currency_code }))}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder="Select default currency"
+                                        />
+                                    )}
+                                />
                             </div>
                         </div>
                     </div>
@@ -851,20 +903,20 @@ export const InvestorRegistration: React.FC = () => {
                                     </div>
                                     <div className="flex-1 flex items-center gap-9 pb-2">
                                         {/* Primary Contact Toggle */}
-                                        <label className={`flex items-center gap-2 cursor-pointer ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
+                                        <label className={`flex items-center gap-3 cursor-pointer select-none ${String(primaryContactParams) === String(index) ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}>
                                             <div className="relative">
                                                 <input
                                                     type="radio"
                                                     value={index}
                                                     {...register('primaryContactParams')}
                                                     className="sr-only peer"
-                                                    disabled={String(primaryContactParams) === String(index)} // Cannot uncheck primary directly
+                                                    disabled={String(primaryContactParams) === String(index)}
                                                 />
-                                                <div className={`w-12 h-6 rounded-3xl transition-colors ${String(primaryContactParams) === String(index) ? 'bg-[#064771]' : 'bg-gray-300'}`}>
-                                                    <div className={`w-5 h-5 bg-white rounded-full absolute top-[2px] transition-all shadow-sm ${String(primaryContactParams) === String(index) ? 'left-[26px]' : 'left-[2px]'}`} />
+                                                <div className={`w-[44px] h-[24px] rounded-full transition-all duration-300 ease-in-out ${String(primaryContactParams) === String(index) ? 'bg-[#064771] shadow-inner' : 'bg-gray-300'}`}>
+                                                    <div className={`w-[20px] h-[20px] bg-white rounded-full absolute top-[2px] transition-all duration-300 ease-in-out shadow-md ${String(primaryContactParams) === String(index) ? 'left-[22px]' : 'left-[2px]'}`} />
                                                 </div>
                                             </div>
-                                            <span className={`text-sm font-normal font-['Inter'] ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                                            <span className={`text-sm font-['Inter'] transition-colors ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500 font-normal'}`}>
                                                 {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
                                             </span>
                                         </label>
@@ -971,7 +1023,7 @@ export const InvestorRegistration: React.FC = () => {
                                         selected={field.value || []}
                                         onSelect={(val) => field.onChange(val)}
                                         multiSelect={true}
-                                        placeholder="Search and select registered targets..."
+                                        placeholder="Select from targets"
                                         searchPlaceholder="Search by code or name..."
                                         dropUp={true}
                                     />
@@ -993,7 +1045,10 @@ export const InvestorRegistration: React.FC = () => {
                 </button>
                 <button
                     type="button"
-                    onClick={handleSubmit(data => onSubmit(data, true))}
+                    onClick={() => {
+                        const data = control._formValues as FormValues;
+                        onSubmit(data, true);
+                    }}
                     disabled={isSubmitting}
                     className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium font-['Inter'] hover:bg-sky-50 transition-colors"
                 >

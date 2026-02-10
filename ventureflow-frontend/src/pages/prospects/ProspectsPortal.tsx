@@ -65,25 +65,21 @@ const ALL_TARGET_COLUMNS = [
     { id: 'companyName', label: 'Company Name' },
     { id: 'originCountry', label: 'Origin Country' },
     { id: 'status', label: 'Status' },
-    { id: 'industry', label: 'Target Industry' },
-    { id: 'projectDetails', label: 'Project Details' },
+    { id: 'industry', label: 'Industry' },
     { id: 'reasonForMA', label: 'Purpose of M&A' },
-    { id: 'saleShareRatio', label: 'Planned Ratio Sale' },
+    { id: 'saleShareRatio', label: 'Sale Ratio' },
+    { id: 'investmentCondition', label: 'Condition' },
     { id: 'desiredInvestment', label: 'Desired Investment' },
     { id: 'ebitda', label: 'EBITDA' },
     { id: 'internalPIC', label: 'Assigned PIC' },
     { id: 'financialAdvisor', label: 'Partner FA' },
-    { id: 'website', label: 'Website' },
-    { id: 'teaserLink', label: 'Teaser Profile' },
-    { id: 'introducedProjects', label: 'Introduced Projects' },
     { id: 'primaryContact', label: 'Contact' },
-    { id: 'primaryEmail', label: 'Email' },
-    { id: 'primaryPhone', label: 'Phone' },
+    { id: 'teaserLink', label: 'Teaser Profile' },
     { id: 'pipelineStatus', label: 'Pipeline' },
     { id: 'addedDate', label: 'Added Date' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'status'];
 
 
 
@@ -509,7 +505,8 @@ const ProspectsPortal: React.FC = () => {
                         ebitda: fin.ttm_profit,
                         channel: ov.channel,
                         isPinned: s.pinned || targetPinnedIds.includes(s.id),
-                        sourceCurrencyRate: sourceRate
+                        sourceCurrencyRate: sourceRate,
+                        investmentCondition: fin.investment_condition || '',
                     };
                 });
                 setTargets(mappedTargets);
@@ -725,10 +722,10 @@ const ProspectsPortal: React.FC = () => {
                 "originCountry",
                 "status",
                 "targetIndustries",
-                "nicheTags",
                 "projectDetails",
                 "reasonForMA",
                 "plannedSaleShareRatio",
+                "investmentCondition",
                 "desiredInvestmentMin",
                 "desiredInvestmentMax",
                 "desiredInvestmentCurrency",
@@ -741,8 +738,8 @@ const ProspectsPortal: React.FC = () => {
             ];
             rowExample = [
                 "XX-S-001", "A", "Global Tech Sellers", "Germany", "Active",
-                "SaaS, AI", "Generative AI", "Selling core business unit", "Exit",
-                "100", "500000", "2000000", "EUR", "100000", "200000",
+                "SaaS, AI", "Selling core business unit", "Exit",
+                "100", "Minority Share", "500000", "2000000", "EUR", "100000", "200000",
                 "Jane Smith", "Advisor B", "https://techsellers.com", "https://doc.com/teaser"
             ];
         }

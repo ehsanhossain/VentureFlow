@@ -87,7 +87,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSel
                 onChange={handleFileChange}
             />
             {/* Label */}
-            <span className="mt-2 text-xs text-gray-500 font-medium">Company Logo</span>
+            <span className="mt-2 text-xs text-gray-500 font-medium">Company Avatar</span>
         </div>
     );
 };

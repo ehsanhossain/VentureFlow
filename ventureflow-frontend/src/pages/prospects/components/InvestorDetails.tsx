@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Loader2, Globe, User, Mail, Phone, ExternalLink, Send, Trash2, X } from 'lucide-react';
+import { Loader2, Globe, User, Mail, Phone, ExternalLink } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
+import { NotesSection, Note, parseActivityLogs } from '../../../components/NotesSection';
 
 const RestrictedField: React.FC<{ allowed: any, section: string | 'root', item: string, children: React.ReactNode }> = ({ allowed, section, item, children }) => {
   if (!isBackendPropertyAllowed(allowed, section, item)) return null;
@@ -33,17 +34,7 @@ interface Country {
   svg_icon_url?: string;
 }
 
-interface Note {
-  id: number;
-  author: string;
-  avatar?: string | null;
-  content: string;
-  timestamp: string;
-  isSystem?: boolean;
-  isSelf?: boolean;
-  isDeleted?: boolean;
-  deletedBy?: string;
-}
+// Note interface is now imported from NotesSection
 
 interface IntroducedProject {
   id: number;
@@ -75,42 +66,28 @@ const InvestorDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [buyer, setBuyer] = useState<any>(null);
   const [allowedFields, setAllowedFields] = useState<any>(null);
-  const [newNote, setNewNote] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
-  const [submittingNote, setSubmittingNote] = useState(false);
-  const notesContainerRef = useRef<HTMLDivElement>(null);
+  const [currencies, setCurrencies] = useState<any[]>([]);
 
-  // Context menu and delete modal states
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; noteId: number } | null>(null);
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; noteId: number | null; noteAuthor: string }>({ isOpen: false, noteId: null, noteAuthor: '' });
-  const [deletingNote, setDeletingNote] = useState(false);
-
-  // Auto-scroll to bottom when notes change
-  useEffect(() => {
-    if (notesContainerRef.current) {
-      notesContainerRef.current.scrollTop = notesContainerRef.current.scrollHeight;
-    }
-  }, [notes]);
+  // Auto-scroll is handled internally by NotesSection
 
   const fetchBuyer = async () => {
     try {
-      const response = await api.get(`/api/buyer/${id}`);
+      const [response, currenciesRes] = await Promise.all([
+        api.get(`/api/buyer/${id}`),
+        api.get('/api/currencies?per_page=999')
+      ]);
       const data = response.data?.data || {};
       setBuyer(data);
       setAllowedFields(response.data?.meta?.allowed_fields || null);
 
-      // Set notes from formatted_activity_logs (reverse order: older first, newer last)
+      // Set currencies
+      const currList = Array.isArray(currenciesRes.data) ? currenciesRes.data : (currenciesRes.data?.data || []);
+      setCurrencies(currList);
+
+      // Set notes from formatted_activity_logs
       if (data.formatted_activity_logs) {
-        const reversedLogs = [...data.formatted_activity_logs].reverse();
-        setNotes(reversedLogs.map((log: any) => ({
-          id: log.id,
-          author: log.author,
-          avatar: log.avatar,
-          content: log.content,
-          timestamp: formatTimestamp(log.timestamp),
-          isSystem: log.isSystem,
-          isSelf: log.author === getCurrentUserName(),
-        })));
+        setNotes(parseActivityLogs(data.formatted_activity_logs, getCurrentUserName()));
       }
     } catch (err) {
       showAlert({ type: "error", message: "Failed to fetch investor details" });
@@ -125,12 +102,7 @@ const InvestorDetails: React.FC = () => {
     }
   }, [id]);
 
-  // Close context menu when clicking outside
-  useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
+  // Context menu click-outside handling is now in NotesSection
 
   const getCurrentUserName = () => {
     const userData = user as any;
@@ -140,16 +112,7 @@ const InvestorDetails: React.FC = () => {
     return userData?.name || 'User';
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+  // formatTimestamp is now handled by NotesSection
 
   if (loading) {
     return (
@@ -177,8 +140,33 @@ const InvestorDetails: React.FC = () => {
   const internalPICs: InternalPIC[] = parseJSON(overview.internal_pic);
   const financialAdvisors: FinancialAdvisor[] = parseJSON(overview.financial_advisor);
 
-  // Get introduced projects from formatted data or parse from overview
-  const introducedProjects: IntroducedProject[] = buyer?.formatted_introduced_projects || parseJSON(overview.introduced_projects);
+  // Get introduced projects from deals AND from overview, merged
+  const introducedProjects: IntroducedProject[] = (() => {
+    const fromDeals: IntroducedProject[] = buyer?.formatted_introduced_projects || [];
+    const fromOverview: any[] = parseJSON(overview.introduced_projects);
+    // Combine both sources, dedup by id
+    const combined = [...fromDeals];
+    const existingIds = new Set(fromDeals.map((p: any) => p.id));
+    for (const proj of fromOverview) {
+      if (existingIds.has(proj.id)) continue;
+      // The overview stores items as { id, name: "CODE — Company Name" }
+      // Parse the combined name to extract code and display name
+      let code = proj.seller_id || proj.code || '';
+      let name = proj.name || proj.reg_name || '';
+      if (!code && name.includes('—')) {
+        const parts = name.split('—');
+        code = parts[0].trim();
+        name = parts.slice(1).join('—').trim();
+      }
+      combined.push({
+        id: proj.id || 0,
+        code: code,
+        name: name,
+      });
+      existingIds.add(proj.id);
+    }
+    return combined;
+  })();
 
   const rank = overview.rank || 'N/A';
   const projectCode = buyer?.buyer_id || 'N/A';
@@ -227,74 +215,7 @@ const InvestorDetails: React.FC = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-
-    setSubmittingNote(true);
-    try {
-      const response = await api.post('/api/activity-logs', {
-        entity_id: id,
-        entity_type: 'buyer',
-        content: newNote.trim(),
-        type: 'comment',
-      });
-
-      if (response.data) {
-        const newNoteData: Note = {
-          id: response.data.data?.id || Date.now(),
-          author: getCurrentUserName(),
-          avatar: null,
-          content: newNote.trim(),
-          timestamp: formatTimestamp(new Date().toISOString()),
-          isSystem: false,
-          isSelf: true,
-        };
-        setNotes([...notes, newNoteData]);
-        setNewNote('');
-        showAlert({ type: "success", message: "Note added successfully" });
-      }
-    } catch (err) {
-      showAlert({ type: "error", message: "Failed to add note" });
-    } finally {
-      setSubmittingNote(false);
-    }
-  };
-
-  // Handle right-click on note
-  const handleNoteContextMenu = (e: React.MouseEvent, noteId: number) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, noteId });
-  };
-
-  // Open delete confirmation modal
-  const openDeleteModal = (noteId: number, noteAuthor: string) => {
-    setContextMenu(null);
-    setDeleteModal({ isOpen: true, noteId, noteAuthor });
-  };
-
-  // Handle delete note
-  const handleDeleteNote = async () => {
-    if (!deleteModal.noteId) return;
-
-    setDeletingNote(true);
-    try {
-      await api.delete(`/api/activity-logs/${deleteModal.noteId}`);
-
-      // Mark note as deleted instead of removing
-      setNotes(notes.map(note =>
-        note.id === deleteModal.noteId
-          ? { ...note, isDeleted: true, deletedBy: getCurrentUserName() }
-          : note
-      ));
-
-      setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' });
-      showAlert({ type: "success", message: "Note deleted successfully" });
-    } catch (err) {
-      showAlert({ type: "error", message: "Failed to delete note" });
-    } finally {
-      setDeletingNote(false);
-    }
-  };
+  // Note add, delete, and context menu handlers are now in NotesSection
 
   // Get first internal PIC
   const getPrimaryPIC = () => {
@@ -375,6 +296,9 @@ const InvestorDetails: React.FC = () => {
                 <div className="flex flex-col justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-medium text-black capitalize">{companyName}</span>
+                    {hqCountryFlag && (
+                      <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" />
+                    )}
                     <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
                       {projectCode}
                     </span>
@@ -390,7 +314,7 @@ const InvestorDetails: React.FC = () => {
                     <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Origin Country</span>
                     <div className="flex items-center gap-2">
                       {hqCountryFlag && (
-                        <img src={hqCountryFlag} alt="" className="w-3 h-3 rounded-full object-cover" />
+                        <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover ring-2 ring-slate-100 shadow-sm" />
                       )}
                       <span className="text-sm font-medium text-[#1F2937]">{hqCountryName}</span>
                     </div>
@@ -448,6 +372,24 @@ const InvestorDetails: React.FC = () => {
                   </div>
                 ) : null;
               })()}
+
+              {/* Addresses / Entities */}
+              {(() => {
+                const hqAddresses = parseJSON(overview.hq_address);
+                return hqAddresses && hqAddresses.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Addresses / Entities</span>
+                    <div className="flex flex-col gap-2">
+                      {hqAddresses.map((addr: any, idx: number) => (
+                        <div key={idx} className="flex flex-col gap-0.5">
+                          {addr.label && <span className="text-xs font-medium text-[#6B7280]">{addr.label}</span>}
+                          <span className="text-sm text-[#374151]">{addr.address || (typeof addr === 'string' ? addr : 'N/A')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </section>
 
@@ -485,7 +427,7 @@ const InvestorDetails: React.FC = () => {
                   <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Investment Budget</span>
                   <span className="text-sm font-semibold text-black">
                     {investmentBudget ? (
-                      <>{formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)} {investmentBudget.currency}</>
+                      <>{formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)} <span className="text-sm font-medium text-gray-400 ml-1">{(() => { const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency)); return found?.currency_code || investmentBudget.currency || ''; })()}</span></>
                     ) : 'Flexible'}
                   </span>
                 </div>
@@ -573,192 +515,13 @@ const InvestorDetails: React.FC = () => {
           </section>
 
           {/* Notes Section */}
-          <section className="border border-[#F3F4F6] rounded overflow-hidden">
-            {/* Notes Header */}
-            <div className="px-3 py-2 bg-[rgba(249,250,251,0.8)] border-b border-[#F3F4F6] flex items-center gap-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15.75 17.25V20.625C15.75 21.2463 15.2463 21.75 14.625 21.75H4.875C4.25368 21.75 3.75 21.2463 3.75 20.625V7.875C3.75 7.25368 4.25368 6.75 4.875 6.75H6.75C7.26107 6.75 7.76219 6.7926 8.25 6.87444M15.75 17.25H19.125C19.7463 17.25 20.25 16.7463 20.25 16.125V11.25C20.25 6.79051 17.0066 3.08855 12.75 2.37444C12.2622 2.2926 11.7611 2.25 11.25 2.25H9.375C8.75368 2.25 8.25 2.75368 8.25 3.375V6.87444M15.75 17.25H9.375C8.75368 17.25 8.25 16.7463 8.25 16.125V6.87444M20.25 13.5V11.625C20.25 9.76104 18.739 8.25 16.875 8.25H15.375C14.7537 8.25 14.25 7.74632 14.25 7.125V5.625C14.25 3.76104 12.739 2.25 10.875 2.25H9.75" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <h2 className="text-base font-medium text-gray-500 capitalize">Notes</h2>
-            </div>
-
-            {/* Notes Content - WhatsApp Style */}
-            <div
-              ref={notesContainerRef}
-              className="p-5 bg-[#F8FAFC] min-h-[200px] max-h-[400px] overflow-y-auto flex flex-col gap-4"
-              style={{ scrollbarWidth: 'thin', scrollbarColor: '#CBD5E1 transparent' }}
-            >
-              {notes.length > 0 ? notes.map((note) => (
-                <div
-                  key={note.id}
-                  className={`flex ${note.isSelf ? 'justify-end' : 'justify-start'}`}
-                  onContextMenu={(e) => !note.isDeleted && note.isSelf && handleNoteContextMenu(e, note.id)}
-                >
-                  <div className={`flex gap-2 max-w-[75%] ${note.isSelf ? 'flex-row-reverse' : ''}`}>
-                    {/* Avatar */}
-                    {!note.isDeleted && (
-                      note.isSystem ? (
-                        <img src="/system-avatar.png" className="w-8 h-8 rounded-full shrink-0 object-cover self-end" alt="System" />
-                      ) : note.avatar ? (
-                        <img src={note.avatar} className="w-8 h-8 rounded-full shrink-0 object-cover self-end" alt="" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[#064771] flex items-center justify-center shrink-0 self-end">
-                          <span className="text-white text-xs font-medium">{getInitials(note.author)}</span>
-                        </div>
-                      )
-                    )}
-
-                    {/* Message Bubble */}
-                    {note.isDeleted ? (
-                      <div className="px-3 py-2 bg-[#F3F4F6] rounded-lg border border-[#E5E7EB] italic">
-                        <span className="text-sm text-[#9CA3AF]">
-                          <Trash2 className="w-3 h-3 inline mr-1" />
-                          {note.deletedBy || note.author} deleted this message
-                        </span>
-                      </div>
-                    ) : (
-                      <div
-                        className={`relative flex flex-col gap-1 px-3 py-2 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${note.isSelf
-                          ? 'bg-[#064771] text-white rounded-br-none'
-                          : note.isSystem
-                            ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] rounded-bl-none border border-[#BAE6FD]'
-                            : 'bg-white text-[#374151] rounded-bl-none border border-[#E5E7EB]'
-                          }`}
-                      >
-                        {/* Author & System Badge */}
-                        <div className={`flex items-center gap-2 ${note.isSelf ? 'justify-end' : ''}`}>
-                          <span className={`text-xs font-semibold ${note.isSelf ? 'text-white/90' : 'text-[#374151]'}`}>
-                            {note.author}
-                          </span>
-                          {note.isSystem && (
-                            <span className="px-1.5 py-0.5 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 rounded text-[9px] font-medium text-[#0369A1]">
-                              System
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Message Content */}
-                        <p className={`text-sm leading-relaxed ${note.isSelf ? 'text-white' : ''}`}>
-                          {note.content}
-                        </p>
-
-                        {/* Timestamp */}
-                        <span className={`text-[10px] self-end ${note.isSelf ? 'text-white/70' : 'text-[#9CA3AF]'}`}>
-                          {note.timestamp}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center text-gray-400 italic py-8">
-                  No notes yet. Add a note to start the conversation.
-                </div>
-              )}
-            </div>
-
-            {/* Notes Input */}
-            <div className="p-3 bg-[rgba(249,250,251,0.5)] border-t border-[#E5E7EB]">
-              <div className="p-4 bg-white border border-[#E2E8F0] rounded">
-                <div className="flex flex-col gap-4">
-                  <textarea
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Write a comment or note..."
-                    className="w-full h-12 resize-none text-base text-[#475569] placeholder-[#475569] focus:outline-none"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleAddNote();
-                      }
-                    }}
-                  />
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleAddNote}
-                      disabled={submittingNote || !newNote.trim()}
-                      className="flex items-center gap-2 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {submittingNote ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        <>
-                          Add
-                          <Send className="w-5 h-5" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Context Menu */}
-          {contextMenu && (
-            <div
-              className="fixed bg-white rounded-lg shadow-lg border border-[#E5E7EB] py-1 z-50 min-w-[140px]"
-              style={{ left: contextMenu.x, top: contextMenu.y }}
-            >
-              <button
-                onClick={() => {
-                  const note = notes.find(n => n.id === contextMenu.noteId);
-                  if (note) openDeleteModal(contextMenu.noteId, note.author);
-                }}
-                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete Message
-              </button>
-            </div>
-          )}
-
-          {/* Delete Confirmation Modal */}
-          {deleteModal.isOpen && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-xl w-[400px] overflow-hidden">
-                {/* Modal Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-                  <h3 className="text-lg font-semibold text-[#111827]">Delete Message</h3>
-                  <button
-                    onClick={() => setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' })}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <X className="w-5 h-5 text-[#6B7280]" />
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="px-5 py-4">
-                  <p className="text-sm text-[#6B7280]">
-                    Are you sure you want to delete this message? This action cannot be undone.
-                  </p>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex justify-end gap-3 px-5 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB]">
-                  <button
-                    onClick={() => setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' })}
-                    className="px-4 py-2 text-sm font-medium text-[#374151] bg-white border border-[#D1D5DB] rounded-md hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDeleteNote}
-                    disabled={deletingNote}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {deletingNote ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <NotesSection
+            notes={notes}
+            onNotesChange={setNotes}
+            entityId={id!}
+            entityType="buyer"
+            currentUserName={getCurrentUserName()}
+          />
         </div>
 
         {/* Right Column - Sidebar */}

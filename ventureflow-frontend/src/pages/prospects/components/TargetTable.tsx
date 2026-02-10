@@ -39,6 +39,7 @@ export interface TargetRowData {
     isPinned?: boolean;
     sourceCurrencyRate?: number;
     channel?: string;
+    investmentCondition?: string;
 }
 
 interface TargetTableProps {
@@ -185,7 +186,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'originCountry',
-            header: 'HQ Country',
+            header: 'Origin Country',
             accessor: (row) => (
                 <div className="flex items-center gap-2">
                     {row.originCountry?.flag ? (
@@ -255,10 +256,19 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'saleShareRatio',
-            header: 'Planned Ratio Sale',
-            accessor: (row) => <span className="text-[12px] font-medium text-slate-600">{row.saleShareRatio || 'N/A'}</span>,
+            header: 'Sale Ratio',
+            accessor: (row) => <span className="text-[12px] font-medium text-slate-600">{row.saleShareRatio ? `${row.saleShareRatio}%` : 'N/A'}</span>,
             textAccessor: (row) => row.saleShareRatio || '',
             width: 120,
+        },
+        {
+            id: 'investmentCondition',
+            header: 'Condition',
+            accessor: (row) => (
+                <span className="text-[13px] text-slate-600">{row.investmentCondition || 'N/A'}</span>
+            ),
+            textAccessor: (row) => row.investmentCondition || '',
+            width: 140,
         },
         {
             id: 'reasonForMA',
@@ -285,6 +295,24 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             header: 'Assigned PIC',
             accessor: (row) => row.internalPIC?.join(', ') || 'Unassigned',
             width: 150,
+        },
+        {
+            id: 'financialAdvisor',
+            header: 'Partner FA',
+            accessor: (row) => (
+                <span className="text-[13px] font-medium text-slate-700">{row.financialAdvisor?.length ? row.financialAdvisor[0] : 'N/A'}</span>
+            ),
+            textAccessor: (row) => row.financialAdvisor?.[0] || '',
+            width: 150,
+        },
+        {
+            id: 'primaryContact',
+            header: 'Contact',
+            accessor: (row) => (
+                <span className="text-[13px] font-medium text-slate-700">{row.primaryContact || 'N/A'}</span>
+            ),
+            textAccessor: (row) => row.primaryContact || '',
+            width: 140,
         },
         {
             id: 'teaserLink',
