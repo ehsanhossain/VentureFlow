@@ -9,7 +9,8 @@ import {
     Zap,
     Trash2,
     ExternalLink,
-    Copy
+    Copy,
+    Plus
 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -502,6 +503,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 sortConfig={sortConfig}
                 onSortChange={(key, direction) => setSortConfig({ key, direction })}
                 pagination={pagination}
+                emptyAction={!isRestricted && (
+                    <button
+                        onClick={() => navigate('/prospects/add-investor')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95 shadow-sm shadow-[#064771]/10"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add New Investor
+                    </button>
+                )}
                 className="flex-1 min-h-0"
                 containerClassName="h-full flex flex-col"
             />

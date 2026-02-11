@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Mail, Phone, Shield, ShieldCheck, Edit2, Loader2 } from 'lucide-react';
+import { ChevronLeft, Mail, Phone, Shield, ShieldCheck, Edit2 } from 'lucide-react';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 
@@ -61,8 +62,8 @@ const StaffDetails: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-[#064771]" />
+            <div className="flex items-center justify-center h-full">
+                <BrandSpinner size="lg" />
             </div>
         );
     }

@@ -24,12 +24,13 @@ import {
 import DataTableSearch from '../../components/table/DataTableSearch';
 import { Dropdown, Country as DropdownCountry } from './components/Dropdown';
 import { IndustryDropdown, Industry as DropdownIndustry } from './components/IndustryDropdown';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { Dayjs } from 'dayjs';
+import { DateRange } from 'react-date-range';
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
+import { Calendar } from 'lucide-react';
 import { showAlert } from '../../components/Alert';
 import { isFieldAllowed } from '../../utils/permissionUtils';
+import { BudgetRangeSlider } from './components/BudgetRangeSlider';
 
 interface Country {
     id: number;
@@ -603,10 +604,12 @@ const ProspectsPortal: React.FC = () => {
     const [filterTargetIndustry, setFilterTargetIndustry] = useState<DropdownIndustry[]>([]);
     const [filterTargetCountries, setFilterTargetCountries] = useState<DropdownCountry[]>([]);
     const [pipelineStageFilter, setPipelineStageFilter] = useState('');
-    const [filterDateFrom, setFilterDateFrom] = useState<Dayjs | null>(null);
-    const [filterDateTo, setFilterDateTo] = useState<Dayjs | null>(null);
+    const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null);
+    const [filterDateTo, setFilterDateTo] = useState<Date | null>(null);
+    const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     const [filterBudgetMin, setFilterBudgetMin] = useState('');
     const [filterBudgetMax, setFilterBudgetMax] = useState('');
+    const [budgetRange, setBudgetRange] = useState({ min: 0, max: 100000000 });
 
     // Reference data for filters
     const [filterIndustries, setFilterIndustries] = useState<DropdownIndustry[]>([]);
@@ -619,8 +622,14 @@ const ProspectsPortal: React.FC = () => {
         if (filterOriginCountry) f.country = filterOriginCountry.id;
         if (filterIndustry.length > 0) f.broader_industries = filterIndustry.map(i => i.id);
         if (filterTargetIndustry.length > 0) f.priority_industries = filterTargetIndustry.map(i => i.id);
-        if (filterDateFrom) f.registered_after = filterDateFrom.format('YYYY-MM-DD');
-        if (filterDateTo) f.registered_before = filterDateTo.format('YYYY-MM-DD');
+        if (filterDateFrom) {
+            const d = filterDateFrom;
+            f.registered_after = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        if (filterDateTo) {
+            const d = filterDateTo;
+            f.registered_before = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
         if (pipelineStageFilter) f.pipeline_stage = pipelineStageFilter;
         if (filterTargetCountries.length > 0) f.target_countries = filterTargetCountries.map(c => c.id);
         if (filterBudgetMin || filterBudgetMax) {
@@ -736,7 +745,7 @@ const ProspectsPortal: React.FC = () => {
                     id: s.id,
                     code: s.code || s.stage_code || '',
                     name: s.name || s.stage_name || '',
-                    type: s.type || ''
+                    type: s.pipeline_type || s.type || ''
                 })));
 
                 // Draft counts
@@ -746,6 +755,19 @@ const ProspectsPortal: React.FC = () => {
                 });
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
+            }
+
+            // Budget range for slider — fetched separately so failures don't block page
+            try {
+                const budgetRangeRes = await api.get('/api/buyer/budget-range');
+                if (budgetRangeRes.data) {
+                    setBudgetRange({
+                        min: budgetRangeRes.data.min ?? 0,
+                        max: budgetRangeRes.data.max ?? 100000000,
+                    });
+                }
+            } catch (e) {
+                console.warn("Budget range not available, using defaults");
             }
         };
         fetchData();
@@ -1104,81 +1126,74 @@ const ProspectsPortal: React.FC = () => {
                                 <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
                                     Registered between
                                 </label>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <div className="flex items-center gap-2">
-                                        <DatePicker
-                                            value={filterDateFrom}
-                                            onChange={(d) => setFilterDateFrom(d)}
-                                            format="DD/MM/YYYY"
-                                            slotProps={{
-                                                textField: {
-                                                    size: 'small',
-                                                    placeholder: 'From',
-                                                    fullWidth: true,
-                                                    sx: {
-                                                        '& .MuiOutlinedInput-root': {
-                                                            height: '40px',
-                                                            borderRadius: '3px',
-                                                            fontFamily: 'Inter',
-                                                            fontSize: '13px',
-                                                            '& fieldset': { borderColor: '#d1d5db' },
-                                                            '&:hover fieldset': { borderColor: '#9ca3af' },
-                                                            '&.Mui-focused fieldset': { borderColor: '#7dd3fc', borderWidth: '1px' },
-                                                        },
-                                                    },
-                                                },
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                                    className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors cursor-pointer"
+                                >
+                                    <span className={filterDateFrom || filterDateTo ? 'text-gray-900' : 'text-gray-400'}>
+                                        {filterDateFrom && filterDateTo
+                                            ? `${filterDateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${filterDateTo.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                            : filterDateFrom
+                                                ? `From ${filterDateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                                : 'Select date range'}
+                                    </span>
+                                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                                </button>
+                                {isDatePickerOpen && (
+                                    <div className="mt-2 ventureflow-date-range">
+                                        <DateRange
+                                            ranges={[{
+                                                startDate: filterDateFrom || new Date(),
+                                                endDate: filterDateTo || new Date(),
+                                                key: 'selection'
+                                            }]}
+                                            onChange={(item: any) => {
+                                                setFilterDateFrom(item.selection.startDate);
+                                                setFilterDateTo(item.selection.endDate);
                                             }}
-                                        />
-                                        <span className="text-gray-400 text-sm font-normal shrink-0">–</span>
-                                        <DatePicker
-                                            value={filterDateTo}
-                                            onChange={(d) => setFilterDateTo(d)}
-                                            format="DD/MM/YYYY"
-                                            minDate={filterDateFrom || undefined}
-                                            slotProps={{
-                                                textField: {
-                                                    size: 'small',
-                                                    placeholder: 'To',
-                                                    fullWidth: true,
-                                                    sx: {
-                                                        '& .MuiOutlinedInput-root': {
-                                                            height: '40px',
-                                                            borderRadius: '3px',
-                                                            fontFamily: 'Inter',
-                                                            fontSize: '13px',
-                                                            '& fieldset': { borderColor: '#d1d5db' },
-                                                            '&:hover fieldset': { borderColor: '#9ca3af' },
-                                                            '&.Mui-focused fieldset': { borderColor: '#7dd3fc', borderWidth: '1px' },
-                                                        },
-                                                    },
-                                                },
-                                            }}
+                                            moveRangeOnFirstSelection={false}
+                                            months={1}
+                                            direction="horizontal"
+                                            rangeColors={['#064771']}
+                                            color="#064771"
+                                            showDateDisplay={false}
                                         />
                                     </div>
-                                </LocalizationProvider>
+                                )}
                             </div>
 
                             {/* Investment Budget (Investors only) */}
                             {activeTab === 'investors' && (
-                                <div className="px-6 pt-4 pb-4">
+                                <div className="px-6 pt-4 pb-4 overflow-hidden">
                                     <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
                                         Investment Budget
                                     </label>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 w-full">
                                         <input
                                             type="number"
                                             placeholder="Min"
-                                            className="flex-1 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
                                             value={filterBudgetMin}
                                             onChange={(e) => setFilterBudgetMin(e.target.value)}
                                         />
-                                        <span className="text-gray-400 text-sm font-normal">–</span>
+                                        <span className="text-gray-400 text-sm font-normal flex-shrink-0">–</span>
                                         <input
                                             type="number"
                                             placeholder="Max"
-                                            className="flex-1 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
                                             value={filterBudgetMax}
                                             onChange={(e) => setFilterBudgetMax(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="mt-4">
+                                        <BudgetRangeSlider
+                                            globalMin={budgetRange.min}
+                                            globalMax={budgetRange.max}
+                                            currentMin={filterBudgetMin}
+                                            currentMax={filterBudgetMax}
+                                            onMinChange={setFilterBudgetMin}
+                                            onMaxChange={setFilterBudgetMax}
                                         />
                                     </div>
                                 </div>
@@ -1196,6 +1211,7 @@ const ProspectsPortal: React.FC = () => {
                                     setPipelineStageFilter('');
                                     setFilterDateFrom(null);
                                     setFilterDateTo(null);
+                                    setIsDatePickerOpen(false);
                                     setFilterBudgetMin('');
                                     setFilterBudgetMax('');
                                 }}

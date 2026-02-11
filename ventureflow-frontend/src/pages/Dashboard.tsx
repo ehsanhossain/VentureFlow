@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  TrendingUp, Users, Target, Briefcase, Activity, ArrowUpRight, AlertTriangle,
-  Plus, Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap, Link2, Calendar
+  Users, Target, Briefcase, Activity, ArrowUpRight, AlertTriangle,
+  Plus, Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap
 } from 'lucide-react';
+import { BrandSpinner } from '../components/BrandSpinner';
 import api from '../config/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, PieChart, Pie, LineChart, Line, Legend
+  Cell, LineChart, Line, Legend
 } from 'recharts';
 
 // =============== TYPES ===============
@@ -167,7 +168,7 @@ const Dashboard: React.FC = () => {
   if (loading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
+        <BrandSpinner size="lg" />
       </div>
     );
   }

@@ -2,7 +2,8 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Loader2, Globe, User, Mail, Phone, ExternalLink, FileText } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, FileText } from 'lucide-react';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
 import { NotesSection, Note, parseActivityLogs } from '../../../components/NotesSection';
@@ -82,8 +83,8 @@ const TargetDetails: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 animate-spin text-[#064771]" />
+            <div className="flex items-center justify-center h-full">
+                <BrandSpinner size="lg" />
             </div>
         );
     }
@@ -430,8 +431,8 @@ const TargetDetails: React.FC = () => {
                             <div className="flex flex-col gap-3">
                                 <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">EBITDA</span>
                                 <span className="text-sm font-semibold text-black">
-                                    {defaultCurrencyCode && getEbitdaDisplay() !== 'N/A' && <span className="text-sm font-medium text-gray-400 mr-1">{defaultCurrencyCode}</span>}
                                     {getEbitdaDisplay()}
+                                    {defaultCurrencyCode && getEbitdaDisplay() !== 'N/A' && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
                                 </span>
                             </div>
 

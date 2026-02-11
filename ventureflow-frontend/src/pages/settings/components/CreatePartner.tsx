@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Mail, User, RefreshCw, Eye, EyeOff, Loader2, Check, AlertCircle, Copy, CheckCircle } from 'lucide-react';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { Dropdown, Country } from '../../currency/components/Dropdown';
@@ -220,8 +221,8 @@ const CreatePartner: React.FC = () => {
 
     if (isFetching) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-[#064771]" />
+            <div className="flex items-center justify-center h-full">
+                <BrandSpinner size="lg" />
             </div>
         );
     }

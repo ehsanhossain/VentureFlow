@@ -5,6 +5,7 @@ import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '../../config/api';
 import { Country, Dropdown } from '../currency/components/Dropdown';
 import { showAlert } from '../../components/Alert';
+import { BrandSpinner } from '../../components/BrandSpinner';
 import { ActivityLogChat } from '../prospects/components/ActivityLogChat';
 import {
     DndContext,
@@ -599,9 +600,9 @@ const DealPipeline = () => {
                     {activeTab === 'board' && (
                         <div className="flex-1 overflow-x-auto p-4">
                             {isLoading ? (
-                                <div className="flex items-center justify-center h-64">
+                                <div className="flex items-center justify-center h-full">
                                     <div className="flex flex-col items-center gap-2">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
+                                        <BrandSpinner size="lg" />
                                         <span className="text-sm font-medium text-gray-500">Loading deals...</span>
                                     </div>
                                 </div>

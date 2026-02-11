@@ -1,6 +1,7 @@
 import { useContext, ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import { Navigate, useLocation } from "react-router-dom";
+import { BrandSpinner } from "../components/BrandSpinner";
 
 interface AuthContextType {
   user: unknown;
@@ -20,7 +21,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-900 border-solid"></div>
+        <BrandSpinner size="lg" />
       </div>
     );
   }

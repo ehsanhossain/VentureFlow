@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Trash2, X, Loader2, Info, FileText, Activity, Handshake } from 'lucide-react';
+import { BrandSpinner } from './BrandSpinner';
 import api from '../config/api';
 
 interface DeletionImpact {
@@ -80,7 +81,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 <div className="p-6">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-8 gap-3">
-                            <Loader2 className="w-8 h-8 text-[#064771] animate-spin" />
+                            <BrandSpinner size="lg" />
                             <p className="text-sm text-slate-500 font-medium">Analyzing impacts...</p>
                         </div>
                     ) : error ? (

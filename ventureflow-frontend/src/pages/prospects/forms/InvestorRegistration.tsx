@@ -27,6 +27,7 @@ interface FormValues {
     budgetMax: string;
     budgetCurrency: string;
     investmentCondition: string;
+    projectDetails: string;
 
     // Contacts
     contacts: {
@@ -128,6 +129,7 @@ export const InvestorRegistration: React.FC = () => {
             channel: '',
             companyIndustry: [],
             primaryContactParams: "0",
+            projectDetails: '',
         }
     });
 
@@ -295,6 +297,7 @@ export const InvestorRegistration: React.FC = () => {
 
                     setValue('purposeMNA', overview.reason_ma || '');
                     setValue('investmentCondition', overview.investment_condition || '');
+                    setValue('projectDetails', overview.details || '');
                     setValue('investorProfileLink', overview.investor_profile_link || '');
 
                     try {
@@ -434,6 +437,7 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('reason_ma', data.purposeMNA || '');
             payload.append('investment_budget', JSON.stringify({ min: data.budgetMin, max: data.budgetMax, currency: data.budgetCurrency }));
             payload.append('investment_condition', data.investmentCondition || '');
+            payload.append('details', data.projectDetails || '');
             payload.append('internal_pic', JSON.stringify(data.internal_pic || []));
             payload.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
             payload.append('introduced_projects', JSON.stringify(data.introducedProjects || []));
@@ -699,13 +703,13 @@ export const InvestorRegistration: React.FC = () => {
                                         <input
                                             {...register(`hqAddresses.${index}.label` as const)}
                                             placeholder="Entity Name/Address Name"
-                                            className={`w-1/3 ${inputClass}`}
+                                            className="w-1/3 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
                                         />
                                         <div className="flex-1 flex items-center gap-2">
                                             <input
                                                 {...register(`hqAddresses.${index}.address` as const)}
                                                 placeholder="Full Address"
-                                                className={`flex-1 ${inputClass}`}
+                                                className="flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
                                             />
                                             {addressFields.length > 1 && (
                                                 <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors">
@@ -840,6 +844,16 @@ export const InvestorRegistration: React.FC = () => {
                                     )}
                                 />
                             </div>
+                        </div>
+
+                        {/* Project Details */}
+                        <div>
+                            <FieldLabel text="Project Details" />
+                            <textarea
+                                {...register('projectDetails')}
+                                className="w-full px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 min-h-[100px] resize-y"
+                                placeholder="Brief description of the deal..."
+                            />
                         </div>
                     </div>
                 </div>

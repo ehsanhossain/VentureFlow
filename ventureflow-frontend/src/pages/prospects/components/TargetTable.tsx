@@ -10,6 +10,7 @@ import {
     Copy,
     Zap,
     Trash2,
+    Plus
 } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -473,6 +474,15 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 sortConfig={sortConfig}
                 onSortChange={(key, direction) => setSortConfig({ key, direction })}
                 pagination={pagination}
+                emptyAction={!isRestricted && (
+                    <button
+                        onClick={() => navigate('/prospects/add-target')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95 shadow-sm shadow-[#064771]/10"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add New Target
+                    </button>
+                )}
                 className="flex-1 min-h-0"
                 containerClassName="h-full flex flex-col"
             />

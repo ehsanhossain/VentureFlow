@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Trash2, GripVertical, Save, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import DataTableSearch from '../../../components/table/DataTableSearch';
 
 interface PipelineStage {
@@ -168,7 +169,7 @@ const PipelineSettings: React.FC = () => {
                     <div className="h-full bg-white rounded-[3px] border border-gray-100 flex flex-col overflow-hidden">
                         {loading ? (
                             <div className="flex-1 flex items-center justify-center">
-                                <RefreshCw className="w-8 h-8 text-[#064771] animate-spin" />
+                                <BrandSpinner size="lg" />
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col overflow-hidden">
@@ -256,7 +257,7 @@ const PipelineSettings: React.FC = () => {
                                         className="flex items-center gap-2 px-6 py-2.5 bg-[#064771] hover:bg-[#053a5e] text-white rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {saving ? (
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                            <BrandSpinner size="sm" />
                                         ) : (
                                             <Save className="w-4 h-4" />
                                         )}

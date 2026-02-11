@@ -237,3 +237,111 @@ body {
     opacity: 1;
   }
 }
+
+/* ============================================
+   REACT-DATE-RANGE CUSTOM STYLING
+   Matches VentureFlow design system
+   ============================================ */
+.ventureflow-date-range {
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ventureflow-date-range .rdrCalendarWrapper {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  background: #fff;
+  width: 100%;
+}
+
+.ventureflow-date-range .rdrMonthAndYearWrapper {
+  padding: 8px 4px 4px;
+}
+
+.ventureflow-date-range .rdrMonthAndYearPickers select {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+
+.ventureflow-date-range .rdrNextPrevButton {
+  background: #f3f4f6;
+  border-radius: 3px;
+  width: 28px;
+  height: 28px;
+}
+
+.ventureflow-date-range .rdrNextPrevButton:hover {
+  background: #e5e7eb;
+}
+
+.ventureflow-date-range .rdrNextPrevButton i {
+  border-color: transparent transparent transparent #374151;
+}
+
+.ventureflow-date-range .rdrPprevButton i {
+  border-color: transparent #374151 transparent transparent;
+}
+
+.ventureflow-date-range .rdrMonth {
+  width: 100%;
+  padding: 0 8px 8px;
+}
+
+.ventureflow-date-range .rdrWeekDay {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ventureflow-date-range .rdrDay {
+  height: 36px;
+  line-height: 36px;
+}
+
+.ventureflow-date-range .rdrDayNumber span {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #374151;
+}
+
+.ventureflow-date-range .rdrDayPassive .rdrDayNumber span {
+  color: #d1d5db;
+}
+
+.ventureflow-date-range .rdrDayToday .rdrDayNumber span::after {
+  background: #064771;
+}
+
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrInRange~.rdrDayNumber span,
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrStartEdge~.rdrDayNumber span,
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrEndEdge~.rdrDayNumber span {
+  color: #fff;
+}
+
+.ventureflow-date-range .rdrStartEdge,
+.ventureflow-date-range .rdrEndEdge {
+  border-radius: 3px;
+}
+
+.ventureflow-date-range .rdrInRange {
+  background: rgba(6, 71, 113, 0.12);
+}
+
+.ventureflow-date-range .rdrDayHovered .rdrDayNumber::after {
+  border-color: #064771;
+}
+
+.ventureflow-date-range .rdrDateDisplayWrapper {
+  display: none;
+}

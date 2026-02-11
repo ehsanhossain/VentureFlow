@@ -3,6 +3,7 @@ import { Send, FileText, MessageSquare, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 
 interface LogItem {
     id: string;
@@ -112,7 +113,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
                 {isLoading ? (
                     <div className="h-full flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#064771]"></div>
+                        <BrandSpinner size="md" />
                     </div>
                 ) : filteredItems.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-300">

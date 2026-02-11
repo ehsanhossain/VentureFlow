@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Camera, X, RefreshCw, Eye, EyeOff, Shield, ShieldCheck, Check, Mail, User } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 
 interface Country {
     id: number;
@@ -198,7 +199,7 @@ const CreateStaff: React.FC = () => {
     if (isFetching) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-[3px] h-8 w-8 border-b-2 border-[#064771]"></div>
+                <BrandSpinner size="lg" />
             </div>
         );
     }
@@ -499,7 +500,7 @@ const CreateStaff: React.FC = () => {
                             className="flex items-center gap-2 px-5 py-2.5 bg-[#064771] hover:bg-[#053a5e] text-white font-medium rounded-[3px] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <BrandSpinner size="sm" />
                             ) : (
                                 <Check className="w-4 h-4" />
                             )}

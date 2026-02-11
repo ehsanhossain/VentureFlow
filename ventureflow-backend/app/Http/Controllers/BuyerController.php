@@ -49,6 +49,36 @@ class BuyerController extends Controller
         return response()->json(['data' => $buyers]);
     }
 
+    /**
+     * Return the min and max investment budget values across all buyers.
+     * Used by the frontend range slider filter.
+     */
+    public function budgetRange()
+    {
+        $financials = \App\Models\BuyersFinancialDetails::whereNotNull('investment_budget')
+            ->get()
+            ->map(function ($fd) {
+                $budget = $fd->investment_budget;
+                if (!is_array($budget)) return ['min' => null, 'max' => null];
+                return [
+                    'min' => isset($budget['min']) && is_numeric($budget['min']) ? (float) $budget['min'] : null,
+                    'max' => isset($budget['max']) && is_numeric($budget['max']) ? (float) $budget['max'] : null,
+                ];
+            })
+            ->filter(fn ($b) => $b['min'] !== null || $b['max'] !== null);
+
+        $allMins = $financials->pluck('min')->filter()->values();
+        $allMaxs = $financials->pluck('max')->filter()->values();
+
+        $globalMin = $allMins->count() > 0 ? $allMins->min() : 0;
+        $globalMax = $allMaxs->count() > 0 ? $allMaxs->max() : 100000000;
+
+        return response()->json([
+            'min' => $globalMin,
+            'max' => $globalMax,
+        ]);
+    }
+
     public function index(Request $request)
     {
         try {

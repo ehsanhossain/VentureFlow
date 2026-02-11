@@ -10,6 +10,7 @@ import {
     TableRow,
 } from '../../../components/table/table';
 import { showAlert } from '../../../components/Alert';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 
 interface SharedSeller {
     id: number;
@@ -53,9 +54,9 @@ const SellerList = () => {
     }, [partnerId]);
 
     if (loading) return (
-        <div className="flex justify-center items-center p-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#064771]"></div>
-            <span className="ml-3 text-gray-600 font-poppins">Loading Targets...</span>
+        <div className="flex flex-col justify-center items-center h-full gap-3">
+            <BrandSpinner size="lg" />
+            <span className="text-gray-600 font-poppins">Loading Targets...</span>
         </div>
     );
 

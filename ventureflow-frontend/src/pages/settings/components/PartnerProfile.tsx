@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Loader2, User } from 'lucide-react';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../routes/AuthContext';
 import api from '../../../config/api';
@@ -126,7 +127,7 @@ const PartnerProfile: React.FC = () => {
         return (
             <div className="flex items-center justify-center h-full">
                 <div className="flex items-center gap-3">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#064771]" />
+                    <BrandSpinner size="lg" />
                     <span className="text-gray-600">{t('common.loading', 'Loading...')}</span>
                 </div>
             </div>

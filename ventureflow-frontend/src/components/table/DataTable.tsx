@@ -1,7 +1,6 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
-    Search,
     ArrowUp,
     ArrowDown,
     GripVertical
@@ -30,6 +29,7 @@ export interface DataTableProps<T> {
     isLoading?: boolean;
     emptyMessage?: string;
     emptyIcon?: React.ReactNode;
+    emptyAction?: React.ReactNode;
     onRowClick?: (row: T, index: number) => void;
     onRowContextMenu?: (e: React.MouseEvent, row: T, index: number) => void;
     rowClassName?: (row: T, index: number) => string;
@@ -134,18 +134,30 @@ const LoadingSkeleton: React.FC<{ columns: number; rows?: number }> = ({ columns
 const EmptyState: React.FC<{
     message?: string;
     icon?: React.ReactNode;
+    emptyAction?: React.ReactNode;
     colSpan: number;
-}> = ({ message = 'No data found', icon, colSpan }) => (
+}> = ({ message = 'No Data Found', colSpan, emptyAction }) => (
     <tr>
-        <td colSpan={colSpan} className="h-64 border-b border-[#f1f5f9]">
-            <div className="flex flex-col items-center justify-center gap-3 opacity-60">
-                {icon || (
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                        <Search className="w-8 h-8 text-slate-300" />
-                    </div>
-                )}
-                <p className="font-medium text-slate-900">{message}</p>
-                <p className="text-sm text-slate-500">Try adjusting your filters or search</p>
+        <td colSpan={colSpan} className="h-[calc(100vh-320px)] min-h-[320px] border-b border-[#f1f5f9] p-0">
+            <div className="sticky left-0 w-[calc(100vw-80px)] flex items-center justify-center">
+                <div className="flex flex-col items-center justify-center gap-2 py-12">
+                    <img
+                        src="/images/no-records-found.png"
+                        alt="No records found"
+                        className="w-36 h-auto mb-2"
+                        draggable={false}
+                    />
+                    <p className="text-lg font-medium text-slate-800 font-['Inter']">{message}</p>
+                    <p className="text-sm text-slate-400 font-['Inter'] text-center max-w-[320px]">
+                        We couldn't find any results matching your search or filters.
+                        Would you like to register a new prospect instead?
+                    </p>
+                    {emptyAction && (
+                        <div className="mt-4">
+                            {emptyAction}
+                        </div>
+                    )}
+                </div>
             </div>
         </td>
     </tr>
@@ -158,6 +170,7 @@ function DataTable<T>({
     isLoading = false,
     emptyMessage,
     emptyIcon,
+    emptyAction,
     onRowClick,
     onRowContextMenu,
     rowClassName,
@@ -577,6 +590,7 @@ function DataTable<T>({
                             <EmptyState
                                 message={emptyMessage}
                                 icon={emptyIcon}
+                                emptyAction={emptyAction}
                                 colSpan={totalColumns}
                             />
                         ) : (

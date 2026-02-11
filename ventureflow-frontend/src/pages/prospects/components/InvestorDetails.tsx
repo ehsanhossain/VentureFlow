@@ -2,7 +2,8 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Loader2, Globe, User, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink } from 'lucide-react';
+import { BrandSpinner } from '../../../components/BrandSpinner';
 import { formatCurrency } from '../../../utils/formatters';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
@@ -116,8 +117,8 @@ const InvestorDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#064771]" />
+      <div className="flex items-center justify-center h-full">
+        <BrandSpinner size="lg" />
       </div>
     );
   }
@@ -192,6 +193,7 @@ const InvestorDetails: React.FC = () => {
   const website = parseWebsiteUrl(overview.website) || '';
   const purposeMNA = overview.reason_ma || 'N/A';
   const investmentCondition = overview.investment_condition || 'N/A';
+  const projectDetails = overview.details || '';
   const investorProfileLink = overview.investor_profile_link || '';
   const hqCountryName = overview.hq_country?.name || 'N/A';
   const hqCountryFlag = overview.hq_country?.svg_icon_url || '';
@@ -408,6 +410,19 @@ const InvestorDetails: React.FC = () => {
               })()}
             </div>
           </section>
+
+          {/* Project Details Section */}
+          {projectDetails && (
+            <section className="space-y-7">
+              <h2 className="text-base font-medium text-gray-500 capitalize">Project Details</h2>
+              <div className="h-px bg-[#E5E7EB]" />
+              <RestrictedField allowed={allowedFields} section="companyOverview" item="details">
+                <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
+                  {projectDetails}
+                </p>
+              </RestrictedField>
+            </section>
+          )}
 
           {/* Investment Strategy Section */}
           <section className="space-y-7">

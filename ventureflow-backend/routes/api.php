@@ -110,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buyer/drafts', [BuyerController::class, 'drafts']);
     Route::get('/buyer/from-partners', [BuyerController::class, 'fromPartners']);
     Route::get('/buyer/delete-analyze', [BuyerController::class, 'getDeleteImpact']);
+    Route::get('/buyer/budget-range', [BuyerController::class, 'budgetRange']);
     Route::delete('/buyers', [BuyerController::class, 'destroy']);
     Route::apiResource('buyer', BuyerController::class);
     Route::post('/buyer/company-overviews', [BuyerController::class, 'companyOverviewStore']);
