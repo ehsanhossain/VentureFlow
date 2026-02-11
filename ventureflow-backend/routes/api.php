@@ -160,6 +160,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'update']);
     Route::delete('/pipeline-stages/{pipelineStage}', [PipelineStageController::class, 'destroy']);
 
+    // Fee Tier Routes
+    Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
+    Route::post('/fee-tiers/bulk', [\App\Http\Controllers\FeeTierController::class, 'updateBulk']);
+
     // Activity Log Routes
     Route::get('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'index']);
     Route::post('/activity-logs', [\App\Http\Controllers\ActivityLogController::class, 'store']);

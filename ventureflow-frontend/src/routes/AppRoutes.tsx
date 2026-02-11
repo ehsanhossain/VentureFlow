@@ -25,6 +25,7 @@ import PartnerDetails from "../pages/settings/components/PartnerDetails";
 import AuditLog from "../pages/settings/components/AuditLog";
 import GeneralSettings from "../pages/settings/components/GeneralSettings";
 import PipelineSettings from "../pages/settings/components/PipelineSettings";
+import FeeStructureSettings from "../pages/settings/components/FeeStructureSettings";
 import ChangePassword from "../pages/auth/ChangePassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
 import PartnerProfile from '../pages/settings/components/PartnerProfile';
@@ -142,6 +143,7 @@ const AppRoutes = () => {
         <Route path="partners/create" element={<CreatePartner />} />
         <Route path="partners/edit/:id" element={<CreatePartner />} />
         <Route path="pipeline" element={<PipelineSettings />} />
+        <Route path="fee-structure" element={<FeeStructureSettings />} />
         <Route path="audit-log" element={<AuditLog />} />
         <Route path="profile" element={<PartnerProfile />} />
       </Route>
