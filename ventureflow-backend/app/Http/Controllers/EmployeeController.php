@@ -24,6 +24,11 @@ class EmployeeController extends Controller
      */
     public function index(Request $request)
     {
+        // Only System Admin and Staff can view employees
+        if (!$request->user()->hasAnyRole(['System Admin', 'Staff'])) {
+             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $search = $request->input('search', '');
 
         $employees = Employee::with([
@@ -43,10 +48,6 @@ class EmployeeController extends Controller
                 });
             })
             ->paginate(10);
-
-        if (!$request->user()->hasRole('System Admin')) {
-             return response()->json(['message' => 'Unauthorized'], 403);
-        }
 
         return response()->json([
             'data' => $employees->items(),
@@ -240,8 +241,8 @@ class EmployeeController extends Controller
                     $userData
                 );
 
-                // Assign Role
-                if ($request->user() && $request->user()->hasRole('System Admin')) {
+                // Assign Role — System Admin and Staff can both assign roles
+                if ($request->user() && $request->user()->hasAnyRole(['System Admin', 'Staff'])) {
                      $role = Role::where('name', $validated['role'])->first();
                      if ($role) {
                          $user->syncRoles([$role]);

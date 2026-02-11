@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Mail, User, RefreshCw, Eye, EyeOff, Loader2, Check, AlertCircle, Copy, CheckCircle } from 'lucide-react';
-import { BrandSpinner } from '../../../components/BrandSpinner';
+import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, ArrowLeft, Copy, CheckCircle } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
-import { Dropdown, Country } from '../../currency/components/Dropdown';
+import { Country, Dropdown } from '../../prospects/components/Dropdown';
 
 interface ExtendedCountry extends Country {
     alpha_2_code?: string;
 }
+
+/* ─── tiny reusable label ─── */
+const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
+    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-800 font-['Inter'] leading-5">
+        {required && <span className="text-rose-600 text-base font-medium">*</span>}
+        {text}
+    </label>
+);
+
+/* ─── section header with divider ─── */
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+    <div className="flex flex-col gap-3 mb-5">
+        <h3 className="text-base font-medium text-black font-['Inter'] capitalize">{title}</h3>
+        <div className="w-full h-px bg-gray-200" />
+    </div>
+);
 
 const CreatePartner: React.FC = () => {
     const navigate = useNavigate();
@@ -16,7 +31,7 @@ const CreatePartner: React.FC = () => {
     const isEditing = Boolean(id);
 
     const [isLoading, setIsLoading] = useState(false);
-    const [isFetching, setIsFetching] = useState(false);
+    const [isFetching, setIsFetching] = useState(isEditing);
     const [showPassword, setShowPassword] = useState(false);
     const [countries, setCountries] = useState<ExtendedCountry[]>([]);
     const [selectedCountry, setSelectedCountry] = useState<ExtendedCountry | null>(null);
@@ -65,11 +80,12 @@ const CreatePartner: React.FC = () => {
     const fetchCountries = async () => {
         try {
             const res = await api.get('/api/countries');
-            const formatted = res.data.map((c: any) => ({
+            const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+            const formatted = data.map((c: any) => ({
                 id: c.id,
                 name: c.name,
                 flagSrc: c.svg_icon_url,
-                status: 'registered',
+                status: 'registered' as const,
                 alpha_2_code: c.alpha_2_code
             }));
             setCountries(formatted);
@@ -202,10 +218,10 @@ const CreatePartner: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Failed to save partner:', error);
-            showAlert({
-                type: 'error',
-                message: error.response?.data?.message || error.response?.data?.error?.email?.[0] || 'Failed to save partner'
-            });
+            const errMsg = error.response?.data?.errors
+                ? Object.values(error.response.data.errors).flat()[0]
+                : error.response?.data?.message || error.response?.data?.error?.email?.[0] || 'Failed to save partner';
+            showAlert({ type: 'error', message: errMsg as string });
         } finally {
             setIsLoading(false);
         }
@@ -215,191 +231,217 @@ const CreatePartner: React.FC = () => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleCountrySelect = (country: ExtendedCountry) => {
-        setSelectedCountry(country);
+    const handleCountrySelect = (country: Country | Country[]) => {
+        const single = Array.isArray(country) ? country[0] : country;
+        if (single) setSelectedCountry(single as ExtendedCountry);
     };
+
+    /* ─── shared input style ─── */
+    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
 
     if (isFetching) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <BrandSpinner size="lg" />
+            <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
+                <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
+                    <button
+                        type="button"
+                        className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
+                        onClick={() => navigate('/settings/partners')}
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back</span>
+                    </button>
+                    <h1 className="text-xl md:text-2xl font-medium text-gray-900">
+                        {isEditing ? 'Edit Partner' : 'Create Partner'}
+                    </h1>
+                </div>
+                <div className="flex-1 overflow-auto p-4 md:p-6">
+                    <div className="w-full pb-24 font-['Inter']">
+                        <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
+                            <div className="flex flex-col gap-6">
+                                <div className="h-6 w-48 bg-gray-200 rounded" />
+                                <div className="h-px bg-gray-200" />
+                                <div className="flex gap-6">
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                </div>
+                                <div className="flex gap-6">
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                </div>
+                            </div>
+                            <div className="h-px bg-gray-200" />
+                            <div className="flex flex-col gap-6">
+                                <div className="h-6 w-40 bg-gray-200 rounded" />
+                                <div className="flex gap-6">
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                    <div className="flex-1 h-11 bg-gray-200 rounded" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#F8F9FB] font-poppins">
+        <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
             {/* Header */}
-            <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10">
-                <div className="flex items-center justify-between max-w-4xl mx-auto">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => navigate('/settings/partners')}
-                            className="p-2 hover:bg-gray-100 rounded-[3px] transition-colors"
-                        >
-                            <ChevronLeft className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <div>
-                            <h1 className="text-xl font-medium text-gray-900">
-                                {isEditing ? 'Edit Partner' : 'Create New Partner'}
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                {isEditing ? 'Update partner registration information' : 'Register a new partner'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
+                <button
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
+                    onClick={() => navigate('/settings/partners')}
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back</span>
+                </button>
+                <h1 className="text-xl md:text-2xl font-medium text-gray-900">
+                    {isEditing ? 'Edit Partner' : 'Create Partner'}
+                </h1>
             </div>
 
-            <div className="max-w-4xl mx-auto p-6 md:p-8">
-                <div className="bg-white rounded-[3px] border border-gray-100 p-6 md:p-8">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Row 1: Country & Partner ID */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    <span className="text-red-500">*</span> Origin Country
-                                </label>
-                                <Dropdown
-                                    countries={countries}
-                                    selected={selectedCountry}
-                                    onSelect={handleCountrySelect}
-                                    placeholder="Select Country"
-                                />
-                            </div>
+            {/* Main Content */}
+            <div className="flex-1 overflow-auto p-4 md:p-6">
+                <form onSubmit={handleSubmit} className="w-full pb-24 font-['Inter']">
+                    <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Partner ID
-                                </label>
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="text"
-                                        value={formData.partner_id}
-                                        onChange={(e) => handleChange('partner_id', e.target.value.toUpperCase())}
-                                        className={`w-full px-4 py-2.5 border rounded-[3px] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 transition-all ${isIdAvailable === false
-                                            ? 'border-red-500 bg-red-50'
-                                            : isIdAvailable === true
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-200'
-                                            }`}
-                                        placeholder="XX-P-XXX"
-                                    />
-                                    <div className="absolute right-3 flex items-center gap-2">
-                                        {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
-                                        {!isCheckingId && isIdAvailable === true && <Check className="w-5 h-5 text-green-500" />}
-                                        {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
-                                    </div>
-                                </div>
-                                {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This ID is already in use.</p>}
-                                {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">ID is available.</p>}
-                            </div>
-                        </div>
-
-                        {/* Row 2: Partner Name & Email */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    <span className="text-red-500">*</span> Partner Name
-                                </label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => handleChange('name', e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
-                                        placeholder="Enter partner name"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    <span className="text-red-500">*</span> Email Address
-                                </label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={(e) => handleChange('email', e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
-                                        placeholder="partner@example.com"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Row 3: Password */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    <span className="text-red-500">*</span> Password
-                                </label>
-                                <div className="relative flex gap-2">
-                                    <div className="relative flex-1">
+                        {/* ═══ Section 1: Partner Information ═══ */}
+                        <div>
+                            <SectionHeader title="Partner Information" />
+                            <div className="flex flex-col gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                    {/* Partner Name */}
+                                    <div>
+                                        <FieldLabel text="Partner Name" required />
                                         <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            required={!isEditing}
-                                            value={formData.password}
-                                            onChange={(e) => handleChange('password', e.target.value)}
-                                            className="w-full px-4 py-2.5 border border-gray-200 rounded-[3px] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] pr-12"
-                                            placeholder={isEditing ? 'Leave empty to keep current' : '••••••••••••'}
+                                            type="text"
+                                            required
+                                            value={formData.name}
+                                            onChange={(e) => handleChange('name', e.target.value)}
+                                            className={inputClass}
+                                            placeholder="Enter partner name"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                        >
-                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={generatePassword}
-                                        className="px-3 bg-gray-100 hover:bg-gray-200 rounded-[3px] transition-colors border border-gray-200"
-                                        title="Generate Password"
-                                    >
-                                        <RefreshCw className="w-4 h-4 text-gray-600" />
-                                    </button>
+
+                                    {/* Origin Country */}
+                                    <div>
+                                        <FieldLabel text="Origin Country" required />
+                                        <Dropdown
+                                            countries={countries}
+                                            selected={selectedCountry}
+                                            onSelect={((val: Country | Country[]) => handleCountrySelect(val)) as any}
+                                            placeholder="Select Country"
+                                        />
+                                    </div>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">Auto-generated secure password</p>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                    {/* Partner ID */}
+                                    <div>
+                                        <FieldLabel text="Partner ID" />
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="text"
+                                                value={formData.partner_id}
+                                                onChange={(e) => handleChange('partner_id', e.target.value.toUpperCase())}
+                                                readOnly={isEditing}
+                                                className={`${inputClass} font-mono pr-10 ${isIdAvailable === false
+                                                    ? 'border-red-400 bg-red-50'
+                                                    : isIdAvailable === true
+                                                        ? 'border-green-400 bg-green-50'
+                                                        : ''
+                                                    } ${isEditing ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}`}
+                                                placeholder="XX-P-XXX"
+                                            />
+                                            <div className="absolute right-3 flex items-center gap-2">
+                                                {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                                {!isCheckingId && isIdAvailable === true && <Check className="w-5 h-5 text-green-500" />}
+                                                {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-5 h-5 text-red-500" />}
+                                            </div>
+                                        </div>
+                                        {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This ID is already in use.</p>}
+                                        {isIdAvailable === true && <p className="text-green-600 text-xs mt-1">ID is available.</p>}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Display Partner ID on Edit */}
-                        {isEditing && formData.partner_id && (
-                            <div className="pt-4 mt-2 border-t border-gray-100">
-                                <label className="block text-xs font-medium text-gray-500 mb-1">Partner ID</label>
-                                <span className="inline-flex px-3 py-1 bg-gray-100 text-gray-600 rounded-[3px] text-sm font-mono border border-gray-200">
-                                    {formData.partner_id}
-                                </span>
-                            </div>
-                        )}
+                        {/* ═══ Section 2: Login & Access ═══ */}
+                        <div>
+                            <SectionHeader title="Login & Access" />
+                            <div className="flex flex-col gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                    {/* Email */}
+                                    <div>
+                                        <FieldLabel text="Email Address" required />
+                                        <input
+                                            type="email"
+                                            required
+                                            value={formData.email}
+                                            onChange={(e) => handleChange('email', e.target.value)}
+                                            className={inputClass}
+                                            placeholder="partner@example.com"
+                                        />
+                                    </div>
 
-                        {/* Action Buttons */}
-                        <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => navigate('/settings/partners')}
-                                className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-[3px] transition-colors border border-gray-200"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isLoading || (isIdAvailable === false)}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium rounded-[3px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {isEditing ? 'Update Partner' : 'Create Partner'}
-                            </button>
+                                    {/* Password */}
+                                    <div>
+                                        <FieldLabel text="Password" required={!isEditing} />
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    required={!isEditing}
+                                                    value={formData.password}
+                                                    onChange={(e) => handleChange('password', e.target.value)}
+                                                    className={`${inputClass} font-mono pr-10`}
+                                                    placeholder={isEditing ? 'Leave empty to keep current' : '••••••••••••'}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                                >
+                                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                </button>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={generatePassword}
+                                                className="h-11 px-3 bg-gray-100 hover:bg-gray-200 rounded-[3px] transition-colors border border-gray-300"
+                                                title="Generate Password"
+                                            >
+                                                <RefreshCw className="w-4 h-4 text-gray-600" />
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1">Auto-generated secure password</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+
+                    {/* ═══ Sticky Bottom Footer ═══ */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 flex items-center justify-end gap-3 px-8 z-50">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/settings/partners')}
+                            className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium font-['Inter'] hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isLoading || (isIdAvailable === false)}
+                            className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium font-['Inter'] hover:bg-[#042d48] transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                            {isEditing ? 'Update Partner' : 'Create Partner'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             {/* Success Modal with Copy Credentials */}

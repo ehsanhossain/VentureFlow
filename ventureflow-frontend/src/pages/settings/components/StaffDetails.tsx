@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Mail, Phone, Shield, ShieldCheck, Edit2 } from 'lucide-react';
+import { Mail, Phone, Shield, ShieldCheck, User } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -18,6 +18,8 @@ interface StaffMember {
     work_email?: string;
     contact_number?: string;
     image?: string;
+    created_at?: string;
+    updated_at?: string;
     user?: {
         id: number;
         name: string;
@@ -85,6 +87,18 @@ const StaffDetails: React.FC = () => {
     const fullName = `${staff.first_name} ${staff.last_name}`;
     const role = staff.user?.roles?.[0]?.name || 'Staff';
     const isAdmin = role === 'System Admin';
+    const lastUpdated = staff.updated_at
+        ? new Date(staff.updated_at).toLocaleDateString()
+        : new Date().toLocaleDateString();
+
+    const getInitials = (name: string) => {
+        if (!name) return 'NA';
+        const parts = name.split(' ').filter(Boolean);
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+    };
 
     const getAvatarUrl = () => {
         if (staff.image) {
@@ -92,7 +106,7 @@ const StaffDetails: React.FC = () => {
                 ? staff.image
                 : `${baseURL}/storage/${staff.image}`;
         }
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=064771&color=fff&size=200`;
+        return '';
     };
 
     const formatDate = (dateStr?: string) => {
@@ -105,166 +119,263 @@ const StaffDetails: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8F9FB] font-inter">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10">
-                <div className="flex items-center justify-between max-w-6xl mx-auto">
-                    <div className="flex items-center gap-4">
+        <div className="flex flex-col w-full min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+            {/* Header Bar */}
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-5 py-2.5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {/* Back Button */}
                         <button
                             onClick={() => navigate('/settings/staff')}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors"
                         >
-                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M5.08346 8.1666L3.29102 6.36276L5.08346 4.57031" stroke="white" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            Back
                         </button>
-                        <div>
-                            <h1 className="text-xl font-medium text-gray-900">Staff Member Details</h1>
-                            <p className="text-sm text-gray-500">View staff information and access settings</p>
-                        </div>
+
+                        {/* Page Title */}
+                        <h1 className="text-2xl font-medium text-gray-900">Staff Profile</h1>
                     </div>
+
+                    {/* Edit Button - Secondary Style */}
                     <button
                         onClick={() => navigate(`/settings/staff/edit/${id}`)}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-all text-sm font-medium"
+                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-[#374151] text-sm font-medium hover:bg-gray-50 transition-colors"
                     >
-                        <Edit2 className="w-4 h-4" />
-                        Edit Member
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        Edit Staff
                     </button>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto p-6">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                    {/* Profile Header */}
-                    <div className="bg-gradient-to-r from-[#064771] to-[#0a6da8] p-8">
-                        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                            <img
-                                src={getAvatarUrl()}
-                                alt={fullName}
-                                className="w-28 h-28 rounded-full object-cover ring-4 ring-white/20 shadow-xl"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=064771&color=fff&size=200`;
-                                }}
-                            />
-                            <div className="text-center md:text-left">
-                                <h2 className="text-2xl font-semibold text-white">{fullName}</h2>
-                                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-2">
-                                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30">
-                                        {staff.employee_id}
-                                    </span>
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${isAdmin
-                                        ? 'bg-amber-400/20 text-amber-100 border border-amber-400/30'
-                                        : 'bg-blue-400/20 text-blue-100 border border-blue-400/30'
-                                        }`}>
-                                        {isAdmin ? <ShieldCheck className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                                        {role}
-                                    </span>
-                                    {staff.designation_data?.title && (
-                                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/90">
-                                            {staff.designation_data.title}
-                                        </span>
-                                    )}
+            {/* Main Content */}
+            <div className="flex gap-16 px-9 py-6">
+                {/* Left Column - Main Content */}
+                <div className="flex-1 max-w-[844px] space-y-10">
+
+                    {/* Overview Section */}
+                    <section className="space-y-6">
+                        <h2 className="text-base font-medium text-gray-500 capitalize">Overview</h2>
+                        <div className="h-px bg-[#E5E7EB]" />
+
+                        <div className="space-y-7">
+                            {/* Staff Header */}
+                            <div className="flex items-center gap-3">
+                                {/* Staff Avatar */}
+                                {getAvatarUrl() ? (
+                                    <img
+                                        src={getAvatarUrl()}
+                                        alt={fullName}
+                                        className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                    />
+                                ) : null}
+                                <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                                    {getInitials(fullName)}
                                 </div>
+
+                                <div className="flex flex-col justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl font-medium text-black capitalize">{fullName}</span>
+                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
+                                            {staff.employee_id}
+                                        </span>
+                                    </div>
+                                    <span className="text-[13px] font-medium text-[#7D7D7D]">last Updated {lastUpdated}</span>
+                                </div>
+                            </div>
+
+                            {/* Overview Stats Row */}
+                            <div className="flex items-start gap-20">
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Nationality</span>
+                                    <div className="flex items-center gap-2">
+                                        {staff.country?.svg_icon_url && (
+                                            <img src={staff.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                        )}
+                                        <span className="text-sm font-medium text-[#1F2937]">{staff.country?.name || 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Gender</span>
+                                    <span className="text-sm font-normal text-black">{staff.gender || 'N/A'}</span>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Department</span>
+                                    <span className="text-sm font-normal text-black">{staff.department_data?.name || 'N/A'}</span>
+                                </div>
+
+                                {staff.designation_data?.title && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Designation</span>
+                                        <span className="text-sm font-normal text-black">{staff.designation_data.title}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Contact Information Section */}
+                    <section className="space-y-7">
+                        <h2 className="text-base font-medium text-gray-500 capitalize">Contact Information</h2>
+                        <div className="h-px bg-[#E5E7EB]" />
+
+                        <div className="flex gap-4">
+                            {/* Work Email Card */}
+                            <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+                                            <Mail className="w-5 h-5 text-[#9CA3AF]" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-medium text-[#9CA3AF]">Work Email</span>
+                                            <span className="text-base font-medium text-[#111827]">{staff.work_email || 'Not set'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Contact Number Card */}
+                            <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+                                            <Phone className="w-5 h-5 text-[#9CA3AF]" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-medium text-[#9CA3AF]">Contact Number</span>
+                                            <span className="text-base font-medium text-[#111827]">{staff.contact_number || 'Not set'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* System Access Section */}
+                    <section className="space-y-7">
+                        <h2 className="text-base font-medium text-gray-500 capitalize">System Access</h2>
+                        <div className="h-px bg-[#E5E7EB]" />
+
+                        <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Login Email</span>
+                                <span className="text-sm font-medium text-[#1F2937]">{staff.user?.email || 'Not set'}</span>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Account Created</span>
+                                <span className="text-sm font-normal text-black">{formatDate(staff.user?.created_at)}</span>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Account Status</span>
+                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium w-fit ${staff.employee_status === 'active'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                    }`}>
+                                    {(staff.employee_status || 'Active').toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Organization Section */}
+                    {(staff.company_data?.name || staff.branch_data?.name || staff.team_data?.name) && (
+                        <section className="space-y-7">
+                            <h2 className="text-base font-medium text-gray-500 capitalize">Organization</h2>
+                            <div className="h-px bg-[#E5E7EB]" />
+
+                            <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
+                                {staff.company_data?.name && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Company</span>
+                                        <span className="text-sm font-normal text-black">{staff.company_data.name}</span>
+                                    </div>
+                                )}
+                                {staff.branch_data?.name && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Branch</span>
+                                        <span className="text-sm font-normal text-black">{staff.branch_data.name}</span>
+                                    </div>
+                                )}
+                                {staff.team_data?.name && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Team</span>
+                                        <span className="text-sm font-normal text-black">{staff.team_data.name}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+                    )}
+                </div>
+
+                {/* Right Column - Sidebar */}
+                <div className="w-[287px] shrink-0 space-y-10">
+                    {/* Permission Level */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Permission Level</h3>
+                        <div className="flex items-center gap-3.5">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isAdmin ? 'bg-amber-100' : 'bg-[#064771]'}`}>
+                                {isAdmin
+                                    ? <ShieldCheck className="w-4 h-4 text-amber-700" />
+                                    : <Shield className="w-4 h-4 text-white" />
+                                }
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-base font-normal text-black">{role}</span>
+                                <span className="text-xs text-[#9CA3AF]">
+                                    {isAdmin ? 'Full system access' : 'Standard access'}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Details Grid */}
-                    <div className="p-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Personal Information */}
-                            <div className="space-y-6">
-                                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
-                                    Personal Information
-                                </h3>
-                                <div className="space-y-4">
-                                    <InfoRow
-                                        icon={<Mail className="w-4 h-4" />}
-                                        label="Work Email"
-                                        value={staff.work_email}
-                                    />
-                                    <InfoRow
-                                        icon={<Phone className="w-4 h-4" />}
-                                        label="Contact Number"
-                                        value={staff.contact_number}
-                                    />
-                                    <InfoRow
-                                        label="Nationality"
-                                        value={staff.country?.name}
-                                        flag={staff.country?.svg_icon_url}
-                                    />
-                                    <InfoRow
-                                        label="Gender"
-                                        value={staff.gender}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                    {/* Employee ID */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Employee ID</h3>
+                        <span className="inline-flex px-3 py-1.5 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771] font-mono">
+                            {staff.employee_id}
+                        </span>
+                    </div>
 
-                        {/* System Access */}
-                        <div className="mt-8 pt-8 border-t border-gray-100">
-                            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                                System Access
-                            </h3>
-                            <div className="bg-gray-50 rounded-xl p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Login Email</p>
-                                        <p className="text-sm font-medium text-gray-900">{staff.user?.email || 'Not set'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Account Created</p>
-                                        <p className="text-sm font-medium text-gray-900">{formatDate(staff.user?.created_at)}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Status</p>
-                                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium ${staff.employee_status === 'active'
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                            : 'bg-gray-100 text-gray-600 border border-gray-200'
-                                            }`}>
-                                            {(staff.employee_status || 'Active').toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500 mb-1">Permission Level</p>
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium ${isAdmin
-                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                            }`}>
-                                            {isAdmin ? <ShieldCheck className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
-                                            {role}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Status */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Account Status</h3>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${staff.employee_status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : staff.employee_status === 'inactive'
+                                ? 'bg-red-50 text-red-600 border border-red-100'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${staff.employee_status === 'inactive' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                            {(staff.employee_status || 'Active').charAt(0).toUpperCase() + (staff.employee_status || 'active').slice(1)}
+                        </span>
+                    </div>
+
+                    {/* Joined Date */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Member Since</h3>
+                        <span className="text-base font-normal text-black">
+                            {formatDate(staff.joining_date || staff.user?.created_at)}
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
-interface InfoRowProps {
-    icon?: React.ReactNode;
-    label: string;
-    value?: string | null;
-    flag?: string;
-}
-
-const InfoRow: React.FC<InfoRowProps> = ({ icon, label, value, flag }) => (
-    <div className="flex items-start gap-3">
-        {icon && (
-            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 flex-shrink-0">
-                {icon}
-            </div>
-        )}
-        <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-            <div className="flex items-center gap-2">
-                {flag && <img src={flag} alt="" className="w-4 h-3 object-cover rounded-sm" />}
-                <p className="text-sm font-medium text-gray-900 truncate">{value || 'Not set'}</p>
-            </div>
-        </div>
-    </div>
-);
 
 export default StaffDetails;
