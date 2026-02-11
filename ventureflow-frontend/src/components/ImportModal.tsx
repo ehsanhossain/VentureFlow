@@ -30,7 +30,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
         setErrorMessage("Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.");
         setSelectedFile(null);
         if (event.target) {
-            event.target.value = "";
+          event.target.value = "";
         }
         return;
       }
@@ -38,13 +38,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
         setErrorMessage("File is too large. Maximum size is 20MB.");
         setSelectedFile(null);
         if (event.target) {
-            event.target.value = "";
+          event.target.value = "";
         }
         return;
       }
       setSelectedFile(file);
     } else {
-      setSelectedFile(null); 
+      setSelectedFile(null);
     }
   };
 
@@ -80,25 +80,25 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
     setErrorMessage(null);
     const file = event.dataTransfer.files?.[0];
     if (file) {
-         if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
-            setErrorMessage("Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.");
-            setSelectedFile(null);
-            return;
-        }
-        if (file.size > 20 * 1024 * 1024) {
-            setErrorMessage("File is too large. Maximum size is 20MB.");
-            setSelectedFile(null);
-            return;
-        }
+      if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+        setErrorMessage("Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.");
+        setSelectedFile(null);
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        setErrorMessage("File is too large. Maximum size is 20MB.");
+        setSelectedFile(null);
+        return;
+      }
       setSelectedFile(file);
     }
   };
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={handleInternalClose} />
-      
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={handleInternalClose} />
+
       <div className="relative bg-white rounded-2xl shadow-xl w-full sm:w-[520px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e2e5]">
           <div>
@@ -119,7 +119,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
         </div>
 
         <div className="p-6 overflow-y-auto">
-          <div 
+          <div
             className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-[#e0e2e5] rounded-lg relative hover:border-[#064771] transition-colors"
             onDragOver={handleDragOver}
             onDrop={handleDrop}

@@ -328,7 +328,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
 
             {/* Delete Confirmation Modal */}
             {deleteModal.isOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]">
                     <div className="bg-white rounded-lg shadow-xl w-[400px] overflow-hidden">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">

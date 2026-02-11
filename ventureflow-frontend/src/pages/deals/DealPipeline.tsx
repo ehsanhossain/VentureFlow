@@ -731,7 +731,7 @@ const DealPipeline = () => {
 
             {/* Lost Remarks Modal */}
             {lostDeal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] p-4">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[110] p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="px-6 py-4 border-b flex items-center justify-between">
                             <h3 className="text-lg font-medium text-gray-900">Mark Deal as Lost</h3>
@@ -774,7 +774,7 @@ const DealPipeline = () => {
 
             {/* Won Celebration Modal */}
             {showWonCelebration && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[120] p-4 animate-in fade-in duration-300">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[120] p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative p-8 text-center flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
                         <div className="absolute top-4 right-4">
                             <button onClick={() => { setShowWonCelebration(false); fetchDeals(); }} className="text-gray-400 hover:text-gray-600 p-2">
@@ -837,7 +837,7 @@ const DealPipeline = () => {
             {/* Overlay background for Chat */}
             {chatDeal && (
                 <div
-                    className="fixed inset-0 bg-black/20 z-[90] animate-in fade-in duration-300"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] animate-in fade-in duration-300"
                     onClick={() => setChatDeal(null)}
                 />
             )}

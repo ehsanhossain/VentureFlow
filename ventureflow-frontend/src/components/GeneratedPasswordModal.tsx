@@ -25,7 +25,7 @@ export default function GeneratedPasswordModal({ generatedPassword, onClose }: G
   return (
     // Modal Overlay: Fixed position, full screen, semi-transparent black background with blur, centered content, high z-index.
     // Also applies Poppins font to the entire modal.
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50 font-poppins p-4 sm:p-6 lg:p-8">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[100] font-poppins p-4 sm:p-6 lg:p-8">
       {/* Modal Content Container: Auto width and height, responsive max-width. */}
       {/* Use `h-auto` to let content dictate height. `max-w-lg` sets a max width (512px by default in Tailwind). */}
       {/* `w-full` makes it fill available width on small screens. */}

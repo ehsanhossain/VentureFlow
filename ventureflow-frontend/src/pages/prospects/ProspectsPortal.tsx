@@ -31,6 +31,7 @@ import { Calendar } from 'lucide-react';
 import { showAlert } from '../../components/Alert';
 import { isFieldAllowed } from '../../utils/permissionUtils';
 import { BudgetRangeSlider } from './components/BudgetRangeSlider';
+import { useGeneralSettings } from '../../context/GeneralSettingsContext';
 
 interface Country {
     id: number;
@@ -103,6 +104,7 @@ const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
     const auth = useContext(AuthContext);
     const isPartner = auth?.isPartner;
+    const { settings: globalSettings } = useGeneralSettings();
     const [searchParams, setSearchParams] = useSearchParams();
     const initialTab = (searchParams.get('tab') as 'investors' | 'targets') || 'investors';
     const [activeTab, setActiveTab] = useState<'investors' | 'targets'>(initialTab);
@@ -717,13 +719,15 @@ const ProspectsPortal: React.FC = () => {
                         exchange_rate: c.exchange_rate
                     }));
                     setCurrencies(currData);
-                    const usd = currData.find((c: any) => c.currency_code === 'USD');
-                    if (usd) {
+                    // Default to the global default currency from General Settings
+                    const defaultCurrCode = globalSettings.default_currency || 'USD';
+                    const defaultMatch = currData.find((c: any) => c.code === defaultCurrCode);
+                    if (defaultMatch) {
                         setSelectedCurrency({
-                            id: usd.id,
-                            code: usd.currency_code,
-                            symbol: usd.currency_sign,
-                            rate: parseFloat(usd.exchange_rate || '1')
+                            id: defaultMatch.id,
+                            code: defaultMatch.code,
+                            symbol: defaultMatch.sign,
+                            rate: parseFloat(defaultMatch.exchange_rate || '1')
                         });
                     } else if (currData.length > 0) {
                         setSelectedCurrency({

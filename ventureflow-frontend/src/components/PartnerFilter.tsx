@@ -15,10 +15,10 @@ interface PartnerFilterProps {
   initialState?: FilterState;
 }
 
-export const PartnerFilter: React.FC<PartnerFilterProps> = ({ 
-  onApplyFilters, 
-  onClearFilters, 
-  initialState 
+export const PartnerFilter: React.FC<PartnerFilterProps> = ({
+  onApplyFilters,
+  onClearFilters,
+  initialState
 }) => {
   // Default initial state if none is provided
   const defaultInitialState: FilterState = {
@@ -40,20 +40,20 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
       const rect = filterButtonRef.current.getBoundingClientRect();
       const modalWidth = 782; // Width of the modal
       const viewportWidth = window.innerWidth;
-      
+
       // Calculate left position - align modal to the right edge of the button
       let leftPosition = rect.right + window.scrollX - modalWidth;
-      
+
       // If modal would go off the right edge, align it to the right edge with some padding
       if (leftPosition + modalWidth > viewportWidth - 20) {
         leftPosition = viewportWidth - modalWidth - 20;
       }
-      
+
       // If modal would go off the left edge, align it to the left edge with some padding
       if (leftPosition < 20) {
         leftPosition = 20;
       }
-      
+
       setModalPosition({
         top: rect.bottom + window.scrollY + 8,
         left: leftPosition,
@@ -168,14 +168,14 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
       {isModalOpen && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/30 backdrop-blur-md z-40"
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
             onClick={handleCloseModal}
           />
-          
+
           {/* Modal */}
-          <div 
-            className="fixed z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+          <div
+            className="fixed z-[101] animate-in fade-in-0 zoom-in-95 duration-200"
             style={{
               top: modalPosition.top,
               left: modalPosition.left,
@@ -187,7 +187,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-3.5">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3"/>
+                      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" />
                     </svg>
                     <h2 className="font-medium text-[#30313d] text-3xl leading-[35.7px] font-['SF_Pro_Display-Medium',Helvetica]">
                       Filter
@@ -254,9 +254,9 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
                             <svg className="w-[16.67px] h-[16.67px] text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10"/>
-                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15"/>
-                              <circle cx="12" cy="17.02" r=".01"/>
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15" />
+                              <circle cx="12" cy="17.02" r=".01" />
                             </svg>
                           </div>
                         </div>
@@ -300,9 +300,9 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
                             <svg className="w-[16.67px] h-[16.67px] text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10"/>
-                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15"/>
-                              <circle cx="12" cy="17.02" r=".01"/>
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15" />
+                              <circle cx="12" cy="17.02" r=".01" />
                             </svg>
                           </div>
                         </div>
@@ -336,9 +336,9 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
                             <svg className="w-[16.67px] h-[16.67px] text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10"/>
-                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15"/>
-                              <circle cx="12" cy="17.02" r=".01"/>
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M9,9h0a3,3,0,0,1,5.12,2.12h0A3,3,0,0,1,9,15" />
+                              <circle cx="12" cy="17.02" r=".01" />
                             </svg>
                           </div>
                         </div>
@@ -379,7 +379,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       />
                       Clear Filter
                     </button>
-                    <button 
+                    <button
                       className="h-[34.49px] px-3 py-[5.03px] bg-[#064771] rounded-[49.82px] text-white font-medium text-base font-['Poppins',Helvetica] hover:bg-[#053a5a] transition-colors cursor-pointer flex items-center"
                       onClick={handleApplySearch}
                     >

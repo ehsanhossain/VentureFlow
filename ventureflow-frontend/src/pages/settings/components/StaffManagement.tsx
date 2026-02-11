@@ -239,7 +239,7 @@ const StaffManagement: React.FC = () => {
     );
 
     return (
-        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+        <div className="h-full flex flex-col bg-white overflow-hidden font-poppins">
             <div className="px-8 py-6">
                 {/* Header & Search */}
                 <div className="flex items-center justify-between gap-6">

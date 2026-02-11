@@ -241,7 +241,7 @@ const CreatePartner: React.FC = () => {
 
     if (isFetching) {
         return (
-            <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
+            <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
                 <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                     <button
                         type="button"
@@ -286,7 +286,7 @@ const CreatePartner: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
+        <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                 <button
@@ -446,7 +446,7 @@ const CreatePartner: React.FC = () => {
 
             {/* Success Modal with Copy Credentials */}
             {showSuccessModal && createdCredentials && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]">
                     <div className="bg-white rounded-[3px] p-6 max-w-md w-full mx-4 shadow-xl">
                         <div className="text-center mb-6">
                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

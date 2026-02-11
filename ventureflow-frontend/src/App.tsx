@@ -7,6 +7,7 @@ import "@fontsource/poppins/500.css";
 import "@fontsource/roboto";
 import { AuthProvider } from "./routes/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { GeneralSettingsProvider } from "./context/GeneralSettingsContext";
 
 function App() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -37,12 +38,14 @@ function App() {
     <AuthProvider>
       <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <NotificationProvider>
-          <Content
-            sidebarExpanded={sidebarExpanded}
-            setSidebarExpanded={setSidebarExpanded}
-            mobileMenuOpen={mobileMenuOpen}
-            toggleMobileMenu={toggleMobileMenu}
-          />
+          <GeneralSettingsProvider>
+            <Content
+              sidebarExpanded={sidebarExpanded}
+              setSidebarExpanded={setSidebarExpanded}
+              mobileMenuOpen={mobileMenuOpen}
+              toggleMobileMenu={toggleMobileMenu}
+            />
+          </GeneralSettingsProvider>
         </NotificationProvider>
       </Router>
     </AuthProvider>
@@ -81,7 +84,7 @@ const Content: React.FC<ContentProps> = ({
     <div className="min-h-screen bg-white">
       {!hideLayout && mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
           onClick={() => toggleMobileMenu()}
         />
       )}

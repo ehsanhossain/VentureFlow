@@ -242,7 +242,7 @@ const CreateStaff: React.FC = () => {
 
     if (isLoadingData) {
         return (
-            <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
+            <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
                 <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                     <button
                         type="button"
@@ -288,7 +288,7 @@ const CreateStaff: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins">
+        <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                 <button

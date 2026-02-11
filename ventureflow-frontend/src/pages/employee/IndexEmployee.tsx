@@ -780,12 +780,12 @@ const IndexEmployee = ({
         {isModalOpen && (
           <>
             <div
-              className="fixed inset-0 bg-black/30 backdrop-blur-md z-40"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
               onClick={handleCloseModal}
             />
 
             <div
-              className="fixed z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+              className="fixed z-[101] animate-in fade-in-0 zoom-in-95 duration-200"
               style={{
                 top: modalPosition.top,
                 left: modalPosition.left,

@@ -4,11 +4,65 @@ namespace App\Http\Controllers;
 
 use App\Models\Currency;
 use DB;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Log;
 
 class CurrencyController extends Controller
 {
+    /**
+     * Refresh exchange rates from an external API.
+     * Uses the free open.er-api.com (no API key required).
+     */
+    public function refreshRates(): JsonResponse
+    {
+        try {
+            // Fetch latest USD-based rates from free API
+            $response = Http::withoutVerifying()->timeout(15)->get('https://open.er-api.com/v6/latest/USD');
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'message' => 'Failed to fetch exchange rates from external API',
+                ], 502);
+            }
+
+            $data = $response->json();
+            $rates = $data['rates'] ?? [];
+
+            if (empty($rates)) {
+                return response()->json([
+                    'message' => 'No rates returned from external API',
+                ], 502);
+            }
+
+            // Update all registered currencies with fresh rates
+            $currencies = Currency::all();
+            $updatedCount = 0;
+
+            foreach ($currencies as $currency) {
+                $code = strtoupper($currency->currency_code);
+                if (isset($rates[$code])) {
+                    $currency->exchange_rate = $rates[$code];
+                    $currency->source = 'api';
+                    $currency->save();
+                    $updatedCount++;
+                }
+            }
+
+            return response()->json([
+                'message' => "Exchange rates refreshed successfully. Updated {$updatedCount} currencies.",
+                'updated' => $updatedCount,
+                'api_time' => $data['time_last_update_utc'] ?? null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Currency refresh failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to refresh exchange rates',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * Display a listing of the resource.
      */

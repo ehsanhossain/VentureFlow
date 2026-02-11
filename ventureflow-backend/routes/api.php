@@ -62,7 +62,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Currency Routes
     Route::delete('/currencies', [CurrencyController::class, 'destroy']);
+    Route::post('/currencies/refresh', [CurrencyController::class, 'refreshRates']);
     Route::apiResource('currencies', CurrencyController::class);
+
+    // General Settings Routes
+    Route::get('/general-settings', [\App\Http\Controllers\GeneralSettingsController::class, 'index']);
+    Route::post('/general-settings', [\App\Http\Controllers\GeneralSettingsController::class, 'update']);
 
     //Seller Routes
     Route::get('/seller/fetch', [SellerController::class, 'fetchAll']);

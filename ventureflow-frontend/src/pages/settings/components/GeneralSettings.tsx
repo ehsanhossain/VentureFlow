@@ -3,6 +3,7 @@ import LanguageSelect from '../../../components/dashboard/LanguageSelect';
 import { useTranslation } from 'react-i18next';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { useGeneralSettings } from '../../../context/GeneralSettingsContext';
 
 interface Currency {
     id: string | number;
@@ -45,16 +46,33 @@ const timezones = [
     "(GMT+12:00) Auckland, Wellington, Fiji, Kamchatka"
 ];
 
+const dateFormats = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD'];
+
 const GeneralSettings: React.FC = () => {
     const { t } = useTranslation();
+    const { refreshSettings: refreshGlobalSettings } = useGeneralSettings();
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
     const [systemNotifications, setSystemNotifications] = useState(true);
     const [browserNotifications, setBrowserNotifications] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+    // Settings state
+    const [defaultCurrency, setDefaultCurrency] = useState('USD');
+    const [timezone, setTimezone] = useState('(GMT+07:00) Bangkok, Hanoi, Jakarta');
+    const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+
+    // Track initial values for dirty checking
+    const [initialSettings, setInitialSettings] = useState({
+        defaultCurrency: 'USD',
+        timezone: '(GMT+07:00) Bangkok, Hanoi, Jakarta',
+        dateFormat: 'DD/MM/YYYY',
+    });
 
     useEffect(() => {
         fetchCurrencies();
-        // Check if browser notifications are already granted
+        fetchSettings();
         if ("Notification" in window && Notification.permission === "granted") {
             setBrowserNotifications(true);
         }
@@ -71,6 +89,66 @@ const GeneralSettings: React.FC = () => {
             setIsLoadingCurrencies(false);
         }
     };
+
+    const fetchSettings = async () => {
+        try {
+            setIsLoadingSettings(true);
+            const response = await api.get('/api/general-settings');
+            const settings = response.data;
+
+            if (settings.default_currency) setDefaultCurrency(settings.default_currency);
+            if (settings.timezone) setTimezone(settings.timezone);
+            if (settings.date_format) setDateFormat(settings.date_format);
+
+            setInitialSettings({
+                defaultCurrency: settings.default_currency || 'USD',
+                timezone: settings.timezone || '(GMT+07:00) Bangkok, Hanoi, Jakarta',
+                dateFormat: settings.date_format || 'DD/MM/YYYY',
+            });
+        } catch (error) {
+            console.error('Failed to fetch settings:', error);
+        } finally {
+            setIsLoadingSettings(false);
+        }
+    };
+
+    const handleSave = async () => {
+        try {
+            setIsSaving(true);
+            await api.post('/api/general-settings', {
+                default_currency: defaultCurrency,
+                timezone: timezone,
+                date_format: dateFormat,
+            });
+
+            setInitialSettings({
+                defaultCurrency,
+                timezone,
+                dateFormat,
+            });
+
+            showAlert({ type: 'success', message: 'Settings saved successfully' });
+
+            // Refresh the global settings context so all components pick up the change
+            await refreshGlobalSettings();
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Failed to save settings';
+            showAlert({ type: 'error', message: msg });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setDefaultCurrency(initialSettings.defaultCurrency);
+        setTimezone(initialSettings.timezone);
+        setDateFormat(initialSettings.dateFormat);
+    };
+
+    const isDirty =
+        defaultCurrency !== initialSettings.defaultCurrency ||
+        timezone !== initialSettings.timezone ||
+        dateFormat !== initialSettings.dateFormat;
 
     const handleBrowserNotificationToggle = async () => {
         if (!("Notification" in window)) {
@@ -111,7 +189,12 @@ const GeneralSettings: React.FC = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">Default Currency</label>
-                                <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer">
+                                <select
+                                    value={defaultCurrency}
+                                    onChange={(e) => setDefaultCurrency(e.target.value)}
+                                    disabled={isLoadingCurrencies || isLoadingSettings}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
+                                >
                                     {isLoadingCurrencies ? (
                                         <option>Loading currencies...</option>
                                     ) : currencies.length > 0 ? (
@@ -130,7 +213,12 @@ const GeneralSettings: React.FC = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">{t('settings.general.timezoneLabel', 'Preferred Timezone')}</label>
-                                <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer">
+                                <select
+                                    value={timezone}
+                                    onChange={(e) => setTimezone(e.target.value)}
+                                    disabled={isLoadingSettings}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
+                                >
                                     {timezones.map((tz, idx) => (
                                         <option key={idx} value={tz}>{tz}</option>
                                     ))}
@@ -138,10 +226,15 @@ const GeneralSettings: React.FC = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">{t('settings.general.dateFormatLabel', 'Date Format')}</label>
-                                <select className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer">
-                                    <option>DD/MM/YYYY</option>
-                                    <option>MM/DD/YYYY</option>
-                                    <option>YYYY/MM/DD</option>
+                                <select
+                                    value={dateFormat}
+                                    onChange={(e) => setDateFormat(e.target.value)}
+                                    disabled={isLoadingSettings}
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
+                                >
+                                    {dateFormats.map((fmt) => (
+                                        <option key={fmt} value={fmt}>{fmt}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
@@ -178,14 +271,29 @@ const GeneralSettings: React.FC = () => {
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button className="px-6 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-all">
+                        <button
+                            onClick={handleCancel}
+                            disabled={!isDirty}
+                            className={`px-6 py-2 text-sm font-medium transition-all ${isDirty ? 'text-gray-500 hover:text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                        >
                             {t('common.cancel', 'Cancel')}
                         </button>
                         <button
-                            onClick={() => showAlert({ type: 'success', message: 'Settings saved successfully' })}
-                            className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-8 py-2.5 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
+                            onClick={handleSave}
+                            disabled={isSaving || !isDirty}
+                            className={`flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-8 py-2.5 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 ${(!isDirty || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            {t('common.saveChanges', 'Save Changes')}
+                            {isSaving ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                t('common.saveChanges', 'Save Changes')
+                            )}
                         </button>
                     </div>
                 </div>

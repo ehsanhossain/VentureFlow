@@ -60,6 +60,8 @@ const CurrencyTable = (): JSX.Element => {
     }
   };
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const fetchCurrencyData = async () => {
     try {
       setLoading(true);
@@ -89,6 +91,20 @@ const CurrencyTable = (): JSX.Element => {
       showAlert({ type: "error", message: t('settings.currency.fetchError') });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshRates = async () => {
+    try {
+      setRefreshing(true);
+      const res = await api.post('/api/currencies/refresh');
+      showAlert({ type: 'success', message: res.data.message || 'Exchange rates refreshed!' });
+      await fetchCurrencyData(); // Reload table with fresh rates
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to refresh exchange rates';
+      showAlert({ type: 'error', message: msg });
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -260,13 +276,13 @@ const CurrencyTable = (): JSX.Element => {
               </button>
             )}
             <button
-              onClick={fetchCurrencyData}
-              className={`flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-[#064771] border border-gray-200 rounded-[3px] text-sm font-medium transition-all hover:border-[#064771]/30 hover:bg-gray-50 shadow-sm active:scale-95 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={loading}
-              title={t('common.refresh')}
+              onClick={handleRefreshRates}
+              className={`flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-[#064771] border border-gray-200 rounded-[3px] text-sm font-medium transition-all hover:border-[#064771]/30 hover:bg-gray-50 shadow-sm active:scale-95 ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={refreshing}
+              title="Refresh exchange rates from API"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             <button
               onClick={() => navigate('/settings/currency/add')}

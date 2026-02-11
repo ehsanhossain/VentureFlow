@@ -145,8 +145,8 @@ const contextMenuOptions = [
     label: "Delete",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="21" viewBox="0 0 18 21" fill="none">
-  <path d="M2.55882 5.9267V17.5738C2.55882 18.7433 3.50693 19.6914 4.67647 19.6914H13.1471C14.3166 19.6914 15.2647 18.7433 15.2647 17.5738V5.9267M2.55882 5.9267H1.5M2.55882 5.9267H4.67647M15.2647 5.9267H16.3235M15.2647 5.9267H13.1471M4.67647 5.9267V3.80905C4.67647 2.63951 5.62457 1.69141 6.79412 1.69141H11.0294C12.199 1.69141 13.1471 2.63951 13.1471 3.80905V5.9267M4.67647 5.9267H13.1471M6.79412 10.162V15.4561M11.0294 10.162V15.4561" stroke="#DF272A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-</svg>
+        <path d="M2.55882 5.9267V17.5738C2.55882 18.7433 3.50693 19.6914 4.67647 19.6914H13.1471C14.3166 19.6914 15.2647 18.7433 15.2647 17.5738V5.9267M2.55882 5.9267H1.5M2.55882 5.9267H4.67647M15.2647 5.9267H16.3235M15.2647 5.9267H13.1471M4.67647 5.9267V3.80905C4.67647 2.63951 5.62457 1.69141 6.79412 1.69141H11.0294C12.199 1.69141 13.1471 2.63951 13.1471 3.80905V5.9267M4.67647 5.9267H13.1471M6.79412 10.162V15.4561M11.0294 10.162V15.4561" stroke="#DF272A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     ),
   },
 ];
@@ -184,7 +184,7 @@ export const FileManager = ({
       try {
         const data = await fetchFolders();
         setFolders(data);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to fetch folders" });
         setError("Failed to load folders. Please try again.");
@@ -225,7 +225,7 @@ export const FileManager = ({
         setFolders((prevFolders) => [...prevFolders, newFolder]);
         setNewFolderName("");
         setIsModalOpen(false);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to create folder" });
         setError("Failed to create folder. Please try again.");
@@ -280,7 +280,7 @@ export const FileManager = ({
         setRenameInputId(null);
         setNewFolderName("");
         folderBeingRenamed.current = null;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to rename folder" });
         setError("Failed to rename folder. Please try again.");
@@ -305,7 +305,7 @@ export const FileManager = ({
         setError(null);
         await deleteFolder(folderId);
         setFolders(folders.filter((folder) => folder.id !== folderId));
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to delete folder" });
         setError("Failed to delete folder. Please try again.");
@@ -362,7 +362,7 @@ export const FileManager = ({
           handleDeleteFolder(folderId);
           break;
         default:
-          // console.warn(`Unknown context menu action: ${optionLabel}`);
+        // console.warn(`Unknown context menu action: ${optionLabel}`);
       }
     },
     [onCopyLink, onDownload, onShare, onViewSize, handleDeleteFolder, folders]
@@ -384,8 +384,8 @@ export const FileManager = ({
         await navigator.clipboard.writeText(folderId);
         // Provide feedback that the ID was copied
         // alert(`Folder ID copied: ${folderId}`);
-       
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         showAlert({ type: "error", message: "Failed to copy folder ID" });
         // Optionally provide error feedback to the user
@@ -421,7 +421,7 @@ export const FileManager = ({
 
 
 
-  
+
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-full px-[25px] py-10">
@@ -636,8 +636,8 @@ export const FileManager = ({
                                         }} // Stop propagation on click inside menu
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="19" viewBox="0 0 20 19" fill="none">
-  <path fillRule="evenodd" clipRule="evenodd" d="M3.34999 13.2643C2.82559 13.2643 2.40001 12.859 2.40001 12.3596V6.93099C2.40001 6.43156 2.82559 6.02623 3.34999 6.02623C3.87439 6.02623 4.30001 5.62089 4.30001 5.12147C4.30001 4.62204 3.87439 4.2167 3.34999 4.2167H2.40001C1.35026 4.2167 0.5 5.02647 0.5 6.02623V13.2643C0.5 14.2641 1.35026 15.0738 2.40001 15.0738H3.34999C3.87439 15.0738 4.30001 14.6685 4.30001 14.1691C4.30001 13.6697 3.87439 13.2643 3.34999 13.2643ZM17.6 4.2167H10.95C10.4256 4.2167 10 4.62204 10 5.12147C10 5.62089 10.4256 6.02623 10.95 6.02623H16.65C17.1744 6.02623 17.6 6.43156 17.6 6.93099V12.3596C17.6 12.859 17.1744 13.2643 16.65 13.2643H10.95C10.4256 13.2643 10 13.6697 10 14.1691C10 14.6685 10.4256 15.0738 10.95 15.0738H17.6C18.6497 15.0738 19.5 14.2641 19.5 13.2643V6.02623C19.5 5.02647 18.6497 4.2167 17.6 4.2167ZM10 17.7881C10 18.2876 9.57441 18.6929 9.05001 18.6929H5.25C4.7256 18.6929 4.30001 18.2876 4.30001 17.7881C4.30001 17.2887 4.7256 16.8834 5.25 16.8834H6.19999V2.40718H5.25C4.7256 2.40718 4.30001 2.00185 4.30001 1.50242C4.30001 1.00299 4.7256 0.597656 5.25 0.597656H9.05001C9.57441 0.597656 10 1.00299 10 1.50242C10 2.00185 9.57441 2.40718 9.05001 2.40718H8.09999V16.8834H9.05001C9.57441 16.8834 10 17.2887 10 17.7881Z" fill="#30313D"/>
-</svg>
+                                          <path fillRule="evenodd" clipRule="evenodd" d="M3.34999 13.2643C2.82559 13.2643 2.40001 12.859 2.40001 12.3596V6.93099C2.40001 6.43156 2.82559 6.02623 3.34999 6.02623C3.87439 6.02623 4.30001 5.62089 4.30001 5.12147C4.30001 4.62204 3.87439 4.2167 3.34999 4.2167H2.40001C1.35026 4.2167 0.5 5.02647 0.5 6.02623V13.2643C0.5 14.2641 1.35026 15.0738 2.40001 15.0738H3.34999C3.87439 15.0738 4.30001 14.6685 4.30001 14.1691C4.30001 13.6697 3.87439 13.2643 3.34999 13.2643ZM17.6 4.2167H10.95C10.4256 4.2167 10 4.62204 10 5.12147C10 5.62089 10.4256 6.02623 10.95 6.02623H16.65C17.1744 6.02623 17.6 6.43156 17.6 6.93099V12.3596C17.6 12.859 17.1744 13.2643 16.65 13.2643H10.95C10.4256 13.2643 10 13.6697 10 14.1691C10 14.6685 10.4256 15.0738 10.95 15.0738H17.6C18.6497 15.0738 19.5 14.2641 19.5 13.2643V6.02623C19.5 5.02647 18.6497 4.2167 17.6 4.2167ZM10 17.7881C10 18.2876 9.57441 18.6929 9.05001 18.6929H5.25C4.7256 18.6929 4.30001 18.2876 4.30001 17.7881C4.30001 17.2887 4.7256 16.8834 5.25 16.8834H6.19999V2.40718H5.25C4.7256 2.40718 4.30001 2.00185 4.30001 1.50242C4.30001 1.00299 4.7256 0.597656 5.25 0.597656H9.05001C9.57441 0.597656 10 1.00299 10 1.50242C10 2.00185 9.57441 2.40718 9.05001 2.40718H8.09999V16.8834H9.05001C9.57441 16.8834 10 17.2887 10 17.7881Z" fill="#30313D" />
+                                        </svg>
                                         <span className="font-['Poppins'] font-medium text-[#1e1e1e] text-sm leading-5 whitespace-nowrap">
                                           {option.label}
                                         </span>
@@ -683,7 +683,7 @@ export const FileManager = ({
       {/* Closes div with bg-white w-full max-w-[1745px] ... */}
       {/* Modal conditional rendering */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]">
           <div className="w-[520px] bg-white rounded-2xl animate-fade-in-down">
             <div className="px-6 py-4 border-b border-[#e0e2e5]">
               <h2 className="font-['Poppins'] font-semibold text-neutral-800 text-lg leading-7">
