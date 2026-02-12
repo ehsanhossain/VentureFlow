@@ -8,7 +8,8 @@ import {
     Copy,
     Zap,
     Trash2,
-    Plus
+    Plus,
+    Download
 } from 'lucide-react';
 import ProfileViewIcon from '../../../assets/icons/table/profile-view.svg';
 import WebsiteIcon from '../../../assets/icons/table/website.svg';
@@ -88,7 +89,9 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, rowId: number } | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
     const contextMenuRef = useRef<HTMLDivElement>(null);
+    const bulkMenuRef = useRef<HTMLDivElement>(null);
 
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
         key: 'projectCode',
@@ -174,6 +177,44 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         } catch (error: any) {
             showAlert({ type: 'error', message: error.response?.data?.message || 'Failed to delete items' });
         }
+    };
+
+    const handleExportCSV = () => {
+        const selectedRows = data.filter(r => selectedIds.has(r.id));
+        if (!selectedRows.length) return;
+        const headers = ['Project Code', 'Company Name', 'Origin Country', 'Industry', 'Project Details', 'Pipeline Status', 'Status', 'Desired Investment', 'Reason for M&A', 'Rank', 'Internal PIC', 'Primary Contact', 'Primary Email', 'Primary Phone', 'Website', 'Teaser Link', 'EBITDA', 'Financial Advisor', 'Introduced Projects', 'Channel', 'Investment Condition'];
+        const rows = selectedRows.map(r => [
+            r.projectCode || '',
+            r.companyName || '',
+            r.originCountry?.name || '',
+            (r.industry || []).join('; '),
+            r.projectDetails || '',
+            r.pipelineStatus || '',
+            r.status || '',
+            typeof r.desiredInvestment === 'object' ? JSON.stringify(r.desiredInvestment) : (r.desiredInvestment || ''),
+            parseMultiField(r.reasonForMA).join('; '),
+            r.rank || '',
+            (r.internalPIC || []).join('; '),
+            r.primaryContact || '',
+            r.primaryEmail || '',
+            r.primaryPhone || '',
+            r.website || '',
+            r.teaserLink || '',
+            typeof r.ebitda === 'object' ? JSON.stringify(r.ebitda) : (r.ebitda || ''),
+            (r.financialAdvisor || []).join('; '),
+            (r.introducedProjects || []).join('; '),
+            r.channel || '',
+            parseMultiField(r.investmentCondition).join('; ')
+        ]);
+        const csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `targets_export_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setBulkMenuOpen(false);
     };
 
     const columns: Column<TargetRowData>[] = useMemo(() => [
@@ -489,36 +530,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
     return (
         <div className="w-full h-full flex flex-col min-h-0 relative">
-            {/* Bulk Action Bar */}
-            {selectedIds.size > 0 && !isRestricted && (
-                <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100 animate-in slide-in-from-top-2 duration-200">
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-medium">
-                                {selectedIds.size}
-                            </div>
-                            <span className="text-sm font-medium text-gray-700">
-                                {selectedIds.size === 1 ? 'target' : 'targets'} selected
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => setSelectedIds(new Set())}
-                            className="text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
-                        >
-                            Clear selection
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setIsDeleteModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-[3px] text-sm font-medium transition-all active:scale-95"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Selected
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Bulk action bar removed — actions now in column header 3-dot menu */}
             <DataTable
                 data={sortedData}
                 columns={filteredColumns}
@@ -533,6 +545,40 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 onSelectionChange={setSelectedIds}
                 getRowId={(row) => row.id}
                 actionsColumn={ActionsColumn}
+                actionsColumnHeader={selectedIds.size > 0 && !isRestricted ? (
+                    <div className="relative" ref={bulkMenuRef}>
+                        <button
+                            onClick={() => setBulkMenuOpen(!bulkMenuOpen)}
+                            className="p-1.5 rounded-[3px] hover:bg-gray-200 transition-all"
+                        >
+                            <MoreVertical className="w-4 h-4 text-gray-600" />
+                        </button>
+                        {bulkMenuOpen && (
+                            <>
+                                <div className="fixed inset-0 z-[90]" onClick={() => setBulkMenuOpen(false)} />
+                                <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-[3px] border border-gray-200 py-1.5 z-[100] shadow-lg animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                                    <div className="px-3 py-1.5 border-b border-gray-100 mb-1">
+                                        <p className="text-[11px] font-medium text-gray-400">{selectedIds.size} selected</p>
+                                    </div>
+                                    <button
+                                        onClick={() => { setIsDeleteModalOpen(true); setBulkMenuOpen(false); }}
+                                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Delete
+                                    </button>
+                                    <button
+                                        onClick={handleExportCSV}
+                                        className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        Export CSV
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                ) : undefined}
                 actionsColumnWidth={60}
                 sortConfig={sortConfig}
                 onSortChange={(key, direction) => setSortConfig({ key, direction })}

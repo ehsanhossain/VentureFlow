@@ -12,14 +12,12 @@ import {
     Filter,
     RotateCcw,
     Settings2,
-    DollarSign,
     Download,
     Upload,
     AlertCircle,
     FileSpreadsheet,
     Eye,
-    EyeOff,
-    Columns
+    EyeOff
 } from 'lucide-react';
 import DataTableSearch from '../../components/table/DataTableSearch';
 import { Dropdown, Country as DropdownCountry } from './components/Dropdown';
@@ -173,6 +171,21 @@ const ProspectsPortal: React.FC = () => {
         if (columnsTabRef.current !== activeTab) return;
         localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(visibleColumns));
     }, [visibleColumns, activeTab]);
+
+    // Keyboard shortcuts: Ctrl+1 = Investors, Ctrl+2 = Targets
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                setActiveTab('investors');
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                setActiveTab('targets');
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const [selectedCurrency, setSelectedCurrency] = useState<{ id: number; code: string; symbol: string; rate: number } | null>(null);
 
@@ -1324,37 +1337,28 @@ const ProspectsPortal: React.FC = () => {
                         {isToolsOpen && (
                             <>
                                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] transition-opacity duration-300" onClick={() => setIsToolsOpen(false)} />
-                                <div className="fixed right-0 top-0 h-full w-[380px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl">
-                                    {/* Header */}
-                                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-[3px] bg-[#F1FBFF] text-[#064771] flex items-center justify-center">
-                                                <Settings2 className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-lg font-medium text-gray-900">Table Settings</h2>
-                                                <p className="text-xs text-gray-500 mt-0.5 font-normal">Customize your view</p>
-                                            </div>
-                                        </div>
+                                <div className="fixed right-0 top-0 h-full w-[440px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl overflow-x-hidden">
+                                    {/* Header — matches Filters */}
+                                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                                        <h2 className="text-base font-medium text-gray-900">Tools</h2>
                                         <button
                                             onClick={() => setIsToolsOpen(false)}
-                                            className="p-2 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
+                                            className="p-1.5 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
                                         >
-                                            <X className="w-5 h-5" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex-1 overflow-y-auto">
+                                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
                                         {/* Currency Section */}
-                                        <div className="p-6 border-b border-gray-50">
-                                            <div className="flex items-center gap-2.5 mb-4">
-                                                <DollarSign className="w-4 h-4 text-[#064771]" />
-                                                <span className="text-sm font-medium text-gray-700">Display Currency</span>
-                                            </div>
+                                        <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+                                            <label className="block mb-1.5 text-[13px] font-medium text-gray-700">
+                                                Display Currency
+                                            </label>
                                             <div className="relative">
                                                 <select
-                                                    className="w-full h-11 px-4 pr-10 bg-gray-50/80 border border-gray-200 rounded-[3px] text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] appearance-none cursor-pointer hover:border-gray-300 transition-all"
+                                                    className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
                                                     value={selectedCurrency?.id}
                                                     onChange={(e) => {
                                                         const curr = currencies.find(c => c.id === Number(e.target.value));
@@ -1368,12 +1372,11 @@ const ProspectsPortal: React.FC = () => {
                                         </div>
 
                                         {/* Visible Columns Section */}
-                                        <div className="p-6">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-2.5">
-                                                    <Columns className="w-4 h-4 text-[#064771]" />
-                                                    <span className="text-sm font-medium text-gray-700">Visible Columns</span>
-                                                </div>
+                                        <div className="px-6 pt-5 pb-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <label className="text-[13px] font-medium text-gray-700">
+                                                    Visible Columns
+                                                </label>
                                                 <span className="text-[11px] font-medium text-gray-400">
                                                     {visibleColumns.length} of {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length} active
                                                 </span>
@@ -1414,8 +1417,8 @@ const ProspectsPortal: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Footer */}
-                                    <div className="p-4 border-t border-gray-100">
+                                    {/* Footer — matches Filter's Reset style */}
+                                    <div className="px-6 py-4 border-t border-gray-100">
                                         <button
                                             onClick={() => {
                                                 const defaults = activeTab === 'investors' ? [...DEFAULT_INVESTOR_COLUMNS] : [...DEFAULT_TARGET_COLUMNS];

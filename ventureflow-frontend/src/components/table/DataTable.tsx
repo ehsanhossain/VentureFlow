@@ -58,6 +58,7 @@ export interface DataTableProps<T> {
     headerSelectSlot?: React.ReactNode;
     // Actions column
     actionsColumn?: (row: T, index: number) => React.ReactNode;
+    actionsColumnHeader?: React.ReactNode;
     actionsColumnWidth?: number;
     // Pagination
     pagination?: {
@@ -189,6 +190,7 @@ function DataTable<T>({
     // selectColumn, // Removed as per instruction
     // headerSelectSlot, // Removed as per instruction
     actionsColumn,
+    actionsColumnHeader,
     actionsColumnWidth = 80,
     pagination,
 }: DataTableProps<T>) {
@@ -578,7 +580,7 @@ function DataTable<T>({
                                     className="sticky right-0 bg-[#f1f5f9] z-30 border-b border-[#cbd5e1] h-12 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.15)]"
                                 >
                                     <div className="flex items-center justify-end px-4 h-full min-h-[48px]">
-                                        {/* Actions Header remains blank */}
+                                        {actionsColumnHeader}
                                     </div>
                                 </th>
                             )}
