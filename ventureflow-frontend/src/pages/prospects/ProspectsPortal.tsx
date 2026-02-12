@@ -135,15 +135,7 @@ const ProspectsPortal: React.FC = () => {
     const [countries, setCountries] = useState<Country[]>([]);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [counts, setCounts] = useState({ investors: 0, targets: 0 });
-    const [investorPinnedIds, setInvestorPinnedIds] = useState<number[]>(() => {
-        const saved = localStorage.getItem('prospects_pinned_ids_investors');
-        return saved ? JSON.parse(saved) : [];
-    });
 
-    const [targetPinnedIds, setTargetPinnedIds] = useState<number[]>(() => {
-        const saved = localStorage.getItem('prospects_pinned_ids_targets');
-        return saved ? JSON.parse(saved) : [];
-    });
 
     const [serverAllowedFields, setServerAllowedFields] = useState<any>(null);
 
@@ -434,7 +426,7 @@ const ProspectsPortal: React.FC = () => {
                         financialAdvisor: finAdvisors,
                         introducedProjects: introProjects,
                         investorProfile: overview.investor_profile_link || "",
-                        isPinned: b.pinned || investorPinnedIds.includes(b.id),
+                        isPinned: !!b.pinned,
                         website: overview.website,
                         email: overview.email,
                         phone: overview.phone,
@@ -556,7 +548,7 @@ const ProspectsPortal: React.FC = () => {
                         teaserLink: ov.teaser_link || "",
                         ebitda: fin.ttm_profit,
                         channel: ov.channel,
-                        isPinned: s.pinned || targetPinnedIds.includes(s.id),
+                        isPinned: !!s.pinned,
                         sourceCurrencyRate: sourceRate,
                         investmentCondition: parseMultiField(fin.investment_condition),
                     };
@@ -659,14 +651,7 @@ const ProspectsPortal: React.FC = () => {
         filterBudgetMin || filterBudgetMax,
     ].filter(Boolean).length;
 
-    // Persist preferences
-    useEffect(() => {
-        localStorage.setItem('prospects_pinned_ids_investors', JSON.stringify(investorPinnedIds));
-    }, [investorPinnedIds]);
 
-    useEffect(() => {
-        localStorage.setItem('prospects_pinned_ids_targets', JSON.stringify(targetPinnedIds));
-    }, [targetPinnedIds]);
 
     // Shortcut Ctrl+F to focus search
     useEffect(() => {
@@ -789,12 +774,31 @@ const ProspectsPortal: React.FC = () => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
     }, [activeTab, searchQuery, filters]);
 
+    // Keyboard shortcuts: Ctrl+1 = Investors, Ctrl+2 = Targets
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    setActiveTab('investors');
+                    setSearchParams({ tab: 'investors' });
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    setActiveTab('targets');
+                    setSearchParams({ tab: 'targets' });
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [setSearchParams]);
+
     // Fetch Investors/Targets
     useEffect(() => {
         if (countries.length > 0) fetchData();
         // Note: pagination.itemsPerPage intentionally excluded to prevent resize-triggered refetch loops
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab, searchQuery, countries, investorPinnedIds, targetPinnedIds, filters, pagination.currentPage]);
+    }, [activeTab, searchQuery, countries, filters, pagination.currentPage]);
 
     const handleTogglePin = async (id: number) => {
         try {
@@ -802,14 +806,15 @@ const ProspectsPortal: React.FC = () => {
             const tab = isInvestor ? 'buyer' : 'seller';
             await api.post(`/api/${tab}/${id}/pinned`);
 
+            // Immediately flip isPinned on the local data so UI reacts instantly
             if (isInvestor) {
-                setInvestorPinnedIds(prev =>
-                    prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                );
+                setInvestors(prev => prev.map(row =>
+                    row.id === id ? { ...row, isPinned: !row.isPinned } : row
+                ));
             } else {
-                setTargetPinnedIds(prev =>
-                    prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                );
+                setTargets(prev => prev.map(row =>
+                    row.id === id ? { ...row, isPinned: !row.isPinned } : row
+                ));
             }
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to update pinned status' });

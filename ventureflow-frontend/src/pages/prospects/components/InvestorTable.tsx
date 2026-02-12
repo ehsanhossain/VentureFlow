@@ -1,16 +1,19 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable, { Column } from '../../../components/table/DataTable';
-import { formatCompactBudget } from '../../../utils/formatters';
+import { formatCompactBudget, formatFullBudget } from '../../../utils/formatters';
+import CellTooltip from '../../../components/table/CellTooltip';
 import {
     MoreVertical,
-    Bookmark,
-    Eye,
     Zap,
     Trash2,
     Copy,
     Plus
 } from 'lucide-react';
+import ProfileViewIcon from '../../../assets/icons/table/profile-view.svg';
+import WebsiteIcon from '../../../assets/icons/table/website.svg';
+import PinnedIcon from '../../../assets/icons/table/pinned.svg';
+import UnpinnedIcon from '../../../assets/icons/table/unpinned.svg';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import DeleteConfirmationModal from '../../../components/DeleteConfirmationModal';
@@ -127,6 +130,13 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         return formatCompactBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
     };
 
+    const getFullBudgetDisplay = (budget: any, sourceRate?: number) => {
+        const targetRate = selectedCurrency?.rate || 1;
+        const sRate = sourceRate || 1;
+        const conversionRate = targetRate / sRate;
+        return formatFullBudget(budget, selectedCurrency?.symbol || '$', conversionRate);
+    };
+
     const parseWebsiteUrl = (website: any): string => {
         if (!website) return '';
 
@@ -187,11 +197,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             e.stopPropagation();
                             onTogglePin(row.id);
                         }}
-                        className={`p-1 rounded transition-all duration-200 ${row.isPinned
-                            ? "text-orange-500 bg-orange-50 hover:bg-orange-100"
-                            : "text-gray-400 hover:text-gray-500 hover:bg-gray-50"}`}
+                        className="p-1 rounded transition-all duration-200 hover:bg-gray-50"
                     >
-                        <Bookmark className={`w-3.5 h-3.5 ${row.isPinned ? "fill-current" : ""}`} />
+                        <img src={row.isPinned ? PinnedIcon : UnpinnedIcon} alt="" className="w-5 h-5" draggable={false} />
                     </button>
                     <span className="text-[13px] font-normal text-[#064771] bg-[#EDF8FF] px-2 py-0.5 rounded-[3px]">
                         {row.projectCode}
@@ -234,20 +242,25 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             id: 'companyIndustry',
             header: 'Industry',
             accessor: (row) => (
-                <div className="flex flex-wrap gap-1">
-                    {row.companyIndustry?.length ? (
-                        <>
-                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
-                                {row.companyIndustry[0]}
-                            </span>
-                            {row.companyIndustry.length > 1 && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
-                                    +{row.companyIndustry.length - 1}
+                <CellTooltip
+                    enabled={!!row.companyIndustry && row.companyIndustry.length > 1}
+                    content={<ul className="list-disc pl-4 space-y-0.5">{row.companyIndustry?.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                >
+                    <div className="flex flex-wrap gap-1">
+                        {row.companyIndustry?.length ? (
+                            <>
+                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
+                                    {row.companyIndustry[0]}
                                 </span>
-                            )}
-                        </>
-                    ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>}
-                </div>
+                                {row.companyIndustry.length > 1 && (
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                        +{row.companyIndustry.length - 1}
+                                    </span>
+                                )}
+                            </>
+                        ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>}
+                    </div>
+                </CellTooltip>
             ),
             textAccessor: (row) => row.companyIndustry?.join(', ') || '',
             width: 200,
@@ -286,7 +299,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 bg-[#f3f4f6] text-gray-600 hover:bg-gray-200 px-2 py-0.5 rounded-[3px] text-[13px] font-normal transition-colors"
                         >
-                            <Eye className="w-3 h-3" /> View
+                            <img src={WebsiteIcon} alt="" className="w-3.5 h-3.5" draggable={false} /> Visit
                         </a>
                         <button
                             onClick={(e) => {
@@ -309,20 +322,25 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             id: 'targetIndustries',
             header: 'Target Industry',
             accessor: (row) => (
-                <div className="flex flex-wrap gap-1">
-                    {row.targetIndustries?.length ? (
-                        <>
-                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
-                                {row.targetIndustries[0]}
-                            </span>
-                            {row.targetIndustries.length > 1 && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
-                                    +{row.targetIndustries.length - 1}
+                <CellTooltip
+                    enabled={!!row.targetIndustries && row.targetIndustries.length > 1}
+                    content={<ul className="list-disc pl-4 space-y-0.5">{row.targetIndustries?.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                >
+                    <div className="flex flex-wrap gap-1">
+                        {row.targetIndustries?.length ? (
+                            <>
+                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
+                                    {row.targetIndustries[0]}
                                 </span>
-                            )}
-                        </>
-                    ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>}
-                </div>
+                                {row.targetIndustries.length > 1 && (
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                        +{row.targetIndustries.length - 1}
+                                    </span>
+                                )}
+                            </>
+                        ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>}
+                    </div>
+                </CellTooltip>
             ),
             textAccessor: (row) => row.targetIndustries?.join(', ') || '',
             width: 200,
@@ -331,19 +349,26 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             id: 'targetCountries',
             header: 'Target Countries',
             accessor: (row) => (
-                row.targetCountries?.length ? (
-                    <div className="flex items-center gap-1.5">
-                        <div className="flex -space-x-1.5 overflow-hidden">
-                            {row.targetCountries.slice(0, 3).map((c, i) => (
-                                <img key={i} src={c.flag} className="w-5 h-5 rounded-full border border-white object-cover shadow-sm" alt="" />
-                            ))}
-                        </div>
-                        <span className="text-[13px] font-normal text-gray-600 truncate">
-                            {row.targetCountries[0].name}
-                            {row.targetCountries.length > 1 && ` +${row.targetCountries.length - 1}`}
-                        </span>
+                <CellTooltip
+                    enabled={!!row.targetCountries && row.targetCountries.length > 1}
+                    content={<ul className="list-disc pl-4 space-y-0.5">{row.targetCountries?.map((c, i) => <li key={i}>{c.name}</li>)}</ul>}
+                >
+                    <div className="flex flex-wrap gap-1">
+                        {row.targetCountries?.length ? (
+                            <>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[140px]">
+                                    <img src={row.targetCountries[0].flag} className="w-4 h-4 rounded-full object-cover shrink-0" alt="" />
+                                    {row.targetCountries[0].name}
+                                </span>
+                                {row.targetCountries.length > 1 && (
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                        +{row.targetCountries.length - 1}
+                                    </span>
+                                )}
+                            </>
+                        ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>}
                     </div>
-                ) : <span className="text-[13px] font-normal text-gray-400">N/A</span>
+                </CellTooltip>
             ),
             textAccessor: (row) => row.targetCountries?.map(c => c.name).join(', ') || '',
             width: 200,
@@ -356,10 +381,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
                 if (items.length === 1) return <span className="text-[13px] text-gray-600">{items[0]}</span>;
                 return (
-                    <div className="flex flex-wrap gap-1">
-                        <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
-                        <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
-                    </div>
+                    <CellTooltip
+                        enabled={items.length > 1}
+                        content={<ul className="list-disc pl-4 space-y-0.5">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                    >
+                        <div className="flex flex-wrap gap-1">
+                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
+                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                        </div>
+                    </CellTooltip>
                 );
             },
             textAccessor: (row) => parseMultiField(row.purposeMNA).join(', '),
@@ -368,13 +398,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         {
             id: 'budget',
             header: 'Budget',
-            accessor: (row) => (
-                <div className="flex flex-col gap-0.5">
-                    <span className="text-[13px] font-normal text-gray-700">
-                        {getBudgetDisplay(row.budget, row.sourceCurrencyRate)}
-                    </span>
-                </div>
-            ),
+            accessor: (row) => {
+                const compact = getBudgetDisplay(row.budget, row.sourceCurrencyRate);
+                const full = getFullBudgetDisplay(row.budget, row.sourceCurrencyRate);
+                const showTooltip = compact !== 'N/A' && compact !== 'Flexible' && compact !== full;
+                return (
+                    <CellTooltip enabled={showTooltip} content={<span className="font-medium">{full}</span>}>
+                        <div className="flex flex-col gap-0.5">
+                            <span className="text-[13px] font-normal text-gray-700">{compact}</span>
+                        </div>
+                    </CellTooltip>
+                );
+            },
             textAccessor: (row) => formatCompactBudget(row.budget, '$', 1), // Approximate for sizing
             width: 150,
         },
@@ -383,10 +418,13 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             header: 'Pipeline',
             accessor: (row) => {
                 const stageInfo = getStagePosition(row.pipelineStatus);
+                const showTooltip = stageInfo.stageName !== 'N/A';
                 return (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 uppercase tracking-tighter">
-                        {stageInfo.display}
-                    </span>
+                    <CellTooltip enabled={showTooltip} content={<span className="font-medium">{stageInfo.stageName}</span>}>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 uppercase tracking-tighter">
+                            {stageInfo.display}
+                        </span>
+                    </CellTooltip>
                 );
             },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
@@ -412,10 +450,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
                 if (items.length === 1) return <span className="text-[13px] text-gray-600">{items[0]}</span>;
                 return (
-                    <div className="flex flex-wrap gap-1">
-                        <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
-                        <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
-                    </div>
+                    <CellTooltip
+                        enabled={items.length > 1}
+                        content={<ul className="list-disc pl-4 space-y-0.5">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>}
+                    >
+                        <div className="flex flex-wrap gap-1">
+                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
+                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                        </div>
+                    </CellTooltip>
                 );
             },
             textAccessor: (row) => parseMultiField(row.investmentCondition).join(', '),
@@ -433,7 +476,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             accessor: (row) => (
                 row.investorProfile ? (
                     <a href={row.investorProfile} target="_blank" rel="noreferrer" className="text-[13px] font-normal text-gray-600 bg-[#f3f4f6] px-2 py-0.5 rounded-[3px] inline-flex items-center gap-1 hover:bg-gray-200 transition-colors">
-                        <Eye className="w-3 h-3" /> View
+                        <img src={ProfileViewIcon} alt="" className="w-3.5 h-3.5" draggable={false} /> View
                     </a>
                 ) : <span className="text-[13px] text-gray-400">N/A</span>
             ),
@@ -459,23 +502,32 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     );
 
     const sortedData = useMemo(() => {
-        if (!sortConfig.key || !sortConfig.direction) return data;
+        const sorted = [...data];
 
-        return [...data].sort((a: any, b: any) => {
-            const aValue = a[sortConfig.key];
-            const bValue = b[sortConfig.key];
+        // Apply active sort to all items
+        if (sortConfig.key && sortConfig.direction) {
+            sorted.sort((a: any, b: any) => {
+                const aValue = a[sortConfig.key];
+                const bValue = b[sortConfig.key];
 
-            if (aValue === bValue) return 0;
-            if (aValue === null || aValue === undefined) return 1;
-            if (bValue === null || bValue === undefined) return -1;
+                if (aValue === bValue) return 0;
+                if (aValue === null || aValue === undefined) return 1;
+                if (bValue === null || bValue === undefined) return -1;
 
-            const direction = sortConfig.direction === 'asc' ? 1 : -1;
+                const direction = sortConfig.direction === 'asc' ? 1 : -1;
 
-            if (typeof aValue === 'string' && typeof bValue === 'string') {
-                return aValue.localeCompare(bValue) * direction;
-            }
-            return (aValue > bValue ? 1 : -1) * direction;
-        });
+                if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    return aValue.localeCompare(bValue) * direction;
+                }
+                return (aValue > bValue ? 1 : -1) * direction;
+            });
+        }
+
+        // Separate pinned and unpinned, preserving sort order within each group
+        const pinned = sorted.filter(row => row.isPinned);
+        const unpinned = sorted.filter(row => !row.isPinned);
+
+        return [...pinned, ...unpinned];
     }, [data, sortConfig]);
 
     return (
@@ -557,14 +609,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors"
                             onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
                         >
-                            <Bookmark className={`w-4 h-4 ${data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'fill-amber-500 text-amber-500' : 'text-gray-400'}`} />
+                            <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? PinnedIcon : UnpinnedIcon} alt="" className="w-5 h-5" draggable={false} />
                             {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
                         </button>
                         <button
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors"
                             onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
-                            <Eye className="w-4 h-4 text-gray-400" />
+                            <img src={ProfileViewIcon} alt="" className="w-4 h-4 opacity-50" draggable={false} />
                             View Full Profile
                         </button>
                         {!isRestricted && (

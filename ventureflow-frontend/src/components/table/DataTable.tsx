@@ -92,7 +92,7 @@ const ResizeHandle: React.FC<{
         {/* The pill-shaped grab indicator (semi-transparent at rest, full on hover) */}
         <div className={cn(
             'absolute right-[-1px] top-1/2 -translate-y-1/2 h-8 w-[3px]',
-            'bg-[#064771] rounded-full opacity-20 group-hover/handle:opacity-100',
+            'bg-[#064771] rounded-full opacity-0 group-hover/handle:opacity-100',
             'transition-all shadow-[0_0_10px_rgba(6,71,113,0.3)]',
             isResizing && 'opacity-100'
         )} />
@@ -491,7 +491,7 @@ function DataTable<T>({
                             {selectable && (
                                 <th className={cn(
                                     "w-[50px] text-center sticky top-0 left-0 z-50 p-2 border-b border-[#cbd5e1] transition-shadow bg-[#f1f5f9]",
-                                    scrolledLeft > 0 && "border-r border-[#cbd5e1] shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
+                                    scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                 )}>
                                     <div className="flex items-center justify-center">
                                         <button
@@ -625,7 +625,7 @@ function DataTable<T>({
                                             <td className={cn(
                                                 "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-shadow",
                                                 isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
-                                                scrolledLeft > 0 && "border-r border-gray-200/60 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]"
+                                                scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                             )}>
                                                 <div className="flex items-center justify-center h-14">
                                                     <button
@@ -666,7 +666,7 @@ function DataTable<T>({
                                                         isStickyLeft && cn(
                                                             'sticky z-10 transition-shadow',
                                                             isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
-                                                            scrolledLeft > 0 && "border-r border-[#cbd5e1] shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
+                                                            scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                                         ),
                                                         column.sticky === 'right' && cn(
                                                             'sticky right-0 z-10 border-l border-[#cbd5e1] shadow-[-2px_0_5px_rgba(0,0,0,0.05)]',
@@ -715,7 +715,7 @@ function DataTable<T>({
                         <button
                             onClick={() => pagination.onPageChange(Math.max(1, pagination.currentPage - 1))}
                             disabled={pagination.currentPage === 1}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            className="p-1.5 rounded-[3px] text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -740,7 +740,7 @@ function DataTable<T>({
                                         key={pageNum}
                                         onClick={() => pagination.onPageChange(pageNum)}
                                         className={cn(
-                                            "min-w-[28px] h-7 rounded-md text-xs font-medium transition-all",
+                                            "min-w-[28px] h-7 rounded-[3px] text-xs font-medium transition-all",
                                             pagination.currentPage === pageNum
                                                 ? "bg-[#064771] text-white shadow-sm shadow-blue-900/10"
                                                 : "text-gray-500 hover:bg-gray-100"
@@ -755,7 +755,7 @@ function DataTable<T>({
                         <button
                             onClick={() => pagination.onPageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
                             disabled={pagination.currentPage === pagination.totalPages}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            className="p-1.5 rounded-[3px] text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
