@@ -143,7 +143,7 @@ const StaffDetails: React.FC = () => {
                     {/* Edit Button - Secondary Style */}
                     <button
                         onClick={() => navigate(`/settings/staff/edit/${id}`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-[#374151] text-sm font-medium hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -190,35 +190,35 @@ const StaffDetails: React.FC = () => {
                                             {staff.employee_id}
                                         </span>
                                     </div>
-                                    <span className="text-[13px] font-medium text-[#7D7D7D]">last Updated {lastUpdated}</span>
+                                    <span className="text-[13px] font-medium text-gray-500">last Updated {lastUpdated}</span>
                                 </div>
                             </div>
 
                             {/* Overview Stats Row */}
                             <div className="flex items-start gap-20">
                                 <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Nationality</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Nationality</span>
                                     <div className="flex items-center gap-2">
                                         {staff.country?.svg_icon_url && (
                                             <img src={staff.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
                                         )}
-                                        <span className="text-sm font-medium text-[#1F2937]">{staff.country?.name || 'N/A'}</span>
+                                        <span className="text-sm font-medium text-gray-900">{staff.country?.name || 'N/A'}</span>
                                     </div>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Gender</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Gender</span>
                                     <span className="text-sm font-normal text-black">{staff.gender || 'N/A'}</span>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Department</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Department</span>
                                     <span className="text-sm font-normal text-black">{staff.department_data?.name || 'N/A'}</span>
                                 </div>
 
                                 {staff.designation_data?.title && (
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Designation</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Designation</span>
                                         <span className="text-sm font-normal text-black">{staff.designation_data.title}</span>
                                     </div>
                                 )}
@@ -237,11 +237,11 @@ const StaffDetails: React.FC = () => {
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                            <Mail className="w-5 h-5 text-[#9CA3AF]" />
+                                            <Mail className="w-5 h-5 text-gray-400" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-[#9CA3AF]">Work Email</span>
-                                            <span className="text-base font-medium text-[#111827]">{staff.work_email || 'Not set'}</span>
+                                            <span className="text-xs font-medium text-gray-400">Work Email</span>
+                                            <span className="text-base font-medium text-gray-900">{staff.work_email || 'Not set'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -252,11 +252,11 @@ const StaffDetails: React.FC = () => {
                                 <div className="flex flex-col gap-4">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                            <Phone className="w-5 h-5 text-[#9CA3AF]" />
+                                            <Phone className="w-5 h-5 text-gray-400" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-[#9CA3AF]">Contact Number</span>
-                                            <span className="text-base font-medium text-[#111827]">{staff.contact_number || 'Not set'}</span>
+                                            <span className="text-xs font-medium text-gray-400">Contact Number</span>
+                                            <span className="text-base font-medium text-gray-900">{staff.contact_number || 'Not set'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -271,17 +271,17 @@ const StaffDetails: React.FC = () => {
 
                         <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
                             <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Login Email</span>
-                                <span className="text-sm font-medium text-[#1F2937]">{staff.user?.email || 'Not set'}</span>
+                                <span className="text-[11px] font-medium text-gray-400 uppercase">Login Email</span>
+                                <span className="text-sm font-medium text-gray-900">{staff.user?.email || 'Not set'}</span>
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Account Created</span>
+                                <span className="text-[11px] font-medium text-gray-400 uppercase">Account Created</span>
                                 <span className="text-sm font-normal text-black">{formatDate(staff.user?.created_at)}</span>
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Account Status</span>
+                                <span className="text-[11px] font-medium text-gray-400 uppercase">Account Status</span>
                                 <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium w-fit ${staff.employee_status === 'active'
                                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                                     : 'bg-gray-100 text-gray-600 border border-gray-200'
@@ -301,19 +301,19 @@ const StaffDetails: React.FC = () => {
                             <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
                                 {staff.company_data?.name && (
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Company</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Company</span>
                                         <span className="text-sm font-normal text-black">{staff.company_data.name}</span>
                                     </div>
                                 )}
                                 {staff.branch_data?.name && (
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Branch</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Branch</span>
                                         <span className="text-sm font-normal text-black">{staff.branch_data.name}</span>
                                     </div>
                                 )}
                                 {staff.team_data?.name && (
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Team</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Team</span>
                                         <span className="text-sm font-normal text-black">{staff.team_data.name}</span>
                                     </div>
                                 )}
@@ -336,7 +336,7 @@ const StaffDetails: React.FC = () => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-base font-normal text-black">{role}</span>
-                                <span className="text-xs text-[#9CA3AF]">
+                                <span className="text-xs text-gray-400">
                                     {isAdmin ? 'Full system access' : 'Standard access'}
                                 </span>
                             </div>

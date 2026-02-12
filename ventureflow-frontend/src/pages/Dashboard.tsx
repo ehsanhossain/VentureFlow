@@ -182,12 +182,12 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-medium text-gray-900">Command Center</h1>
-            <span className="text-[13px] font-medium text-[#9CA3AF]">{stats.month_name}</span>
+            <span className="text-[13px] font-medium text-gray-400">{stats.month_name}</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchDashboard}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5E7EB] rounded-[3px] text-[#374151] text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5E7EB] rounded-[3px] text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Refresh
@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
               <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Deals Requiring Action</h2>
-              <span className="text-[11px] text-[#9CA3AF] font-medium ml-1">
+              <span className="text-[11px] text-gray-400 font-medium ml-1">
                 {data.deals_needing_action.length} deal{data.deals_needing_action.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -228,13 +228,13 @@ const Dashboard: React.FC = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-[#F3F4F6]">
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Deal</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Buyer → Seller</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Stage</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Value</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">PIC</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Status</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-[#9CA3AF] uppercase">Idle</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Deal</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Buyer → Seller</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Stage</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Value</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">PIC</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Status</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Idle</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -247,25 +247,25 @@ const Dashboard: React.FC = () => {
                         onClick={() => navigate('/deal-pipeline')}
                       >
                         <td className="px-4 py-2.5">
-                          <span className="text-sm font-medium text-[#1F2937]">{deal.name}</span>
+                          <span className="text-sm font-medium text-gray-900">{deal.name}</span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-1.5 text-[12px] text-[#6B7280]">
-                            <span className="font-medium text-[#374151]">{deal.buyer_name || '—'}</span>
-                            <ArrowRight className="w-3 h-3 text-[#D1D5DB]" />
-                            <span className="font-medium text-[#374151]">{deal.seller_name || '—'}</span>
+                          <div className="flex items-center gap-1.5 text-[12px] text-gray-500">
+                            <span className="font-medium text-gray-700">{deal.buyer_name || '—'}</span>
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <span className="font-medium text-gray-700">{deal.seller_name || '—'}</span>
                           </div>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-[#6B7280]">{deal.stage_name}</span>
+                          <span className="text-[12px] text-gray-500">{deal.stage_name}</span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-[12px] font-medium text-[#1F2937]">
+                          <span className="text-[12px] font-medium text-gray-900">
                             {deal.estimated_value ? formatCurrency(deal.estimated_value) : '—'}
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-[#6B7280]">{deal.pic_name}</span>
+                          <span className="text-[12px] text-gray-500">{deal.pic_name}</span>
                         </td>
                         <td className="px-4 py-2.5">
                           <span className={`px-2 py-0.5 text-[11px] font-medium rounded-[2px] border ${badge.bg} ${badge.text} ${badge.border}`}>
@@ -273,7 +273,7 @@ const Dashboard: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-[#9CA3AF]">{deal.days_since_update}d</span>
+                          <span className="text-[12px] text-gray-400">{deal.days_since_update}d</span>
                         </td>
                       </tr>
                     );
@@ -284,7 +284,7 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="py-8 text-center">
               <Zap className="w-8 h-8 mx-auto mb-2 text-green-400" />
-              <p className="text-sm text-[#6B7280]">All deals are on track!</p>
+              <p className="text-sm text-gray-500">All deals are on track!</p>
             </div>
           )}
         </div>
@@ -293,14 +293,14 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-5 border border-t-0 border-[#E5E7EB] divide-x divide-[#E5E7EB]">
           {/* Pipeline Value */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/deal-pipeline')}>
-            <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide">Pipeline Value</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Pipeline Value</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{formatCurrency(stats.pipeline_value)}</p>
-            <p className="text-[11px] text-[#9CA3AF]">{stats.active_deals} active deal{stats.active_deals !== 1 ? 's' : ''}</p>
+            <p className="text-[11px] text-gray-400">{stats.active_deals} active deal{stats.active_deals !== 1 ? 's' : ''}</p>
           </div>
 
           {/* Investors */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/prospects?tab=investors')}>
-            <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide">Investors</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Investors</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.total_investors}</p>
             {stats.investors_this_month > 0 && (
               <div className="flex items-center gap-1">
@@ -312,7 +312,7 @@ const Dashboard: React.FC = () => {
 
           {/* Targets */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/prospects?tab=targets')}>
-            <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide">Targets</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Targets</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.total_targets}</p>
             {stats.targets_this_month > 0 && (
               <div className="flex items-center gap-1">
@@ -324,16 +324,16 @@ const Dashboard: React.FC = () => {
 
           {/* Unmatched Investors */}
           <div className="p-3.5">
-            <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide">Unmatched Investors</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Unmatched Investors</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.unmatched_investors}</p>
-            <p className="text-[11px] text-[#9CA3AF]">seeking targets</p>
+            <p className="text-[11px] text-gray-400">seeking targets</p>
           </div>
 
           {/* Unmatched Targets */}
           <div className="p-3.5">
-            <p className="text-[11px] font-medium text-[#9CA3AF] uppercase tracking-wide">Unmatched Targets</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Unmatched Targets</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.unmatched_targets}</p>
-            <p className="text-[11px] text-[#9CA3AF]">seeking buyers</p>
+            <p className="text-[11px] text-gray-400">seeking buyers</p>
           </div>
         </div>
 
@@ -344,19 +344,19 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Pipeline Stages</h2>
-                <span className="text-[11px] text-[#9CA3AF] font-medium">{totalPipelineDeals} deals</span>
+                <span className="text-[11px] text-gray-400 font-medium">{totalPipelineDeals} deals</span>
               </div>
               <div className="flex border border-[#E5E7EB] rounded-[3px] overflow-hidden">
                 <button
                   onClick={() => setPipelineView('buyer')}
-                  className={`px-3 py-1 text-[11px] font-medium transition-colors ${pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-white text-[#6B7280] hover:bg-gray-50'
+                  className={`px-3 py-1 text-[11px] font-medium transition-colors ${pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
                     }`}
                 >
                   Investor Side
                 </button>
                 <button
                   onClick={() => setPipelineView('seller')}
-                  className={`px-3 py-1 text-[11px] font-medium border-l border-[#E5E7EB] transition-colors ${pipelineView === 'seller' ? 'bg-[#064771] text-white' : 'bg-white text-[#6B7280] hover:bg-gray-50'
+                  className={`px-3 py-1 text-[11px] font-medium border-l border-[#E5E7EB] transition-colors ${pipelineView === 'seller' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
                     }`}
                 >
                   Target Side
@@ -388,7 +388,7 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center">
-                <p className="text-sm text-[#9CA3AF]">No pipeline data available</p>
+                <p className="text-sm text-gray-400">No pipeline data available</p>
               </div>
             )}
           </div>
@@ -397,7 +397,7 @@ const Dashboard: React.FC = () => {
           <div className="col-span-2 p-4">
             <div className="flex items-center gap-2 mb-3">
               <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Deal Flow</h2>
-              <span className="text-[11px] text-[#9CA3AF] font-medium">Last 6 Months</span>
+              <span className="text-[11px] text-gray-400 font-medium">Last 6 Months</span>
             </div>
 
             {data.deal_flow_trend.length > 0 ? (
@@ -419,7 +419,7 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center">
-                <p className="text-sm text-[#9CA3AF]">No trend data yet</p>
+                <p className="text-sm text-gray-400">No trend data yet</p>
               </div>
             )}
           </div>
@@ -433,7 +433,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#064771]" />
                 <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Global Coverage</h2>
-                <span className="text-[11px] text-[#9CA3AF] font-medium">{data.geo_distribution.length} countries</span>
+                <span className="text-[11px] text-gray-400 font-medium">{data.geo_distribution.length} countries</span>
               </div>
             </div>
 
@@ -461,8 +461,8 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="h-[200px] flex items-center justify-center">
-                <Globe className="w-10 h-10 text-[#D1D5DB] mb-2" />
-                <p className="text-sm text-[#9CA3AF]">No geographic data available</p>
+                <Globe className="w-10 h-10 text-gray-400 mb-2" />
+                <p className="text-sm text-gray-400">No geographic data available</p>
               </div>
             )}
           </div>
@@ -471,7 +471,7 @@ const Dashboard: React.FC = () => {
           <div className="col-span-2 p-4 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Recent Activity</h2>
-              <Clock className="w-3.5 h-3.5 text-[#9CA3AF]" />
+              <Clock className="w-3.5 h-3.5 text-gray-400" />
             </div>
 
             {data.activities.length > 0 ? (
@@ -486,18 +486,18 @@ const Dashboard: React.FC = () => {
                       {getActivityIcon(act.entity_type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] text-[#374151] leading-[1.4]">
+                      <p className="text-[12px] text-gray-700 leading-[1.4]">
                         <span className="font-medium">{act.user_name}</span>
                         {' '}{act.content || `updated ${act.entity_name}`}
                       </p>
-                      <p className="text-[10px] text-[#9CA3AF] mt-0.5">{act.time_ago}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{act.time_ago}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-xs text-[#9CA3AF]">No recent activity</p>
+                <p className="text-xs text-gray-400">No recent activity</p>
               </div>
             )}
           </div>
@@ -532,16 +532,16 @@ const Dashboard: React.FC = () => {
                         {inv.name?.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-[13px] font-medium text-[#1F2937]">{inv.name}</p>
-                        <p className="text-[11px] text-[#9CA3AF]">{inv.code} · {inv.country}</p>
+                        <p className="text-[13px] font-medium text-gray-900">{inv.name}</p>
+                        <p className="text-[11px] text-gray-400">{inv.code} · {inv.country}</p>
                       </div>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#D1D5DB]" />
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-[#9CA3AF] text-center py-4">No investors yet</p>
+              <p className="text-[11px] text-gray-400 text-center py-4">No investors yet</p>
             )}
           </div>
 
@@ -572,16 +572,16 @@ const Dashboard: React.FC = () => {
                         {tgt.name?.substring(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-[13px] font-medium text-[#1F2937]">{tgt.name}</p>
-                        <p className="text-[11px] text-[#9CA3AF]">{tgt.code} · {tgt.country}</p>
+                        <p className="text-[13px] font-medium text-gray-900">{tgt.name}</p>
+                        <p className="text-[11px] text-gray-400">{tgt.code} · {tgt.country}</p>
                       </div>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#D1D5DB]" />
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-[#9CA3AF] text-center py-4">No targets yet</p>
+              <p className="text-[11px] text-gray-400 text-center py-4">No targets yet</p>
             )}
           </div>
         </div>

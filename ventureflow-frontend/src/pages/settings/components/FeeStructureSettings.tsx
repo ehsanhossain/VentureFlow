@@ -160,7 +160,7 @@ const FeeStructureSettings: React.FC = () => {
         'w-full px-3 py-1.5 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all';
 
     return (
-        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
             {/* Header */}
             <div className="px-8 py-6">
                 <div className="flex items-center justify-between gap-6">
@@ -237,7 +237,7 @@ const FeeStructureSettings: React.FC = () => {
                                                     >
                                                         {/* Order */}
                                                         <div className="w-12 flex items-center gap-2">
-                                                            <GripVertical className="w-4 h-4 text-gray-300 cursor-grab" />
+                                                            <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
                                                             <span className="text-sm font-medium text-gray-400">{index + 1}</span>
                                                         </div>
 

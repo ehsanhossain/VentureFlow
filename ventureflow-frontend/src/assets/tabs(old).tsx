@@ -21,14 +21,14 @@ const Tab: React.FC<TabProps> = ({
     <div
       className={`flex flex-col justify-between items-center px-0 pt-[10px] min-w-[200px] h-[40px] cursor-pointer transition-all duration-300 ease-in-out ${
         isActive ? "bg-white" : "bg-transparent"
-      } font-poppins text-sm`}
+      } text-sm`}
       onClick={onClick}
     >
       <div className="flex items-center gap-1.5 pb-1">
         {isActive ? activeSvg : inactiveSvg}
         <div
           className={`text-center font-semibold leading-5 ${
-            isActive ? "text-[#064771]" : "text-[#A0A0A0]"
+            isActive ? "text-[#064771]" : "text-gray-500"
           }`}
         >
           {text}

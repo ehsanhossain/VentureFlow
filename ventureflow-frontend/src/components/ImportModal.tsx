@@ -102,16 +102,16 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
       <div className="relative bg-white rounded-2xl shadow-xl w-full sm:w-[520px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e0e2e5]">
           <div>
-            <h2 className="font-semibold text-neutral-800 text-lg leading-7">
+            <h2 className="font-medium text-gray-900 text-lg leading-7">
               Import Excel File
             </h2>
-            <p className="font-normal text-neutral-800 text-[13px] leading-5">
+            <p className="font-normal text-gray-900 text-[13px] leading-5">
               Select an Excel or CSV file to import your data
             </p>
           </div>
           <button
             onClick={handleInternalClose}
-            className="text-neutral-500 hover:text-neutral-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-colors"
             aria-label="Close import modal"
           >
             <X className="w-5 h-5" />
@@ -127,10 +127,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
             <div className="flex flex-col items-center gap-2 text-center">
               <UploadIcon className="w-10 h-10 sm:w-12 sm:h-12 text-[#064771]" />
               <div>
-                <p className="text-sm font-medium text-neutral-800">
+                <p className="text-sm font-medium text-gray-900">
                   {selectedFile ? selectedFile.name : "Click to upload or drag and drop"}
                 </p>
-                <p className="text-xs text-neutral-600">
+                <p className="text-xs text-gray-600">
                   Excel (.xlsx, .xls) or CSV (.csv) files up to 20MB
                 </p>
               </div>
@@ -148,10 +148,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
           {selectedFile && !errorMessage && (
             <div className="flex items-center gap-2 p-3 mt-4 bg-blue-50 border border-blue-200 rounded-md w-full">
               <FileIcon className="w-5 h-5 text-[#064771] flex-shrink-0" />
-              <span className="text-sm font-medium text-neutral-800 truncate" title={selectedFile.name}>
+              <span className="text-sm font-medium text-gray-900 truncate" title={selectedFile.name}>
                 {selectedFile.name}
               </span>
-              <span className="text-xs text-neutral-600 ml-auto flex-shrink-0">
+              <span className="text-xs text-gray-600 ml-auto flex-shrink-0">
                 ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
               </span>
             </div>
@@ -169,7 +169,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
           <button
             onClick={handleInternalClose}
             disabled={isLoading}
-            className="w-full sm:w-auto h-[38px] px-4 items-center justify-center rounded-md border border-solid border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-70 transition-colors text-sm font-medium"
+            className="w-full sm:w-auto h-[38px] px-4 items-center justify-center rounded-md border border-solid border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-70 transition-colors text-sm font-medium"
           >
             Cancel
           </button>

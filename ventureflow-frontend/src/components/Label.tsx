@@ -13,7 +13,7 @@ const Label: React.FC<LabelProps> = ({ text, required = false }) => {
           *
         </span>
       )}
-      <span className="text-[#30313D] text-base font-poppins font-medium leading-[19.29px]">
+      <span className="text-gray-900 text-base font-medium leading-[19.29px]">
         {text}
       </span>
     </div>

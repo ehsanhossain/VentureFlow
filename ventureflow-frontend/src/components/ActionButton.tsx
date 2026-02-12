@@ -147,7 +147,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
               strokeLinejoin="round"
             />
           </svg>
-          <span className="font-medium text-[#064771] text-sm font-poppins">{buttonText}</span>
+          <span className="font-medium text-[#064771] text-sm ">{buttonText}</span>
         </button>
       )}
 
@@ -203,7 +203,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
               <path d="M9.87298 14.2338V16.6641C9.87298 18.6894 9.06285 19.4995 7.0375 19.4995H4.60709C2.58174 19.4995 1.77161 18.6894 1.77161 16.6641V14.2338C1.77161 12.2085 2.58174 11.3984 4.60709 11.3984H7.0375C9.06285 11.3984 9.87298 12.2085 9.87298 14.2338Z" fill="#BDEAFA" stroke="#064771" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M15.6154 9.60071V11.959C15.6154 14.3804 14.6523 15.3435 12.2308 15.3435H9.87244V14.2363C9.87244 12.2111 9.0623 11.401 7.037 11.401H5.92981V9.04264C5.92981 6.62134 6.89297 5.6582 9.31435 5.6582H11.6727V6.76536C11.6727 8.79061 12.4829 9.60071 14.5082 9.60071H15.6154Z" fill="white" stroke="#064771" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="font-semibold text-sm font-poppins">{buttonText}</span>
+            <span className="font-semibold text-sm ">{buttonText}</span>
             <svg
               width="12"
               height="6"
@@ -236,7 +236,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
                 onClick={handleExportClick}
                 className={`flex items-center gap-2 hover:bg-gray-50 w-full justify-center py-1 ${customStyles.dropdownExportButton || ''}`}
               >
-                <span className="font-medium text-[#30313d] text-base">
+                <span className="font-medium text-gray-900 text-base">
                   {exportText}
                 </span>
               </button>

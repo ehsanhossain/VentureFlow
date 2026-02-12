@@ -34,10 +34,10 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange }) => {
 
             {/* Label */}
             <div
-              className={`font-['Poppins'] ${
+              className={` ${
                 activeTab === tab.id
                   ? "font-semibold text-[#064771]"
-                  : "font-medium text-[#828282]"
+                  : "font-medium text-gray-500"
               } text-sm tracking-[0] leading-5 whitespace-nowrap`}
             >
               {tab.label}
@@ -49,7 +49,7 @@ export const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange }) => {
                 className={`ml-2 inline-flex h-6 items-center justify-center px-2 py-0 ${
                   activeTab === tab.id
                     ? "bg-[#e4f7ff] text-[#064771] rounded-3xl"
-                    : "text-[#54575c]"
+                    : "text-gray-600"
                 } font-medium text-sm`}
               >
                 {tab.count}

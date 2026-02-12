@@ -18,7 +18,7 @@ const InfoButton: React.FC<InfoButtonProps> = ({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex min-w-[100px] min-h-[35px] items-center justify-center gap-[5px] flex-shrink-0 bg-[#F1FBFF] border-[0.77px] border-[#0C5577] text-[#0C5577] px-[8px] py-[5px] rounded-[49.82036209106445px] hover:bg-opacity-90 transition font-poppins ${className}`}
+      className={`inline-flex min-w-[100px] min-h-[35px] items-center justify-center gap-[5px] flex-shrink-0 bg-[#F1FBFF] border-[0.77px] border-[#0C5577] text-[#0C5577] px-[8px] py-[5px] rounded-[49.82036209106445px] hover:bg-opacity-90 transition ${className}`}
     >
       {icon && iconPosition === "before" && <span className="ml-[8px] py-[5px]">{icon}</span>}
       <span className="mr-[8px] py-[5px]">{children}</span>

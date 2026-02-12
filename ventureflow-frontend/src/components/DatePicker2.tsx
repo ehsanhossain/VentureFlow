@@ -23,15 +23,15 @@ export const SelectDate = ({ date, onDateChange, placeholder = "Select date" }: 
 
       <div 
         onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-        className="absolute left-[17px] w-[166px] h-10 pl-[50px] pr-5 py-2 rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-slate-300 flex items-center justify-between bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+        className="absolute left-[17px] w-[166px] h-10 pl-[50px] pr-5 py-2 rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-gray-300 flex items-center justify-between bg-white cursor-pointer hover:bg-gray-50 transition-colors"
       >
-        <span className="text-[#8a8a8a] text-sm">
+        <span className="text-gray-500 text-sm">
           {date ? format(date, "MMM dd, yyyy") : placeholder}
         </span>
         {isCalendarOpen ? (
-          <ChevronUp className="w-4 h-4 text-[#8a8a8a]" />
+          <ChevronUp className="w-4 h-4 text-gray-500" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-[#8a8a8a]" />
+          <ChevronDown className="w-4 h-4 text-gray-500" />
         )}
       </div>
 

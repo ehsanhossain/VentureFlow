@@ -32,7 +32,7 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex items-center justify-center gap-2 w-[112px] h-[32px] px-[12.308px] py-[9.846px] rounded-[48px] border-[0.615px] bg-[#F9F8FA] border-[#BBCDDE] disabled:border-[#838383] disabled:opacity-50 font-poppins"
+        className="flex items-center justify-center gap-2 w-[112px] h-[32px] px-[12.308px] py-[9.846px] rounded-[48px] border-[0.615px] bg-[#F9F8FA] border-[#BBCDDE] disabled:border-[#838383] disabled:opacity-50 "
       >
         <svg
           width="9"
@@ -49,7 +49,7 @@ const Pagination: React.FC<PaginationProps> = ({
           />
         </svg>
         <span
-          className={currentPage === 1 ? "text-[#838383]" : "text-[#0C5577]"}
+          className={currentPage === 1 ? "text-gray-500" : "text-[#0C5577]"}
         >
           Previous
         </span>
@@ -96,11 +96,11 @@ const Pagination: React.FC<PaginationProps> = ({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex items-center justify-center gap-2 w-[112px] h-[32px] px-[12.308px] py-[9.846px] rounded-[48px] border-[0.615px] bg-[#F9F8FA] border-[#BBCDDE] disabled:border-[#838383] disabled:opacity-50 font-poppins"
+        className="flex items-center justify-center gap-2 w-[112px] h-[32px] px-[12.308px] py-[9.846px] rounded-[48px] border-[0.615px] bg-[#F9F8FA] border-[#BBCDDE] disabled:border-[#838383] disabled:opacity-50 "
       >
         <span
           className={
-            currentPage === totalPages ? "text-[#838383]" : "text-[#0C5577]"
+            currentPage === totalPages ? "text-gray-500" : "text-[#0C5577]"
           }
         >
           Next

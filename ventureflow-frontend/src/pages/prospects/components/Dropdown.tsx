@@ -199,7 +199,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                                     className="w-5 h-5 rounded-full shrink-0"
                                                 />
                                             )}
-                                            <span className="text-sm text-[#30313d] truncate">
+                                            <span className="text-sm text-gray-900 truncate">
                                                 {(country as any).name || 'Unknown'}
                                             </span>
                                         </div>

@@ -37,9 +37,9 @@ const ChangePassword = () => {
 
     if (success) {
         return (
-            <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-white font-poppins px-6 text-center">
+            <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-white px-6 text-center">
                 <div className="w-full max-w-lg flex flex-col items-center">
-                    <h1 className="text-3xl font-bold text-[#064771] mb-2 flex flex-col items-center gap-2 text-center">
+                    <h1 className="text-3xl font-medium text-[#064771] mb-2 flex flex-col items-center gap-2 text-center">
                         <span className="block w-full">VentureFlow</span>
                         <span className="block w-full">Congrats!!</span>
                     </h1>
@@ -58,7 +58,7 @@ const ChangePassword = () => {
 
                     <button
                         onClick={() => navigate('/login')}
-                        className="px-8 py-3 bg-[#064771] text-white font-bold rounded-full hover:bg-[#053a5c] transition-colors shadow-lg text-lg"
+                        className="px-8 py-3 bg-[#064771] text-white font-medium rounded-full hover:bg-[#053a5c] transition-colors shadow-lg text-lg"
                     >
                         Continue your M&A Journey
                     </button>
@@ -68,17 +68,17 @@ const ChangePassword = () => {
     }
 
     return (
-        <div className="min-h-screen w-screen flex justify-center items-center bg-white font-poppins px-6">
+        <div className="min-h-screen w-screen flex justify-center items-center bg-white px-6">
             <div className="w-full max-w-md">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-bold text-[#064771] mb-2">VentureFlow</h1>
-                    <h2 className="text-xl font-bold text-gray-800">Change Your Password</h2>
+                    <h1 className="text-3xl font-medium text-[#064771] mb-2">VentureFlow</h1>
+                    <h2 className="text-xl font-medium text-gray-900">Change Your Password</h2>
                     <p className="text-gray-500 mt-2 text-sm">For security reasons, you must change your password before continuing.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">New Password</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 ">New Password</label>
                         <input
                             type="password"
                             value={password}
@@ -90,7 +90,7 @@ const ChangePassword = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1 font-poppins">Confirm New Password</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 ">Confirm New Password</label>
                         <input
                             type="password"
                             value={confirmPassword}
@@ -104,7 +104,7 @@ const ChangePassword = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 bg-[#064771] text-white font-bold rounded-xl hover:bg-[#053a5c] transition-all shadow-md mt-4 flex items-center justify-center font-medium"
+                        className="w-full py-3 bg-[#064771] text-white font-medium rounded-xl hover:bg-[#053a5c] transition-all shadow-md mt-4 flex items-center justify-center font-medium"
                     >
                         {loading ? (
                             <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5"></span>

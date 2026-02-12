@@ -90,7 +90,7 @@ const Settings: React.FC = () => {
       >
         <div className={`p-6 flex items-center justify-between ${isCollapsed ? 'flex-col gap-4' : ''}`}>
           {!isCollapsed && (
-            <h2 className="text-xl font-semibold text-[#064771] font-poppins">
+            <h2 className="text-2xl font-medium text-[#064771] ">
               {t('navigation.settings', 'Settings')}
             </h2>
           )}
@@ -108,8 +108,7 @@ const Settings: React.FC = () => {
               to={item.path}
               title={isCollapsed ? item.label : ''}
               className={({ isActive }) =>
-                `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors font-poppins
-                ${isActive
+                `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive
                   ? 'bg-[#E6F0F6] text-[#064771]'
                   : 'text-gray-700 hover:bg-gray-50'
                 } ${isCollapsed ? 'justify-center' : ''}`

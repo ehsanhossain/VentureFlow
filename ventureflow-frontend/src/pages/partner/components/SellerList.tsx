@@ -56,13 +56,13 @@ const SellerList = () => {
     if (loading) return (
         <div className="flex flex-col justify-center items-center h-full gap-3">
             <BrandSpinner size="lg" />
-            <span className="text-gray-600 font-poppins">Loading Targets...</span>
+            <span className="text-gray-600 ">Loading Targets...</span>
         </div>
     );
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4 text-[#30313D] font-poppins">Assigned Targets</h2>
+            <h2 className="text-lg md:text-xl font-medium mb-4 text-gray-900 ">Assigned Targets</h2>
 
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
@@ -127,7 +127,7 @@ const SellerList = () => {
                             </div>
                             <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Revenue</span>
-                                <span className="text-sm font-bold text-[#064771]">{seller.financial_details?.revenue || '-'}</span>
+                                <span className="text-sm font-medium text-[#064771]">{seller.financial_details?.revenue || '-'}</span>
                             </div>
                         </div>
                     ))

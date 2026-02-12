@@ -122,7 +122,7 @@ const PipelineSettings: React.FC = () => {
     }, [stages, searchQuery]);
 
     return (
-        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
             {/* Header */}
             <div className="px-8 py-6">
                 <div className="flex items-center justify-between gap-6">
@@ -190,7 +190,7 @@ const PipelineSettings: React.FC = () => {
                                                     className="flex gap-4 items-center bg-gray-50/50 p-3 rounded-[3px] border border-gray-100 transition-all hover:border-[#064771]/30"
                                                 >
                                                     <div className="w-12 flex items-center gap-2">
-                                                        <GripVertical className="w-4 h-4 text-gray-300 cursor-grab" />
+                                                        <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
                                                         <span className="text-sm font-medium text-gray-400">{index + 1}</span>
                                                     </div>
                                                     <div className="w-24">

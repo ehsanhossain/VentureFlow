@@ -301,10 +301,10 @@ const FileView: React.FC<FileViewProps> = ({
 
               {/* Text Section */}
               <div className="flex justify-start items-center flex-col gap-[7.1178297996521px]">
-                <span className="text-[#292D32] text-center font-medium">
+                <span className="text-gray-900 text-center font-medium">
                   No Files to show
                 </span>
-                <span className="text-[#838383] text-sm text-center">
+                <span className="text-gray-500 text-sm text-center">
                   Upload file to view here
                 </span>
               </div>
@@ -393,12 +393,12 @@ const FileView: React.FC<FileViewProps> = ({
                       onChange={handleFileNameChange}
                       onKeyDown={handleInputKeyDown}
                       onBlur={handleSaveRename}
-                      className="file-rename-input flex-grow text-sm text-gray-800 font-medium border-b-2 border-blue-500 outline-none bg-transparent focus:ring-0"
+                      className="file-rename-input flex-grow text-sm text-gray-900 font-medium border-b-2 border-blue-500 outline-none bg-transparent focus:ring-0"
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
                     <div
-                      className="text-sm text-gray-800 font-medium truncate"
+                      className="text-sm text-gray-900 font-medium truncate"
                       title={file.name}
                     >
                       {file.name}

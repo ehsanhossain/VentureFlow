@@ -27,7 +27,7 @@ const SellerPortal: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex justify-center items-center min-w-[799px] min-h-[223px] p-[13px] px-[16px] rounded-lg border border-[#a1bed1] bg-[#fafdff] font-poppins">
+    <div className="flex justify-center items-center min-w-[799px] min-h-[223px] p-[13px] px-[16px] rounded-lg border border-[#a1bed1] bg-[#fafdff] ">
       <div className="flex flex-col md:flex-row justify-between items-center w-full gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           {/* SVG icon */}
@@ -63,10 +63,10 @@ const SellerPortal: React.FC = () => {
           {/* Count info */}
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="flex flex-col items-center">
-              <div className="text-[#30313d] text-center font-semibold text-2xl">
+              <div className="text-gray-900 text-center font-semibold text-2xl">
                 {monthlyCounts?.sellers ?? "-"}
               </div>
-              <div className="text-[#727272] text-center text-sm font-medium">
+              <div className="text-gray-500 text-center text-sm font-medium">
                 {t('dashboard.registeredIn', {
                   month: new Date().toLocaleString(undefined, { month: "long" }),
                   year: new Date().getFullYear(),
@@ -76,10 +76,10 @@ const SellerPortal: React.FC = () => {
             </div>
             <div className="w-px h-16 bg-[#30313D] hidden sm:block"></div>
             <div className="flex flex-col items-center">
-              <div className="text-[#30313d] text-center font-semibold text-2xl">
+              <div className="text-gray-900 text-center font-semibold text-2xl">
                 {totalCounts?.sellers ?? "-"}
               </div>
-              <div className="text-[#727272] text-center text-sm font-medium">
+              <div className="text-gray-500 text-center text-sm font-medium">
                 {t('dashboard.totalRegistered', 'Total Registered')}
               </div>
             </div>

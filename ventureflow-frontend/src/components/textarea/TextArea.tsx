@@ -321,7 +321,7 @@ export const TextArea = ({ value, onChange, onBlur }: TextAreaProps): JSX.Elemen
         <section className="max-w-[1200px] space-y-3 py-6">
           <div className="flex gap-2 flex-wrap">
      
-            <div className="flex bg-white border border-slate-200 rounded-md overflow-hidden">
+            <div className="flex bg-white border border-gray-200 rounded-md overflow-hidden">
               {formattingButtons.map((button, index) => (
                 <button
                   key={index}
@@ -329,11 +329,11 @@ export const TextArea = ({ value, onChange, onBlur }: TextAreaProps): JSX.Elemen
                   onClick={() => handleFormat(button.command)}
                   className={`w-8 h-8 flex items-center justify-center cursor-pointer transition-colors ${
                     textStyle[button.command]
-                      ? "bg-slate-200"
-                      : "hover:bg-slate-100"
+                      ? "bg-gray-200"
+                      : "hover:bg-gray-100"
                   } ${
                     index < formattingButtons.length - 1
-                      ? "border-r border-slate-200"
+                      ? "border-r border-gray-200"
                       : ""
                   }`}
                   aria-label={button.alt}
@@ -349,7 +349,7 @@ export const TextArea = ({ value, onChange, onBlur }: TextAreaProps): JSX.Elemen
             </div>
 
             {/* Structure Buttons */}
-            <div className="flex bg-white border border-slate-200 rounded-md overflow-hidden">
+            <div className="flex bg-white border border-gray-200 rounded-md overflow-hidden">
               {structureButtons.map((button, index) => {
                 let isActive = false;
                 if (button.command === "formatBlock" && button.value) {
@@ -368,11 +368,11 @@ export const TextArea = ({ value, onChange, onBlur }: TextAreaProps): JSX.Elemen
                     }
                     className={`w-8 h-8 flex items-center justify-center cursor-pointer transition-colors ${
                        isActive
-                        ? "bg-slate-200"
-                        : "hover:bg-slate-100"
+                        ? "bg-gray-200"
+                        : "hover:bg-gray-100"
                     } ${
                       index < structureButtons.length - 1
-                        ? "border-r border-slate-200"
+                        ? "border-r border-gray-200"
                         : ""
                     }`}
                     aria-label={button.alt}
@@ -400,11 +400,11 @@ export const TextArea = ({ value, onChange, onBlur }: TextAreaProps): JSX.Elemen
               }
             `}
           </style>
-          <div className="bg-white border border-slate-200 rounded-md p-4 min-h-[200px]">
+          <div className="bg-white border border-gray-200 rounded-md p-4 min-h-[200px]">
             <div
               ref={editorRef}
               contentEditable
-              className="outline-none min-h-[300px] font-poppins text-sm leading-6 text-black"
+              className="outline-none min-h-[300px] text-sm leading-6 text-black"
               onInput={handleInput}
               onBlur={handleBlur} 
               data-placeholder="Start typing..."

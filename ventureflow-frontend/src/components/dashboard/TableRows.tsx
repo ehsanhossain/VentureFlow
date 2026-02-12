@@ -22,7 +22,7 @@ const Row: React.FC<RowProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-wrap h-auto items-center rounded border border-gray-300 bg-white box-border w-full font-poppins p-2 md:flex-nowrap md:h-10">
+    <div className="flex flex-wrap h-auto items-center rounded border border-gray-300 bg-white box-border w-full p-2 md:flex-nowrap md:h-10">
       <div className="flex flex-wrap w-full md:w-[332px] p-3 items-center gap-3">
         <div className="flex w-full md:w-[308px] items-center gap-3 flex-shrink-0">
           <div className="w-[18.897px] h-[21.243px] flex-shrink-0 text-primary-green">
@@ -139,7 +139,7 @@ const Row: React.FC<RowProps> = ({
                 ? navigate(`/prospects/target/${id}`)
                 : navigate(`/prospects/investor/${id}`)
             }
-            className="text-gray-800 text-sm font-medium leading-[32px] truncate cursor-pointer hover:underline"
+            className="text-gray-900 text-sm font-medium leading-[32px] truncate cursor-pointer hover:underline"
           >
             {label}
           </span>

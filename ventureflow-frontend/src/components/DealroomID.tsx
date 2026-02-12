@@ -86,13 +86,13 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                 strokeLinejoin="round"
               />
             </svg>
-            <h3 className="font-['Poppins',Helvetica] font-semibold text-black text-base">
+            <h3 className="font-semibold text-black text-base">
               {label}
             </h3>
           </div>
 
           <div className="flex flex-col gap-[18px]">
-            <p className="font-['Poppins',Helvetica] text-[#30313d] text-sm">
+            <p className="text-gray-900 text-sm">
               {description}
             </p>
 
@@ -116,7 +116,7 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                     <label
                       id={labelId}
                       htmlFor={inputId}
-                      className="font-['Poppins',Helvetica] font-medium text-[#30313d] text-base"
+                      className="font-medium text-gray-900 text-base"
                     >
                       {label}
                     </label>
@@ -141,7 +141,7 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                                   setIsEditing(false);
                                 }
                               }}
-                              className="bg-transparent font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6 outline-none w-[150px]"
+                              className="bg-transparent font-semibold text-[22.4px] leading-6 outline-none w-[150px]"
                               autoFocus
                               aria-label="Dealroom ID"
                             />
@@ -153,7 +153,7 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <span className="font-['Poppins',Helvetica] font-semibold text-[22.4px] leading-6">
+                            <span className="font-semibold text-[22.4px] leading-6">
                               {field.value}
                             </span>
                             {!isChecking && isAvailable === true && <Check className="w-4 h-4 text-green-400" />}

@@ -18,7 +18,7 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex min-w-[100px] min-h-[35px] items-center justify-center gap-[5px] flex-shrink-0 bg-[#064771] text-white px-[8px] py-[5px] rounded-[49.82036209106445px] hover:bg-opacity-90 transition font-poppins ${className}`}
+      className={`inline-flex min-w-[100px] min-h-[35px] items-center justify-center gap-[5px] flex-shrink-0 bg-[#064771] text-white px-[8px] py-[5px] rounded-[49.82036209106445px] hover:bg-opacity-90 transition ${className}`}
     >
       {icon && iconPosition === "before" && <span className="ml-[8px] py-[5px]">{icon}</span>}
       <span className="mr-[8px] py-[5px]">{children}</span>

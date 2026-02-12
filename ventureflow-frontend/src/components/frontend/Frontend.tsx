@@ -57,14 +57,14 @@ export const Frontend = ({
 
                       <div className="flex items-center gap-[3px]">
                         <img className="w-5 h-5" src="/industry-svgrepo-com-1.svg" alt="Industry" />
-                        <span className="text-base font-medium text-[#757575]">Industry: <span className="font-bold text-black">{industry}</span></span>
+                        <span className="text-base font-medium text-gray-500">Industry: <span className="font-medium text-black">{industry}</span></span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-[5px]">
                       <img className="w-[17.25px] h-[18px]" src="/vector-2.svg" alt="Seller Rank" />
                       <span className="text-base text-black">
-                        <span className="text-[#6d6d6d]">Seller Rank</span> &quot;{sellerRank}&quot;
+                        <span className="text-gray-600">Seller Rank</span> &quot;{sellerRank}&quot;
                       </span>
                     </div>
                   </div>
@@ -82,7 +82,7 @@ export const Frontend = ({
 
               <div className="flex justify-end w-full">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-[#1d7595] underline">See is Details</span>
+                  <span className="text-lg font-medium text-[#1d7595] underline">See is Details</span>
                   <img className="w-[13.65px] h-[14.97px]" src="/vector-3.svg" alt="Details arrow" />
                 </div>
               </div>
@@ -115,12 +115,12 @@ export const Frontend = ({
               <div className="flex flex-col items-end gap-4">
                 <div className="flex flex-col items-end gap-[8.44px]">
                   <div className="flex items-center gap-[7.51px]">
-                    <span className="text-[15px] font-medium text-[#757575]">Desired Investment & Stake</span>
+                    <span className="text-[15px] font-medium text-gray-500">Desired Investment & Stake</span>
                     <img className="w-[15.64px] h-[15.64px]" src="/group-22120.png" alt="Investment Info" />
                   </div>
                   <div className="text-[22.3px] text-[#1d7595] text-right">
                     <span className="font-medium">{desiredInvestment}</span>
-                    <span className="font-light"> for </span>
+                    <span className="font-normal"> for </span>
                     <span className="font-medium">{stake}</span>
                   </div>
                 </div>

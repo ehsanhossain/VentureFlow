@@ -97,7 +97,7 @@ const ProfileDropdown: React.FC = () => {
                 className="w-12 h-12 rounded-full object-cover bg-gray-100"
               />
               <div className="flex flex-col min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.name || 'User Name'}
                 </p>
                 <p className="text-xs text-gray-500 truncate">
@@ -150,7 +150,7 @@ const ProfileDropdown: React.FC = () => {
               <div className="w-8 h-8 rounded-full bg-red-100/50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-all">
                 <LogOut className="w-4 h-4" />
               </div>
-              <span className="font-bold">{t('profile.logout', 'Sign Out')}</span>
+              <span className="font-medium">{t('profile.logout', 'Sign Out')}</span>
             </button>
           </div>
         </div>

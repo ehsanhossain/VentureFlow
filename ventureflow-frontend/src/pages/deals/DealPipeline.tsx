@@ -308,7 +308,7 @@ const DealPipeline = () => {
 
 
     return (
-        <div className="flex flex-col h-full min-h-screen bg-gray-50 font-poppins overflow-x-hidden">
+        <div className="flex flex-col h-full min-h-screen bg-gray-50 overflow-x-hidden">
             {/* Header */}
             <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                 <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
@@ -561,7 +561,7 @@ const DealPipeline = () => {
                                                 ? pipelineView === 'buyer' ? 'bg-[#064771] text-white shadow-md' : 'bg-green-600 text-white shadow-md'
                                                 : stageDeals.length > 0
                                                     ? pipelineView === 'buyer' ? 'bg-blue-50 text-[#064771] border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'
-                                                    : 'bg-white text-gray-300 border border-gray-100 hover:border-gray-300'
+                                                    : 'bg-white text-gray-400 border border-gray-100 hover:border-gray-300'
                                                 }`}
                                             title={`${stage.name} (${stageDeals.length})`}
                                         >
@@ -687,7 +687,7 @@ const DealPipeline = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <span className={`px-2 py-1 rounded-full text-xs ${(deal as any).possibility === 'High' ? 'bg-green-100 text-green-800' :
                                                         (deal as any).possibility === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                            'bg-gray-100 text-gray-900'
                                                         }`}>
                                                         {(deal as any).possibility || deal.priority}
                                                     </span>

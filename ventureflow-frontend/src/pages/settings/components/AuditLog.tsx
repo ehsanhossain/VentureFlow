@@ -250,7 +250,7 @@ const AuditLog: React.FC = () => {
     }
 
     return (
-        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
             {/* Header */}
             <div className="px-8 py-6">
                 <div className="flex items-center justify-between gap-6">

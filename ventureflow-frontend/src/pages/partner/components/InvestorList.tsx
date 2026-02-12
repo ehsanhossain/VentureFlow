@@ -57,13 +57,13 @@ const InvestorList = () => {
     if (loading) return (
         <div className="flex flex-col justify-center items-center h-full gap-3">
             <BrandSpinner size="lg" />
-            <span className="text-gray-600 font-poppins">{t('investor.loading', 'Loading Investors...')}</span>
+            <span className="text-gray-600 ">{t('investor.loading', 'Loading Investors...')}</span>
         </div>
     );
 
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4 text-[#30313D] font-poppins">
+            <h2 className="text-lg md:text-xl font-medium mb-4 text-gray-900 ">
                 {t('investor.title', 'Assigned Investors')}
             </h2>
 
@@ -130,7 +130,7 @@ const InvestorList = () => {
                             </div>
                             <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('investor.investmentSize', 'Investment Size')}</span>
-                                <span className="text-sm font-bold text-[#064771]">{buyer.target_preference?.investment_size || '-'}</span>
+                                <span className="text-sm font-medium text-[#064771]">{buyer.target_preference?.investment_size || '-'}</span>
                             </div>
                         </div>
                     ))

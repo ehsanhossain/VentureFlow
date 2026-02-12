@@ -526,7 +526,7 @@ const CreateEmployee: React.FC = () => {
     <div>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col flex-shrink-0 justify-center items-start gap-4 w-full md:w-[682px]">
-          <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal] pt-10 md:pt-[40px] pl-[25px]">
+          <div className="flex items-center self-stretch text-gray-900 text-right text-[1.75rem] font-medium leading-[normal] pt-10 md:pt-[40px] pl-[25px]">
             {id ? 'Update User' : `Create ${accountType === 'employee' ? 'Employee' : 'Partner'}`}
           </div>
           <div className="flex items-center self-stretch pl-[25px]">
@@ -613,7 +613,7 @@ const CreateEmployee: React.FC = () => {
                   ) : (
                     <div className="w-[86.01px] gap-[10.49px] flex flex-col items-center">
                       <PlusSquareIcon className="w-[30.98px] h-[30.98px] text-[#064771]" />
-                      <p className="font-['Poppins',Helvetica] font-medium text-[#828282] text-[11.3px] text-center tracking-[0] leading-[12.1px]">
+                      <p className="font-medium text-gray-500 text-[11.3px] text-center tracking-[0] leading-[12.1px]">
                         Upload Profile Picture
                       </p>
                     </div>
@@ -624,12 +624,12 @@ const CreateEmployee: React.FC = () => {
                   {fileInfo.map((info, index) => (
                     <div
                       key={index}
-                      className="relative self-stretch font-['Poppins',Helvetica] font-normal text-center leading-normal"
+                      className="relative self-stretch font-normal text-center leading-normal"
                     >
-                      <span className="font-light text-[#8b8b8b] tracking-[0] text-xs">
+                      <span className="font-normal text-gray-500 tracking-[0] text-xs">
                         {info.label} <br />
                       </span>
-                      <span className="font-semibold text-[#30313d] tracking-[-0.02px] text-xs">
+                      <span className="font-semibold text-gray-900 tracking-[-0.02px] text-xs">
                         {info.value}
                       </span>
                     </div>
@@ -658,7 +658,7 @@ const CreateEmployee: React.FC = () => {
                         <span className="text-[#EC1D42] font-sf font-semibold leading-[19.28569984436035px]">
                           *
                         </span>
-                        <span className="text-[#30313D] font-medium leading-[19.28569984436035px] font-poppins">
+                        <span className="text-gray-900 font-medium leading-[19.28569984436035px] ">
                           Registered Name
                         </span>
                       </div>
@@ -670,7 +670,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.regName}
                       />
                       {errors.regName && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.regName.message}
                         </span>
                       )}
@@ -679,7 +679,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className="text-red-600 font-semibold leading-5">*</span>
-                          <span className="text-gray-800 font-medium leading-5 font-poppins">
+                          <span className="text-gray-900 font-medium leading-5 ">
                             Partner ID
                           </span>
                         </div>
@@ -692,7 +692,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.partnerID}
                       />
                       {errors.partnerID && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.partnerID.message}
                         </span>
                       )}
@@ -704,7 +704,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className="text-red-600 font-semibold leading-5">*</span>
-                          <span className="text-gray-800 font-medium leading-5 font-poppins">
+                          <span className="text-gray-900 font-medium leading-5 ">
                             HQ Country
                           </span>
                         </div>
@@ -726,7 +726,7 @@ const CreateEmployee: React.FC = () => {
                         )}
                       />
                       {errors.nationality && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           Country is required
                         </span>
                       )}
@@ -742,7 +742,7 @@ const CreateEmployee: React.FC = () => {
                         <span className="text-[#EC1D42] font-sf font-semibold leading-[19.28569984436035px]">
                           *
                         </span>
-                        <span className="text-[#30313D] font-medium leading-[19.28569984436035px] font-poppins">
+                        <span className="text-gray-900 font-medium leading-[19.28569984436035px] ">
                           First Name
                         </span>
                       </div>
@@ -754,7 +754,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.firstName}
                       />
                       {errors.firstName && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.firstName.message}
                         </span>
                       )}
@@ -762,10 +762,10 @@ const CreateEmployee: React.FC = () => {
                     <div className="flex justify-start items-start flex-col gap-3.5 w-[386px]">
                       <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                         <div className="flex justify-start items-center flex-row gap-[3px]">
-                          <span className="text-[#EC1D42] font-serif font-semibold leading-[19.28569984436035px]">
+                          <span className="text-[#EC1D42] font-semibold leading-[19.28569984436035px]">
                             *
                           </span>
-                          <span className="text-[#30313D] font-medium leading-[19.28569984436035px] font-poppins">
+                          <span className="text-gray-900 font-medium leading-[19.28569984436035px] ">
                             Last Name
                           </span>
                         </div>
@@ -779,17 +779,17 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.lastName}
                       />
                       {errors.lastName && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.lastName.message}
                         </span>
                       )}
                     </div>
                     <div className="flex flex-col gap-[19px] w-[182px]">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[#EC1D42] font-serif font-bold leading-[19.2857px]">
+                        <span className="text-[#EC1D42] font-medium leading-[19.2857px]">
                           *
                         </span>
-                        <span className="text-[#30313D] font-medium leading-[19.2857px] font-poppins">
+                        <span className="text-gray-900 font-medium leading-[19.2857px] ">
                           Gender
                         </span>
                       </div>
@@ -808,7 +808,7 @@ const CreateEmployee: React.FC = () => {
                       />
 
                       {errors.gender && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           Gender is required
                         </span>
                       )}
@@ -819,7 +819,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className="text-red-600 font-semibold leading-5">*</span>
-                          <span className="text-gray-800 font-medium leading-5 font-poppins">
+                          <span className="text-gray-900 font-medium leading-5 ">
                             Employee ID
                           </span>
                         </div>
@@ -832,7 +832,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.employeeID}
                       />
                       {errors.employeeID && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.employeeID.message}
                         </span>
                       )}
@@ -841,7 +841,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className="text-red-600 font-semibold leading-5">*</span>
-                          <span className="text-gray-800 font-medium leading-5 font-poppins">
+                          <span className="text-gray-900 font-medium leading-5 ">
                             Nationality
                           </span>
                         </div>
@@ -869,8 +869,8 @@ const CreateEmployee: React.FC = () => {
                       render={({ field }) => (
                         <div className="flex flex-col gap-4 w-[182px]">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-red-600 font-semibold font-poppins">*</span>
-                            <span className="text-gray-800 font-medium font-poppins">
+                            <span className="text-red-600 font-semibold ">*</span>
+                            <span className="text-gray-900 font-medium ">
                               Employee Status
                             </span>
                           </div>
@@ -888,7 +888,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex flex-col gap-4 w-[183px]">
                         <div className="flex items-center gap-1.5">
                           <span className="text-red-600 font-semibold"> *</span>
-                          <span className="text-gray-800 font-medium font-poppins">Joining Date</span>
+                          <span className="text-gray-900 font-medium ">Joining Date</span>
                         </div>
                         <div className="relative">
                           <Controller
@@ -921,7 +921,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex flex-col gap-4 w-[183px]">
                         <div className="flex items-center gap-1.5">
                           <span className="text-red-600 font-semibold"> *</span>
-                          <span className="text-gray-800 font-medium font-poppins">DOB</span>
+                          <span className="text-gray-900 font-medium ">DOB</span>
                         </div>
                         <div className="relative">
                           <Controller
@@ -956,7 +956,7 @@ const CreateEmployee: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <div className="flex items-center gap-1">
                           <span className="text-red-600 font-semibold">*</span>
-                          <span className="text-gray-800 font-medium font-poppins">Work Email</span>
+                          <span className="text-gray-900 font-medium ">Work Email</span>
                         </div>
                       </div>
                       <Input
@@ -989,7 +989,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.workEmail}
                       />
                       {errors.workEmail && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.workEmail.message}
                         </span>
                       )}
@@ -999,7 +999,7 @@ const CreateEmployee: React.FC = () => {
                         <span className="text-[#EC1D42] font-sf font-semibold leading-[19.2857px]">
                           *
                         </span>
-                        <span className="text-[#30313D] font-medium leading-[19.2857px] font-poppins">
+                        <span className="text-gray-900 font-medium leading-[19.2857px] ">
                           Contact Number
                         </span>
                       </div>
@@ -1011,7 +1011,7 @@ const CreateEmployee: React.FC = () => {
                         error={!!errors.contact}
                       />
                       {errors.contact && (
-                        <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                        <span className="text-sm text-red-500 mt-[-5px]">
                           {errors.contact.message}
                         </span>
                       )}
@@ -1023,7 +1023,7 @@ const CreateEmployee: React.FC = () => {
           </div>
         </div>
         <div className="flex self-stretch justify-start items-start flex-col gap-[43px] pt-[50px] pl-[40px] pb-[40px]">
-          <p className="self-stretch text-black text-lg font-poppins font-medium leading-5">
+          <p className="self-stretch text-black text-lg font-medium leading-5">
             Company Details & User Role
           </p>
           <div className="flex flex-col items-start gap-8 w-full">
@@ -1031,10 +1031,10 @@ const CreateEmployee: React.FC = () => {
               <div className="flex flex-row items-center gap-16 w-full">
                 <div className="flex flex-col gap-3.5 w-[386px]">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[#EC1D42] font-poppins font-semibold leading-[19.29px]">
+                    <span className="text-[#EC1D42] font-semibold leading-[19.29px]">
                       *
                     </span>
-                    <span className="text-[#30313D] font-poppins font-medium leading-[19.29px]">
+                    <span className="text-gray-900 font-medium leading-[19.29px]">
                       Company
                     </span>
                   </div>
@@ -1068,7 +1068,7 @@ const CreateEmployee: React.FC = () => {
                     <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
                       *
                     </span>
-                    <span className="text-[#30313D] font-medium text-sm font-poppins">
+                    <span className="text-gray-900 font-medium text-sm ">
                       Department
                     </span>
                   </div>
@@ -1094,10 +1094,10 @@ const CreateEmployee: React.FC = () => {
                   style={{ width: '386px' }}
                 >
                   <div className="flex justify-start items-center flex-row gap-1.5">
-                    <span className="text-[#EC1D42] font-poppins font-semibold leading-[19.28569984436035px]">
+                    <span className="text-[#EC1D42] font-semibold leading-[19.28569984436035px]">
                       *
                     </span>
-                    <span className="text-[#30313D] font-medium text-sm font-poppins">
+                    <span className="text-gray-900 font-medium text-sm ">
                       Select Branch
                     </span>
                   </div>
@@ -1128,7 +1128,7 @@ const CreateEmployee: React.FC = () => {
                     <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
                       *
                     </span>
-                    <span className="text-[#30313D] font-medium leading-[19.29px] font-poppins">
+                    <span className="text-gray-900 font-medium leading-[19.29px] ">
                       Select Team
                     </span>
                   </div>
@@ -1153,8 +1153,8 @@ const CreateEmployee: React.FC = () => {
                 </div>
                 <div className="flex flex-col gap-3.5 w-[386px]">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-red-600 font-semibold font-poppins">*</span>
-                    <span className="text-gray-800 font-medium font-poppins">Designation</span>
+                    <span className="text-red-600 font-semibold ">*</span>
+                    <span className="text-gray-900 font-medium ">Designation</span>
                   </div>
                   <div className="relative w-full">
                     <Controller
@@ -1179,15 +1179,15 @@ const CreateEmployee: React.FC = () => {
             </div>
             <div className="bg-white flex w-full">
               <div className="bg-white w-full max-w-[1110px]">
-                <p className="self-stretch text-black text-lg font-poppins font-medium leading-5 pb-10">
+                <p className="self-stretch text-black text-lg font-medium leading-5 pb-10">
                   User login and Permission
                 </p>
                 <div className="flex flex-col items-start gap-6 w-full">
                   <div className="flex flex-col sm:flex-row items-start gap-6 sm:gap-10 w-full">
                     <div className="flex flex-col w-full sm:w-[386px] gap-2">
                       <label className="inline-flex items-center gap-1.5">
-                        <span className="font-bold text-[#eb1c41] text-base">*</span>
-                        <span className="font-medium text-[#30313d] text-base font-poppins">
+                        <span className="font-medium text-[#eb1c41] text-base">*</span>
+                        <span className="font-medium text-gray-900 text-base ">
                           System Login ID
                         </span>
                       </label>
@@ -1237,7 +1237,7 @@ const CreateEmployee: React.FC = () => {
                           error={!!errors.loginEmail}
                         />
                         {errors.loginEmail && (
-                          <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                          <span className="text-sm text-red-500 mt-[-5px]">
                             {errors.loginEmail.message}
                           </span>
                         )}
@@ -1246,8 +1246,8 @@ const CreateEmployee: React.FC = () => {
 
                     <div className="flex flex-col w-full sm:w-[414px] gap-2">
                       <label className="inline-flex items-center gap-1.5">
-                        <span className="font-bold text-[#eb1c41] text-base">*</span>
-                        <span className="font-medium text-[#30313d] text-base font-poppins">
+                        <span className="font-medium text-[#eb1c41] text-base">*</span>
+                        <span className="font-medium text-gray-900 text-base ">
                           Password
                         </span>
                       </label>
@@ -1281,12 +1281,12 @@ const CreateEmployee: React.FC = () => {
                                 },
                               }
                           )}
-                          className="h-10 w-full pl-12 pr-10 bg-white rounded-md border border-slate-300 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="h-10 w-full pl-12 pr-10 bg-white rounded-md border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                           placeholder="••••••••••"
                         />
 
                         {errors.password && (
-                          <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                          <span className="text-sm text-red-500 mt-[-5px]">
                             {errors.password.message}
                           </span>
                         )}
@@ -1339,8 +1339,8 @@ const CreateEmployee: React.FC = () => {
                   {canEditRole && (
                     <div className="flex flex-col w-full sm:w-[459px] gap-4">
                       <label className="inline-flex items-center gap-1.5">
-                        <span className="font-bold text-[#eb1c41] text-base">*</span>
-                        <span className="font-medium text-[#30313d] text-base font-poppins">
+                        <span className="font-medium text-[#eb1c41] text-base">*</span>
+                        <span className="font-medium text-gray-900 text-base ">
                           System-wide Permission
                         </span>
                       </label>
@@ -1393,7 +1393,7 @@ const CreateEmployee: React.FC = () => {
                       strokeLinecap="round"
                     />
                   </svg>
-                  <span className="text-red-600 text-center font-medium font-poppins">Cancel</span>
+                  <span className="text-red-600 text-center font-medium ">Cancel</span>
                 </button>
 
                 <button
@@ -1417,7 +1417,7 @@ const CreateEmployee: React.FC = () => {
                           fill="white"
                         />
                       </svg>
-                      <span className="text-white text-center font-medium font-poppins ml-[4px]">
+                      <span className="text-white text-center font-medium ml-[4px]">
                         {id ? 'Update' : 'Create'}
                       </span>
                     </>

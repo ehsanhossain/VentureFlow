@@ -139,7 +139,7 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
                                 />
                             ) : (
                                 <span
-                                    className="text-xs font-bold"
+                                    className="text-xs font-medium"
                                     style={{ color: primaryColor.text }}
                                 >
                                     {primaryEntity.substring(0, 2).toUpperCase()}
@@ -219,7 +219,7 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
                             />
                         ) : (
                             <span
-                                className="text-xs font-bold"
+                                className="text-xs font-medium"
                                 style={{ color: secondaryColor.text }}
                             >
                                 {secondaryEntity.substring(0, 2).toUpperCase()}
@@ -240,7 +240,7 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
                         {shareholdingRatio && (
                             <span className="text-xs text-gray-500">{shareholdingRatio}</span>
                         )}
-                        <span className="text-base font-medium text-gray-800">{dealValue}</span>
+                        <span className="text-base font-medium text-gray-900">{dealValue}</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <Download className="w-4 h-4" style={{ color: priorityInfo.color }} />

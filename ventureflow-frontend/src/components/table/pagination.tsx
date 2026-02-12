@@ -41,7 +41,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }: { totalPages: num
             fill="#838383"
           />
         </svg>
-        <span className="text-[#838383] font-medium">Previous</span>
+        <span className="text-gray-500 font-medium">Previous</span>
       </button>
 
       {/* Page Numbers */}
@@ -51,7 +51,7 @@ const Pagination = ({ totalPages, currentPage, onPageChange }: { totalPages: num
             <button
               key={page}
               onClick={() => handlePageClick(page)}
-              className={`text-center leading-[33.21394348144531px] ${page === currentPage ? 'text-[#0C5577] font-medium' : 'text-[#30313D]'}`}
+              className={`text-center leading-[33.21394348144531px] ${page === currentPage ? 'text-[#0C5577] font-medium' : 'text-gray-900'}`}
             >
               {page}
             </button>

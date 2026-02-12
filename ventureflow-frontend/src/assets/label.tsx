@@ -8,7 +8,7 @@ export const Label: React.FC<LabelProps> = ({ text }) => {
     return (
         <div className="label-container">
             <div
-                className="label-text font-poppins"
+                className="label-text "
                 style={{
                     color: '#064771',
                     fontSize: '16px',

@@ -213,9 +213,9 @@ const DatePicker: React.FC<DatePickerProps> = ({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full h-10 pl-[47px] pr-10 py-2 ml-[17px] bg-white rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-slate-300 text-left relative"
+          className="w-full h-10 pl-[47px] pr-10 py-2 ml-[17px] bg-white rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-gray-300 text-left relative"
         >
-          <span className="text-sm text-[#8a8a8a] font-normal truncate overflow-hidden whitespace-nowrap max-w-full">
+          <span className="text-sm text-gray-500 font-normal truncate overflow-hidden whitespace-nowrap max-w-full">
             {selectedDate ? formatDate(selectedDate) : placeholder}
           </span>
 
@@ -237,7 +237,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
         {/* Calendar Dropdown */}
         {isOpen && (
-          <div className="absolute w-[320px] mt-2 bg-white border border-slate-200 rounded-lg shadow-lg z-20 p-4 top-full right-0">
+          <div className="absolute w-[320px] mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-4 top-full right-0">
             <div className="flex justify-between items-center mb-4">
               {/* Previous Period Button */}
               <button

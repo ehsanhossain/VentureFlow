@@ -72,9 +72,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                     <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <X className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Error Occurred</h3>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">Error Occurred</h3>
                     <p className="text-gray-500 mb-6">{error}</p>
-                    <button onClick={onClose} className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-colors">
+                    <button onClick={onClose} className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors">
                         Close Modal
                     </button>
                 </div>
@@ -104,11 +104,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                             ) : (
                                 <>
                                     <div className="flex flex-wrap items-center gap-3 mb-2">
-                                        <h2 className="text-2xl font-black text-gray-900 tracking-tight truncate">{deal.name}</h2>
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${deal.status === 'won' ? 'bg-green-100 text-green-700' :
-                                                deal.status === 'lost' ? 'bg-red-100 text-red-700' :
-                                                    deal.status === 'on_hold' ? 'bg-orange-100 text-orange-700' :
-                                                        'bg-blue-100 text-[#064771]'
+                                        <h2 className="text-2xl font-medium text-gray-900 tracking-tight truncate">{deal.name}</h2>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest ${deal.status === 'won' ? 'bg-green-100 text-green-700' :
+                                            deal.status === 'lost' ? 'bg-red-100 text-red-700' :
+                                                deal.status === 'on_hold' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-blue-100 text-[#064771]'
                                             }`}>
                                             {deal.status}
                                         </span>
@@ -156,11 +156,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm transition-hover hover:border-blue-200 group">
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Expected Transaction</p>
+                                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Expected Transaction</p>
                                             <DollarSign className="w-4 h-4 text-green-500 group-hover:scale-110 transition-transform" />
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-3xl font-black text-gray-900 tracking-tight">
+                                            <span className="text-3xl font-semibold text-gray-900 tracking-tight">
                                                 {deal.estimated_ev_value
                                                     ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(deal.estimated_ev_value)}`
                                                     : 'N/A'}
@@ -169,20 +169,20 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                     </div>
                                     <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm transition-hover hover:border-amber-200">
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Confidence Score</p>
+                                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Confidence Score</p>
                                             <Activity className="w-4 h-4 text-amber-500" />
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className={`text-xl font-black ${deal.possibility === 'High' ? 'text-green-600' :
-                                                    deal.possibility === 'Medium' ? 'text-amber-600' :
-                                                        'text-gray-600'
+                                            <span className={`text-xl font-semibold ${deal.possibility === 'High' ? 'text-green-600' :
+                                                deal.possibility === 'Medium' ? 'text-amber-600' :
+                                                    'text-gray-600'
                                                 }`}>
                                                 {deal.possibility || 'Unknown'}
                                             </span>
                                             {deal.priority && (
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${deal.priority === 'high' ? 'bg-red-50 text-red-600' :
-                                                        deal.priority === 'medium' ? 'bg-amber-50 text-amber-600' :
-                                                            'bg-green-50 text-green-600'
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-tighter ${deal.priority === 'high' ? 'bg-red-50 text-red-600' :
+                                                    deal.priority === 'medium' ? 'bg-amber-50 text-amber-600' :
+                                                        'bg-green-50 text-green-600'
                                                     }`}>
                                                     {deal.priority}
                                                 </span>
@@ -199,10 +199,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             <div className="p-2 bg-blue-50 rounded-xl transition-colors group-hover:bg-blue-100">
                                                 <Building2 className="w-5 h-5 text-[#064771]" />
                                             </div>
-                                            <h3 className="font-black text-gray-900 tracking-tight">The Buyer</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight">The Buyer</h3>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-lg font-bold text-gray-800 leading-tight">{deal.buyer?.company_overview?.reg_name || 'N/A'}</p>
+                                            <p className="text-lg font-medium text-gray-900 leading-tight">{deal.buyer?.company_overview?.reg_name || 'N/A'}</p>
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                                 <MapPin className="w-3.5 h-3.5" />
                                                 {deal.buyer?.company_overview?.hq_country?.name || 'Location Not Specified'}
@@ -216,10 +216,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             <div className="p-2 bg-green-50 rounded-xl transition-colors group-hover:bg-green-100">
                                                 <Briefcase className="w-5 h-5 text-green-600" />
                                             </div>
-                                            <h3 className="font-black text-gray-900 tracking-tight">The Target</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight">The Target</h3>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-lg font-bold text-gray-800 leading-tight">{deal.seller?.company_overview?.reg_name || 'N/A'}</p>
+                                            <p className="text-lg font-medium text-gray-900 leading-tight">{deal.seller?.company_overview?.reg_name || 'N/A'}</p>
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                                 <Tag className="w-3.5 h-3.5 text-green-500" />
                                                 {deal.industry || 'General Industry'}
@@ -230,28 +230,28 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
 
                                 {/* Detailed Metrics */}
                                 <div className="bg-white/50 rounded-2xl border border-gray-100 p-6">
-                                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Strategic Metrics</h3>
+                                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">Strategic Metrics</h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1.5">PIC</label>
+                                            <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">PIC</label>
                                             <div className="flex items-center gap-2">
                                                 <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center border-2 border-white shadow-sm">
-                                                    <span className="text-[10px] font-black text-[#064771]">{getDisplayName(deal.pic).substring(0, 1).toUpperCase()}</span>
+                                                    <span className="text-[10px] font-semibold text-[#064771]">{getDisplayName(deal.pic).substring(0, 1).toUpperCase()}</span>
                                                 </div>
-                                                <span className="text-sm font-bold text-gray-800">{getDisplayName(deal.pic)}</span>
+                                                <span className="text-sm font-medium text-gray-900">{getDisplayName(deal.pic)}</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1.5">Region</label>
-                                            <span className="text-sm font-bold text-gray-800">{deal.region || 'International'}</span>
+                                            <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">Region</label>
+                                            <span className="text-sm font-medium text-gray-900">{deal.region || 'International'}</span>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1.5">Currency</label>
-                                            <span className="text-sm font-bold text-gray-800 px-2 py-0.5 bg-gray-100 rounded-md">{deal.estimated_ev_currency || 'USD'}</span>
+                                            <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">Currency</label>
+                                            <span className="text-sm font-medium text-gray-900 px-2 py-0.5 bg-gray-100 rounded-md">{deal.estimated_ev_currency || 'USD'}</span>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1.5">Close Est.</label>
-                                            <div className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
+                                            <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">Close Est.</label>
+                                            <div className="flex items-center gap-1.5 text-sm font-medium text-gray-900">
                                                 <Calendar className="w-3.5 h-3.5 text-red-400" />
                                                 {deal.target_close_date ? new Date(deal.target_close_date).toLocaleDateString() : 'TBD'}
                                             </div>
@@ -269,7 +269,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`relative flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'text-[#064771]' : 'text-gray-400 hover:text-gray-600'
+                                    className={`relative flex-1 py-4 text-[10px] font-semibold uppercase tracking-widest transition-all ${activeTab === tab ? 'text-[#064771]' : 'text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
                                     {tab}
@@ -284,7 +284,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                             {activeTab === 'details' && (
                                 <div className="space-y-6">
                                     <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest flex items-center justify-between">
+                                        <h4 className="text-[10px] font-semibold text-gray-400 uppercase mb-4 tracking-widest flex items-center justify-between">
                                             Documents
                                             <span className="bg-blue-100 text-[#064771] px-1.5 py-0.5 rounded text-[8px]">{deal?.documents?.length || 0}</span>
                                         </h4>
@@ -296,8 +296,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                             <FileText className="w-4 h-4 text-[#064771]" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-bold text-gray-700 truncate">{doc.file_name}</p>
-                                                            <p className="text-[9px] text-gray-400 uppercase font-black">{doc.document_type || 'General'}</p>
+                                                            <p className="text-xs font-medium text-gray-700 truncate">{doc.file_name}</p>
+                                                            <p className="text-[9px] text-gray-400 uppercase font-semibold">{doc.document_type || 'General'}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -319,14 +319,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                 .filter((l: any) => l.type === 'comment')
                                                 .map((log: any) => (
                                                     <div key={log.id} className="flex gap-4 group">
-                                                        <div className="w-8 h-8 rounded-full bg-[#064771]/10 flex items-center justify-center flex-shrink-0 text-[#064771] font-black text-[10px] shadow-sm ring-2 ring-white">
+                                                        <div className="w-8 h-8 rounded-full bg-[#064771]/10 flex items-center justify-center flex-shrink-0 text-[#064771] font-semibold text-[10px] shadow-sm ring-2 ring-white">
                                                             {getDisplayName(log.user).substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm relative group-hover:shadow-md transition-shadow">
                                                                 <div className="flex justify-between items-center mb-1.5">
-                                                                    <span className="text-[11px] font-black text-gray-900">{getDisplayName(log.user)}</span>
-                                                                    <span className="text-[9px] font-bold text-gray-400">{new Date(log.created_at).toLocaleDateString()}</span>
+                                                                    <span className="text-[11px] font-semibold text-gray-900">{getDisplayName(log.user)}</span>
+                                                                    <span className="text-[9px] font-medium text-gray-400">{new Date(log.created_at).toLocaleDateString()}</span>
                                                                 </div>
                                                                 <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{log.content}</p>
                                                             </div>
@@ -336,9 +336,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                         ) : (
                                             <div className="text-center py-12">
                                                 <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                                    <MessageSquare className="w-6 h-6 text-gray-300" />
+                                                    <MessageSquare className="w-6 h-6 text-gray-400" />
                                                 </div>
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No conversation yet</p>
+                                                <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">No conversation yet</p>
                                             </div>
                                         )}
                                     </div>
@@ -371,14 +371,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                 <div key={idx} className="relative">
                                                     <div className="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500 shadow-sm" />
                                                     <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                                        <p className="text-xs font-bold text-gray-900">
+                                                        <p className="text-xs font-medium text-gray-900">
                                                             Phase <span className="text-blue-600">{history.from_stage || '?'}</span> ➔ <span className="text-blue-600">{history.to_stage}</span>
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-50">
                                                             <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
                                                                 <User className="w-2.5 h-2.5 text-gray-400" />
                                                             </div>
-                                                            <span className="text-[10px] font-bold text-gray-500">{getDisplayName(history.changed_by)}</span>
+                                                            <span className="text-[10px] font-medium text-gray-500">{getDisplayName(history.changed_by)}</span>
                                                             <span className="ml-auto text-[9px] text-gray-400">{new Date(history.created_at || history.changed_at).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
@@ -388,7 +388,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                     ) : (
                                         <div className="text-center py-12">
                                             <Clock className="w-6 h-6 text-gray-200 mx-auto mb-2" />
-                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No activity log</p>
+                                            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">No activity log</p>
                                         </div>
                                     )}
                                 </div>

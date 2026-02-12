@@ -438,7 +438,7 @@ const IndexEmployee = ({
       <div className="flex justify-between items-center flex-row gap-[464px] px-[25px] pt-[25px]">
         <div className="flex flex-col gap-4 w-[789px]">
           <div className="flex w-full justify-start items-center gap-3">
-            <span className="text-black text-2xl font-medium font-poppins">All Employees</span>
+            <span className="text-black text-2xl font-medium ">All Employees</span>
           </div>
           <div className="flex self-stretch justify-start items-center flex-row">
             <div className="flex flex-col md:flex-row items-center gap-2.5 w-full md:w-[447px]">
@@ -470,7 +470,7 @@ const IndexEmployee = ({
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <div className="text-white font-poppins text-[.8125rem] font-semibold leading-[1.1875rem]">
+                  <div className="text-white text-[.8125rem] font-semibold leading-[1.1875rem]">
                     Back
                   </div>
                 </div>
@@ -498,7 +498,7 @@ const IndexEmployee = ({
                   fill="white"
                 />
               </svg>
-              <span className="text-white text-sm font-medium font-poppins">Add Employee</span>
+              <span className="text-white text-sm font-medium ">Add Employee</span>
             </div>
           </button>
 
@@ -532,7 +532,7 @@ const IndexEmployee = ({
                   strokeWidth="1.3125"
                 />
               </svg>
-              <span className="text-[#064771] text-sm font-medium font-poppins">
+              <span className="text-[#064771] text-sm font-medium ">
                 Batch Register
               </span>
             </div>
@@ -569,7 +569,7 @@ const IndexEmployee = ({
                   strokeLinejoin="round"
                 />
               </svg>
-              <span className="text-[#0C5577] text-sm font-medium font-poppins">Export</span>
+              <span className="text-[#0C5577] text-sm font-medium ">Export</span>
             </div>
           </div>
         </div>
@@ -613,11 +613,11 @@ const IndexEmployee = ({
                 strokeLinejoin="round"
               />
             </svg>
-            <span className="text-[#064771] text-center leading-5 font-poppins">All Employees</span>
+            <span className="text-[#064771] text-center leading-5 ">All Employees</span>
             <div className="flex flex-col">
               <div className="flex items-center gap-2 px-2 bg-[#E4F8FF] rounded-3xl h-[24px]">
                 <div className="flex items-center gap-0.5">
-                  <span className="text-[#064771] text-sm font-medium leading-5 font-poppins">
+                  <span className="text-[#064771] text-sm font-medium leading-5 ">
                     {meta.total}
                   </span>
                 </div>
@@ -670,15 +670,15 @@ const IndexEmployee = ({
               placeholder="Search Here"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-gray-500 text-sm leading-normal font-poppins bg-transparent border-none outline-none"
+              className="text-gray-500 text-sm leading-normal bg-transparent border-none outline-none"
             />
           </div>
-          <div className="flex items-center gap-2 font-poppins">
+          <div className="flex items-center gap-2 ">
             <div className="flex items-center gap-1">
               <div className="flex items-center justify-center bg-gray-200 rounded px-1 w-6 h-5">
-                <span className="text-gray-500 text-[10px] font-bold">Ctrl</span>
+                <span className="text-gray-500 text-[10px] font-medium">Ctrl</span>
               </div>
-              <span className="text-gray-500 text-xs font-bold">/</span>
+              <span className="text-gray-500 text-xs font-medium">/</span>
               <div className="flex items-center justify-center bg-gray-200 rounded px-1 w-5 h-5">
                 <svg
                   className="w-4 h-4"
@@ -724,7 +724,7 @@ const IndexEmployee = ({
                 </svg>
               </div>
             </div>
-            <span className="text-gray-500 text-xs font-bold">+</span>
+            <span className="text-gray-500 text-xs font-medium">+</span>
             <div className="flex items-center justify-center bg-gray-200 rounded px-1 w-5 h-5">
               <span className="text-gray-600 text-sm font-medium">F</span>
             </div>
@@ -732,11 +732,11 @@ const IndexEmployee = ({
         </div>
 
         <div className="flex justify-start items-center gap-4">
-          <span className="text-sm leading-5 font-poppins text-center">
+          <span className="text-sm leading-5 text-center">
             <span className="text-gray-500">Showing</span>
-            <span className="text-gray-800 font-poppins mx-1">{employees?.length}</span>
+            <span className="text-gray-900 mx-1">{employees?.length}</span>
             <span className="text-gray-500">of</span>
-            <span className="text-gray-800 font-poppins mx-1">{meta?.total}</span>
+            <span className="text-gray-900 mx-1">{meta?.total}</span>
             <span className="text-gray-500">Employees</span>
           </span>
 
@@ -770,7 +770,7 @@ const IndexEmployee = ({
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <span className="text-gray-800 text-sm font-medium font-poppins">Filter</span>
+                  <span className="text-gray-900 text-sm font-medium ">Filter</span>
                 </div>
               </button>
             </div>
@@ -804,7 +804,7 @@ const IndexEmployee = ({
                       >
                         <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" />
                       </svg>
-                      <h2 className="font-medium text-[#30313d] text-3xl leading-[35.7px] font-['SF_Pro_Display-Medium',Helvetica]">
+                      <h2 className="font-medium text-gray-900 text-3xl leading-[35.7px] font-['SF_Pro_Display-Medium',Helvetica]">
                         Filter
                       </h2>
                     </div>
@@ -833,7 +833,7 @@ const IndexEmployee = ({
                       <div className="flex items-center justify-between w-full">
                         <div className="flex flex-col w-[301px] h-[70px] items-start justify-between">
                           <div className="flex items-center gap-1.5 w-full">
-                            <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                            <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                               Company
                             </span>
                             <div className="w-[18px] h-[18px] flex items-center justify-center">
@@ -881,7 +881,7 @@ const IndexEmployee = ({
 
                         <div className="flex flex-col h-[70px] items-start justify-between flex-1 ml-[80px]">
                           <div className="flex items-center gap-1.5 w-full">
-                            <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                            <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                               Nationality
                             </span>
                             <div className="w-[18px] h-[18px] flex items-center justify-center">
@@ -933,7 +933,7 @@ const IndexEmployee = ({
 
                     <div className="flex items-center justify-end gap-4 w-full">
                       <button
-                        className="h-[34px] px-3 py-[5.03px] bg-[#f1faff] rounded-[49.82px] border-[0.77px] border-solid border-[#0c5577] text-[#0c5577] font-normal text-base font-['Poppins',Helvetica] hover:bg-[#e6f4ff] transition-colors cursor-pointer flex items-center"
+                        className="h-[34px] px-3 py-[5.03px] bg-[#f1faff] rounded-[49.82px] border-[0.77px] border-solid border-[#0c5577] text-[#0c5577] font-normal text-base hover:bg-[#e6f4ff] transition-colors cursor-pointer flex items-center"
                         onClick={handleClearFilter}
                       >
                         {' '}
@@ -984,7 +984,7 @@ const IndexEmployee = ({
                         <span className="cursor-pointer pl-1">Clear Filter</span>
                       </button>
                       <button
-                        className="h-[34.49px] px-3 py-[5.03px] bg-[#064771] rounded-[49.82px] text-white font-medium text-base font-['Poppins',Helvetica] hover:bg-[#053a5a] transition-colors cursor-pointer flex items-center"
+                        className="h-[34.49px] px-3 py-[5.03px] bg-[#064771] rounded-[49.82px] text-white font-medium text-base hover:bg-[#053a5a] transition-colors cursor-pointer flex items-center"
                         onClick={handleSubmit(handleApplySearch)}
                       >
                         <span className="p-2">Apply & Search</span>
@@ -1026,7 +1026,7 @@ const IndexEmployee = ({
                     <TableHead
                       key={idx}
                       onClick={() => key && handleSort(key)}
-                      className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                      className={`cursor-pointer py-[10px] px-6 font-semibold text-gray-500 text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
                         } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
                         } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
                     >
@@ -1059,7 +1059,7 @@ const IndexEmployee = ({
                     <TableRow key={index}>
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 font-semibold text-[#30313D] text-sm border-t border-b border-l truncate whitespace-nowrap rounded-l-lg',
+                          'py-[10px] px-6 font-semibold text-gray-900 text-sm border-t border-b border-l truncate whitespace-nowrap rounded-l-lg',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
@@ -1102,7 +1102,7 @@ const IndexEmployee = ({
 
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b truncate whitespace-nowrap',
+                          'py-[10px] px-6 text-center text-gray-900 text-sm border-t border-b truncate whitespace-nowrap',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
@@ -1114,7 +1114,7 @@ const IndexEmployee = ({
 
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b truncate whitespace-nowrap',
+                          'py-[10px] px-6 text-center text-gray-900 text-sm border-t border-b truncate whitespace-nowrap',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
@@ -1126,7 +1126,7 @@ const IndexEmployee = ({
 
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b truncate whitespace-nowrap',
+                          'py-[10px] px-6 text-center text-gray-900 text-sm border-t border-b truncate whitespace-nowrap',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,
@@ -1138,7 +1138,7 @@ const IndexEmployee = ({
 
                       <TableCell
                         className={clsx(
-                          'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b truncate whitespace-nowrap',
+                          'py-[10px] px-6 text-center text-gray-900 text-sm border-t border-b truncate whitespace-nowrap',
                           {
                             'border-[#064771] bg-[#F5FBFF]': isSelected,
                             'border-[#E4E4E4] bg-white': !isSelected,

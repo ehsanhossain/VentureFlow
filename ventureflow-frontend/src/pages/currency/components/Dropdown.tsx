@@ -92,7 +92,7 @@ export const Dropdown = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
-        className="flex w-full h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-md border border-slate-300 bg-white focus:outline-none"
+        className="flex w-full h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none"
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap max-w-[calc(100%-24px)]">
@@ -120,7 +120,7 @@ export const Dropdown = ({
                     alt="Selected country flag"
                     src={selectedCountries[0].flagSrc}
                   />
-                  <span className="text-sm text-[#30313D] font-normal truncate">
+                  <span className="text-sm text-gray-900 font-normal truncate">
                     {selectedCountries[0].name}
                   </span>
                 </div>
@@ -150,15 +150,15 @@ export const Dropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-md border border-t-0 border-slate-300 bg-white overflow-hidden shadow-lg">
+        <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-md border border-t-0 border-gray-300 bg-white overflow-hidden shadow-lg">
           <div className="flex flex-col w-full items-start gap-4 px-4 py-3">
 
             <div className="relative w-full">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#828282]" />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-10 pr-3 py-2 rounded-full border border-[#828282] text-sm placeholder:text-[#828282] focus:outline-none"
+                className="w-full h-9 pl-10 pr-3 py-2 rounded-full border border-[#828282] text-sm placeholder:text-gray-500 focus:outline-none"
                 placeholder="Search Here"
               />
             </div>
@@ -187,7 +187,7 @@ export const Dropdown = ({
                           alt={`${country.name} flag`}
                           src={country.flagSrc}
                         />
-                        <span className={`text-sm ${isSelected ? 'text-[#064771] font-medium' : 'text-[#30313d]'}`}>
+                        <span className={`text-sm ${isSelected ? 'text-[#064771] font-medium' : 'text-gray-900'}`}>
                           {country.name}
                         </span>
                       </div>

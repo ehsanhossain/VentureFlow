@@ -225,7 +225,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                                     {/* Message Bubble */}
                                     {note.isDeleted ? (
                                         <div className="px-3 py-2 bg-[#F3F4F6] rounded-lg border border-[#E5E7EB] italic">
-                                            <span className="text-sm text-[#9CA3AF]">
+                                            <span className="text-sm text-gray-400">
                                                 <Trash2 className="w-3 h-3 inline mr-1" />
                                                 {note.deletedBy || note.author} deleted this message
                                             </span>
@@ -236,12 +236,12 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                                                 ? 'bg-[#064771] text-white rounded-br-none'
                                                 : note.isSystem
                                                     ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] rounded-bl-none border border-[#BAE6FD]'
-                                                    : 'bg-white text-[#374151] rounded-bl-none border border-[#E5E7EB]'
+                                                    : 'bg-white text-gray-700 rounded-bl-none border border-[#E5E7EB]'
                                                 }`}
                                         >
                                             {/* Author & System Badge */}
                                             <div className={`flex items-center gap-2 ${note.isSelf ? 'justify-end' : ''}`}>
-                                                <span className={`text-xs font-semibold ${note.isSelf ? 'text-white/90' : 'text-[#374151]'}`}>
+                                                <span className={`text-xs font-semibold ${note.isSelf ? 'text-white/90' : 'text-gray-700'}`}>
                                                     {note.author}
                                                 </span>
                                                 {note.isSystem && (
@@ -255,7 +255,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                                             <p className={`text-sm leading-relaxed ${note.isSelf ? 'text-white' : ''}`}>{note.content}</p>
 
                                             {/* Timestamp */}
-                                            <span className={`text-[10px] self-end ${note.isSelf ? 'text-white/70' : 'text-[#9CA3AF]'}`}>
+                                            <span className={`text-[10px] self-end ${note.isSelf ? 'text-white/70' : 'text-gray-400'}`}>
                                                 {note.timestamp}
                                             </span>
                                         </div>
@@ -278,7 +278,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                                 value={newNote}
                                 onChange={(e) => setNewNote(e.target.value)}
                                 placeholder="Write a comment or note..."
-                                className="w-full h-12 resize-none text-base text-[#475569] placeholder-[#475569] focus:outline-none"
+                                className="w-full h-12 resize-none text-base text-gray-600 placeholder-[#475569] focus:outline-none"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -332,18 +332,18 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                     <div className="bg-white rounded-lg shadow-xl w-[400px] overflow-hidden">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E5E7EB]">
-                            <h3 className="text-lg font-semibold text-[#111827]">Delete Message</h3>
+                            <h3 className="text-lg font-medium text-gray-900">Delete Message</h3>
                             <button
                                 onClick={() => setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' })}
                                 className="p-1 hover:bg-gray-100 rounded transition-colors"
                             >
-                                <X className="w-5 h-5 text-[#6B7280]" />
+                                <X className="w-5 h-5 text-gray-500" />
                             </button>
                         </div>
 
                         {/* Modal Body */}
                         <div className="px-5 py-4">
-                            <p className="text-sm text-[#6B7280]">
+                            <p className="text-sm text-gray-500">
                                 Are you sure you want to delete this message? This action cannot be undone.
                             </p>
                         </div>
@@ -352,7 +352,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                         <div className="flex justify-end gap-3 px-5 py-4 bg-[#F9FAFB] border-t border-[#E5E7EB]">
                             <button
                                 onClick={() => setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' })}
-                                className="px-4 py-2 text-sm font-medium text-[#374151] bg-white border border-[#D1D5DB] rounded-md hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-[#D1D5DB] rounded-md hover:bg-gray-50 transition-colors"
                             >
                                 Cancel
                             </button>

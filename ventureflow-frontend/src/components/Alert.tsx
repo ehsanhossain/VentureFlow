@@ -21,7 +21,7 @@ export const showAlert = ({ type, message }: AlertProps) => {
     timer: 3000,
     timerProgressBar: true,
     customClass: {
-      popup: "font-poppins",
+      popup: "",
     },
   });
 };

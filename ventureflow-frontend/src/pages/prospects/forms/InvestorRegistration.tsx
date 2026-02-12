@@ -84,7 +84,7 @@ const CHANNEL_OPTIONS = [
 
 /* ─── tiny reusable label ─── */
 const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
-    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-800 font-['Inter'] leading-5">
+    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-900  leading-5">
         {required && <span className="text-rose-600 text-base font-medium">*</span>}
         {text}
     </label>
@@ -93,7 +93,7 @@ const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, requ
 /* ─── section header with divider ─── */
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <div className="flex flex-col gap-3 mb-5">
-        <h3 className="text-base font-medium text-black font-['Inter'] capitalize">{title}</h3>
+        <h3 className="text-base font-medium text-black  capitalize">{title}</h3>
         <div className="w-full h-px bg-gray-200" />
     </div>
 );
@@ -486,11 +486,11 @@ export const InvestorRegistration: React.FC = () => {
     };
 
     /* ─── shared input style ─── */
-    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
+    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
 
     if (isLoadingData) {
         return (
-            <div className="w-full pb-24 font-['Inter']">
+            <div className="w-full pb-24 ">
                 <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
                     <div className="flex gap-8 items-start">
                         <div className="w-28 h-28 bg-gray-200 rounded-full" />
@@ -531,7 +531,7 @@ export const InvestorRegistration: React.FC = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 font-['Inter']">
+        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 ">
             <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
                 {/* ═══════════════════════════════════════════════
@@ -675,7 +675,7 @@ export const InvestorRegistration: React.FC = () => {
                                             {...register(`websiteLinks.${index}.url` as const)}
                                             type="text"
                                             placeholder="www.example.com"
-                                            className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
+                                            className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
                                         />
                                         {websiteFields.length > 1 && (
                                             <button type="button" onClick={() => removeWebsite(index)} className="ml-2 text-red-400 hover:text-red-600 transition-colors">
@@ -688,7 +688,7 @@ export const InvestorRegistration: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => appendWebsite({ url: '' })}
-                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium  hover:underline w-fit"
                             >
                                 <Plus className="w-3 h-3" /> Add another Link
                             </button>
@@ -703,13 +703,13 @@ export const InvestorRegistration: React.FC = () => {
                                         <input
                                             {...register(`hqAddresses.${index}.label` as const)}
                                             placeholder="Entity Name/Address Name"
-                                            className="w-1/3 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
+                                            className="w-1/3 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
                                         />
                                         <div className="flex-1 flex items-center gap-2">
                                             <input
                                                 {...register(`hqAddresses.${index}.address` as const)}
                                                 placeholder="Full Address"
-                                                className="flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
+                                                className="flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
                                             />
                                             {addressFields.length > 1 && (
                                                 <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors">
@@ -723,7 +723,7 @@ export const InvestorRegistration: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => appendAddress({ label: '', address: '' })}
-                                className="flex items-center gap-2 text-[#064771] text-sm font-medium font-['Inter'] hover:underline w-fit"
+                                className="flex items-center gap-2 text-[#064771] text-sm font-medium  hover:underline w-fit"
                             >
                                 <Plus className="w-3 h-3" /> Add another Address/ Entity
                             </button>
@@ -851,7 +851,7 @@ export const InvestorRegistration: React.FC = () => {
                             <FieldLabel text="Project Details" />
                             <textarea
                                 {...register('projectDetails')}
-                                className="w-full px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 min-h-[100px] resize-y"
+                                className="w-full px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 min-h-[100px] resize-y"
                                 placeholder="Brief description of the deal..."
                             />
                         </div>
@@ -930,7 +930,7 @@ export const InvestorRegistration: React.FC = () => {
                                                     <div className={`w-[20px] h-[20px] bg-white rounded-full absolute top-[2px] transition-all duration-300 ease-in-out shadow-md ${String(primaryContactParams) === String(index) ? 'left-[22px]' : 'left-[2px]'}`} />
                                                 </div>
                                             </div>
-                                            <span className={`text-sm font-['Inter'] transition-colors ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500 font-normal'}`}>
+                                            <span className={`text-sm  transition-colors ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500 font-normal'}`}>
                                                 {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
                                             </span>
                                         </label>
@@ -942,12 +942,12 @@ export const InvestorRegistration: React.FC = () => {
                                                 onClick={() => removeContact(index)}
                                                 disabled={String(primaryContactParams) === String(index)}
                                                 className={`flex items-center gap-2 transition-colors ${String(primaryContactParams) === String(index)
-                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                    : 'text-neutral-400 hover:text-red-500 cursor-pointer'
+                                                    ? 'text-gray-400 cursor-not-allowed'
+                                                    : 'text-gray-400 hover:text-red-500 cursor-pointer'
                                                     }`}
                                             >
                                                 <Trash2 className="w-5 h-5" />
-                                                <span className="text-sm font-normal font-['Inter']">Delete</span>
+                                                <span className="text-sm font-normal ">Delete</span>
                                             </button>
                                         )}
                                     </div>
@@ -959,7 +959,7 @@ export const InvestorRegistration: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => appendContact({ name: '', department: '', designation: '', phone: '', email: '', isPrimary: false })}
-                        className="self-stretch flex items-center gap-3 text-sky-900 text-base font-medium font-['Inter']"
+                        className="self-stretch flex items-center gap-3 text-sky-900 text-base font-medium "
                     >
                         <Plus className="w-4 h-4" /> Add another Contact
                     </button>
@@ -1020,7 +1020,7 @@ export const InvestorRegistration: React.FC = () => {
                                 <input
                                     {...register('investorProfileLink')}
                                     placeholder="https://tokyoconsultinggroup.3qcloud.jp/index.php/s/..."
-                                    className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 truncate"
+                                    className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 truncate"
                                 />
                             </div>
                         </div>
@@ -1053,7 +1053,7 @@ export const InvestorRegistration: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => navigate('/prospects?tab=investors')}
-                    className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium font-['Inter'] hover:bg-gray-50 transition-colors"
+                    className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium  hover:bg-gray-50 transition-colors"
                 >
                     Cancel
                 </button>
@@ -1064,14 +1064,14 @@ export const InvestorRegistration: React.FC = () => {
                         onSubmit(data, true);
                     }}
                     disabled={isSubmitting}
-                    className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium font-['Inter'] hover:bg-sky-50 transition-colors"
+                    className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium  hover:bg-sky-50 transition-colors"
                 >
                     Save as Draft
                 </button>
                 <button
                     type="submit"
                     disabled={isSubmitting || (isIdAvailable === false)}
-                    className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium font-['Inter'] hover:bg-[#042d48] transition-colors disabled:opacity-50"
+                    className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium  hover:bg-[#042d48] transition-colors disabled:opacity-50"
                 >
                     {isSubmitting ? 'Saving...' : id ? 'Update Investor' : 'Save Investor'}
                 </button>

@@ -3,6 +3,60 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
+/* ============================================
+   VENTUREFLOW TYPOGRAPHY SYSTEM
+   Shipfaster-aligned, app-practical
+   Inter font, 3 weights, 5 text colors
+   ============================================ */
+@layer components {
+
+  /* ── Headings ── */
+  .vf-page-title {
+    @apply text-2xl leading-8 font-medium text-gray-900 tracking-vfHeading;
+  }
+
+  .vf-section-title {
+    @apply text-lg leading-7 font-medium text-gray-900;
+  }
+
+  /* ── Body ── */
+  .vf-body {
+    @apply text-sm leading-5 font-normal text-gray-600;
+  }
+
+  .vf-body-lg {
+    @apply text-base leading-6 font-normal text-gray-600;
+  }
+
+  /* ── Labels & Helpers ── */
+  .vf-label {
+    @apply text-sm leading-5 font-medium text-gray-700;
+  }
+
+  .vf-caption {
+    @apply text-xs leading-5 font-normal text-gray-500;
+  }
+
+  /* ── Table ── */
+  .vf-table-head {
+    @apply text-xs leading-5 font-medium text-gray-500 uppercase tracking-wider;
+  }
+
+  /* ── Overlines ── */
+  .vf-overline {
+    @apply text-xs leading-5 font-medium uppercase tracking-wider text-gray-500;
+  }
+
+  .vf-overline-sm {
+    @apply text-[10px] leading-4 font-medium uppercase tracking-widest text-gray-400;
+  }
+
+  /* ── Button ── */
+  .vf-button-text {
+    @apply text-sm leading-5 font-medium;
+  }
+}
+
 
 body {
   font-family: 'Inter', sans-serif;

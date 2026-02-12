@@ -42,7 +42,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
               className={`w-6 h-6 rounded-[61px] border border-solid mr-1.5 relative ${
                 isSelected
                   ? "bg-white border-white"
-                  : "bg-neutral-100 border-[#0c5577]"
+                  : "bg-gray-100 border-[#0c5577]"
               }`}
             >
               {isSelected && (
@@ -64,7 +64,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
               )}
             </div>
             <span
-              className={`font-['Poppins'] text-sm tracking-[0.10px] leading-5 ${
+              className={` text-sm tracking-[0.10px] leading-5 ${
                 isSelected ? "text-white font-semibold" : "font-normal"
               }`}
             >

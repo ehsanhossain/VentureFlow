@@ -80,7 +80,7 @@ const ResizeHandle: React.FC<{
         onDoubleClick={onDoubleClick}
     >
         {/* The persistent separator line */}
-        <div className="absolute right-0 top-0 h-full w-[1px] bg-slate-300 transition-all opacity-50" />
+        <div className="absolute right-0 top-0 h-full w-[1px] bg-gray-300 transition-all opacity-50" />
         {/* The grab handle pill (visible on hover) */}
         <div className={cn(
             'absolute right-[-1px] top-1/2 -translate-y-1/2 h-8 w-[3px]',
@@ -96,11 +96,11 @@ const SortIcon: React.FC<{ direction: 'asc' | 'desc' | null }> = ({ direction })
         <div className="flex flex-col items-center -space-y-0.5 transition-opacity">
             <ArrowUp className={cn(
                 "w-2.5 h-2.5 transition-all duration-200",
-                direction === 'asc' ? 'text-[#064771] scale-110' : 'text-slate-300 opacity-40 group-hover/header:opacity-80'
+                direction === 'asc' ? 'text-[#064771] scale-110' : 'text-gray-400 opacity-40 group-hover/header:opacity-80'
             )} />
             <ArrowDown className={cn(
                 "w-2.5 h-2.5 transition-all duration-200",
-                direction === 'desc' ? 'text-[#064771] scale-110' : 'text-slate-300 opacity-40 group-hover/header:opacity-80'
+                direction === 'desc' ? 'text-[#064771] scale-110' : 'text-gray-400 opacity-40 group-hover/header:opacity-80'
             )} />
         </div>
     );
@@ -108,7 +108,7 @@ const SortIcon: React.FC<{ direction: 'asc' | 'desc' | null }> = ({ direction })
 
 const DragHandle: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => (
     <div className={cn(
-        'w-4 h-4 text-slate-300 opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab flex items-center justify-center',
+        'w-4 h-4 text-gray-400 opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab flex items-center justify-center',
         isDragging && 'opacity-100 text-[#064771]'
     )}>
         <GripVertical className="w-3.5 h-3.5" />
@@ -122,7 +122,7 @@ const LoadingSkeleton: React.FC<{ columns: number; rows?: number }> = ({ columns
             <tr key={`skeleton-${i}`} className="h-14 animate-pulse border-b border-[#f1f5f9]">
                 {Array.from({ length: columns }).map((_, j) => (
                     <td key={j} className="px-4 py-3">
-                        <div className="h-4 rounded bg-slate-100/60 w-full" />
+                        <div className="h-4 rounded bg-gray-100/60 w-full" />
                     </td>
                 ))}
             </tr>
@@ -147,8 +147,8 @@ const EmptyState: React.FC<{
                         className="w-36 h-auto mb-2"
                         draggable={false}
                     />
-                    <p className="text-lg font-medium text-slate-800 font-['Inter']">{message}</p>
-                    <p className="text-sm text-slate-400 font-['Inter'] text-center max-w-[320px]">
+                    <p className="text-lg font-medium text-gray-700 ">{message}</p>
+                    <p className="text-sm text-gray-400  text-center max-w-[320px]">
                         We couldn't find any results matching your search or filters.
                         Would you like to register a new prospect instead?
                     </p>
@@ -472,7 +472,7 @@ function DataTable<T>({
         <div
             ref={containerRef}
             className={cn(
-                'w-full h-full flex flex-col min-h-0 bg-white font-poppins rounded-[3px] overflow-hidden border border-slate-200',
+                'w-full h-full flex flex-col min-h-0 bg-white rounded-[3px] overflow-hidden border border-gray-200',
                 containerClassName
             )}
         >
@@ -500,7 +500,7 @@ function DataTable<T>({
                                             checked={isAllSelected}
                                             ref={el => el && (el.indeterminate = isSomeSelected)}
                                             onChange={toggleSelectAll}
-                                            className="w-4 h-4 text-[#064771] border-slate-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
+                                            className="w-4 h-4 text-[#064771] border-gray-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
                                         />
                                     </div>
                                 </th>
@@ -541,14 +541,14 @@ function DataTable<T>({
                                         <div
                                             className={cn(
                                                 'flex items-center gap-1.5 px-[3px] py-2 h-full group/header min-h-[48px]',
-                                                isSortable && 'cursor-pointer hover:bg-slate-200/50',
+                                                isSortable && 'cursor-pointer hover:bg-gray-200/50',
                                                 'select-none transition-colors'
                                             )}
                                             onClick={() => isSortable && handleSort(column.id)}
                                         >
                                             {canDrag && <DragHandle isDragging={isDragging} />}
                                             {typeof column.header === 'string' ? (
-                                                <span className="text-[11px] font-medium text-[#475569] uppercase tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis px-[3px]">
+                                                <span className="text-[11px] font-medium text-gray-600 uppercase tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis px-[3px]">
                                                     {column.header}
                                                 </span>
                                             ) : (
@@ -620,7 +620,7 @@ function DataTable<T>({
                                             <td className={cn(
                                                 "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-shadow",
                                                 isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
-                                                scrolledLeft > 0 && "border-r border-slate-200/60 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]"
+                                                scrolledLeft > 0 && "border-r border-gray-200/60 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]"
                                             )}>
                                                 <div className="flex items-center justify-center h-14">
                                                     <input
@@ -639,7 +639,7 @@ function DataTable<T>({
                                                             onSelectionChange(newSet);
                                                         }}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="w-4 h-4 text-[#064771] border-slate-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
+                                                        className="w-4 h-4 text-[#064771] border-gray-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
                                                     />
                                                 </div>
                                             </td>
@@ -656,7 +656,7 @@ function DataTable<T>({
                                                         ...stickyLeftStyle
                                                     }}
                                                     className={cn(
-                                                        'px-4 py-3 text-[13.5px] text-[#475569] border-b border-[#f1f5f9]',
+                                                        'px-4 py-3 text-[13.5px] text-gray-600 border-b border-[#f1f5f9]',
                                                         'align-middle overflow-hidden whitespace-nowrap text-ellipsis',
                                                         isStickyLeft && cn(
                                                             'sticky z-10 transition-shadow',
@@ -703,7 +703,7 @@ function DataTable<T>({
             {/* Pagination Footer */}
             {pagination && pagination.totalPages > 0 && (
                 <div className="flex items-center justify-between px-4 py-2.5 bg-white border-t border-gray-100">
-                    <div className="text-[11px] text-gray-500 font-medium">
+                    <div className="text-[11px] text-gray-500 font-normal">
                         Showing {((pagination.currentPage - 1) * (pagination.itemsPerPage || 20)) + 1} to {Math.min(pagination.currentPage * (pagination.itemsPerPage || 20), pagination.totalItems || 0)} of {pagination.totalItems} entries
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -735,7 +735,7 @@ function DataTable<T>({
                                         key={pageNum}
                                         onClick={() => pagination.onPageChange(pageNum)}
                                         className={cn(
-                                            "min-w-[28px] h-7 rounded-md text-xs font-semibold transition-all",
+                                            "min-w-[28px] h-7 rounded-md text-xs font-medium transition-all",
                                             pagination.currentPage === pageNum
                                                 ? "bg-[#064771] text-white shadow-sm shadow-blue-900/10"
                                                 : "text-gray-500 hover:bg-gray-100"

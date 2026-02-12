@@ -378,27 +378,27 @@ export const FileUpload = ({
       case "primary":
         baseClasses =
           "flex items-center gap-2 px-4 py-1 h-[34.49px] bg-[#064771] text-white rounded-full";
-        textClasses = "font-['Poppins',Helvetica] text-base font-medium";
+        textClasses = "text-base font-medium";
         break;
       case "secondary":
         baseClasses =
-          "flex items-center gap-1.5 px-4 py-1 h-[34px] bg-white border border-[#d0d5dd] rounded-full text-[#54575c]";
-        textClasses = "font-['Poppins',Helvetica] text-base";
+          "flex items-center gap-1.5 px-4 py-1 h-[34px] bg-white border border-[#d0d5dd] rounded-full text-gray-600";
+        textClasses = "text-base";
         break;
       case "cancel": // Style for cancel/reset buttons
         baseClasses =
-          "flex items-center gap-1 px-4 py-1 h-[34.49px] bg-[#fff6f6] border border-[#FEECEB] rounded-full text-[#54575c]";
-        textClasses = "font-['Poppins',Helvetica] text-base font-medium";
+          "flex items-center gap-1 px-4 py-1 h-[34.49px] bg-[#fff6f6] border border-[#FEECEB] rounded-full text-gray-600";
+        textClasses = "text-base font-medium";
         break;
       case "tryAgain": // Style specifically for try again (often similar to cancel/error)
         baseClasses =
-          "flex items-center gap-1 px-4 py-1 h-[34.49px] bg-[#fff6f6] border border-[#FEECEB] rounded-full text-[#54575c]"; // Example: same as cancel
-        textClasses = "font-['Poppins',Helvetica] text-base font-medium";
+          "flex items-center gap-1 px-4 py-1 h-[34.49px] bg-[#fff6f6] border border-[#FEECEB] rounded-full text-gray-600"; // Example: same as cancel
+        textClasses = "text-base font-medium";
         break;
       case "done": // Style for the final success action button
         baseClasses =
           "flex items-center gap-2 px-4 py-1 h-[34.49px] bg-[#EBF9F1] text-[#064771] rounded-full border border-[#B8E8CD]";
-        textClasses = "font-['Poppins',Helvetica] text-base font-medium";
+        textClasses = "text-base font-medium";
         break;
     }
 
@@ -484,7 +484,7 @@ export const FileUpload = ({
             ) : (
               <div className="flex flex-col gap-4 w-full">
                 <div className="flex items-center gap-4">
-                  <h2 className="font-['Poppins',Helvetica] font-medium text-[#0c5577] text-lg leading-5">
+                  <h2 className="font-medium text-[#0c5577] text-lg leading-5">
                     Quick Upload
                   </h2>
                 </div>
@@ -532,7 +532,7 @@ export const FileUpload = ({
                         </svg>
                       </div>
                       {/* Progress Percentage Text */}
-                      <div className="absolute inset-0 flex items-center justify-center font-['Poppins',Helvetica] font-semibold text-[#30313d] text-[19.5px] leading-[23.4px]">
+                      <div className="absolute inset-0 flex items-center justify-center font-semibold text-gray-900 text-[19.5px] leading-[23.4px]">
                         {currentConfig.progress}%
                       </div>
                     </div>
@@ -544,17 +544,17 @@ export const FileUpload = ({
 
                 {/* Text Area (Title, Subtitle, Error) */}
                 <div className="flex flex-col items-center gap-2">
-                  <h3 className="font-['Poppins',Helvetica] font-medium text-[#292d32] text-base">
+                  <h3 className="font-medium text-gray-900 text-base">
                     {currentConfig.title} {/* Dynamic title */}
                   </h3>
                   {currentConfig.subtitle && (
-                    <p className="font-['Poppins',Helvetica] text-[#828282] text-sm max-w-xs break-words truncate">
+                    <p className="text-gray-500 text-sm max-w-xs break-words truncate">
                       {currentConfig.subtitle} {/* Dynamic subtitle */}
                     </p>
                   )}
                   {/* Display error message specifically in 'failed' state */}
                   {uploadState === "failed" && Boolean(uploadError) && (
-                    <p className="font-['Poppins',Helvetica] text-[#DF272A] text-sm max-w-xs break-words">
+                    <p className="text-[#DF272A] text-sm max-w-xs break-words">
                       {/* Try to display backend message, fallback to generic */}
                       {(() => {
                         if (typeof uploadError === 'object' && uploadError !== null && 'response' in uploadError &&
@@ -588,7 +588,7 @@ export const FileUpload = ({
                         buttonInfo.type === "secondary" && // If first is secondary
                         displayedButtons[1].type === "primary" && // And second is primary
                         uploadState === "initial" && ( // Only in specific states (e.g., initial)
-                          <span className="font-['Poppins',Helvetica] text-[#30313d] text-base hidden md:inline">
+                          <span className="text-gray-900 text-base hidden md:inline">
                             or
                           </span>
                         )}
@@ -618,7 +618,7 @@ export const FileUpload = ({
                         strokeLinejoin="round"
                       />
                     </svg>
-                    <span className="font-['Poppins',Helvetica] text-white text-sm font-semibold leading-5 whitespace-nowrap overflow-hidden text-ellipsis">
+                    <span className="text-white text-sm font-semibold leading-5 whitespace-nowrap overflow-hidden text-ellipsis">
                       {currentConfig.badge} {/* Dynamic badge text */}
                     </span>
                   </div>

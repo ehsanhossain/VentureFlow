@@ -103,7 +103,7 @@ const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
                         <span className="text-sm text-gray-500">{card.title}</span>
                         {card.icon}
                     </div>
-                    <div className="text-2xl font-bold text-gray-900 mb-1">{card.value}</div>
+                    <div className="text-2xl font-medium text-gray-900 mb-1">{card.value}</div>
                     <div className="text-xs text-gray-400">{card.subtitle}</div>
                 </div>
             ))}

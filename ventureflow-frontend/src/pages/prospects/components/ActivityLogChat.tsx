@@ -80,7 +80,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
     }).sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
-        <div className="bg-white border md:border-transparent rounded-lg flex flex-col h-full overflow-hidden font-poppins">
+        <div className="bg-white border md:border-transparent rounded-lg flex flex-col h-full overflow-hidden ">
             {/* Header / Tabs */}
             <div className="border-b px-6 py-4 flex items-center justify-between bg-white">
                 <div className="flex space-x-6">
@@ -88,7 +88,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`text-sm font-semibold pb-4 -mb-4 border-b-2 transition-all ${activeTab === tab
+                            className={`text-sm font-medium pb-4 -mb-4 border-b-2 transition-all ${activeTab === tab
                                 ? 'border-[#064771] text-[#064771]'
                                 : 'border-transparent text-gray-400 hover:text-gray-600'
                                 }`}
@@ -116,7 +116,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                         <BrandSpinner size="md" />
                     </div>
                 ) : filteredItems.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-300">
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400">
                         <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
                         <p className="text-sm font-medium">No activity recorded yet</p>
                     </div>
@@ -129,7 +129,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                                     item.avatar ? (
                                         <img src={item.avatar} alt="" className="w-9 h-9 rounded-full border border-gray-100 object-cover" />
                                     ) : (
-                                        <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-[#064771] font-bold text-xs border border-blue-100">
+                                        <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-[#064771] font-medium text-xs border border-blue-100">
                                             {item.user.charAt(0).toUpperCase()}
                                         </div>
                                     )
@@ -143,11 +143,11 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 mb-1">
-                                    <span className={`text-[13px] font-bold ${item.type === 'system' ? 'text-gray-500' : 'text-gray-900'}`}>
+                                    <span className={`text-[13px] font-medium ${item.type === 'system' ? 'text-gray-500' : 'text-gray-900'}`}>
                                         {item.user}
                                     </span>
                                     {item.type === 'system' && (
-                                        <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase tracking-tighter">System</span>
+                                        <span className="text-[10px] font-medium bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded uppercase tracking-tighter">System</span>
                                     )}
                                     <span className="text-[11px] text-gray-400 font-medium ml-auto uppercase tracking-tight">
                                         {format(item.timestamp, 'MMM d, h:mm a')}
@@ -178,12 +178,12 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
                         }}
                     />
                     <div className="absolute right-3 bottom-3 flex items-center gap-3">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:block">Press Enter to send, Shift + Enter for new line</span>
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest hidden sm:block">Press Enter to send, Shift + Enter for new line</span>
                         <button
                             type="button"
                             onClick={handleSendMessage}
                             disabled={!newMessage.trim() || !entityId}
-                            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] disabled:opacity-30 disabled:grayscale transition-all shadow-md active:scale-95 font-bold"
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-[#064771] rounded-lg hover:bg-[#053a5c] disabled:opacity-30 disabled:grayscale transition-all shadow-md active:scale-95 font-medium"
                         >
                             <span>Send</span>
                             <Send className="w-4 h-4" />

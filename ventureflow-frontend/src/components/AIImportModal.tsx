@@ -109,11 +109,11 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm font-poppins">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm ">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b">
-                    <h3 className="text-xl font-semibold text-[#00081a]">
+                    <h3 className="text-lg font-medium text-gray-900">
                         AI Auto-Fill ({type === 'buyer' ? 'Buyer' : 'Seller'})
                     </h3>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -208,7 +208,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
                         <div className="space-y-6">
                             <div className="flex items-center justify-between border-b pb-4">
                                 <div>
-                                    <h4 className="text-lg font-semibold text-gray-900">Review Extracted Data</h4>
+                                    <h4 className="text-lg font-medium text-gray-900">Review Extracted Data</h4>
                                     <p className="text-sm text-gray-500">Please verify the information below before applying.</p>
                                 </div>
                                 <button
@@ -264,7 +264,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
 
                                         return (
                                             <div key={key} className="bg-white p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors group">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 group-hover:text-[#064771] transition-colors">
+                                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 group-hover:text-[#064771] transition-colors">
                                                     {label}
                                                 </label>
                                                 <div className="text-sm text-gray-900 font-medium break-words leading-relaxed">

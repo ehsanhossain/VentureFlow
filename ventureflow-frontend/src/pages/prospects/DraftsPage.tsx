@@ -350,7 +350,7 @@ const DraftsPage: React.FC = () => {
     }, [searchQuery, activeTab, pagination.currentPage]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
             {/* Header — identical layout to ProspectsPortal */}
             <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                 <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
@@ -358,7 +358,7 @@ const DraftsPage: React.FC = () => {
                         {/* Back Button — same style as InvestorDetails / TargetDetails */}
                         <button
                             onClick={() => navigate('/prospects')}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors"
+                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />

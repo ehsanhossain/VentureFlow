@@ -112,7 +112,7 @@ export const BudgetRangeSlider: React.FC<BudgetRangeSliderProps> = ({
                 >
                     {/* Tooltip */}
                     <div
-                        className={`absolute left-1/2 -translate-x-1/2 -top-9 px-2 py-1 rounded-[3px] text-[11px] font-medium font-['Inter'] whitespace-nowrap transition-all duration-150
+                        className={`absolute left-1/2 -translate-x-1/2 -top-9 px-2 py-1 rounded-[3px] text-[11px] font-medium  whitespace-nowrap transition-all duration-150
                             ${showMinTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
                         style={{ background: '#064771', color: '#fff' }}
                     >
@@ -140,7 +140,7 @@ export const BudgetRangeSlider: React.FC<BudgetRangeSliderProps> = ({
                 >
                     {/* Tooltip */}
                     <div
-                        className={`absolute left-1/2 -translate-x-1/2 -top-9 px-2 py-1 rounded-[3px] text-[11px] font-medium font-['Inter'] whitespace-nowrap transition-all duration-150
+                        className={`absolute left-1/2 -translate-x-1/2 -top-9 px-2 py-1 rounded-[3px] text-[11px] font-medium  whitespace-nowrap transition-all duration-150
                             ${showMaxTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
                         style={{ background: '#064771', color: '#fff' }}
                     >
@@ -161,8 +161,8 @@ export const BudgetRangeSlider: React.FC<BudgetRangeSliderProps> = ({
 
             {/* Min / Max labels */}
             <div className="flex items-center justify-between mt-1.5">
-                <span className="text-[11px] text-gray-400 font-['Inter']">{formatBudget(globalMin)}</span>
-                <span className="text-[11px] text-gray-400 font-['Inter']">{formatBudget(globalMax)}</span>
+                <span className="text-[11px] text-gray-400 ">{formatBudget(globalMin)}</span>
+                <span className="text-[11px] text-gray-400 ">{formatBudget(globalMax)}</span>
             </div>
         </div>
     );

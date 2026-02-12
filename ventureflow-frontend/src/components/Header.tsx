@@ -155,7 +155,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               <div className="flex items-center overflow-hidden max-w-[400px]">
                 {pathSegments.length > 3 && (
                   <span className="flex items-center text-gray-400 px-1">
-                    <span className="mx-1 text-gray-300">/</span>
+                    <span className="mx-1 text-gray-400">/</span>
                     <span className="text-xs">...</span>
                   </span>
                 )}
@@ -167,7 +167,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
                   return (
                     <span key={segment} className="flex items-center group">
-                      <span className="mx-1 text-gray-300">/</span>
+                      <span className="mx-1 text-gray-400">/</span>
                       <Link
                         to={url}
                         className={`
@@ -283,7 +283,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {unreadCount > 0 ? (
                   <>
                     <NotificationTrueIcon className="w-8 h-8 text-[#064771]" />
-                    <span className="text-base font-bold text-[#064771]">{unreadCount}</span>
+                    <span className="text-base font-medium text-[#064771]">{unreadCount}</span>
                   </>
                 ) : (
                   <NotificationFalseIcon className="w-8 h-8 text-gray-500" />

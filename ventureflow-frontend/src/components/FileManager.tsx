@@ -430,7 +430,7 @@ export const FileManager = ({
             <div className="flex flex-col w-full items-start gap-5">
               <div className="flex flex-col items-start gap-4 w-full">
                 <div className="flex items-center gap-4">
-                  <h2 className="font-['Poppins',Helvetica] font-medium text-[#0c5577] text-lg leading-5">
+                  <h2 className="font-medium text-[#0c5577] text-lg leading-5">
                     Folders
                   </h2>
                   {!isLoading && !error && folders.length > 0 ? (
@@ -465,7 +465,7 @@ export const FileManager = ({
               {/* Simplified Conditional Rendering */}
               {isLoading && (
                 <div className="flex justify-center items-center w-full py-20">
-                  <p className="text-[#717171] text-lg">Loading folders...</p>
+                  <p className="text-gray-500 text-lg">Loading folders...</p>
                 </div>
               )}
               {error && (
@@ -492,10 +492,10 @@ export const FileManager = ({
                       />
                     </svg>
                     <div className="flex flex-col gap-2">
-                      <span className="text-[#292D32] text-base font-medium">
+                      <span className="text-gray-900 text-base font-medium">
                         No Folders to show
                       </span>
-                      <span className="text-[#838383] text-sm">
+                      <span className="text-gray-500 text-sm">
                         Create a Folder under this prospect to see the folders
                       </span>
                     </div>
@@ -570,12 +570,12 @@ export const FileManager = ({
                                 folderBeingRenamed.current = null;
                               }
                             }}
-                            className="ml-4 font-['Roboto'] text-[13px] font-semibold text-[#30313d] flex-grow outline-none border-b border-blue-500 bg-transparent"
+                            className="ml-4 text-[13px] font-medium text-gray-900 flex-grow outline-none border-b border-blue-500 bg-transparent"
                             onClick={(e) => e.stopPropagation()} // Stop propagation on input click
                             autoFocus
                           />
                         ) : (
-                          <div className="ml-4 font-['Roboto'] text-[13px] font-semibold text-[#30313d] truncate flex-grow">
+                          <div className="ml-4 text-[13px] font-medium text-gray-900 truncate flex-grow">
                             {folder.name}
                           </div>
                         )}
@@ -638,7 +638,7 @@ export const FileManager = ({
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="19" viewBox="0 0 20 19" fill="none">
                                           <path fillRule="evenodd" clipRule="evenodd" d="M3.34999 13.2643C2.82559 13.2643 2.40001 12.859 2.40001 12.3596V6.93099C2.40001 6.43156 2.82559 6.02623 3.34999 6.02623C3.87439 6.02623 4.30001 5.62089 4.30001 5.12147C4.30001 4.62204 3.87439 4.2167 3.34999 4.2167H2.40001C1.35026 4.2167 0.5 5.02647 0.5 6.02623V13.2643C0.5 14.2641 1.35026 15.0738 2.40001 15.0738H3.34999C3.87439 15.0738 4.30001 14.6685 4.30001 14.1691C4.30001 13.6697 3.87439 13.2643 3.34999 13.2643ZM17.6 4.2167H10.95C10.4256 4.2167 10 4.62204 10 5.12147C10 5.62089 10.4256 6.02623 10.95 6.02623H16.65C17.1744 6.02623 17.6 6.43156 17.6 6.93099V12.3596C17.6 12.859 17.1744 13.2643 16.65 13.2643H10.95C10.4256 13.2643 10 13.6697 10 14.1691C10 14.6685 10.4256 15.0738 10.95 15.0738H17.6C18.6497 15.0738 19.5 14.2641 19.5 13.2643V6.02623C19.5 5.02647 18.6497 4.2167 17.6 4.2167ZM10 17.7881C10 18.2876 9.57441 18.6929 9.05001 18.6929H5.25C4.7256 18.6929 4.30001 18.2876 4.30001 17.7881C4.30001 17.2887 4.7256 16.8834 5.25 16.8834H6.19999V2.40718H5.25C4.7256 2.40718 4.30001 2.00185 4.30001 1.50242C4.30001 1.00299 4.7256 0.597656 5.25 0.597656H9.05001C9.57441 0.597656 10 1.00299 10 1.50242C10 2.00185 9.57441 2.40718 9.05001 2.40718H8.09999V16.8834H9.05001C9.57441 16.8834 10 17.2887 10 17.7881Z" fill="#30313D" />
                                         </svg>
-                                        <span className="font-['Poppins'] font-medium text-[#1e1e1e] text-sm leading-5 whitespace-nowrap">
+                                        <span className=" font-medium text-gray-900 text-sm leading-5 whitespace-nowrap">
                                           {option.label}
                                         </span>
                                       </button>
@@ -658,7 +658,7 @@ export const FileManager = ({
                                       }} // Stop propagation on click inside menu
                                     >
                                       {option.icon}
-                                      <span className="font-['Poppins'] font-medium text-[#1e1e1e] text-sm leading-5 whitespace-nowrap">
+                                      <span className=" font-medium text-gray-900 text-sm leading-5 whitespace-nowrap">
                                         {option.label}
                                       </span>
                                     </button>
@@ -686,10 +686,10 @@ export const FileManager = ({
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100]">
           <div className="w-[520px] bg-white rounded-2xl animate-fade-in-down">
             <div className="px-6 py-4 border-b border-[#e0e2e5]">
-              <h2 className="font-['Poppins'] font-semibold text-neutral-800 text-lg leading-7">
+              <h2 className="font-medium text-gray-900 text-lg leading-7">
                 Create Folder
               </h2>
-              <p className="font-['Poppins'] font-normal text-neutral-800 text-[13px] leading-5">
+              <p className=" font-normal text-gray-900 text-[13px] leading-5">
                 Make new folder to store files
               </p>
             </div>
@@ -700,7 +700,7 @@ export const FileManager = ({
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="Enter Folder Name"
-                className="w-full h-10 px-5 py-[13px] rounded-[5px] border-[0.5px] border-slate-300 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 outline-none"
+                className="w-full h-10 px-5 py-[13px] rounded-[5px] border-[0.5px] border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 outline-none"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -719,7 +719,7 @@ export const FileManager = ({
                   setIsModalOpen(false);
                   setNewFolderName("");
                 }}
-                className="min-w-[79px] h-[34px] font-medium text-[#54575c] rounded-[49.82px] border-[0.77px] border-[#717171] px-4 py-1 transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="min-w-[79px] h-[34px] font-medium text-gray-600 rounded-[49.82px] border-[0.77px] border-[#717171] px-4 py-1 transition-colors hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoading}
               >
                 Cancel

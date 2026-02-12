@@ -25,11 +25,11 @@ export const ApproxInput = forwardRef<HTMLInputElement, ApproxInputProps>(
       defaultOperator: propDefaultOperator = "=",
       operators: propOperators = ["=", ">", "<", "~"],
       placeholder = "e.g., 54%",
-      inputClassName = "flex-1 h-[34px] border-0 outline-none text-[#8a8a8a] text-sm leading-5 focus:ring-0",
+      inputClassName = "flex-1 h-[34px] border-0 outline-none text-gray-500 text-sm leading-5 focus:ring-0",
       dropdownClassName = "absolute top-full left-0 mt-1 w-[60px] bg-white border border-gray-200 rounded-[5px] shadow-lg z-10",
       dropdownButtonClassName = "flex items-center justify-between w-[60px] h-[34px] bg-[#064771] rounded px-3",
       dropdownItemClassName = "w-full text-center px-2 py-2 hover:bg-gray-50",
-      containerClassName = "flex w-full h-10 items-center gap-2 bg-white rounded-[5px] border-[0.5px] border-solid border-slate-300 px-1",
+      containerClassName = "flex w-full h-10 items-center gap-2 bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 px-1",
     },
     ref
   ) => {

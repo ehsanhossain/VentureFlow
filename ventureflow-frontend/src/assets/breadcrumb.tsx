@@ -21,7 +21,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ links }) => {
               <div
                 className={`flex items-start gap-1 text-sm font-semibold leading-5 ${
                   link.isCurrentPage
-                    ? "text-[#727272]"
+                    ? "text-gray-500"
                     : "text-[#064771] underline cursor-pointer"
                 } whitespace-nowrap`}
                 onClick={
@@ -43,7 +43,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ links }) => {
                 {link.label}
               </div>
               {!link.isCurrentPage && (
-                <div className="flex flex-col justify-center w-5 h-5 text-gray-300 text-center font-['Inter'] text-sm font-medium leading-5">
+                <div className="flex flex-col justify-center w-5 h-5 text-gray-400 text-center  text-sm font-medium leading-5">
                   /
                 </div>
               )}

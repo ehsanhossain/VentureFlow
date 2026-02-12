@@ -159,7 +159,7 @@ const CurrencyTable = (): JSX.Element => {
       accessor: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100/50">
-            <span className="text-[#064771] font-bold text-sm">{row.sign}</span>
+            <span className="text-[#064771] font-medium text-sm">{row.sign}</span>
           </div>
           <div className="overflow-hidden">
             <div className="font-medium text-gray-900 truncate">{row.name}</div>
@@ -251,7 +251,7 @@ const CurrencyTable = (): JSX.Element => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+    <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
       <div className="px-8 py-6">
         {/* Header & Search */}
         <div className="flex items-center justify-between gap-6">

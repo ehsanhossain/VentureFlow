@@ -18,7 +18,7 @@ const Select: React.FC<SelectProps> = ({ options, selected, onChange }) => {
   const selectedOption = options.find((opt) => opt.value === selected);
 
   return (
-    <div className="relative w-[182px] font-poppins">
+    <div className="relative w-[182px] ">
 
       <button
         type="button"

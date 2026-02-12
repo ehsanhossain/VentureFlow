@@ -117,7 +117,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
             {searchable && (
               <div className="flex items-center border border-[#828282] rounded px-3 py-2 mb-3">
                 <svg
-                  className="w-5 h-5 text-[#828282]"
+                  className="w-5 h-5 text-gray-500"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -129,7 +129,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
                 <input
-                  className="ml-2 w-full bg-transparent outline-none text-sm" // font-poppins is inherited
+                  className="ml-2 w-full bg-transparent outline-none text-sm" // is inherited
                   placeholder="Search here"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -159,13 +159,13 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                         className="w-5 h-5 rounded-full object-cover"
                       />
                     )}
-                    <span className="text-sm text-black truncate"> {/* font-poppins is inherited */}
+                    <span className="text-sm text-black truncate"> {/* is inherited */}
                       {option.label}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-2 text-sm text-gray-500">No results found</div> // font-poppins is inherited
+                <div className="px-4 py-2 text-sm text-gray-500">No results found</div> // is inherited
               )}
             </div>
           </div>

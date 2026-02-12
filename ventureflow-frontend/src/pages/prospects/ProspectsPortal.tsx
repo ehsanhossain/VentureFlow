@@ -1018,7 +1018,7 @@ const ProspectsPortal: React.FC = () => {
                     <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[440px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl overflow-x-hidden">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-base font-medium text-gray-900 font-['Inter']">Filters</h2>
+                            <h2 className="text-base font-medium text-gray-900 ">Filters</h2>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
                                 className="p-1.5 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
@@ -1031,7 +1031,7 @@ const ProspectsPortal: React.FC = () => {
                         <div className="flex-1 overflow-y-auto overflow-x-hidden">
                             {/* Origin Country */}
                             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                     Origin Country
                                 </label>
                                 <Dropdown
@@ -1050,7 +1050,7 @@ const ProspectsPortal: React.FC = () => {
 
                             {/* Industry (investor's own industry) */}
                             <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                     Industry
                                 </label>
                                 <IndustryDropdown
@@ -1065,7 +1065,7 @@ const ProspectsPortal: React.FC = () => {
                             {/* Target Business & Industry (Investors only) */}
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                         Target Business & Industry
                                     </label>
                                     <IndustryDropdown
@@ -1081,7 +1081,7 @@ const ProspectsPortal: React.FC = () => {
                             {/* Interested Country (Investors only) */}
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                         Interested Country
                                     </label>
                                     <Dropdown
@@ -1107,12 +1107,12 @@ const ProspectsPortal: React.FC = () => {
 
                             {/* Pipeline Stage */}
                             <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                     Pipeline Stage
                                 </label>
                                 <div className="relative">
                                     <select
-                                        className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
+                                        className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
                                         value={pipelineStageFilter}
                                         onChange={(e) => setPipelineStageFilter(e.target.value)}
                                     >
@@ -1127,13 +1127,13 @@ const ProspectsPortal: React.FC = () => {
 
                             {/* Registration Date (Range) */}
                             <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                     Registered between
                                 </label>
                                 <button
                                     type="button"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                                    className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors cursor-pointer"
+                                    className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors cursor-pointer"
                                 >
                                     <span className={filterDateFrom || filterDateTo ? 'text-gray-900' : 'text-gray-400'}>
                                         {filterDateFrom && filterDateTo
@@ -1170,14 +1170,14 @@ const ProspectsPortal: React.FC = () => {
                             {/* Investment Budget (Investors only) */}
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 overflow-hidden">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 font-['Inter']">
+                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
                                         Investment Budget
                                     </label>
                                     <div className="flex items-center gap-2 w-full">
                                         <input
                                             type="number"
                                             placeholder="Min"
-                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
                                             value={filterBudgetMin}
                                             onChange={(e) => setFilterBudgetMin(e.target.value)}
                                         />
@@ -1185,7 +1185,7 @@ const ProspectsPortal: React.FC = () => {
                                         <input
                                             type="number"
                                             placeholder="Max"
-                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
                                             value={filterBudgetMax}
                                             onChange={(e) => setFilterBudgetMax(e.target.value)}
                                         />
@@ -1229,7 +1229,7 @@ const ProspectsPortal: React.FC = () => {
                 </>
             )}
 
-            <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 font-poppins overflow-hidden">
+            <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
@@ -1241,24 +1241,24 @@ const ProspectsPortal: React.FC = () => {
                                     setActiveTab('investors');
                                     setSearchParams({ tab: 'investors' });
                                 }}
-                                className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'investors'
+                                className={`px-4 py-1.5 rounded-[3px] text-sm font-medium transition-all duration-200 ${activeTab === 'investors'
                                     ? 'bg-white text-[#064771] shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
-                                Investors <span className={`ml-1 text-[10px] opacity-60`}>({counts.investors})</span>
+                                Investors <span className={`ml-1 opacity-60`}>({counts.investors})</span>
                             </button>
                             <button
                                 onClick={() => {
                                     setActiveTab('targets');
                                     setSearchParams({ tab: 'targets' });
                                 }}
-                                className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'targets'
+                                className={`px-4 py-1.5 rounded-[3px] text-sm font-medium transition-all duration-200 ${activeTab === 'targets'
                                     ? 'bg-white text-[#064771] shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
-                                Targets <span className={`ml-1 text-[10px] opacity-60`}>({counts.targets})</span>
+                                Targets <span className={`ml-1 opacity-60`}>({counts.targets})</span>
                             </button>
                         </div>
 
@@ -1293,7 +1293,7 @@ const ProspectsPortal: React.FC = () => {
                             <Filter className="w-4 h-4" />
                             <span>Filter</span>
                             {activeFilterCount > 0 && (
-                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1 text-[10px] font-bold text-white">
+                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1 text-[10px] font-medium text-white">
                                     {activeFilterCount}
                                 </span>
                             )}
@@ -1322,7 +1322,7 @@ const ProspectsPortal: React.FC = () => {
                                             </div>
                                             <div>
                                                 <h2 className="text-lg font-medium text-gray-900">Table Settings</h2>
-                                                <p className="text-xs text-gray-500 mt-0.5 font-medium">Customize your view</p>
+                                                <p className="text-xs text-gray-500 mt-0.5 font-normal">Customize your view</p>
                                             </div>
                                         </div>
                                         <button
@@ -1384,7 +1384,7 @@ const ProspectsPortal: React.FC = () => {
                                                                 <div className="flex items-center gap-3">
                                                                     {isActive
                                                                         ? <Eye className="w-4 h-4 text-[#064771]" />
-                                                                        : <EyeOff className="w-4 h-4 text-gray-300 group-hover:text-gray-400" />
+                                                                        : <EyeOff className="w-4 h-4 text-gray-400 group-hover:text-gray-400" />
                                                                     }
                                                                     <span className={`text-sm ${isActive ? 'font-medium' : 'font-normal'}`}>
                                                                         {col.label}

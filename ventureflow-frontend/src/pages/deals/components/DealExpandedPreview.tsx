@@ -56,7 +56,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     const updatedDate = new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     return (
-        <div className="w-full inline-flex flex-col font-inter shadow-xl rounded-lg">
+        <div className="w-full inline-flex flex-col shadow-xl rounded-lg">
             {/* Main Card Body */}
             <div
                 className="px-6 py-6 bg-white rounded-t-lg flex flex-col"
@@ -151,14 +151,14 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             {/* Budget */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Budget</span>
-                                <span className="text-[14px] font-semibold text-gray-800 leading-5">{budget}</span>
+                                <span className="text-[14px] font-semibold text-gray-900 leading-5">{budget}</span>
                             </div>
 
                             {/* Target Country */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Target Country</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[14px] text-gray-800 leading-5">{displayCountry}</span>
+                                    <span className="text-[14px] text-gray-900 leading-5">{displayCountry}</span>
                                     {additionalCountries > 0 && (
                                         <span
                                             className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-gray-600"
@@ -174,7 +174,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Target Industry</span>
                                 <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-[14px] text-gray-800 leading-5 truncate" style={{ maxWidth: 180 }}>{displayIndustries}</span>
+                                    <span className="text-[14px] text-gray-900 leading-5 truncate" style={{ maxWidth: 180 }}>{displayIndustries}</span>
                                     {additionalIndustries > 0 && (
                                         <span
                                             className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-gray-600 flex-shrink-0"
@@ -194,19 +194,19 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             {/* Desired Investment */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>Desired Investment</span>
-                                <span className="text-[14px] font-semibold text-gray-800 leading-5">{desiredInvestment}</span>
+                                <span className="text-[14px] font-semibold text-gray-900 leading-5">{desiredInvestment}</span>
                             </div>
 
                             {/* Share Ratio */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>Share Ratio</span>
-                                <span className="text-[14px] text-gray-800 leading-5">{shareRatio}</span>
+                                <span className="text-[14px] text-gray-900 leading-5">{shareRatio}</span>
                             </div>
 
                             {/* EBITDA */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>EBITDA</span>
-                                <span className="text-[14px] text-gray-800 leading-5">{ebitda}</span>
+                                <span className="text-[14px] text-gray-900 leading-5">{ebitda}</span>
                             </div>
                         </div>
                     </div>

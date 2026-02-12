@@ -26,7 +26,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({ columns }) => {
             key={index}
             className={`flex h-10 px-3 py-2 items-center gap-2 ${column.width || "flex-1 min-w-[100px]"} truncate`}
           >
-            <span className="truncate text-[var(--Color-Tokens-Content-Dark-Secondary,#727272)] font-poppins text-sm font-medium leading-[150%]">
+            <span className="truncate text-[var(--Color-Tokens-Content-Dark-Secondary,#727272)] text-sm font-medium leading-[150%]">
               {column.label}
             </span>
             {column.sortable && (

@@ -243,7 +243,7 @@ const TargetDetails: React.FC = () => {
                         {/* Back Button */}
                         <button
                             onClick={() => navigate('/prospects?tab=targets')}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors"
+                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
@@ -259,7 +259,7 @@ const TargetDetails: React.FC = () => {
                     {/* Edit Button - Secondary Style */}
                     <button
                         onClick={() => navigate(`/prospects/edit-target/${id}`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-[#374151] text-sm font-medium hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                     >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -295,7 +295,7 @@ const TargetDetails: React.FC = () => {
                                             {projectCode}
                                         </span>
                                     </div>
-                                    <span className="text-[13px] font-medium text-[#7D7D7D]">last Updated {lastUpdated}</span>
+                                    <span className="text-[13px] font-medium text-gray-500">last Updated {lastUpdated}</span>
                                 </div>
                             </div>
 
@@ -303,26 +303,26 @@ const TargetDetails: React.FC = () => {
                             <div className="flex items-start gap-20">
                                 <RestrictedField allowed={allowedFields} section="companyOverview" item="hq_country">
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Origin Country</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Origin Country</span>
                                         <div className="flex items-center gap-2">
                                             {hqCountryFlag && (
                                                 <img src={hqCountryFlag} alt="" className="w-5 h-5 rounded-full object-cover" />
                                             )}
-                                            <span className="text-sm font-medium text-[#1F2937]">{hqCountryName}</span>
+                                            <span className="text-sm font-medium text-gray-900">{hqCountryName}</span>
                                         </div>
                                     </div>
                                 </RestrictedField>
 
                                 <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma">
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Purpose of M&A</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Purpose of M&A</span>
                                         <span className="text-sm font-normal text-black">{purposeMA}</span>
                                     </div>
                                 </RestrictedField>
 
                                 <RestrictedField allowed={allowedFields} section="companyOverview" item="website">
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Website</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Website</span>
                                         {website ? (
                                             <a
                                                 href={website.startsWith('http') ? website : `https://${website}`}
@@ -340,7 +340,7 @@ const TargetDetails: React.FC = () => {
                                 </RestrictedField>
 
                                 <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Rank</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Rank</span>
                                     <span className="text-sm font-normal text-black">{rank}</span>
                                 </div>
                             </div>
@@ -348,14 +348,14 @@ const TargetDetails: React.FC = () => {
                             {/* Industry in Overview */}
                             <RestrictedField allowed={allowedFields} section="companyOverview" item="industry_ops">
                                 <div className="flex flex-col gap-3">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Industry</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Industry</span>
                                     <div className="flex flex-wrap gap-1.5">
                                         {industries.length > 0 ? industries.map((ind: any, idx: number) => (
                                             <div
                                                 key={idx}
                                                 className="h-8 px-3 bg-[#F3F4F6] rounded flex items-center"
                                             >
-                                                <span className="text-sm font-normal text-[#374151]">{ind.name || (typeof ind === 'string' ? ind : String(ind.id || JSON.stringify(ind)))}</span>
+                                                <span className="text-sm font-normal text-gray-700">{ind.name || (typeof ind === 'string' ? ind : String(ind.id || JSON.stringify(ind)))}</span>
                                             </div>
                                         )) : (
                                             <span className="text-sm font-medium text-black">N/A</span>
@@ -367,12 +367,12 @@ const TargetDetails: React.FC = () => {
                             {/* Addresses / Entities in Overview */}
                             {hqAddresses && hqAddresses.length > 0 && (
                                 <div className="flex flex-col gap-3">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Addresses / Entities</span>
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Addresses / Entities</span>
                                     <div className="flex flex-col gap-2">
                                         {hqAddresses.map((addr: any, idx: number) => (
                                             <div key={idx} className="flex flex-col gap-0.5">
-                                                {addr.label && <span className="text-xs font-medium text-[#6B7280]">{addr.label}</span>}
-                                                <span className="text-sm text-[#374151]">{addr.address || (typeof addr === 'string' ? addr : 'N/A')}</span>
+                                                {addr.label && <span className="text-xs font-medium text-gray-500">{addr.label}</span>}
+                                                <span className="text-sm text-gray-700">{addr.address || (typeof addr === 'string' ? addr : 'N/A')}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -402,15 +402,15 @@ const TargetDetails: React.FC = () => {
                         <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
                             {/* Investment Condition */}
                             <div className="flex flex-col gap-3">
-                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Investment Condition</span>
+                                <span className="text-[11px] font-medium text-gray-400 uppercase">Investment Condition</span>
                                 <span className="text-sm font-medium text-black">{investmentCondition}</span>
                             </div>
 
                             {/* Planned Sale Share Ratio */}
                             <RestrictedField allowed={allowedFields} section="financialDetails" item="maximum_investor_shareholding_percentage">
                                 <div className="flex flex-col gap-3">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Planned Sale Share Ratio</span>
-                                    <span className="text-sm font-semibold text-black">
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Planned Sale Share Ratio</span>
+                                    <span className="text-sm font-medium text-gray-900">
                                         {saleShareRatio ? `${saleShareRatio}%` : 'Negotiable'}
                                     </span>
                                 </div>
@@ -419,8 +419,8 @@ const TargetDetails: React.FC = () => {
                             {/* Desired Investment */}
                             <RestrictedField allowed={allowedFields} section="financialDetails" item="expected_investment_amount">
                                 <div className="flex flex-col gap-3">
-                                    <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">Desired Investment</span>
-                                    <span className="text-sm font-semibold text-black">
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Desired Investment</span>
+                                    <span className="text-sm font-medium text-gray-900">
                                         {getDesiredInvestmentDisplay()}
                                         {defaultCurrencyCode && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
                                     </span>
@@ -429,8 +429,8 @@ const TargetDetails: React.FC = () => {
 
                             {/* EBITDA */}
                             <div className="flex flex-col gap-3">
-                                <span className="text-[11px] font-medium text-[#9CA3AF] uppercase">EBITDA</span>
-                                <span className="text-sm font-semibold text-black">
+                                <span className="text-[11px] font-medium text-gray-400 uppercase">EBITDA</span>
+                                <span className="text-sm font-medium text-gray-900">
                                     {getEbitdaDisplay()}
                                     {defaultCurrencyCode && getEbitdaDisplay() !== 'N/A' && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
                                 </span>
@@ -443,7 +443,7 @@ const TargetDetails: React.FC = () => {
                     <section className="space-y-7">
                         <div className="flex items-center justify-between">
                             <h2 className="text-base font-medium text-gray-500 capitalize">Key Personnel</h2>
-                            <span className="text-xs font-medium text-[#9CA3AF]">1 Contact(s)</span>
+                            <span className="text-xs font-medium text-gray-400">1 Contact(s)</span>
                         </div>
                         <div className="h-px bg-[#E5E7EB]" />
 
@@ -455,10 +455,10 @@ const TargetDetails: React.FC = () => {
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                                    <User className="w-5 h-5 text-[#9CA3AF]" />
+                                                    <User className="w-5 h-5 text-gray-400" />
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-base font-medium text-[#111827]">{overview.seller_contact_name || 'N/A'}</span>
+                                                    <span className="text-base font-medium text-gray-900">{overview.seller_contact_name || 'N/A'}</span>
                                                     <span className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</span>
                                                 </div>
                                             </div>
@@ -470,12 +470,12 @@ const TargetDetails: React.FC = () => {
                                         {/* Contact Details */}
                                         <div className="pt-4 border-t border-[#F3F4F6] flex flex-col gap-3">
                                             <div className="flex items-center gap-2">
-                                                <Mail className="w-3.5 h-3.5 text-[#9CA3AF]" />
-                                                <span className="text-xs font-normal text-[#4B5563]">{overview.seller_email || 'N/A'}</span>
+                                                <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="text-xs font-normal text-gray-600">{overview.seller_email || 'N/A'}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Phone className="w-3.5 h-3.5 text-[#9CA3AF]" />
-                                                <span className="text-xs font-normal text-[#4B5563]">
+                                                <Phone className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="text-xs font-normal text-gray-600">
                                                     {Array.isArray(overview.seller_phone)
                                                         ? (overview.seller_phone.find((p: any) => p.isPrimary)?.phone || overview.seller_phone[0]?.phone || 'N/A')
                                                         : (overview.seller_phone || 'N/A')}

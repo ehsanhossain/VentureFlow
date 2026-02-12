@@ -8,11 +8,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        inter: ["Inter", "sans-serif"],
-        poppins: ["Inter", "sans-serif"],
-        sans: ["Inter", "sans-serif"],
-        sf: ["Inter", "sans-serif"],
-        roboto: ["Inter", "sans-serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+      },
+      letterSpacing: {
+        vfHeading: "-0.02em",
       },
     },
   },

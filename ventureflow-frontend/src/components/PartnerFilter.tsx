@@ -159,7 +159,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
             strokeLinejoin="round"
           />
         </svg>
-        <span className="text-gray-800 text-sm font-medium font-poppins">
+        <span className="text-gray-900 text-sm font-medium ">
           Filter
         </span>
       </div>
@@ -189,7 +189,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" />
                     </svg>
-                    <h2 className="font-medium text-[#30313d] text-3xl leading-[35.7px] font-['SF_Pro_Display-Medium',Helvetica]">
+                    <h2 className="font-medium text-gray-900 text-3xl leading-[35.7px] font-['SF_Pro_Display-Medium',Helvetica]">
                       Filter
                     </h2>
                   </div>
@@ -211,7 +211,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       {/* Registered Within */}
                       <div className="flex-col w-[300px] h-[70px] flex items-start justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                          <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                             {filterFields[0].label}
                           </span>
                         </div>
@@ -228,11 +228,11 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                             <select
                               value={filters.registered}
                               onChange={(e) => handleFilterChange('registered', e.target.value)}
-                              className="w-[283px] h-10 pl-[47px] pr-5 py-2 -ml-[34px] bg-white rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-slate-300 text-[#8a8a8a] text-sm font-normal font-['Poppins',Helvetica] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
+                              className="w-[283px] h-10 pl-[47px] pr-5 py-2 -ml-[34px] bg-white rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
                             >
                               <option value="">{filterFields[0].placeholder}</option>
                               {filterFields[0].options.map((option) => (
-                                <option key={option.value} value={option.value} className="text-[#30313d]">
+                                <option key={option.value} value={option.value} className="text-gray-900">
                                   {option.label}
                                 </option>
                               ))}
@@ -249,7 +249,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       {/* Partner's HQ/Origin Country */}
                       <div className="flex flex-col h-[70px] items-start justify-between flex-1">
                         <div className="flex items-center gap-1.5 w-full">
-                          <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                          <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                             {filterFields[1].label}
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
@@ -265,11 +265,11 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           <select
                             value={filters.country}
                             onChange={(e) => handleFilterChange('country', e.target.value)}
-                            className="w-full h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-slate-300 text-[#8a8a8a] text-sm font-normal font-['Poppins',Helvetica] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f] pl-[50px]"
+                            className="w-full h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f] pl-[50px]"
                           >
                             <option value="">{filterFields[1].placeholder}</option>
                             {filterFields[1].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-[#30313d]">
+                              <option key={option.value} value={option.value} className="text-gray-900">
                                 {option.label}
                               </option>
                             ))}
@@ -295,7 +295,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       {/* Structure */}
                       <div className="flex flex-col w-[301px] h-[70px] items-start justify-between">
                         <div className="flex items-center gap-1.5 w-full">
-                          <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                          <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                             {filterFields[2].label}
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
@@ -311,11 +311,11 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           <select
                             value={filters.structure}
                             onChange={(e) => handleFilterChange('structure', e.target.value)}
-                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-slate-300 text-[#8a8a8a] text-sm font-normal font-['Poppins',Helvetica] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
+                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
                           >
                             <option value="">{filterFields[2].placeholder}</option>
                             {filterFields[2].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-[#30313d]">
+                              <option key={option.value} value={option.value} className="text-gray-900">
                                 {option.label}
                               </option>
                             ))}
@@ -331,7 +331,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       {/* Status */}
                       <div className="flex flex-col w-[301px] h-[70px] items-start justify-between">
                         <div className="flex items-center gap-1.5 w-full">
-                          <span className="font-medium text-[#30313d] text-base leading-[19.3px] font-['Poppins',Helvetica]">
+                          <span className="font-medium text-gray-900 text-base leading-[19.3px] ">
                             {filterFields[3].label}
                           </span>
                           <div className="w-[18px] h-[18px] flex items-center justify-center">
@@ -347,11 +347,11 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                           <select
                             value={filters.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
-                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-slate-300 text-[#8a8a8a] text-sm font-normal font-['Poppins',Helvetica] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
+                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
                           >
                             <option value="">{filterFields[3].placeholder}</option>
                             {filterFields[3].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-[#30313d]">
+                              <option key={option.value} value={option.value} className="text-gray-900">
                                 {option.label}
                               </option>
                             ))}
@@ -369,7 +369,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                   {/* Action Buttons */}
                   <div className="flex items-center justify-end gap-4 w-full">
                     <button
-                      className="h-[34px] px-3 py-[5.03px] bg-[#f1faff] rounded-[49.82px] border-[0.77px] border-solid border-[#0c5577] text-[#0c5577] font-normal text-base font-['Poppins',Helvetica] hover:bg-[#e6f4ff] transition-colors cursor-pointer flex items-center"
+                      className="h-[34px] px-3 py-[5.03px] bg-[#f1faff] rounded-[49.82px] border-[0.77px] border-solid border-[#0c5577] text-[#0c5577] font-normal text-base hover:bg-[#e6f4ff] transition-colors cursor-pointer flex items-center"
                       onClick={handleClearFilter}
                     >
                       <img
@@ -380,7 +380,7 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                       Clear Filter
                     </button>
                     <button
-                      className="h-[34.49px] px-3 py-[5.03px] bg-[#064771] rounded-[49.82px] text-white font-medium text-base font-['Poppins',Helvetica] hover:bg-[#053a5a] transition-colors cursor-pointer flex items-center"
+                      className="h-[34.49px] px-3 py-[5.03px] bg-[#064771] rounded-[49.82px] text-white font-medium text-base hover:bg-[#053a5a] transition-colors cursor-pointer flex items-center"
                       onClick={handleApplySearch}
                     >
                       Apply & Search

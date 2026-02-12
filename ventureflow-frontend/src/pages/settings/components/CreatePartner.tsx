@@ -11,7 +11,7 @@ interface ExtendedCountry extends Country {
 
 /* ─── tiny reusable label ─── */
 const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, required }) => (
-    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-800 font-['Inter'] leading-5">
+    <label className="flex items-center gap-1 mb-2 text-base font-medium text-gray-900  leading-5">
         {required && <span className="text-rose-600 text-base font-medium">*</span>}
         {text}
     </label>
@@ -20,7 +20,7 @@ const FieldLabel: React.FC<{ text: string; required?: boolean }> = ({ text, requ
 /* ─── section header with divider ─── */
 const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
     <div className="flex flex-col gap-3 mb-5">
-        <h3 className="text-base font-medium text-black font-['Inter'] capitalize">{title}</h3>
+        <h3 className="text-base font-medium text-black  capitalize">{title}</h3>
         <div className="w-full h-px bg-gray-200" />
     </div>
 );
@@ -237,11 +237,11 @@ const CreatePartner: React.FC = () => {
     };
 
     /* ─── shared input style ─── */
-    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal font-['Inter'] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
+    const inputClass = "w-full h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors";
 
     if (isFetching) {
         return (
-            <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
+            <div className="flex flex-col h-full min-h-screen bg-white ">
                 <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                     <button
                         type="button"
@@ -256,7 +256,7 @@ const CreatePartner: React.FC = () => {
                     </h1>
                 </div>
                 <div className="flex-1 overflow-auto p-4 md:p-6">
-                    <div className="w-full pb-24 font-['Inter']">
+                    <div className="w-full pb-24 ">
                         <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
                             <div className="flex flex-col gap-6">
                                 <div className="h-6 w-48 bg-gray-200 rounded" />
@@ -286,7 +286,7 @@ const CreatePartner: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
+        <div className="flex flex-col h-full min-h-screen bg-white ">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                 <button
@@ -304,7 +304,7 @@ const CreatePartner: React.FC = () => {
 
             {/* Main Content */}
             <div className="flex-1 overflow-auto p-4 md:p-6">
-                <form onSubmit={handleSubmit} className="w-full pb-24 font-['Inter']">
+                <form onSubmit={handleSubmit} className="w-full pb-24 ">
                     <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
                         {/* ═══ Section 1: Partner Information ═══ */}
@@ -428,14 +428,14 @@ const CreatePartner: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => navigate('/settings/partners')}
-                            className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium font-['Inter'] hover:bg-gray-50 transition-colors"
+                            className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium  hover:bg-gray-50 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={isLoading || (isIdAvailable === false)}
-                            className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium font-['Inter'] hover:bg-[#042d48] transition-colors disabled:opacity-50 flex items-center gap-2"
+                            className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium  hover:bg-[#042d48] transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
                             {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                             {isEditing ? 'Update Partner' : 'Create Partner'}
@@ -452,7 +452,7 @@ const CreatePartner: React.FC = () => {
                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CheckCircle className="w-8 h-8 text-green-600" />
                             </div>
-                            <h2 className="text-xl font-semibold text-gray-900">Partner Created Successfully!</h2>
+                            <h2 className="text-lg font-medium text-gray-900">Partner Created Successfully!</h2>
                             <p className="text-sm text-gray-500 mt-1">Save the credentials below before closing</p>
                         </div>
 

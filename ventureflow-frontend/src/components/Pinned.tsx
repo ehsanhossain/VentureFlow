@@ -77,7 +77,7 @@ export const Pinned: React.FC<PinnedProps> = ({
         {/* Conditionally render the SVG based on the state */}
         {isPinned ? PinnedIcon : UnpinnedIcon}
       </span>
-      <span className="relative w-fit font-medium text-[#30313d] text-sm text-center tracking-[0.10px] leading-5 whitespace-nowrap font-['Poppins',Helvetica]">
+      <span className="relative w-fit font-medium text-gray-900 text-sm text-center tracking-[0.10px] leading-5 whitespace-nowrap ">
         {isPinned ? "Pinned" : "Unpinned"}
       </span>
     </button>

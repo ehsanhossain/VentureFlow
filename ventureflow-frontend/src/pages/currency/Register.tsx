@@ -199,10 +199,10 @@ const Register: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="font-poppins">
+          <div className="">
             <div className="flex items-center gap-[13px] w-[1315px] ml-10 mt-4">
               <div className="flex flex-col flex-shrink-0 justify-center items-start gap-4 w-[682px]">
-                <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal]">
+                <div className="flex items-center self-stretch text-gray-900 text-right text-[1.75rem] font-medium leading-[normal]">
                   {t('settings.currency.management')}
                 </div>
                 <div className="flex items-center self-stretch">
@@ -268,10 +268,10 @@ const Register: React.FC = () => {
                 <div className="flex justify-start items-start flex-col gap-[30px] w-[394px]">
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                      <span className="text-[#EC1D42] font-inter font-semibold leading-[19.28569984436035px]">
+                      <span className="text-[#EC1D42] font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
-                      <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                      <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                         {t('settings.currency.name')}
                       </span>
                     </div>
@@ -284,17 +284,17 @@ const Register: React.FC = () => {
                       error={!!errors.currencyName}
                     />
                     {errors.currencyName && (
-                      <span className="text-sm text-red-500 font-poppins mt-[-10px]">
+                      <span className="text-sm text-red-500 mt-[-10px]">
                         {errors.currencyName.message}
                       </span>
                     )}
                   </div>
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                      <span className="text-[#EC1D42] font-inter font-semibold leading-[19.28569984436035px]">
+                      <span className="text-[#EC1D42] font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
-                      <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                      <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                         {t('settings.currency.code')}
                       </span>
                     </div>
@@ -307,7 +307,7 @@ const Register: React.FC = () => {
                       error={!!errors.currencyCode}
                     />
                     {errors.currencyCode && (
-                      <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                      <span className="text-sm text-red-500 mt-[-5px]">
                         {errors.currencyCode.message}
                       </span>
                     )}
@@ -318,7 +318,7 @@ const Register: React.FC = () => {
                       <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
-                      <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                      <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                         {t('settings.currency.sign')}
                       </span>
                     </div>
@@ -331,7 +331,7 @@ const Register: React.FC = () => {
                       error={!!errors.currencySign}
                     />
                     {errors.currencySign && (
-                      <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                      <span className="text-sm text-red-500 mt-[-5px]">
                         {errors.currencySign.message}
                       </span>
                     )}
@@ -342,7 +342,7 @@ const Register: React.FC = () => {
                       <span className="text-[#EC1D42] font-['SF_Pro_Display'] font-semibold leading-[19.28569984436035px]">
                         *
                       </span>
-                      <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                      <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                         {t('settings.currency.country')}
                       </span>
                     </div>
@@ -360,7 +360,7 @@ const Register: React.FC = () => {
                             placeholder={t('settings.currency.countryPlaceholder')}
                           />
                           {errors.country && (
-                            <span className="text-sm text-red-500 font-inter">
+                            <span className="text-sm text-red-500 ">
                               {errors.country.message}
                             </span>
                           )}
@@ -371,7 +371,7 @@ const Register: React.FC = () => {
 
                   <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                     <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                      <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                      <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                         {t('settings.currency.dollarUnit')}
                       </span>
                     </div>
@@ -384,7 +384,7 @@ const Register: React.FC = () => {
                     <div className="flex self-stretch justify-start items-start flex-col gap-[18px]">
                       <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
                         <div className="flex justify-start items-center flex-row gap-[3px]">
-                          <span className="text-[#30313D] font-medium leading-[19.2857px]">
+                          <span className="text-gray-900 font-medium leading-[19.2857px]">
                             {t('settings.currency.exchangeRateSource')}
                           </span>
                         </div>
@@ -458,11 +458,11 @@ const Register: React.FC = () => {
                                   fill="#16607B"
                                 />
                               </svg>
-                              <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                              <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                 Application Programming Interface (API)
                               </span>
                             </div>
-                            <p className="self-stretch text-[#6D6D6D] text-sm">
+                            <p className="self-stretch text-gray-600 text-sm">
                               Our API dynamically fetches real-time exchange rates, continuously
                               updated from trusted sources. Rates are converted from USD to the
                               selected country’s currency, ensuring accurate and up-to-date
@@ -471,7 +471,7 @@ const Register: React.FC = () => {
                             <div className="flex self-stretch justify-start items-start flex-col gap-[30px]">
                               <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                                 <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                                  <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                                  <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                     {t('settings.currency.manualRate')}
                                   </span>
                                 </div>
@@ -503,11 +503,11 @@ const Register: React.FC = () => {
                                       fill="#16607B"
                                     />
                                   </svg>
-                                  <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                                  <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                     Manual Currency Rate
                                   </span>
                                 </div>
-                                <p className="self-stretch text-[#6D6D6D] text-sm">
+                                <p className="self-stretch text-gray-600 text-sm">
                                   Enter the exchange rate manually if you&apos;d prefer to set your own.
                                   This option is useful when you need custom rates that are not tied
                                   to real-time data. Ensure the rates are accurate to maintain
@@ -541,11 +541,11 @@ const Register: React.FC = () => {
                                   fill="#16607B"
                                 />
                               </svg>
-                              <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                              <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                 Application Programming Interface (API)
                               </span>
                             </div>
-                            <p className="self-stretch text-[#6D6D6D] text-sm">
+                            <p className="self-stretch text-gray-600 text-sm">
                               Our API dynamically fetches real-time exchange rates, continuously
                               updated from trusted sources. Rates are converted from USD to the
                               selected country’s currency, ensuring accurate and up-to-date
@@ -554,7 +554,7 @@ const Register: React.FC = () => {
                             <div className="flex self-stretch justify-start items-start flex-col gap-[30px]">
                               <div className="flex self-stretch justify-between items-start flex-col gap-3.5 h-[70px]">
                                 <div className="flex self-stretch justify-start items-center flex-row gap-1.5">
-                                  <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                                  <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                     {t('settings.currency.manualRate')}
                                   </span>
                                 </div>
@@ -566,7 +566,7 @@ const Register: React.FC = () => {
                                   error={!!errors.exchangeRate}
                                 />
                                 {errors.exchangeRate && (
-                                  <span className="text-sm text-red-500 font-poppins mt-[-5px]">
+                                  <span className="text-sm text-red-500 mt-[-5px]">
                                     {errors.exchangeRate.message}
                                   </span>
                                 )}
@@ -593,11 +593,11 @@ const Register: React.FC = () => {
                                       fill="#16607B"
                                     />
                                   </svg>
-                                  <span className="text-[#30313D] font-medium leading-[19.28569984436035px]">
+                                  <span className="text-gray-900 font-medium leading-[19.28569984436035px]">
                                     Manual Currency Rate
                                   </span>
                                 </div>
-                                <p className="self-stretch text-[#6D6D6D] text-sm">
+                                <p className="self-stretch text-gray-600 text-sm">
                                   Enter the exchange rate manually if you&apos;d prefer to set your own.
                                   This option is useful when you need custom rates that are not tied
                                   to real-time data. Ensure the rates are accurate to maintain
@@ -643,11 +643,11 @@ const Register: React.FC = () => {
                         fill="#DD7A01"
                       />
                     </svg>
-                    <span className="text-[#000000] text-lg font-medium">{t('settings.currency.hints')}</span>
+                    <span className="text-gray-900 text-lg font-medium">{t('settings.currency.hints')}</span>
                   </div>
 
                   <div className="w-[480px] p-4  rounded-md ">
-                    <ul className="list-disc pl-5 text-[#30313D] text-sm">
+                    <ul className="list-disc pl-5 text-gray-900 text-sm">
                       <li>{t('settings.currency.hint1')}</li>
                       <li>{t('settings.currency.hint2')}</li>
                       <li>{t('settings.currency.hint3')}</li>
@@ -704,11 +704,11 @@ const Register: React.FC = () => {
                             />
                           </svg>
                           {id ? (
-                            <span className="text-white text-center font-medium font-poppins ml-[4px]">
+                            <span className="text-white text-center font-medium ml-[4px]">
                               {t('common.update')}
                             </span>
                           ) : (
-                            <span className="text-white text-center font-medium font-poppins ml-[4px]">
+                            <span className="text-white text-center font-medium ml-[4px]">
                               {t('common.create')}
                             </span>
                           )}

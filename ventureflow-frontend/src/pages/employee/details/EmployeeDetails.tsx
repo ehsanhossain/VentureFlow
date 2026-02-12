@@ -202,9 +202,9 @@ const EmployeeDetails: React.FC = () => {
   const countryData = getCountryById(parseInt(employee?.nationality));
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-[13px] w-full font-poppins ">
+    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-[13px] w-full ">
       <div className="flex flex-col flex-shrink-0 justify-center items-start gap-4 w-full md:w-[682px] pl-7 pt-7">
-        <div className="flex items-center self-stretch text-[#00081a] text-right font-poppins text-[1.75rem] font-medium leading-[normal]">
+        <div className="flex items-center self-stretch text-gray-900 text-right text-[1.75rem] font-medium leading-[normal]">
           Employee Details
         </div>
         <div className="flex items-center self-stretch">
@@ -296,17 +296,17 @@ const EmployeeDetails: React.FC = () => {
                 alt="profile"
               />
 
-              <p className="text-[#232323] text-[22px] text-center font-poppins font-semibold mt-5">
+              <p className="text-gray-900 text-[22px] text-center font-semibold mt-5">
                 {employee?.first_name} {employee?.last_name}
               </p>
-              <p className="text-[#5C5C5C] font-poppins text-[16px] mt-2 text-center">
+              <p className="text-gray-500 text-[16px] mt-2 text-center">
                 {employee?.designation?.title}
               </p>
 
               <button
                 onClick={() => handleClick('employee')}
-                className={`relative flex items-center ${selectedButton === 'employee' ? 'text-[#064771] underline' : 'text-[#212121]'
-                  } font-poppins text-[16px] font-semibold mt-[160px]`}
+                className={`relative flex items-center ${selectedButton === 'employee' ? 'text-[#064771] underline' : 'text-gray-900'
+                  } text-[16px] font-semibold mt-[160px]`}
               >
                 <p>Employee Details</p>
                 {selectedButton === 'employee' && (
@@ -316,8 +316,8 @@ const EmployeeDetails: React.FC = () => {
 
               <button
                 onClick={() => handleClick('projects')}
-                className={`relative flex items-center ${selectedButton === 'projects' ? 'text-[#064771] underline' : 'text-[#212121]'
-                  } font-poppins text-[16px] font-semibold mt-8 mb-4`}
+                className={`relative flex items-center ${selectedButton === 'projects' ? 'text-[#064771] underline' : 'text-gray-900'
+                  } text-[16px] font-semibold mt-8 mb-4`}
               >
                 <p>Assigned Projects</p>
                 {selectedButton === 'projects' && (
@@ -349,7 +349,7 @@ const EmployeeDetails: React.FC = () => {
                         </clipPath>
                       </defs>
                     </svg>
-                    <span className="text-[#212121] font-semibold tracking-[0.32px]">
+                    <span className="text-gray-900 font-semibold tracking-[0.32px]">
                       Personal Information
                     </span>
                   </div>
@@ -358,45 +358,45 @@ const EmployeeDetails: React.FC = () => {
 
                   <div className="mt-5 space-y-6">
                     <div className="flex items-center gap-[80px]">
-                      <p className="text-[#232323]">Employee ID</p>
-                      <p className="text-[#232323] font-medium">{employee?.employee_id}</p>
+                      <p className="text-gray-900">Employee ID</p>
+                      <p className="text-gray-900 font-medium">{employee?.employee_id}</p>
                     </div>
 
                     <div className="flex items-center gap-[30px]">
-                      <p className="text-[#232323]">Nationality</p>
+                      <p className="text-gray-900">Nationality</p>
 
                       <div className="flex justify-start items-center flex-row gap-[8.67px] ml-[55px]">
                         {countryData?.svg_icon_url ? (
                           <img
                             src={countryData?.svg_icon_url}
                             alt="flag"
-                            className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
+                            className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-900 text-[10px] flex items-center justify-center"
                           />
                         ) : (
-                          <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
+                          <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-900 text-[10px] flex items-center justify-center">
                             n/a
                           </span>
                         )}
-                        <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
+                        <span className="text-gray-900 text-sm font-semibold leading-[31.78px]">
                           {countryData?.name || 'N/A'}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-[80px]">
-                      <p className="text-[#232323]">Date of Birth</p>
+                      <p className="text-gray-900">Date of Birth</p>
                       <div className="text-left">
-                        <p className="text-[#232323] font-medium">
+                        <p className="text-gray-900 font-medium">
                           {employee?.dob ? new Date(employee.dob).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-[120px]">
-                      <p className="text-[#232323]">Gender</p>
+                      <p className="text-gray-900">Gender</p>
 
                       <div className="flex items-center gap-2.5">
-                        <span className="text-[#232323] font-medium">
+                        <span className="text-gray-900 font-medium">
                           {employee?.gender
                             ? employee.gender.charAt(0).toUpperCase() + employee.gender.slice(1)
                             : ''}
@@ -406,12 +406,12 @@ const EmployeeDetails: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-[80px]">
-                      <p className="text-[#232323]">Employment</p>
-                      <p className="text-[#232323] font-medium">Permanent</p>
+                      <p className="text-gray-900">Employment</p>
+                      <p className="text-gray-900 font-medium">Permanent</p>
                     </div>
 
                     <div className="flex items-center gap-[65px]">
-                      <p className="text-[#232323]">Company Mail</p>
+                      <p className="text-gray-900">Company Mail</p>
 
                       <div className="flex items-center gap-2.5">
                         <span className="text-[#0C5577] font-medium" title={employee?.work_email}>
@@ -447,9 +447,9 @@ const EmployeeDetails: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-[40px]">
-                      <p className="text-[#232323]">Contact Number</p>
+                      <p className="text-gray-900">Contact Number</p>
                       <div className="flex items-center gap-2.5">
-                        <span className="text-[#232323] font-medium">
+                        <span className="text-gray-900 font-medium">
                           {employee?.contact_number || 'N/A'}
                         </span>
 
@@ -480,7 +480,7 @@ const EmployeeDetails: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-[90px]">
-                      <p className="text-[#30313D]">User Role</p>
+                      <p className="text-gray-900">User Role</p>
 
                       <div className="bg-[#0C5577] rounded-[36px] h-[32px] px-3 flex items-center gap-2">
                         <div className="w-[16px] h-[16px]" style={{ width: '16px' }}>
@@ -525,7 +525,7 @@ const EmployeeDetails: React.FC = () => {
                         fill="#30313D"
                       />
                     </svg>
-                    <span className="text-[#212121] font-semibold tracking-[0.32px]">
+                    <span className="text-gray-900 font-semibold tracking-[0.32px]">
                       Company Details
                     </span>
                   </div>
@@ -595,7 +595,7 @@ const EmployeeDetails: React.FC = () => {
                           </svg>
                         </div>
                       </div>
-                      <span className="text-[#212121] text-[22px] font-medium truncate whitespace-nowrap max-w-[350px] block">
+                      <span className="text-gray-900 text-[22px] font-medium truncate whitespace-nowrap max-w-[350px] block">
                         {employee?.company?.name || 'N/A'}
                       </span>
                     </div>
@@ -654,10 +654,10 @@ const EmployeeDetails: React.FC = () => {
                       className="flex justify-start items-end flex-col  w-[125px]"
                       style={{ width: '125px', marginLeft: '104px' }}
                     >
-                      <span className="text-[#7C7C7C] text-sm text-right leading-5">
+                      <span className="text-gray-500 text-sm text-right leading-5">
                         Latest Synced
                       </span>
-                      <p className="self-stretch text-[#000000] text-xs text-right leading-[24.000316619873047px] tracking-[-0.18px] text-nowrap">
+                      <p className="self-stretch text-gray-900 text-xs text-right leading-[24.000316619873047px] tracking-[-0.18px] text-nowrap">
                         {employee?.updated_at
                           ? new Date(employee.updated_at).toLocaleString('en-US', {
                             month: '2-digit',
@@ -713,7 +713,7 @@ const EmployeeDetails: React.FC = () => {
                     </div>
 
                     <div className="ml-5 ">
-                      <p className="self-stretch text-[#838383] text-[9.379307746887207px] font-medium leading-[26.953031539916992px] ">
+                      <p className="self-stretch text-gray-500 text-[9.379307746887207px] font-medium leading-[26.953031539916992px] ">
                         Data Synced from
                       </p>
 
@@ -729,7 +729,7 @@ const EmployeeDetails: React.FC = () => {
             {selectedButton === 'projects' && (
               <div className=" py-[25px]  ">
                 <div className="mb-5 ml-[-1100px] ">
-                  <span className="text-[#30313D] text-[22px] font-semibold leading-[25.674741744995117px]">
+                  <span className="text-gray-900 text-[22px] font-semibold leading-[25.674741744995117px]">
                     Concerned Projects
                   </span>
                 </div>
@@ -742,7 +742,7 @@ const EmployeeDetails: React.FC = () => {
                         {tableHeaders.map((header, idx) => (
                           <TableHead
                             key={idx}
-                            className={`cursor-pointer py-[10px] px-6 font-semibold text-[#727272] text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
+                            className={`cursor-pointer py-[10px] px-6 font-semibold text-gray-500 text-sm border-t border-b ${idx === 0 ? 'border-l first:rounded-l-lg' : ''
                               } ${idx === tableHeaders.length - 1 ? 'border-r last:rounded-r-lg' : ''
                               } bg-[#F9F9F9] text-center whitespace-nowrap hover:bg-[#d1d1d1] transition-colors`}
                           >
@@ -767,7 +767,7 @@ const EmployeeDetails: React.FC = () => {
                           <TableRow key={seller.id ?? index}>
                             <TableCell
                               className={clsx(
-                                'py-[10px] px-6 font-semibold text-[#30313D] text-sm border-t border-b border-l truncate whitespace-nowrap rounded-l-lg',
+                                'py-[10px] px-6 font-semibold text-gray-900 text-sm border-t border-b border-l truncate whitespace-nowrap rounded-l-lg',
                                 {
                                   'border-[#064771] bg-[#F5FBFF]': isSelected,
                                   'border-[#E4E4E4] bg-white': !isSelected,
@@ -788,7 +788,7 @@ const EmployeeDetails: React.FC = () => {
 
                             <TableCell
                               className={clsx(
-                                'py-[10px] px-6 text-center font-medium text-[#30313D] text-sm border-t border-b',
+                                'py-[10px] px-6 text-center font-medium text-gray-900 text-sm border-t border-b',
                                 {
                                   'border-[#064771] bg-[#F5FBFF]': isSelected,
                                   'border-[#E4E4E4] bg-white': !isSelected,
@@ -803,7 +803,7 @@ const EmployeeDetails: React.FC = () => {
                             </TableCell>
                             <TableCell
                               className={clsx(
-                                'py-[10px] px-6 text-center text-[#30313D] text-sm border-t border-b',
+                                'py-[10px] px-6 text-center text-gray-900 text-sm border-t border-b',
                                 {
                                   'border-[#064771] bg-[#F5FBFF]': isSelected,
                                   'border-[#E4E4E4] bg-white': !isSelected,
@@ -816,14 +816,14 @@ const EmployeeDetails: React.FC = () => {
                                     <img
                                       src={PersoncountryData?.svg_icon_url}
                                       alt="flag"
-                                      className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center"
+                                      className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-900 text-[10px] flex items-center justify-center"
                                     />
                                   ) : (
-                                    <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-800 text-[10px] flex items-center justify-center">
+                                    <span className="w-[26px] h-[26px] rounded-full bg-gray-200 text-gray-900 text-[10px] flex items-center justify-center">
                                       n/a
                                     </span>
                                   )}
-                                  <span className="text-[#30313D] text-sm font-semibold leading-[31.78px]">
+                                  <span className="text-gray-900 text-sm font-semibold leading-[31.78px]">
                                     {PersoncountryData?.name || 'N/A'}
                                   </span>
                                 </div>

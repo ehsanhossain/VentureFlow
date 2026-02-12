@@ -168,8 +168,8 @@ const Login = () => {
 
           <form onSubmit={handleLogin} className="flex flex-col w-full mt-10">
 
-            <label className="my-5 mb-1 font-poppins text-base font-normal text-[16px]">
-              <span className="text-red-500 font-poppins">*</span> Email or Partner ID
+            <label className="my-5 mb-1 text-base font-normal text-[16px]">
+              <span className="text-red-500 ">*</span> Email or Partner ID
             </label>
 
             <div className="flex items-center border border-gray-300 rounded-md p-2.5 mb-5">
@@ -201,11 +201,11 @@ const Login = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border-none outline-none w-full text-base font-poppins placeholder:text-[14px]"
+                className="border-none outline-none w-full text-base placeholder:text-[14px]"
               />
             </div>
 
-            <label className="my-5 mb-1 font-poppins text-base font-normal text-[16px]">
+            <label className="my-5 mb-1 text-base font-normal text-[16px]">
               <span className="text-red-500">*</span> Password
             </label>
 
@@ -246,7 +246,7 @@ const Login = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="border-none outline-none w-full text-base font-poppins placeholder:text-[14px]"
+                className="border-none outline-none w-full text-base placeholder:text-[14px]"
               />
 
               <button type="button" onClick={() => setShowPassword(!showPassword)}>
@@ -255,7 +255,7 @@ const Login = () => {
             </div>
 
             <div className="flex justify-between items-center my-5">
-              <label className="flex items-center font-poppins text-xs font-normal cursor-pointer">
+              <label className="flex items-center text-xs font-normal cursor-pointer">
                 <input
                   type="checkbox"
                   className="hidden"
@@ -272,11 +272,11 @@ const Login = () => {
                   ></div>
                 </div>
 
-                <span className="ml-2 font-poppins">Remember me for 30 days</span>
+                <span className="ml-2 ">Remember me for 30 days</span>
               </label>
               <a
                 href="#"
-                className="text-[#064771] font-poppins text-sm font-semibold underline decoration-solid"
+                className="text-[#064771] text-sm font-semibold underline decoration-solid"
               >
                 Forgot Password?
               </a>
@@ -284,7 +284,7 @@ const Login = () => {
 
             <button
               type="submit"
-              className="px-4 py-3 bg-[#064771] text-white border-0 rounded-full cursor-pointer text-lg font-bold font-poppins mt-5 flex items-center justify-center"
+              className="px-4 py-3 bg-[#064771] text-white border-0 rounded-full cursor-pointer text-lg font-medium mt-5 flex items-center justify-center"
               disabled={loading}
             >
               {loading ? (
@@ -295,11 +295,11 @@ const Login = () => {
             </button>
 
             <div className="flex justify-center items-center my-5">
-              <p className="text-gray-500 my-5 font-poppins text-xs">
+              <p className="text-gray-500 my-5 text-xs">
                 Need an account?{' '}
                 <a
                   href="#"
-                  className="text-[#064771] font-bold underline decoration-solid font-poppins"
+                  className="text-[#064771] font-medium underline decoration-solid "
                 >
                   Contact Administrator
                 </a>

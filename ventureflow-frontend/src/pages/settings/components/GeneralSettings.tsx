@@ -170,7 +170,7 @@ const GeneralSettings: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden font-poppins">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
             <div className="px-8 py-6">
                 <h1 className="text-2xl font-medium text-gray-900 whitespace-nowrap">
                     {t('settings.general.title', 'General')}
@@ -274,7 +274,7 @@ const GeneralSettings: React.FC = () => {
                         <button
                             onClick={handleCancel}
                             disabled={!isDirty}
-                            className={`px-6 py-2 text-sm font-medium transition-all ${isDirty ? 'text-gray-500 hover:text-gray-700' : 'text-gray-300 cursor-not-allowed'}`}
+                            className={`px-6 py-2 text-sm font-medium transition-all ${isDirty ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 cursor-not-allowed'}`}
                         >
                             {t('common.cancel', 'Cancel')}
                         </button>

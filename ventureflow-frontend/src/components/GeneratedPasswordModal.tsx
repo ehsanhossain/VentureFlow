@@ -25,17 +25,17 @@ export default function GeneratedPasswordModal({ generatedPassword, onClose }: G
   return (
     // Modal Overlay: Fixed position, full screen, semi-transparent black background with blur, centered content, high z-index.
     // Also applies Poppins font to the entire modal.
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[100] font-poppins p-4 sm:p-6 lg:p-8">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[100] p-4 sm:p-6 lg:p-8">
       {/* Modal Content Container: Auto width and height, responsive max-width. */}
       {/* Use `h-auto` to let content dictate height. `max-w-lg` sets a max width (512px by default in Tailwind). */}
       {/* `w-full` makes it fill available width on small screens. */}
       <div className="w-full max-w-lg h-auto flex flex-col bg-[#FFFFFF] rounded-2xl shadow-lg overflow-hidden">
         {/* Header Section */}
         <div className="flex flex-col items-start py-4 px-6 border-b border-solid border-[#E0E3E6]">
-          <span className="text-[#40454A] text-lg font-semibold leading-7">
+          <span className="text-gray-600 text-lg font-semibold leading-7">
             Generated User Password
           </span>
-          <span className="text-[#40454A] text-[13px] leading-5">
+          <span className="text-gray-600 text-[13px] leading-5">
             Copy this password for the new user.
           </span>
         </div>
@@ -47,10 +47,10 @@ export default function GeneratedPasswordModal({ generatedPassword, onClose }: G
             {/* Password Display Box: Responsive width `w-full` */}
             <div className="w-full flex justify-between items-center gap-2.5 py-3 px-4 bg-[#E7F4FC] rounded-[5px]">
               <div className="flex flex-col items-start gap-1 flex-grow">
-                <span className="text-[#40454A] text-sm font-bold leading-5">
+                <span className="text-gray-600 text-sm font-medium leading-5">
                   Generated Password
                 </span>
-                <span className="text-[#40454A] text-lg font-mono leading-7 select-all break-all">
+                <span className="text-gray-600 text-lg font-mono leading-7 select-all break-all">
                   {generatedPassword}
                 </span>
               </div>
@@ -75,7 +75,7 @@ export default function GeneratedPasswordModal({ generatedPassword, onClose }: G
           <button
             type="button"
             onClick={onClose}
-            className="flex justify-center items-center gap-[4.313709259033203px] py-2.5 px-4 bg-[#FFFFFF] border border-solid border-[#727272] rounded-[49.82036209106445px] cursor-pointer text-[#40454A] text-sm font-medium leading-5 hover:bg-gray-50 transition-colors duration-200"
+            className="flex justify-center items-center gap-[4.313709259033203px] py-2.5 px-4 bg-[#FFFFFF] border border-solid border-[#727272] rounded-[49.82036209106445px] cursor-pointer text-gray-600 text-sm font-medium leading-5 hover:bg-gray-50 transition-colors duration-200"
           >
             <span>Close</span>
           </button>

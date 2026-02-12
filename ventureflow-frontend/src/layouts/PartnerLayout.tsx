@@ -40,9 +40,9 @@ const PartnerLayout: React.FC = () => {
                 {/* Logo Area */}
                 <div className="h-16 flex items-center justify-center border-b border-white/10 relative">
                     {!isCollapsed ? (
-                        <h1 className="text-xl font-bold tracking-wider">VENTURE<span className="font-light">FLOW</span></h1>
+                        <h1 className="text-xl font-medium tracking-wider">VENTURE<span className="font-normal">FLOW</span></h1>
                     ) : (
-                        <h1 className="text-xl font-bold">VF</h1>
+                        <h1 className="text-xl font-medium">VF</h1>
                     )}
 
                     <button
@@ -68,7 +68,7 @@ const PartnerLayout: React.FC = () => {
                                 className={`
                                     flex items-center px-3 py-3 rounded-xl transition-all duration-200 group
                                     ${isActive
-                                        ? 'bg-white/10 text-white shadow-sm font-bold'
+                                        ? 'bg-white/10 text-white shadow-sm font-medium'
                                         : 'text-blue-100 hover:bg-white/5 hover:text-white'
                                     }
                                 `}
@@ -96,11 +96,11 @@ const PartnerLayout: React.FC = () => {
                     <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                         {!isCollapsed && (
                             <div className="flex items-center gap-3 overflow-hidden" onClick={() => navigate('/partner-portal/settings')} role="button">
-                                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold ring-2 ring-white/20">
+                                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-medium ring-2 ring-white/20">
                                     {auth?.user?.name?.charAt(0).toUpperCase() || 'P'}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-bold truncate">{auth?.user?.name || 'Partner'}</p>
+                                    <p className="text-sm font-medium truncate">{auth?.user?.name || 'Partner'}</p>
                                     <p className="text-[10px] text-blue-300 truncate">{auth?.user?.email || 'Partner Portal'}</p>
                                 </div>
                             </div>
@@ -124,7 +124,7 @@ const PartnerLayout: React.FC = () => {
             <main className="flex-1 flex flex-col overflow-hidden bg-[#F8F9FB] relative">
                 {/* Top Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex justify-between items-center px-8 shadow-sm z-10">
-                    <h2 className="text-xl font-bold text-gray-800">
+                    <h2 className="text-xl font-medium text-gray-900">
                         {navItems.find(i => location.pathname === i.path || (location.pathname.startsWith(i.path) && !i.exact))?.label || 'Partner Portal'}
                     </h2>
 

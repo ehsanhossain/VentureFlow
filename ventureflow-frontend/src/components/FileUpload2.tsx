@@ -22,7 +22,7 @@ const Button = ({ children, className, variant = 'default', onClick }: ButtonPro
   <button
     className={`flex items-center justify-center gap-1.5 px-3 py-[5.03px] rounded-[49.82px] ${
       variant === 'outline' 
-        ? 'bg-white border border-solid border-[#064771] text-[#54575c]' 
+        ? 'bg-white border border-solid border-[#064771] text-gray-600' 
         : 'bg-[#064771] text-white'
     } ${className || ''}`}
     onClick={onClick}
@@ -129,10 +129,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <div className="flex flex-col items-center gap-4 text-center">
               <img className="w-12 h-12" alt="Upload icon" src="/group-3.png" />
               <div className="space-y-2">
-                <p className="font-medium text-[#292d32] text-sm sm:text-base">
+                <p className="font-medium text-gray-900 text-sm sm:text-base">
                   Choose a file or drag & drop it here
                 </p>
-                <p className="font-normal text-[#828282] text-xs sm:text-sm">
+                <p className="font-normal text-gray-500 text-xs sm:text-sm">
                   Upload the required files
                 </p>
               </div>
@@ -145,10 +145,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <div className="flex flex-col items-center gap-4 text-center">
               <img className="w-12 h-12" alt="Upload icon" src="/group-3-1.png" />
               <div className="space-y-2">
-                <p className="font-medium text-[#292d32] text-sm sm:text-base">
+                <p className="font-medium text-gray-900 text-sm sm:text-base">
                   {isDragging ? "Drop files here" : `${selectedFiles.length} Files selected`}
                 </p>
-                <p className="font-normal text-[#828282] text-xs sm:text-sm">
+                <p className="font-normal text-gray-500 text-xs sm:text-sm">
                   {isDragging ? "Release to upload files" : 'Click "Upload" to proceed or "Browse" to add more'}
                 </p>
               </div>
@@ -159,7 +159,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 </Button>
                 {!isDragging && (
                   <>
-                    <div className="font-medium text-[#30313d] text-sm sm:text-base">or</div>
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">or</div>
                     <Button className="min-w-[111px] h-[34px]" onClick={handleUploadClick}>
                       <img className="w-4 h-4" alt="Upload icon" src="/group-1261156533.png" />
                       <span className="font-medium">Upload</span>

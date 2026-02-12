@@ -8,7 +8,7 @@ const AddSeller: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="flex flex-col h-full min-h-screen bg-white font-poppins">
+        <div className="flex flex-col h-full min-h-screen bg-white ">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
                 <button

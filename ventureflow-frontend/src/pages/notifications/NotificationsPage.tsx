@@ -28,7 +28,7 @@ const getCategoryIcon = (entityType: string, type: string) => {
         return <AlertCircle className={`${iconClass} text-red-600`} />;
     }
 
-    return <Bell className={`${iconClass} text-slate-500`} />;
+    return <Bell className={`${iconClass} text-gray-500`} />;
 };
 
 // Get background color for icon container
@@ -38,7 +38,7 @@ const getIconBgColor = (entityType: string, type: string) => {
     if (entityType === 'partner') return 'bg-green-50';
     if (type === 'deal') return 'bg-purple-50';
     if (type === 'deadline') return 'bg-red-50';
-    return 'bg-slate-50';
+    return 'bg-gray-50';
 };
 
 // Get category label
@@ -59,7 +59,7 @@ const getCategoryBadgeColor = (entityType: string, type: string) => {
     if (entityType === 'partner') return 'bg-green-100 text-green-700';
     if (type === 'deal') return 'bg-purple-100 text-purple-700';
     if (type === 'deadline') return 'bg-red-100 text-red-700';
-    return 'bg-slate-100 text-slate-600';
+    return 'bg-gray-100 text-gray-600';
 };
 
 // Format relative time
@@ -194,8 +194,8 @@ export default function NotificationsPage() {
                                 <Bell className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-semibold text-[#1e293b]">Notifications</h1>
-                                <p className="text-sm text-slate-500">
+                                <h1 className="text-2xl font-medium text-gray-900">Notifications</h1>
+                                <p className="text-sm text-gray-500">
                                     {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
                                 </p>
                             </div>
@@ -205,7 +205,7 @@ export default function NotificationsPage() {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => { refreshNotifications(); fetchPage(1); }}
-                            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors text-sm"
+                            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                             title="Refresh"
                         >
                             <RefreshCw className="w-4 h-4" />
@@ -224,7 +224,7 @@ export default function NotificationsPage() {
                 </div>
 
                 {/* Filter Tabs - Pill Style */}
-                <div className="flex gap-1 mt-5 bg-slate-100 p-1 rounded-lg w-fit">
+                <div className="flex gap-1 mt-5 bg-gray-100 p-1 rounded-lg w-fit">
                     {[
                         { key: 'all', label: 'All', count: allNotifications.length },
                         { key: 'unread', label: 'Unread', count: unreadCount },
@@ -235,12 +235,12 @@ export default function NotificationsPage() {
                             onClick={() => setFilter(f.key as any)}
                             className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${filter === f.key
                                 ? 'bg-white text-[#064771] shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                                : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             {f.label}
                             {f.count > 0 && (
-                                <span className={`ml-1.5 text-xs ${filter === f.key ? 'text-[#064771]' : 'text-slate-400'}`}>
+                                <span className={`ml-1.5 text-xs ${filter === f.key ? 'text-[#064771]' : 'text-gray-400'}`}>
                                     ({f.count})
                                 </span>
                             )}
@@ -251,19 +251,19 @@ export default function NotificationsPage() {
 
             {/* Notification List */}
             <div className="flex-1 overflow-y-auto px-6 pb-6">
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {filteredNotifications.length === 0 ? (
                         <div className="p-16 text-center">
-                            <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Check className="w-10 h-10 text-slate-300" />
+                            <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Check className="w-10 h-10 text-gray-400" />
                             </div>
-                            <p className="text-slate-500 font-medium">No notifications</p>
-                            <p className="text-sm text-slate-400 mt-1">
+                            <p className="text-gray-500 font-medium">No notifications</p>
+                            <p className="text-sm text-gray-400 mt-1">
                                 {filter === 'unread' ? "You're all caught up!" : "Nothing to show here."}
                             </p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-slate-100">
+                        <div className="divide-y divide-gray-100">
                             {filteredNotifications.map((notification) => {
                                 const entityType = notification.data.entity_type || '';
                                 const type = notification.data.type || '';
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
                                     <div
                                         key={notification.id}
                                         onClick={() => handleClick(notification)}
-                                        className={`group p-4 hover:bg-slate-50 cursor-pointer transition-all flex gap-4 relative ${isUnread ? 'bg-blue-50/40' : ''
+                                        className={`group p-4 hover:bg-gray-50 cursor-pointer transition-all flex gap-4 relative ${isUnread ? 'bg-blue-50/40' : ''
                                             }`}
                                     >
                                         {/* Category Icon */}
@@ -285,18 +285,18 @@ export default function NotificationsPage() {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-3 mb-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className={`text-sm ${isUnread ? 'font-semibold text-[#1e293b]' : 'font-medium text-slate-700'}`}>
+                                                    <h3 className={`text-sm ${isUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
                                                         {notification.data.title}
                                                     </h3>
                                                     <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded-full ${getCategoryBadgeColor(entityType, type)}`}>
                                                         {getCategoryLabel(entityType, type)}
                                                     </span>
                                                 </div>
-                                                <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                                                <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
                                                     {formatRelativeTime(notification.created_at)}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-slate-500 line-clamp-2">
+                                            <p className="text-sm text-gray-500 line-clamp-2">
                                                 {notification.data.message}
                                             </p>
                                         </div>
@@ -309,7 +309,7 @@ export default function NotificationsPage() {
                                         {/* Delete button - appears on hover */}
                                         <button
                                             onClick={(e) => handleDeleteNotification(e, notification.id)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all flex-shrink-0"
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all flex-shrink-0"
                                             title="Delete notification"
                                         >
                                             <Trash2 className="w-4 h-4" />
@@ -327,7 +327,7 @@ export default function NotificationsPage() {
                         <button
                             onClick={handleLoadMore}
                             disabled={loading}
-                            className="px-6 py-2 text-sm text-slate-500 hover:text-[#064771] bg-white border border-slate-200 rounded-lg hover:border-[#064771]/30 transition-all disabled:opacity-50"
+                            className="px-6 py-2 text-sm text-gray-500 hover:text-[#064771] bg-white border border-gray-200 rounded-lg hover:border-[#064771]/30 transition-all disabled:opacity-50"
                         >
                             {loading ? 'Loading...' : 'Load more notifications'}
                         </button>

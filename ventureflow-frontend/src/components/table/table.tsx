@@ -67,7 +67,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-slate-200 bg-slate-50 font-medium [&>tr]:last:border-b-0",
+      "border-t border-gray-200 bg-gray-50 font-medium [&>tr]:last:border-b-0",
       className,
     )}
     {...props}
@@ -108,7 +108,7 @@ const TableHead = React.forwardRef<
       "min-h-[48px] h-12 px-4 py-2",
       // Text styling - allow wrap to 2 lines, NO truncation
       "text-left align-middle",
-      "text-[11px] font-semibold text-[#475569] uppercase tracking-wide",
+      "text-[11px] font-semibold text-gray-600 uppercase tracking-wide",
       // Allow text to wrap naturally to 2 lines
       "whitespace-normal break-words leading-[1.4]",
       // Distinct header background (inherited from thead)
@@ -136,7 +136,7 @@ const TableCell = React.forwardRef<
       // Vertical alignment
       "align-middle",
       // Text styling
-      "text-sm text-[#334155]",
+      "text-sm text-gray-900",
       // Inherit background for proper hover effect on row
       "bg-inherit",
       // Checkbox alignment
@@ -154,7 +154,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-slate-500", className)}
+    className={cn("mt-4 text-sm text-gray-500", className)}
     {...props}
   />
 ));

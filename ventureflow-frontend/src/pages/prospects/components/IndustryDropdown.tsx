@@ -91,7 +91,7 @@ export const IndustryDropdown = ({
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-expanded={isOpen}
-                className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 rounded-[3px] border border-slate-300 bg-white focus:outline-none flex-wrap overflow-hidden"
+                className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 rounded-[3px] border border-gray-300 bg-white focus:outline-none flex-wrap overflow-hidden"
             >
                 {selectedIndustries.length > 0 ? (
                     multiSelect ? (
@@ -99,7 +99,7 @@ export const IndustryDropdown = ({
                             {selectedIndustries.map((industry) => (
                                 <span
                                     key={industry.id.toString()}
-                                    className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-full text-xs text-[#30313d] max-w-full truncate"
+                                    className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-900 max-w-full truncate"
                                 >
                                     <span className="truncate">{industry.name}</span>
                                     <XIcon
@@ -113,7 +113,7 @@ export const IndustryDropdown = ({
                             ))}
                         </div>
                     ) : (
-                        <span className="text-sm text-[#30313d] truncate">{selectedIndustries[0]?.name}</span>
+                        <span className="text-sm text-gray-900 truncate">{selectedIndustries[0]?.name}</span>
                     )
                 ) : (
                     <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -134,10 +134,10 @@ export const IndustryDropdown = ({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-xl border border-slate-200 bg-white shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex flex-col w-full p-3 gap-3">
                         <div className="relative w-full">
-                            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
@@ -149,7 +149,7 @@ export const IndustryDropdown = ({
                                         setSearch('');
                                     }
                                 }}
-                                className="w-full h-10 pl-10 pr-3 py-2 rounded-[3px] border border-slate-200 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                className="w-full h-10 pl-10 pr-3 py-2 rounded-[3px] border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
                                 placeholder="Search or type to add industry..."
                                 autoFocus
                             />
@@ -162,19 +162,19 @@ export const IndustryDropdown = ({
                                         key={industry.id.toString()}
                                         type="button"
                                         onClick={() => handleSelect(industry)}
-                                        className="flex items-center w-full justify-start gap-3 py-2.5 px-3 hover:bg-slate-50 rounded-lg transition-colors group"
+                                        className="flex items-center w-full justify-start gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group"
                                     >
                                         {multiSelect && (
                                             <div
                                                 className={`w-5 h-5 flex items-center justify-center border rounded-md transition-all ${isSelected(industry)
                                                     ? 'bg-[#064771] border-[#064771] text-white'
-                                                    : 'border-slate-300 group-hover:border-[#064771]'
+                                                    : 'border-gray-300 group-hover:border-[#064771]'
                                                     }`}
                                             >
                                                 {isSelected(industry) && <CheckIcon className="w-3.5 h-3.5" />}
                                             </div>
                                         )}
-                                        <span className={`text-sm ${isSelected(industry) ? 'text-[#064771] font-semibold' : 'text-slate-600'}`}>
+                                        <span className={`text-sm ${isSelected(industry) ? 'text-[#064771] font-medium' : 'text-gray-600'}`}>
                                             {industry.name}
                                         </span>
                                     </button>
@@ -190,10 +190,10 @@ export const IndustryDropdown = ({
                                     className="flex items-center w-full justify-start gap-3 py-3 px-3 hover:bg-[#F1FBFF] rounded-lg border border-dashed border-[#064771]/30 text-[#064771] transition-all"
                                 >
                                     <PlusIcon className="w-4 h-4" />
-                                    <span className="text-sm font-semibold">Add "{search}" as new industry</span>
+                                    <span className="text-sm font-medium">Add "{search}" as new industry</span>
                                 </button>
                             ) : (
-                                <div className="py-8 text-center text-slate-400 text-sm">
+                                <div className="py-8 text-center text-gray-400 text-sm">
                                     Start typing to find industries
                                 </div>
                             )}

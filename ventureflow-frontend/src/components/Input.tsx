@@ -23,9 +23,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           style={customBorder}
           className={cn(
-            "w-full px-4 py-2 rounded-[3px] text-sm placeholder:text-[#8a8a8a] transition-all",
+            "w-full px-4 py-2 rounded-[3px] text-sm placeholder:text-gray-500 transition-all",
             "focus:outline-none",
-            "font-poppins",
+            "",
             leftIcon && "pl-10",
             rightIcon && "pr-10",
             error

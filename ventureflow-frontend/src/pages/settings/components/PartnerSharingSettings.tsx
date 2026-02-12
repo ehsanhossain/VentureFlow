@@ -151,7 +151,7 @@ const PartnerSharingSettings: React.FC = () => {
     const renderFieldGroup = (title: string, categories: { category: string; fields: FieldDefinition[] }[], config: SharingConfig, type: 'buyer' | 'seller') => (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-8">
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="font-bold text-[#064771] text-lg">{title}</h3>
+                <h3 className="font-medium text-[#064771] text-lg">{title}</h3>
                 <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">
                     {Object.keys(config).filter(k => k.startsWith('company_overview') || k === (type === 'buyer' ? 'buyer_id' : 'seller_id')).filter(k => config[k]).length} Allowed Fields
                 </span>
@@ -160,7 +160,7 @@ const PartnerSharingSettings: React.FC = () => {
                 {categories.map((cat, catIdx) => (
                     <div key={catIdx} className="space-y-4">
                         <div className="flex items-center gap-4">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.category}</h4>
+                            <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">{cat.category}</h4>
                             <div className="h-px bg-gray-100 flex-1"></div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -228,7 +228,7 @@ const PartnerSharingSettings: React.FC = () => {
                     <Info className="w-5 h-5 text-[#064771]" />
                 </div>
                 <div>
-                    <h4 className="font-bold text-[#064771] text-sm">Data Sharing Control</h4>
+                    <h4 className="font-medium text-[#064771] text-sm">Data Sharing Control</h4>
                     <p className="text-sm text-[#064771]/80 mt-1">
                         Configure exactly which fields are visible to partners in their portal.
                         Locked fields contain sensitive information (like identity or contact details) and cannot be shared.
@@ -243,7 +243,7 @@ const PartnerSharingSettings: React.FC = () => {
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-[#064771] text-white font-bold rounded-xl hover:bg-[#053a5c] transition-all shadow-md disabled:opacity-70"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-[#064771] text-white font-medium rounded-xl hover:bg-[#053a5c] transition-all shadow-md disabled:opacity-70"
                 >
                     <Save className="w-5 h-5" />
                     <span>{saving ? 'Saving...' : 'Save Settings'}</span>
