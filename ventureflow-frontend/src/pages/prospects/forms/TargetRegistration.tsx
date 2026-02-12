@@ -8,6 +8,7 @@ import { showAlert } from '../../../components/Alert';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry as IndustryType } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
+import MultiSelectPicker from '../../../components/MultiSelectPicker';
 import { LogoUpload } from '../../../components/LogoUpload';
 
 interface ExtendedCountry extends Country {
@@ -38,12 +39,12 @@ interface FormValues {
 
     // Deal Summary
     projectDetails: string;
-    reasonForMA: string;
-    plannedSaleShareRatio: string;
+    reasonForMA: string[];
+
     desiredInvestmentMin: string;
     desiredInvestmentMax: string;
     desiredInvestmentCurrency: string;
-    investmentCondition: string;
+    investmentCondition: string[];
 
     ebitdaMin: string;
     ebitdaMax: string;
@@ -83,18 +84,12 @@ const REASONS_MA = [
     { value: 'Cross-Border Expansion', label: 'Cross-Border Expansion' },
 ];
 
-const RATIO_OPTIONS = [
-    { value: 'Minority (<50%)', label: 'Minority (<50%)' },
-    { value: 'Majority (>50%)', label: 'Majority (>50%)' },
-    { value: '100% Sale', label: '100% Sale' },
-    { value: 'Negotiable', label: 'Negotiable' },
-];
-
 const INVESTMENT_CONDITIONS = [
-    { value: 'Majority stake only', label: 'Majority stake only' },
-    { value: 'Minority stake only', label: 'Minority stake only' },
-    { value: 'Full acquisition', label: 'Full acquisition' },
-    { value: 'Joint venture', label: 'Joint venture' },
+    { value: 'Minority (<50%)', label: 'Minority (<50%)' },
+    { value: 'Significant minority (25–49%)', label: 'Significant minority (25–49%)' },
+    { value: 'Joint control (51/49)', label: 'Joint control (51/49)' },
+    { value: 'Majority (51–99%)', label: 'Majority (51–99%)' },
+    { value: 'Full acquisition (100%)', label: 'Full acquisition (100%)' },
     { value: 'Flexible', label: 'Flexible' },
 ];
 
@@ -156,9 +151,9 @@ export const TargetRegistration: React.FC = () => {
             primaryContactParams: "0",
 
             // Deal Context Defaults
-            reasonForMA: '',
-            investmentCondition: '',
-            plannedSaleShareRatio: '',
+            reasonForMA: [],
+            investmentCondition: [],
+
             desiredInvestmentMin: '',
             desiredInvestmentMax: '',
             ebitdaMin: '',
@@ -297,7 +292,13 @@ export const TargetRegistration: React.FC = () => {
                 setValue('rank', ov.company_rank || 'B');
                 setValue('channel', ov.channel || 'TCF');
                 setValue('projectDetails', ov.details || '');
-                setValue('reasonForMA', ov.reason_ma || '');
+                const parseMulti = (val: any) => {
+                    if (!val) return [];
+                    if (Array.isArray(val)) return val;
+                    try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { }
+                    return val ? [val] : [];
+                };
+                setValue('reasonForMA', parseMulti(ov.reason_ma || ov.reason_for_mna));
                 setValue('teaserLink', ov.teaser_link || '');
 
                 try {
@@ -384,8 +385,8 @@ export const TargetRegistration: React.FC = () => {
 
                 const ebitdaVal = typeof fin.ebitda_value === 'string' ? { min: fin.ebitda_value, max: '' } : (fin.ebitda_value || { min: '', max: '' });
                 setValue('ebitdaMin', ebitdaVal.min || fin.ttm_profit || '');
-                setValue('plannedSaleShareRatio', fin.maximum_investor_shareholding_percentage || '');
-                setValue('investmentCondition', fin.investment_condition || '');
+
+                setValue('investmentCondition', parseMulti(fin.investment_condition));
 
                 // Contacts Loading
                 try {
@@ -438,7 +439,7 @@ export const TargetRegistration: React.FC = () => {
             overviewFormData.append('companyRank', data.rank);
             overviewFormData.append('status', isDraft ? 'Draft' : 'Active');
             overviewFormData.append('details', data.projectDetails);
-            overviewFormData.append('reason_for_mna', data.reasonForMA);
+            overviewFormData.append('reason_for_mna', JSON.stringify(data.reasonForMA || []));
             overviewFormData.append('website_links', JSON.stringify(data.websiteLinks));
             overviewFormData.append('hq_address', JSON.stringify(data.hqAddresses));
             overviewFormData.append('websiteLink', data.websiteLinks[0]?.url || '');
@@ -479,12 +480,12 @@ export const TargetRegistration: React.FC = () => {
                     max: data.desiredInvestmentMax
                 },
                 default_currency: data.desiredInvestmentCurrency,
-                maximum_investor_shareholding_percentage: data.plannedSaleShareRatio,
+
                 ebitda_value: {
                     min: data.ebitdaMin,
                     max: ''
                 },
-                investment_condition: data.investmentCondition || '',
+                investment_condition: JSON.stringify(data.investmentCondition || []),
                 is_draft: isDraft ? '2' : '1'
             };
             await api.post('/api/seller/financial-details', financePayload);
@@ -768,9 +769,9 @@ export const TargetRegistration: React.FC = () => {
                                     control={control}
                                     name="reasonForMA"
                                     render={({ field }) => (
-                                        <SelectPicker
+                                        <MultiSelectPicker
                                             options={REASONS_MA}
-                                            value={field.value}
+                                            value={field.value || []}
                                             onChange={field.onChange}
                                             placeholder="Select Purpose of M&A"
                                         />
@@ -783,51 +784,34 @@ export const TargetRegistration: React.FC = () => {
                                     control={control}
                                     name="investmentCondition"
                                     render={({ field }) => (
-                                        <SelectPicker
+                                        <MultiSelectPicker
                                             options={INVESTMENT_CONDITIONS}
-                                            value={field.value}
+                                            value={field.value || []}
                                             onChange={field.onChange}
-                                            placeholder="e.g. Majority stake only"
+                                            placeholder="Select investment condition"
                                         />
                                     )}
                                 />
                             </div>
                         </div>
 
-                        {/* Row: Planned Sale Share Ratio + Desired Investment Range */}
-                        <div className="flex gap-6">
-                            <div className="flex-1">
-                                <FieldLabel text="Planned Sale Share Ratio" />
-                                <Controller
-                                    control={control}
-                                    name="plannedSaleShareRatio"
-                                    render={({ field }) => (
-                                        <SelectPicker
-                                            options={RATIO_OPTIONS}
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            placeholder="Select the Percentage of share selling"
-                                        />
-                                    )}
+                        {/* Row: Desired Investment Range (full width) */}
+                        <div>
+                            <FieldLabel text="Desired Investment Range" />
+                            <div className="flex items-center gap-3">
+                                <input
+                                    {...register('desiredInvestmentMin')}
+                                    type="number"
+                                    placeholder="Min"
+                                    className={`flex-1 ${inputClass}`}
                                 />
-                            </div>
-                            <div className="flex-1">
-                                <FieldLabel text="Desired Investment Range" />
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        {...register('desiredInvestmentMin')}
-                                        type="number"
-                                        placeholder="Min"
-                                        className={`flex-1 ${inputClass}`}
-                                    />
-                                    <span className="text-black text-base font-normal">-</span>
-                                    <input
-                                        {...register('desiredInvestmentMax')}
-                                        type="number"
-                                        placeholder="Max" // Using Max to be logical, user said 'min and max field'
-                                        className={`flex-1 ${inputClass}`}
-                                    />
-                                </div>
+                                <span className="text-gray-400 text-base font-normal">—</span>
+                                <input
+                                    {...register('desiredInvestmentMax')}
+                                    type="number"
+                                    placeholder="Max"
+                                    className={`flex-1 ${inputClass}`}
+                                />
                             </div>
                         </div>
 

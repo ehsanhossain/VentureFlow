@@ -6,7 +6,6 @@ import {
     MoreVertical,
     Bookmark,
     Eye,
-    ExternalLink,
     Copy,
     Zap,
     Trash2,
@@ -27,8 +26,7 @@ export interface TargetRowData {
     pipelineStatus: string;
     status: string;
     desiredInvestment: any;
-    reasonForMA: string;
-    saleShareRatio: string;
+    reasonForMA: string[];
     rank: string;
     internalPIC: string[];
     primaryContact: string;
@@ -42,8 +40,19 @@ export interface TargetRowData {
     isPinned?: boolean;
     sourceCurrencyRate?: number;
     channel?: string;
-    investmentCondition?: string;
+    investmentCondition?: string[];
 }
+
+/* Helper to parse multi-select fields which may be stored as string, JSON string, or array */
+const parseMultiField = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'string') {
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+        return val ? [val] : [];
+    }
+    return [];
+};
 
 interface TargetTableProps {
     data: TargetRowData[];
@@ -174,7 +183,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     >
                         <Bookmark className={`w-3.5 h-3.5 ${row.isPinned ? "fill-current" : ""}`} />
                     </button>
-                    <span className="text-[13px] font-normal text-[#064771] bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
+                    <span className="text-[13px] font-normal text-[#064771] bg-[#EDF8FF] px-2 py-0.5 rounded-[3px]">
                         {row.projectCode}
                     </span>
                 </div>
@@ -188,12 +197,13 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             id: 'rank',
             header: 'Rank',
             accessor: (row) => (
-                <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center text-xs font-normal ring-4 ${row.rank === 'A' ? 'bg-rose-50 text-rose-700 ring-rose-50/50' :
-                    row.rank === 'B' ? 'bg-blue-50 text-blue-700 ring-blue-50/50' :
-                        'bg-gray-100 text-gray-500 ring-gray-100/50'
+                <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-[3px] text-[13px] font-normal ${row.rank === 'A' ? 'bg-[#ECFDF5] text-[#065F46]' :
+                    row.rank === 'B' ? 'bg-[#FEFCE8] text-[#854D0E]' :
+                        row.rank === 'C' ? 'bg-[#FFF7ED] text-[#9A3412]' :
+                            'bg-[#f3f4f6] text-gray-500'
                     }`}>
                     {row.rank || '-'}
-                </div>
+                </span>
             ),
             width: 80,
             sortable: true,
@@ -235,15 +245,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 if (!url) return <span className="text-gray-400 text-sm">N/A</span>;
                 const displayUrl = url.startsWith('http') ? url : `https://${url}`;
                 return (
-                    <div className="group flex items-center justify-between gap-2 max-w-full">
+                    <div className="group flex items-center gap-1.5 max-w-full">
                         <a
                             href={displayUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 hover:underline text-sm font-normal truncate"
+                            className="inline-flex items-center gap-1 bg-[#f3f4f6] text-gray-600 hover:bg-gray-200 px-2 py-0.5 rounded-[3px] text-[13px] font-normal transition-colors"
                         >
-                            Visit Website
-                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                            <Eye className="w-3 h-3" /> View
                         </a>
                         <button
                             onClick={(e) => {
@@ -251,7 +260,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 e.preventDefault();
                                 copyToClipboard(displayUrl);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all duration-200"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-[3px] hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all duration-200"
                             title="Copy URL"
                         >
                             <Copy className="w-3.5 h-3.5" />
@@ -270,11 +279,11 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 <div className="flex flex-wrap gap-1">
                     {row.industry?.length ? (
                         <>
-                            <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
+                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
                                 {row.industry[0]}
                             </span>
                             {row.industry.length > 1 && (
-                                <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-[13px] font-normal text-blue-600">
+                                <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
                                     +{row.industry.length - 1}
                                 </span>
                             )}
@@ -310,26 +319,38 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             width: 140,
         },
         {
-            id: 'saleShareRatio',
-            header: 'Sale Ratio',
-            accessor: (row) => <span className="text-[13px] font-normal text-gray-600">{row.saleShareRatio ? `${row.saleShareRatio}%` : 'N/A'}</span>,
-            textAccessor: (row) => row.saleShareRatio || '',
-            width: 120,
-        },
-        {
             id: 'investmentCondition',
             header: 'Condition',
-            accessor: (row) => (
-                <span className="text-[13px] text-gray-600">{row.investmentCondition || 'N/A'}</span>
-            ),
-            textAccessor: (row) => row.investmentCondition || '',
-            width: 140,
+            accessor: (row) => {
+                const items = parseMultiField(row.investmentCondition);
+                if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
+                if (items.length === 1) return <span className="text-[13px] text-gray-600">{items[0]}</span>;
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
+                        <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                    </div>
+                );
+            },
+            textAccessor: (row) => parseMultiField(row.investmentCondition).join(', '),
+            width: 160,
         },
         {
             id: 'reasonForMA',
             header: 'Purpose of M&A',
-            accessor: 'reasonForMA',
-            width: 150,
+            accessor: (row) => {
+                const items = parseMultiField(row.reasonForMA);
+                if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
+                if (items.length === 1) return <span className="text-[13px] text-gray-600">{items[0]}</span>;
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
+                        <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                    </div>
+                );
+            },
+            textAccessor: (row) => parseMultiField(row.reasonForMA).join(', '),
+            width: 170,
         },
         {
             id: 'pipelineStatus',
@@ -337,12 +358,9 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             accessor: (row) => {
                 const stageInfo = getStagePosition(row.pipelineStatus);
                 return (
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${stageInfo.display === 'N/A' ? 'bg-gray-300' : 'bg-blue-500 shadow-sm shadow-blue-200'}`} />
-                        <span className="text-[13px] font-normal text-gray-700 uppercase tracking-tighter">
-                            {stageInfo.display}
-                        </span>
-                    </div>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 uppercase tracking-tighter">
+                        {stageInfo.display}
+                    </span>
                 );
             },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
@@ -377,8 +395,8 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             header: 'Teaser',
             accessor: (row) => (
                 row.teaserLink ? (
-                    <a href={row.teaserLink} target="_blank" rel="noreferrer" className="text-[13px] font-normal text-emerald-600 bg-emerald-50 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-emerald-100 transition-colors">
-                        <Eye className="w-3 h-3" /> Teaser
+                    <a href={row.teaserLink} target="_blank" rel="noreferrer" className="text-[13px] font-normal text-gray-600 bg-[#f3f4f6] px-2 py-0.5 rounded-[3px] inline-flex items-center gap-1 hover:bg-gray-200 transition-colors">
+                        <Eye className="w-3 h-3" /> View
                     </a>
                 ) : <span className="text-[13px] text-gray-400">N/A</span>
             ),

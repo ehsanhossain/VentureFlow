@@ -191,8 +191,17 @@ const InvestorDetails: React.FC = () => {
   };
 
   const website = parseWebsiteUrl(overview.website) || '';
-  const purposeMNA = overview.reason_ma || 'N/A';
-  const investmentCondition = overview.investment_condition || 'N/A';
+  const parseMultiField = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'string') {
+      try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+      return val ? [val] : [];
+    }
+    return [];
+  };
+  const purposeMNA = parseMultiField(overview.reason_ma);
+  const investmentCondition = parseMultiField(overview.investment_condition);
   const projectDetails = overview.details || '';
   const investorProfileLink = overview.investor_profile_link || '';
   const hqCountryName = overview.hq_country?.name || 'N/A';
@@ -342,7 +351,15 @@ const InvestorDetails: React.FC = () => {
                 <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma">
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-medium text-gray-400 uppercase">Purpose of M&A</span>
-                    <span className="text-sm font-normal text-black">{purposeMNA}</span>
+                    {purposeMNA.length > 1 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {purposeMNA.map((item, i) => (
+                          <span key={i} className="px-2.5 py-1 rounded-[3px] bg-[#f3f4f6] text-sm font-normal text-gray-600">{item}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm font-normal text-black">{purposeMNA[0] || 'N/A'}</span>
+                    )}
                   </div>
                 </RestrictedField>
 
@@ -486,7 +503,15 @@ const InvestorDetails: React.FC = () => {
               {/* Special Conditions */}
               <div className="flex flex-col gap-3">
                 <span className="text-[11px] font-medium text-gray-400 uppercase">Investment Condition</span>
-                <span className="text-sm font-medium text-black">{investmentCondition}</span>
+                {investmentCondition.length > 1 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {investmentCondition.map((item, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-[3px] bg-[#f3f4f6] text-sm font-normal text-gray-600">{item}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-sm font-medium text-black">{investmentCondition[0] || 'N/A'}</span>
+                )}
               </div>
             </div>
           </section>

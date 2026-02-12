@@ -1,11 +1,17 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-    ArrowUp,
-    ArrowDown,
-    GripVertical
-} from 'lucide-react';
+import { GripVertical } from 'lucide-react';
 import { cn } from '../../utils/cn';
+
+// Custom table icons from Figma
+import SortDefaultIcon from '../../assets/icons/table/sort-default.svg';
+import SortAscIcon from '../../assets/icons/table/sort-asc.svg';
+import SortDescIcon from '../../assets/icons/table/sort-desc.svg';
+import CheckboxDefaultIcon from '../../assets/icons/table/checkbox-default.svg';
+import CheckboxSomeIcon from '../../assets/icons/table/checkbox-some.svg';
+import CheckboxAllIcon from '../../assets/icons/table/checkbox-all.svg';
+import RowUncheckedIcon from '../../assets/icons/table/row-unchecked.svg';
+import RowCheckedIcon from '../../assets/icons/table/row-checked.svg';
 
 // ============ TYPE DEFINITIONS ============
 export interface DataTableColumn<T> {
@@ -71,20 +77,22 @@ const ResizeHandle: React.FC<{
 }> = ({ onMouseDown, onDoubleClick, isResizing }) => (
     <div
         className={cn(
-            'absolute right-0 top-0 h-full w-[4px] cursor-col-resize',
+            'absolute right-0 top-0 h-full w-[5px] cursor-col-resize',
             'select-none z-20 group/handle transition-all duration-200',
-            'hover:w-[6px]',
-            isResizing && 'w-[6px]'
+            'hover:w-[7px]',
+            isResizing && 'w-[7px]'
         )}
         onMouseDown={onMouseDown}
         onDoubleClick={onDoubleClick}
     >
-        {/* The persistent separator line */}
-        <div className="absolute right-0 top-0 h-full w-[1px] bg-gray-300 transition-all opacity-50" />
-        {/* The grab handle pill (visible on hover) */}
+        {/* Full-height line — only visible when actively resizing */}
+        {isResizing && (
+            <div className="absolute right-0 top-0 h-full w-[1px] bg-[#064771]" />
+        )}
+        {/* The pill-shaped grab indicator (semi-transparent at rest, full on hover) */}
         <div className={cn(
             'absolute right-[-1px] top-1/2 -translate-y-1/2 h-8 w-[3px]',
-            'bg-[#064771] rounded-full opacity-0 group-hover/handle:opacity-100',
+            'bg-[#064771] rounded-full opacity-20 group-hover/handle:opacity-100',
             'transition-all shadow-[0_0_10px_rgba(6,71,113,0.3)]',
             isResizing && 'opacity-100'
         )} />
@@ -92,24 +100,15 @@ const ResizeHandle: React.FC<{
 );
 
 const SortIcon: React.FC<{ direction: 'asc' | 'desc' | null }> = ({ direction }) => {
-    return (
-        <div className="flex flex-col items-center -space-y-0.5 transition-opacity">
-            <ArrowUp className={cn(
-                "w-2.5 h-2.5 transition-all duration-200",
-                direction === 'asc' ? 'text-[#064771] scale-110' : 'text-gray-400 opacity-40 group-hover/header:opacity-80'
-            )} />
-            <ArrowDown className={cn(
-                "w-2.5 h-2.5 transition-all duration-200",
-                direction === 'desc' ? 'text-[#064771] scale-110' : 'text-gray-400 opacity-40 group-hover/header:opacity-80'
-            )} />
-        </div>
-    );
+    if (direction === 'asc') return <img src={SortAscIcon} alt="" className="w-4 h-4" draggable={false} />;
+    if (direction === 'desc') return <img src={SortDescIcon} alt="" className="w-4 h-4" draggable={false} />;
+    return <img src={SortDefaultIcon} alt="" className="w-4 h-4 opacity-50 group-hover/header:opacity-80 transition-opacity" draggable={false} />;
 };
 
 const DragHandle: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => (
     <div className={cn(
         'w-4 h-4 text-gray-400 opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab flex items-center justify-center',
-        isDragging && 'opacity-100 text-[#064771]'
+        isDragging && 'opacity-100 text-[#064771] cursor-grabbing'
     )}>
         <GripVertical className="w-3.5 h-3.5" />
     </div>
@@ -495,13 +494,19 @@ function DataTable<T>({
                                     scrolledLeft > 0 && "border-r border-[#cbd5e1] shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                 )}>
                                     <div className="flex items-center justify-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={isAllSelected}
-                                            ref={el => el && (el.indeterminate = isSomeSelected)}
-                                            onChange={toggleSelectAll}
-                                            className="w-4 h-4 text-[#064771] border-gray-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
-                                        />
+                                        <button
+                                            type="button"
+                                            onClick={toggleSelectAll}
+                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            style={{ width: 28, height: 28 }}
+                                        >
+                                            <img
+                                                src={isAllSelected ? CheckboxAllIcon : isSomeSelected ? CheckboxSomeIcon : CheckboxDefaultIcon}
+                                                alt=""
+                                                style={{ width: 28, height: 28 }}
+                                                draggable={false}
+                                            />
+                                        </button>
                                     </div>
                                 </th>
                             )}
@@ -529,7 +534,7 @@ function DataTable<T>({
                                             isStickyLeft && scrolledLeft > 0 && 'shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]',
                                             column.sticky === 'right' && 'sticky right-0 z-30 shadow-[-4px_0_10px_-4px_rgba(0,0,0,0.15)]',
                                             isDragging && 'opacity-50',
-                                            isDragOver && 'bg-blue-50 border-l-4 border-l-blue-400',
+                                            isDragOver && 'bg-[#EDF8FF] shadow-[inset_3px_0_0_0_#064771]',
                                             column.headerClassName
                                         )}
                                         draggable={canDrag}
@@ -623,24 +628,24 @@ function DataTable<T>({
                                                 scrolledLeft > 0 && "border-r border-gray-200/60 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]"
                                             )}>
                                                 <div className="flex items-center justify-center h-14">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => {
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (!onSelectionChange) return;
                                                             const newSet = new Set(selectedIds);
                                                             const id = typeof rowId === 'string' ? String(rowId) : Number(rowId);
-                                                            if (e.target.checked) {
-                                                                (newSet as any).add(id);
-                                                            } else {
+                                                            if (isSelected) {
                                                                 (newSet as any).delete(id);
+                                                            } else {
+                                                                (newSet as any).add(id);
                                                             }
                                                             onSelectionChange(newSet);
                                                         }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="w-4 h-4 text-[#064771] border-gray-300 rounded focus:ring-[#064771]/20 accent-[#064771] cursor-pointer"
-                                                    />
+                                                        className="flex items-center justify-center w-5 h-5 cursor-pointer hover:opacity-80 transition-opacity"
+                                                    >
+                                                        <img src={isSelected ? RowCheckedIcon : RowUncheckedIcon} alt="" className="w-5 h-5" draggable={false} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         )}

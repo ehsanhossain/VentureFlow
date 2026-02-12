@@ -85,7 +85,6 @@ const ALL_TARGET_COLUMNS = [
     { id: 'website', label: 'Website' },
     { id: 'industry', label: 'Industry' },
     { id: 'reasonForMA', label: 'Purpose of M&A' },
-    { id: 'saleShareRatio', label: 'Sale Ratio' },
     { id: 'investmentCondition', label: 'Condition' },
     { id: 'desiredInvestment', label: 'Desired Investment' },
     { id: 'ebitda', label: 'EBITDA' },
@@ -96,9 +95,18 @@ const ALL_TARGET_COLUMNS = [
     { id: 'pipelineStatus', label: 'Pipeline' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank', 'pipelineStatus'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'rank', 'pipelineStatus'];
 
-
+/* Helper to parse multi-select fields which may be stored as string, JSON string, or array */
+const parseMultiField = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'string') {
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+        return val ? [val] : [];
+    }
+    return [];
+};
 
 const ProspectsPortal: React.FC = () => {
     const navigate = useNavigate();
@@ -420,8 +428,8 @@ const ProspectsPortal: React.FC = () => {
                         targetIndustries: indMap,
                         pipelineStatus: b.deals && b.deals.length > 0 ? b.deals[b.deals.length - 1].stage_code : "N/A",
                         budget: overview.investment_budget,
-                        investmentCondition: overview.investment_condition || "",
-                        purposeMNA: overview.reason_ma || "",
+                        investmentCondition: parseMultiField(overview.investment_condition),
+                        purposeMNA: parseMultiField(overview.reason_ma),
                         internalPIC: internalPICs,
                         financialAdvisor: finAdvisors,
                         introducedProjects: introProjects,
@@ -501,8 +509,7 @@ const ProspectsPortal: React.FC = () => {
                         pipelineStatus: s.deals && s.deals.length > 0 ? s.deals[s.deals.length - 1].stage_code : "N/A",
                         status: ov.status || "N/A",
                         desiredInvestment: fin.expected_investment_amount,
-                        reasonForMA: ov.reason_ma || "",
-                        saleShareRatio: fin.maximum_investor_shareholding_percentage || "",
+                        reasonForMA: parseMultiField(ov.reason_ma || ov.reason_for_mna),
                         rank: ov.company_rank || ov.rank || '',
                         internalPIC: internalPICs,
                         financialAdvisor: finAdvisors,
@@ -551,7 +558,7 @@ const ProspectsPortal: React.FC = () => {
                         channel: ov.channel,
                         isPinned: s.pinned || targetPinnedIds.includes(s.id),
                         sourceCurrencyRate: sourceRate,
-                        investmentCondition: fin.investment_condition || '',
+                        investmentCondition: parseMultiField(fin.investment_condition),
                     };
                 });
                 setTargets(mappedTargets);
@@ -860,7 +867,6 @@ const ProspectsPortal: React.FC = () => {
                 "targetIndustries",
                 "projectDetails",
                 "reasonForMA",
-                "plannedSaleShareRatio",
                 "investmentCondition",
                 "desiredInvestmentMin",
                 "desiredInvestmentMax",

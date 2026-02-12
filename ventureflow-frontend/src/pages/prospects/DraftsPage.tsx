@@ -20,7 +20,18 @@ interface Currency {
 }
 
 const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'originCountry', 'targetCountries', 'targetIndustries', 'budget'];
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'saleShareRatio', 'rank'];
+const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'rank'];
+
+/* Helper to parse multi-select fields */
+const parseMultiField = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    if (typeof val === 'string') {
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+        return val ? [val] : [];
+    }
+    return [];
+};
 
 const DraftsPage: React.FC = () => {
     const navigate = useNavigate();
@@ -319,9 +330,8 @@ const DraftsPage: React.FC = () => {
                     companyName: ov.reg_name || "Unknown Company",
                     originCountry: { name: hqCountry?.name || "Unknown", flag: hqCountry?.flagSrc || "" },
                     industry: indMajor,
-                    reasonForMA: ov.reason_ma || "",
-                    saleShareRatio: fin.maximum_investor_shareholding_percentage || "",
-                    investmentCondition: fin.investment_condition || "",
+                    reasonForMA: parseMultiField(ov.reason_ma || ov.reason_for_mna),
+                    investmentCondition: parseMultiField(fin.investment_condition),
                     desiredInvestment: desiredInv,
                     ebitda: ebitdaDisplay,
                     primaryContact: primaryContactName,

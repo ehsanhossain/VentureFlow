@@ -122,7 +122,16 @@ const TargetDetails: React.FC = () => {
     const companyName = overview.reg_name || 'Unknown Target';
     const lastUpdated = seller?.updated_at ? new Date(seller.updated_at).toLocaleDateString() : new Date().toLocaleDateString();
     const website = overview.website || '';
-    const purposeMA = overview.reason_ma || 'N/A';
+    const parseMultiField = (val: any): string[] => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.filter(Boolean);
+        if (typeof val === 'string') {
+            try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+            return val ? [val] : [];
+        }
+        return [];
+    };
+    const purposeMA = parseMultiField(overview.reason_ma || overview.reason_for_mna);
     const projectDetails = overview.details || '';
     const teaserLink = overview.teaser_link || '';
     const hqCountryName = overview?.hq_country?.name || 'N/A';
@@ -132,8 +141,7 @@ const TargetDetails: React.FC = () => {
     const hqAddresses = parseJSON(overview.hq_address);
 
     // Financial fields
-    const investmentCondition = financial.investment_condition || 'N/A';
-    const saleShareRatio = financial.maximum_investor_shareholding_percentage || '';
+    const investmentCondition = parseMultiField(financial.investment_condition);
     const defaultCurrencyCode = (() => {
         const currId = financial.default_currency;
         if (!currId) return '';
@@ -316,7 +324,15 @@ const TargetDetails: React.FC = () => {
                                 <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma">
                                     <div className="flex flex-col gap-1.5">
                                         <span className="text-[11px] font-medium text-gray-400 uppercase">Purpose of M&A</span>
-                                        <span className="text-sm font-normal text-black">{purposeMA}</span>
+                                        {purposeMA.length > 1 ? (
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {purposeMA.map((item, i) => (
+                                                    <span key={i} className="px-2.5 py-1 rounded-[3px] bg-[#f3f4f6] text-sm font-normal text-gray-600">{item}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span className="text-sm font-normal text-black">{purposeMA[0] || 'N/A'}</span>
+                                        )}
                                     </div>
                                 </RestrictedField>
 
@@ -403,18 +419,17 @@ const TargetDetails: React.FC = () => {
                             {/* Investment Condition */}
                             <div className="flex flex-col gap-3">
                                 <span className="text-[11px] font-medium text-gray-400 uppercase">Investment Condition</span>
-                                <span className="text-sm font-medium text-black">{investmentCondition}</span>
+                                {investmentCondition.length > 1 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {investmentCondition.map((item, i) => (
+                                            <span key={i} className="px-2.5 py-1 rounded-[3px] bg-[#f3f4f6] text-sm font-normal text-gray-600">{item}</span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-sm font-medium text-black">{investmentCondition[0] || 'N/A'}</span>
+                                )}
                             </div>
 
-                            {/* Planned Sale Share Ratio */}
-                            <RestrictedField allowed={allowedFields} section="financialDetails" item="maximum_investor_shareholding_percentage">
-                                <div className="flex flex-col gap-3">
-                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Planned Sale Share Ratio</span>
-                                    <span className="text-sm font-medium text-gray-900">
-                                        {saleShareRatio ? `${saleShareRatio}%` : 'Negotiable'}
-                                    </span>
-                                </div>
-                            </RestrictedField>
 
                             {/* Desired Investment */}
                             <RestrictedField allowed={allowedFields} section="financialDetails" item="expected_investment_amount">

@@ -8,6 +8,7 @@ import { showAlert } from '../../../components/Alert';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
+import MultiSelectPicker from '../../../components/MultiSelectPicker';
 import { LogoUpload } from '../../../components/LogoUpload';
 
 // Types
@@ -21,12 +22,12 @@ interface FormValues {
 
     // Investment Intent
     targetIndustries: Industry[]; // main_industry_operations
-    purposeMNA: string; // reason_ma
+    purposeMNA: string[]; // reason_ma
     targetCountries: Country[]; // target_countries
     budgetMin: string;
     budgetMax: string;
     budgetCurrency: string;
-    investmentCondition: string;
+    investmentCondition: string[];
     projectDetails: string;
 
     // Contacts
@@ -68,10 +69,11 @@ const MNA_PURPOSES = [
 ];
 
 const INVESTMENT_CONDITIONS = [
-    { value: 'Majority stake only', label: 'Majority stake only' },
-    { value: 'Minority stake only', label: 'Minority stake only' },
-    { value: 'Full acquisition', label: 'Full acquisition' },
-    { value: 'Joint venture', label: 'Joint venture' },
+    { value: 'Minority (<50%)', label: 'Minority (<50%)' },
+    { value: 'Significant minority (25–49%)', label: 'Significant minority (25–49%)' },
+    { value: 'Joint control (51/49)', label: 'Joint control (51/49)' },
+    { value: 'Majority (51–99%)', label: 'Majority (51–99%)' },
+    { value: 'Full acquisition (100%)', label: 'Full acquisition (100%)' },
     { value: 'Flexible', label: 'Flexible' },
 ];
 
@@ -295,8 +297,20 @@ export const InvestorRegistration: React.FC = () => {
                         }
                     }
 
-                    setValue('purposeMNA', overview.reason_ma || '');
-                    setValue('investmentCondition', overview.investment_condition || '');
+                    const parsePurpose = (val: any) => {
+                        if (!val) return [];
+                        if (Array.isArray(val)) return val;
+                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { }
+                        return val ? [val] : [];
+                    };
+                    setValue('purposeMNA', parsePurpose(overview.reason_ma));
+                    const parseCondition = (val: any) => {
+                        if (!val) return [];
+                        if (Array.isArray(val)) return val;
+                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { }
+                        return val ? [val] : [];
+                    };
+                    setValue('investmentCondition', parseCondition(overview.investment_condition));
                     setValue('projectDetails', overview.details || '');
                     setValue('investorProfileLink', overview.investor_profile_link || '');
 
@@ -434,9 +448,9 @@ export const InvestorRegistration: React.FC = () => {
             payload.append('hq_address', JSON.stringify(data.hqAddresses));
 
             // Investment Intent
-            payload.append('reason_ma', data.purposeMNA || '');
+            payload.append('reason_ma', JSON.stringify(data.purposeMNA || []));
             payload.append('investment_budget', JSON.stringify({ min: data.budgetMin, max: data.budgetMax, currency: data.budgetCurrency }));
-            payload.append('investment_condition', data.investmentCondition || '');
+            payload.append('investment_condition', JSON.stringify(data.investmentCondition || []));
             payload.append('details', data.projectDetails || '');
             payload.append('internal_pic', JSON.stringify(data.internal_pic || []));
             payload.append('financial_advisor', JSON.stringify(data.financialAdvisor || []));
@@ -783,9 +797,9 @@ export const InvestorRegistration: React.FC = () => {
                                     control={control}
                                     name="purposeMNA"
                                     render={({ field }) => (
-                                        <SelectPicker
+                                        <MultiSelectPicker
                                             options={MNA_PURPOSES}
-                                            value={field.value}
+                                            value={field.value || []}
                                             onChange={field.onChange}
                                             placeholder="Select Purpose of M&A"
                                         />
@@ -798,11 +812,11 @@ export const InvestorRegistration: React.FC = () => {
                                     control={control}
                                     name="investmentCondition"
                                     render={({ field }) => (
-                                        <SelectPicker
+                                        <MultiSelectPicker
                                             options={INVESTMENT_CONDITIONS}
-                                            value={field.value}
+                                            value={field.value || []}
                                             onChange={field.onChange}
-                                            placeholder="e.g. Majority stake only"
+                                            placeholder="Select investment condition"
                                         />
                                     )}
                                 />
