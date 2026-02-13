@@ -68,7 +68,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
 
             setItems(prev => [newItem, ...prev]);
             setNewMessage('');
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             showAlert({ type: 'error', message: 'Failed to send comment' });
         }
@@ -114,7 +114,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
                 {isLoading ? (
-                    <div className="h-full flex items-center justify-center">
+                    <div className="min-h-[400px] flex items-center justify-center">
                         <BrandSpinner size="md" />
                     </div>
                 ) : filteredItems.length === 0 ? (

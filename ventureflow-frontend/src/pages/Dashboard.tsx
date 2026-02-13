@@ -103,6 +103,8 @@ interface RecentItem {
 
 // =============== HELPERS ===============
 const formatCurrency = (value: number): string => {
+  if (value >= 1000000000000000) return `$${(value / 1000000000000000).toFixed(1)}Q`;
+  if (value >= 1000000000000) return `$${(value / 1000000000000).toFixed(1)}T`;
   if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
   if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
   if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
@@ -169,7 +171,7 @@ const Dashboard: React.FC = () => {
 
   if (loading || !data) {
     return (
-      <div className="h-full flex items-center justify-center bg-white">
+      <div className="h-screen flex items-center justify-center bg-white">
         <BrandSpinner size="lg" />
       </div>
     );

@@ -14,6 +14,7 @@ use App\Models\Buyer;
 use App\Models\ActivityLog;
 use App\Models\SellersPartnershipDetail;
 use App\Models\FileFolder;
+use App\Models\BuyersCompanyOverview;
 use Carbon\Carbon;
 use App\Models\User; // Notification recipient
 use Illuminate\Support\Facades\Notification;
@@ -901,12 +902,26 @@ class SellerController extends Controller
                 ], 400);
             }
 
+            // Count how many buyers reference these sellers in their introduced_projects JSON
+            $introducedProjectsCount = 0;
+            $allBuyerOverviews = BuyersCompanyOverview::whereNotNull('introduced_projects')->get();
+            foreach ($allBuyerOverviews as $overview) {
+                $projects = is_array($overview->introduced_projects) ? $overview->introduced_projects : json_decode($overview->introduced_projects, true);
+                if (!is_array($projects)) continue;
+                foreach ($projects as $project) {
+                    if (isset($project['id']) && in_array($project['id'], array_map('intval', $ids))) {
+                        $introducedProjectsCount++;
+                    }
+                }
+            }
+
             $impact = [
                 'count' => count($ids),
                 'deals' => Deal::whereIn('seller_id', $ids)->count(),
                 'active_deals' => Deal::whereIn('seller_id', $ids)
                     ->where('progress_percent', '<', 100)
                     ->count(),
+                'introduced_projects' => $introducedProjectsCount,
                 'files' => FileFolder::whereIn('seller_id', $ids)->count(),
                 'activities' => ActivityLog::where('loggable_type', Seller::class)
                     ->whereIn('loggable_id', $ids)
@@ -956,10 +971,27 @@ class SellerController extends Controller
                 // 2. Delete file associations
                 FileFolder::whereIn('seller_id', $idsToDelete)->delete();
 
-                // 3. Delete the sellers
+                // 3. Clean up introduced_projects references from buyers' company overviews
+                // When a seller is deleted, any buyer that references this seller in their
+                // introduced_projects JSON must have that reference removed.
+                $intIdsToDelete = array_map('intval', $idsToDelete);
+                $buyerOverviews = BuyersCompanyOverview::whereNotNull('introduced_projects')->get();
+                foreach ($buyerOverviews as $buyerOverview) {
+                    $projects = is_array($buyerOverview->introduced_projects) ? $buyerOverview->introduced_projects : json_decode($buyerOverview->introduced_projects, true);
+                    if (!is_array($projects)) continue;
+                    $filtered = array_values(array_filter($projects, function ($project) use ($intIdsToDelete) {
+                        return !isset($project['id']) || !in_array((int)$project['id'], $intIdsToDelete);
+                    }));
+                    if (count($filtered) !== count($projects)) {
+                        $buyerOverview->introduced_projects = $filtered;
+                        $buyerOverview->save();
+                    }
+                }
+
+                // 4. Delete the sellers
                 $deletedCount = Seller::whereIn('id', $idsToDelete)->delete();
 
-                // 4. Clean up the detailed records (orphaned after seller is deleted)
+                // 5. Clean up the detailed records (orphaned after seller is deleted)
                 if (!empty($overviewIds)) {
                     SellersCompanyOverview::whereIn('id', $overviewIds)->delete();
                 }

@@ -60,42 +60,71 @@ const ALL_INVESTOR_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
-    { id: 'companyIndustry', label: 'Industry' },
     { id: 'originCountry', label: 'Origin Country' },
-    { id: 'website', label: 'Website' },
-    { id: 'targetIndustries', label: 'Target Industry' },
+    { id: 'companyIndustry', label: 'Industry' },
     { id: 'targetCountries', label: 'Target Countries' },
+    { id: 'targetIndustries', label: 'Target Industry' },
     { id: 'purposeMNA', label: 'Purpose of M&A' },
-    { id: 'budget', label: 'Budget' },
     { id: 'investmentCondition', label: 'Condition' },
+    { id: 'budget', label: 'Budget' },
+    { id: 'investorProfileLink', label: 'Investor Profile' },
+    { id: 'pipelineStatus', label: 'Pipeline' },
+    { id: 'website', label: 'Website' },
     { id: 'primaryContact', label: 'Contact' },
     { id: 'internalPIC', label: 'Assigned PIC' },
     { id: 'financialAdvisor', label: 'Partner FA' },
-    { id: 'investorProfileLink', label: 'Investor Profile' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
 ];
 
-const DEFAULT_INVESTOR_COLUMNS = ['projectCode', 'rank', 'companyName', 'primaryContact', 'originCountry', 'targetCountries', 'targetIndustries', 'pipelineStatus', 'budget'];
+// System default VISIBLE columns
+const DEFAULT_INVESTOR_COLUMNS = [
+    'projectCode', 'rank', 'companyName', 'originCountry',
+    'companyIndustry', 'targetCountries', 'targetIndustries',
+    'purposeMNA', 'investmentCondition', 'budget', 'investorProfileLink',
+];
+
+// System default column ORDER — ALL columns, canonical position (visible + hidden)
+const DEFAULT_INVESTOR_ORDER = [
+    'projectCode', 'rank', 'companyName', 'originCountry',
+    'companyIndustry', 'targetCountries', 'targetIndustries',
+    'purposeMNA', 'investmentCondition', 'budget', 'investorProfileLink',
+    // Hidden by default
+    'pipelineStatus', 'website', 'primaryContact', 'internalPIC', 'financialAdvisor',
+];
 
 const ALL_TARGET_COLUMNS = [
     { id: 'projectCode', label: 'Project Code' },
     { id: 'rank', label: 'Rank' },
     { id: 'companyName', label: 'Company Name' },
     { id: 'originCountry', label: 'Origin Country' },
-    { id: 'website', label: 'Website' },
     { id: 'industry', label: 'Industry' },
     { id: 'reasonForMA', label: 'Purpose of M&A' },
     { id: 'investmentCondition', label: 'Condition' },
     { id: 'desiredInvestment', label: 'Desired Investment' },
+    { id: 'teaserLink', label: 'Teaser' },
     { id: 'ebitda', label: 'EBITDA' },
+    { id: 'pipelineStatus', label: 'Pipeline' },
+    { id: 'website', label: 'Website' },
+    { id: 'primaryContact', label: 'Contact' },
     { id: 'internalPIC', label: 'Assigned PIC' },
     { id: 'financialAdvisor', label: 'Partner FA' },
-    { id: 'primaryContact', label: 'Contact' },
-    { id: 'teaserLink', label: 'Teaser' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
 ];
 
-const DEFAULT_TARGET_COLUMNS = ['projectCode', 'companyName', 'originCountry', 'industry', 'desiredInvestment', 'reasonForMA', 'rank', 'pipelineStatus'];
+// System default VISIBLE columns
+const DEFAULT_TARGET_COLUMNS = [
+    'projectCode', 'rank', 'companyName', 'originCountry',
+    'industry', 'reasonForMA', 'investmentCondition',
+    'desiredInvestment', 'teaserLink',
+];
+
+// System default column ORDER — ALL columns, canonical position (visible + hidden)
+const DEFAULT_TARGET_ORDER = [
+    'projectCode', 'rank', 'companyName', 'originCountry',
+    'industry', 'reasonForMA', 'investmentCondition',
+    'desiredInvestment', 'teaserLink',
+    // Hidden by default
+    'ebitda', 'pipelineStatus', 'website', 'primaryContact',
+    'internalPIC', 'financialAdvisor',
+];
 
 /* Helper to parse multi-select fields which may be stored as string, JSON string, or array */
 const parseMultiField = (val: any): string[] => {
@@ -140,40 +169,196 @@ const ProspectsPortal: React.FC = () => {
 
     const [serverAllowedFields, setServerAllowedFields] = useState<any>(null);
 
-    // Tools & Selection States
-    const getValidColumns = (tab: 'investors' | 'targets'): string[] => {
-        const allCols = tab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS;
-        const validIds = new Set(allCols.map(c => c.id));
-        const defaults = tab === 'investors' ? DEFAULT_INVESTOR_COLUMNS : DEFAULT_TARGET_COLUMNS;
-        const saved = localStorage.getItem(`prospects_columns_${tab}`);
-        if (!saved) return [...defaults];
+    // ============ COLUMN PREFERENCE SYSTEM ============
+    const userId = auth?.user?.id;
+
+    // Helpers for localStorage cache keyed by userId + tableType
+    const getCacheKey = (tab: string) => `colprefs_${userId}_${tab}`;
+
+    const loadCachedPrefs = (tab: 'investors' | 'targets') => {
+        if (!userId) return null;
         try {
-            const parsed: string[] = JSON.parse(saved);
-            const filtered = parsed.filter(id => validIds.has(id));
-            return filtered.length > 0 ? filtered : [...defaults];
-        } catch {
-            return [...defaults];
+            const raw = localStorage.getItem(getCacheKey(tab));
+            if (!raw) return null;
+            return JSON.parse(raw) as {
+                visible_columns: string[];
+                column_order: string[];
+                updated_at: string;
+            };
+        } catch { return null; }
+    };
+
+    const saveCachePrefs = (tab: string, data: { visible_columns: string[]; column_order: string[]; updated_at: string }) => {
+        if (!userId) return;
+        localStorage.setItem(getCacheKey(tab), JSON.stringify(data));
+    };
+
+    const clearCachePrefs = (tab: string) => {
+        if (!userId) return;
+        localStorage.removeItem(getCacheKey(tab));
+    };
+
+    // Reconcile saved column_order with current ALL_* definitions
+    // (adds new columns that didn't exist when pref was saved)
+    const reconcileOrder = (savedOrder: string[], tab: 'investors' | 'targets'): string[] => {
+        const allCols = tab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS;
+        const allIds = allCols.map(c => c.id);
+        const savedSet = new Set(savedOrder);
+        // Keep saved order, filter out any that no longer exist
+        const validSaved = savedOrder.filter(id => allIds.includes(id));
+        // Append any new columns not in saved
+        const missing = allIds.filter(id => !savedSet.has(id));
+        return [...validSaved, ...missing];
+    };
+
+    const reconcileVisible = (savedVisible: string[], allOrder: string[]): string[] => {
+        const orderSet = new Set(allOrder);
+        return savedVisible.filter(id => orderSet.has(id));
+    };
+
+    const getDefaultVisible = (tab: 'investors' | 'targets') =>
+        tab === 'investors' ? [...DEFAULT_INVESTOR_COLUMNS] : [...DEFAULT_TARGET_COLUMNS];
+
+    const getDefaultOrder = (tab: 'investors' | 'targets') =>
+        tab === 'investors' ? [...DEFAULT_INVESTOR_ORDER] : [...DEFAULT_TARGET_ORDER];
+
+    // Initial state from cache or defaults
+    const initPrefs = (tab: 'investors' | 'targets') => {
+        const cached = loadCachedPrefs(tab);
+        if (cached) {
+            const order = reconcileOrder(cached.column_order, tab);
+            const visible = reconcileVisible(cached.visible_columns, order);
+            return { visible, order };
+        }
+        return { visible: getDefaultVisible(tab), order: getDefaultOrder(tab) };
+    };
+
+    const initialPrefs = initPrefs(activeTab);
+    const [visibleColumns, setVisibleColumns] = useState<string[]>(initialPrefs.visible);
+    const [columnOrder, setColumnOrder] = useState<string[]>(initialPrefs.order);
+
+    // Track which tab the current columns belong to
+    const columnsTabRef = useRef<'investors' | 'targets'>(activeTab);
+
+    // Debounced save to API
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingSaveRef = useRef<{ visible: string[]; order: string[]; tab: string } | null>(null);
+    const suppressSaveRef = useRef(false); // Prevents save during programmatic resets
+
+    const flushSave = () => {
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        const pending = pendingSaveRef.current;
+        if (pending) {
+            pendingSaveRef.current = null;
+            api.put(`/api/user/table-preferences/${pending.tab === 'investors' ? 'investor' : 'target'}`, {
+                visible_columns: pending.visible,
+                column_order: pending.order,
+            }).then((res) => {
+                if (res.data?.updated_at) {
+                    saveCachePrefs(pending.tab, {
+                        visible_columns: pending.visible,
+                        column_order: pending.order,
+                        updated_at: res.data.updated_at,
+                    });
+                }
+            }).catch(() => { /* silent — cache already written optimistically */ });
         }
     };
 
-    const [visibleColumns, setVisibleColumns] = useState<string[]>(() => getValidColumns(activeTab));
+    const cancelPendingSave = () => {
+        if (saveTimerRef.current) {
+            clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = null;
+        }
+        pendingSaveRef.current = null;
+    };
 
-    // Track which tab the current visibleColumns belong to, to prevent saving cross-tab
-    const columnsTabRef = useRef<'investors' | 'targets'>(activeTab);
+    const scheduleSave = (visible: string[], order: string[], tab: string) => {
+        // Optimistic cache write
+        saveCachePrefs(tab, {
+            visible_columns: visible,
+            column_order: order,
+            updated_at: new Date().toISOString(),
+        });
+        pendingSaveRef.current = { visible, order, tab };
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(flushSave, 1000);
+    };
 
-    // When activeTab changes, load the correct columns for the new tab
+    // Flush on unmount
     useEffect(() => {
-        const newCols = getValidColumns(activeTab);
+        return () => { flushSave(); };
+    }, []);
+
+    // Load preferences from API on mount + reconcile with cache
+    useEffect(() => {
+        if (!userId) return;
+        const loadForTab = async (tab: 'investors' | 'targets') => {
+            const tableType = tab === 'investors' ? 'investor' : 'target';
+            try {
+                const res = await api.get(`/api/user/table-preferences/${tableType}`);
+                if (res.data && res.data.column_order) {
+                    // User has saved preferences on the server
+                    const order = reconcileOrder(res.data.column_order, tab);
+                    const visible = reconcileVisible(res.data.visible_columns, order);
+                    // Reconcile with local cache: server wins if newer
+                    const cached = loadCachedPrefs(tab);
+                    if (!cached || !cached.updated_at || res.data.updated_at >= cached.updated_at) {
+                        saveCachePrefs(tab, {
+                            visible_columns: visible,
+                            column_order: order,
+                            updated_at: res.data.updated_at,
+                        });
+                        if (tab === activeTab) {
+                            suppressSaveRef.current = true;
+                            setVisibleColumns(visible);
+                            setColumnOrder(order);
+                        }
+                    }
+                } else {
+                    // No saved prefs on server — clear any stale cache so code defaults take effect
+                    clearCachePrefs(tab);
+                    if (tab === activeTab) {
+                        suppressSaveRef.current = true;
+                        setVisibleColumns(getDefaultVisible(tab));
+                        setColumnOrder(getDefaultOrder(tab));
+                    }
+                }
+            } catch {
+                // API failed — keep using cache/defaults
+            }
+        };
+        loadForTab('investors');
+        loadForTab('targets');
+    }, [userId]);
+
+    // When activeTab changes, load the correct prefs for the new tab
+    useEffect(() => {
+        cancelPendingSave(); // Cancel any pending save for the old tab
         columnsTabRef.current = activeTab;
-        setVisibleColumns(newCols);
+        const prefs = initPrefs(activeTab);
+        suppressSaveRef.current = true;
+        setVisibleColumns(prefs.visible);
+        setColumnOrder(prefs.order);
     }, [activeTab]);
 
-    // Persist columns to localStorage — only when the columns actually belong to the current tab
+    // Schedule save whenever visible columns or order change (skip programmatic resets)
+    const isInitialRender = useRef(true);
     useEffect(() => {
-        // Guard: don't persist if visibleColumns hasn't caught up with the tab switch yet
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
+        if (suppressSaveRef.current) {
+            suppressSaveRef.current = false;
+            return;
+        }
         if (columnsTabRef.current !== activeTab) return;
-        localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(visibleColumns));
-    }, [visibleColumns, activeTab]);
+        scheduleSave(visibleColumns, columnOrder, activeTab);
+    }, [visibleColumns, columnOrder]);
 
     // Keyboard shortcuts: Ctrl+1 = Investors, Ctrl+2 = Targets
     useEffect(() => {
@@ -841,12 +1026,24 @@ const ProspectsPortal: React.FC = () => {
 
     const toggleColumn = (columnId: string) => {
         setVisibleColumns(prev => {
-            const next = prev.includes(columnId)
-                ? prev.filter(c => c !== columnId)
-                : [...prev, columnId];
-            // Immediately persist to localStorage for the current tab
-            localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(next));
-            return next;
+            if (prev.includes(columnId)) {
+                // Turn off — just filter out
+                return prev.filter(c => c !== columnId);
+            } else {
+                // Turn on — insert at the column's position in columnOrder
+                const orderIndex = columnOrder.indexOf(columnId);
+                const newVisible = [...prev];
+                // Find the right insertion point to maintain columnOrder sequence
+                let insertAt = newVisible.length;
+                for (let i = 0; i < newVisible.length; i++) {
+                    if (columnOrder.indexOf(newVisible[i]) > orderIndex) {
+                        insertAt = i;
+                        break;
+                    }
+                }
+                newVisible.splice(insertAt, 0, columnId);
+                return newVisible;
+            }
         });
     };
 
@@ -1403,8 +1600,10 @@ const ProspectsPortal: React.FC = () => {
                                                 </span>
                                             </div>
                                             <div className="space-y-1">
-                                                {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS)
-                                                    .filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab))
+                                                {/* Iterate in columnOrder sequence so toggle list matches table header */}
+                                                {columnOrder
+                                                    .map(colId => (activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).find(c => c.id === colId))
+                                                    .filter((col): col is { id: string; label: string } => !!col && isFieldAllowed(col.id, serverAllowedFields, activeTab))
                                                     .map(col => {
                                                         const isActive = visibleColumns.includes(col.id);
                                                         return (
@@ -1442,9 +1641,18 @@ const ProspectsPortal: React.FC = () => {
                                     <div className="px-6 py-4 border-t border-gray-100">
                                         <button
                                             onClick={() => {
-                                                const defaults = activeTab === 'investors' ? [...DEFAULT_INVESTOR_COLUMNS] : [...DEFAULT_TARGET_COLUMNS];
-                                                setVisibleColumns(defaults);
-                                                localStorage.setItem(`prospects_columns_${activeTab}`, JSON.stringify(defaults));
+                                                // Cancel any pending debounced save
+                                                cancelPendingSave();
+                                                // Reset to system defaults
+                                                const defaultVisible = getDefaultVisible(activeTab);
+                                                const defaultOrder = getDefaultOrder(activeTab);
+                                                setVisibleColumns(defaultVisible);
+                                                setColumnOrder(defaultOrder);
+                                                // Clear local cache
+                                                clearCachePrefs(activeTab);
+                                                // Delete server preference
+                                                const tableType = activeTab === 'investors' ? 'investor' : 'target';
+                                                api.delete(`/api/user/table-preferences/${tableType}`).catch(() => { });
                                             }}
                                             className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                                         >
@@ -1502,6 +1710,8 @@ const ProspectsPortal: React.FC = () => {
                                 isLoading={isLoading}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
+                                columnOrder={columnOrder}
+                                onColumnOrderChange={setColumnOrder}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}
@@ -1519,6 +1729,8 @@ const ProspectsPortal: React.FC = () => {
                                 isLoading={isLoading}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
+                                columnOrder={columnOrder}
+                                onColumnOrderChange={setColumnOrder}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}

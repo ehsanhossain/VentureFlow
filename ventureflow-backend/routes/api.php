@@ -25,6 +25,7 @@ use App\Http\Controllers\PipelineStageController;
 use App\Http\Controllers\SearchController;
 
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UserTablePreferenceController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -201,5 +202,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/activity', [\App\Http\Controllers\DashboardController::class, 'activity']);
         Route::get('/recent', [\App\Http\Controllers\DashboardController::class, 'recent']);
     });
+
+    // User Table Preferences (column visibility & order)
+    Route::get('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'show']);
+    Route::put('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'update']);
+    Route::delete('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'destroy']);
 });
 

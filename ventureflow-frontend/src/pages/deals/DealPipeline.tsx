@@ -605,7 +605,7 @@ const DealPipeline = () => {
                     {activeTab === 'board' && (
                         <div className="flex-1 overflow-x-auto p-4">
                             {isLoading ? (
-                                <div className="flex items-center justify-center h-full">
+                                <div className="flex items-center justify-center h-screen">
                                     <div className="flex flex-col items-center gap-2">
                                         <BrandSpinner size="lg" />
                                         <span className="text-sm font-medium text-gray-500">Loading deals...</span>

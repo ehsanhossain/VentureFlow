@@ -49,14 +49,14 @@ export const ALLOWED_FIELD_MAPPING: Record<string, Record<string, FieldMapEntry>
     }
 };
 
-export const isFieldAllowed = (colId: string, allowedConfig: AllowedConfig | null | undefined, type: 'investors' | 'targets') => {
+export const isFieldAllowed = (colId: string, allowedConfig: AllowedConfig | null | undefined, type: 'investors' | 'targets'): boolean => {
     if (!allowedConfig) return true;
     const map = ALLOWED_FIELD_MAPPING[type][colId];
     if (!map) return true;
-    if (map.root) return allowedConfig.root?.includes(map.key);
+    if (map.root) return allowedConfig.root?.includes(map.key) ?? false;
     if (map.rel) {
         if (!allowedConfig.relationships) return false;
-        return allowedConfig.relationships[map.rel]?.includes(map.key);
+        return allowedConfig.relationships[map.rel]?.includes(map.key) ?? false;
     }
     return false;
 };

@@ -59,6 +59,8 @@ interface InvestorTableProps {
     isLoading: boolean;
     onTogglePin: (id: number) => void;
     visibleColumns: string[];
+    columnOrder?: string[];
+    onColumnOrderChange?: (order: string[]) => void;
     selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh: () => void;
     isRestricted?: boolean;
@@ -76,6 +78,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     isLoading,
     onTogglePin,
     visibleColumns,
+    columnOrder,
+    onColumnOrderChange,
     selectedCurrency,
     onRefresh,
     isRestricted = false,
@@ -525,10 +529,17 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
         }
     ], [pipelineStages, selectedCurrency]);
 
-    const filteredColumns = useMemo(() =>
-        columns.filter(col => visibleColumns.includes(col.id)),
-        [columns, visibleColumns]
-    );
+    const filteredColumns = useMemo(() => {
+        const visible = columns.filter(col => visibleColumns.includes(col.id));
+        if (columnOrder && columnOrder.length > 0) {
+            visible.sort((a, b) => {
+                const aIdx = columnOrder.indexOf(a.id);
+                const bIdx = columnOrder.indexOf(b.id);
+                return (aIdx === -1 ? Infinity : aIdx) - (bIdx === -1 ? Infinity : bIdx);
+            });
+        }
+        return visible;
+    }, [columns, visibleColumns, columnOrder]);
 
     const ActionsColumn = (row: InvestorRowData) => (
         <div className="flex items-center justify-end px-2">

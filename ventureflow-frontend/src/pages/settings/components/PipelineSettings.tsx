@@ -32,7 +32,7 @@ const PipelineSettings: React.FC = () => {
                 params: { type: activeTab }
             });
             setStages(response.data);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to fetch pipeline stages' });
         } finally {
@@ -170,7 +170,7 @@ const PipelineSettings: React.FC = () => {
                 <div className="flex-1 px-8 pb-8 overflow-hidden">
                     <div className="h-full bg-white rounded-[3px] border border-gray-100 flex flex-col overflow-hidden">
                         {loading ? (
-                            <div className="flex-1 flex items-center justify-center">
+                            <div className="flex-1 flex items-center justify-center min-h-screen">
                                 <BrandSpinner size="lg" />
                             </div>
                         ) : (

@@ -56,7 +56,7 @@ const InvestorList = () => {
     }, [partnerId]);
 
     if (loading) return (
-        <div className="flex flex-col justify-center items-center h-full gap-3">
+        <div className="flex flex-col justify-center items-center h-screen gap-3">
             <BrandSpinner size="lg" />
             <span className="text-gray-600 ">{t('investor.loading', 'Loading Investors...')}</span>
         </div>

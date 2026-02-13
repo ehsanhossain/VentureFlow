@@ -126,7 +126,7 @@ const PartnerProfile: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-screen">
                 <div className="flex items-center gap-3">
                     <BrandSpinner size="lg" />
                     <span className="text-gray-600">{t('common.loading', 'Loading...')}</span>

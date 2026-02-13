@@ -9,6 +9,8 @@ import { BrandSpinner } from '../../../components/BrandSpinner';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
 import { NotesSection, Note, parseActivityLogs } from '../../../components/NotesSection';
+import introducedProjectsIcon from '../../../assets/icons/introduced-projects.svg';
+import dealsPipelineIcon from '../../../assets/icons/deals-pipeline.svg';
 
 const RestrictedField: React.FC<{ allowed: any, section: string | 'root', item: string, children: React.ReactNode }> = ({ allowed, section, item, children }) => {
     if (!isBackendPropertyAllowed(allowed, section, item)) return null;
@@ -85,7 +87,7 @@ const TargetDetails: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-screen">
                 <BrandSpinner size="lg" />
             </div>
         );
@@ -517,7 +519,7 @@ const TargetDetails: React.FC = () => {
 
                 {/* Right Column - Sidebar */}
                 <div className="w-[287px] shrink-0 space-y-10">
-                    {/* Teaser Document Link */}
+                    {/* 1. Teaser Document Link */}
                     <div className="space-y-5">
                         <h3 className="text-base font-medium text-gray-500 capitalize">Documents & Links</h3>
                         {teaserLink ? (
@@ -540,9 +542,10 @@ const TargetDetails: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Introduced Projects */}
+                    {/* 2. Introduced Projects (with icon) */}
                     <div className="space-y-5">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">
+                        <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
+                            <img src={introducedProjectsIcon} alt="" className="w-5 h-5" />
                             {introducedProjects && introducedProjects.length > 0 ? 'Introduced Projects' : 'Propose Investors'}
                         </h3>
                         <div className="space-y-3">
@@ -573,37 +576,18 @@ const TargetDetails: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Assigned PIC */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Assigned PIC</h3>
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                <span className="text-white text-sm font-normal">{getInitials(getPrimaryPIC())}</span>
-                            </div>
-                            <span className="text-base font-normal text-black">{getPrimaryPIC()}</span>
-                        </div>
-                    </div>
-
-                    {/* Financial Advisor Role */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Financial Advisor Role (Partner)</h3>
-                        <div className="flex items-center gap-3.5">
-                            <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                <span className="text-white text-sm font-normal">{getInitials(getPrimaryAdvisor())}</span>
-                            </div>
-                            <span className="text-base font-normal text-black">{getPrimaryAdvisor()}</span>
-                        </div>
-                    </div>
-
-                    {/* Deal Pipeline Stage */}
+                    {/* 3. Deal Pipeline Stage (with icon) */}
                     {(() => {
                         const pipeInfo = getDealPipelineInfo();
                         return (
                             <div className="space-y-3">
-                                <h3 className="text-base font-medium text-gray-500 capitalize">Deal Pipeline Stage</h3>
+                                <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
+                                    <img src={dealsPipelineIcon} alt="" className="w-5 h-5" />
+                                    Deal Pipeline Stage
+                                </h3>
                                 {pipeInfo ? (
                                     <>
-                                        <span className="text-base font-normal text-black">{pipeInfo.stageName}</span>
+                                        <span className="text-base font-semibold text-black">{pipeInfo.stageName}</span>
                                         {pipeInfo.pairedId && (
                                             <div
                                                 className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
@@ -625,6 +609,56 @@ const TargetDetails: React.FC = () => {
                             </div>
                         );
                     })()}
+
+                    {/* 4. Assigned PIC (show all) */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Assigned PIC</h3>
+                        <div className="space-y-2.5">
+                            {internalPICs && internalPICs.length > 0 ? internalPICs.map((pic, idx) => {
+                                const picName = pic.name || `${pic.first_name || ''} ${pic.last_name || ''}`.trim() || 'N/A';
+                                return (
+                                    <div key={pic.id || idx} className="flex items-center gap-3.5">
+                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                            <span className="text-white text-sm font-normal">{getInitials(picName)}</span>
+                                        </div>
+                                        <span className="text-base font-normal text-black">{picName}</span>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                        <span className="text-white text-sm font-normal">{getInitials(getPrimaryPIC())}</span>
+                                    </div>
+                                    <span className="text-base font-normal text-black">{getPrimaryPIC()}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 5. Financial Advisor Role (show all) */}
+                    <div className="space-y-3">
+                        <h3 className="text-base font-medium text-gray-500 capitalize">Financial Advisor Role (Partner)</h3>
+                        <div className="space-y-2.5">
+                            {financialAdvisors && financialAdvisors.length > 0 ? financialAdvisors.map((advisor, idx) => {
+                                const advisorName = advisor.name || advisor.reg_name || 'N/A';
+                                return (
+                                    <div key={advisor.id || idx} className="flex items-center gap-3.5">
+                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                            <span className="text-white text-sm font-normal">{getInitials(advisorName)}</span>
+                                        </div>
+                                        <span className="text-base font-normal text-black">{advisorName}</span>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                        <span className="text-white text-sm font-normal">{getInitials(getPrimaryAdvisor())}</span>
+                                    </div>
+                                    <span className="text-base font-normal text-black">{getPrimaryAdvisor()}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

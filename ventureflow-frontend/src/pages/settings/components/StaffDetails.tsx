@@ -65,7 +65,7 @@ const StaffDetails: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-screen">
                 <BrandSpinner size="lg" />
             </div>
         );

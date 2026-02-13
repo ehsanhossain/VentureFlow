@@ -52,12 +52,18 @@ export const getCurrencySymbol = (code: string): string => {
 };
 
 /**
- * Formats a number into a shorter string representation (K, M, B)
+ * Formats a number into a shorter string representation (K, M, B, T, Q)
  */
 export const formatCompactNumber = (number: number): string => {
     if (number === 0) return '0';
     if (!number) return 'N/A';
 
+    if (number >= 1000000000000000) {
+        return `${(number / 1000000000000000).toFixed(1)}Q`;
+    }
+    if (number >= 1000000000000) {
+        return `${(number / 1000000000000).toFixed(1)}T`;
+    }
     if (number >= 1000000000) {
         return `${(number / 1000000000).toFixed(1)}B`;
     }

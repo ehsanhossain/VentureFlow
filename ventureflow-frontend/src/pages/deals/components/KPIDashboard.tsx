@@ -13,6 +13,12 @@ interface KPIDashboardProps {
 
 const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
     const formatCurrency = (value: number) => {
+        if (value >= 1000000000000000) {
+            return `$${(value / 1000000000000000).toFixed(1)}Q`;
+        }
+        if (value >= 1000000000000) {
+            return `$${(value / 1000000000000).toFixed(1)}T`;
+        }
         if (value >= 1000000000) {
             return `$${(value / 1000000000).toFixed(1)}B`;
         }

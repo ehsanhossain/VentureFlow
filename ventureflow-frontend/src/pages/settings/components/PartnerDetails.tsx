@@ -84,7 +84,7 @@ const PartnerDetails: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-screen">
                 <BrandSpinner size="lg" />
             </div>
         );
@@ -406,8 +406,8 @@ const PartnerDetails: React.FC = () => {
                                     <div className="flex flex-col gap-1.5">
                                         <span className="text-[11px] font-medium text-gray-400 uppercase">Exclusivity</span>
                                         <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium w-fit ${structure.exclusivity
-                                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : 'bg-gray-100 text-gray-600 border border-gray-200'
                                             }`}>
                                             {structure.exclusivity ? 'EXCLUSIVE' : 'NON-EXCLUSIVE'}
                                         </span>
@@ -433,7 +433,7 @@ const PartnerDetails: React.FC = () => {
                         <h3 className="text-base font-medium text-gray-500 capitalize">Account Status</h3>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(partner.status)}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${partner.status?.toLowerCase() === 'active' ? 'bg-emerald-500' :
-                                    ['inactive', 'suspended'].includes(partner.status?.toLowerCase()) ? 'bg-rose-500' : 'bg-emerald-500'
+                                ['inactive', 'suspended'].includes(partner.status?.toLowerCase()) ? 'bg-rose-500' : 'bg-emerald-500'
                                 }`} />
                             {(partner.status || 'Active').charAt(0).toUpperCase() + (partner.status || 'active').slice(1)}
                         </span>

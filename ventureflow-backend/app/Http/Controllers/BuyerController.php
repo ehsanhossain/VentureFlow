@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Buyer;
+use App\Models\Seller;
 use App\Models\ActivityLog;
 use App\Models\BuyersCompanyOverview;
 use App\Models\BuyersTargetPreferences;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\BuyersFinancialDetails;
 use App\Models\BuyersPartnershipDetails;
 use App\Models\BuyersTeaserCenters;
+use App\Models\SellersCompanyOverview;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -57,19 +59,34 @@ class BuyerController extends Controller
     public function budgetRange()
     {
         $range = Cache::remember('buyer_budget_range', 1800, function () {
-            // Use SQL aggregation instead of loading all records into PHP memory
-            $result = \DB::table('buyers_financial_details')
-                ->selectRaw("
-                    MIN(CAST(JSON_UNQUOTE(JSON_EXTRACT(investment_budget, '$.min')) AS DECIMAL(20,2))) as min_val,
-                    MAX(CAST(JSON_UNQUOTE(JSON_EXTRACT(investment_budget, '$.max')) AS DECIMAL(20,2))) as max_val
-                ")
+            // Database-agnostic: fetch raw JSON and parse in PHP
+            // (SQLite doesn't support JSON_UNQUOTE / JSON_VALID)
+            $rows = \DB::table('buyers_financial_details')
                 ->whereNotNull('investment_budget')
-                ->whereRaw("JSON_VALID(investment_budget)")
-                ->first();
+                ->where('investment_budget', '!=', '')
+                ->pluck('investment_budget');
+
+            $minVal = null;
+            $maxVal = null;
+
+            foreach ($rows as $raw) {
+                $budget = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : null);
+                if (!is_array($budget)) continue;
+
+                $bMin = isset($budget['min']) ? (float) $budget['min'] : null;
+                $bMax = isset($budget['max']) ? (float) $budget['max'] : null;
+
+                if ($bMin !== null && ($minVal === null || $bMin < $minVal)) {
+                    $minVal = $bMin;
+                }
+                if ($bMax !== null && ($maxVal === null || $bMax > $maxVal)) {
+                    $maxVal = $bMax;
+                }
+            }
 
             return [
-                'min' => $result->min_val ?? 0,
-                'max' => $result->max_val ?? 100000000,
+                'min' => $minVal ?? 0,
+                'max' => $maxVal ?? 100000000,
             ];
         });
 
@@ -1085,12 +1102,26 @@ class BuyerController extends Controller
                 ], 400);
             }
 
+            // Count how many sellers reference these buyers in their introduced_projects JSON
+            $introducedProjectsCount = 0;
+            $allSellerOverviews = SellersCompanyOverview::whereNotNull('introduced_projects')->get();
+            foreach ($allSellerOverviews as $overview) {
+                $projects = is_array($overview->introduced_projects) ? $overview->introduced_projects : json_decode($overview->introduced_projects, true);
+                if (!is_array($projects)) continue;
+                foreach ($projects as $project) {
+                    if (isset($project['id']) && in_array($project['id'], array_map('intval', $ids))) {
+                        $introducedProjectsCount++;
+                    }
+                }
+            }
+
             $impact = [
                 'count' => count($ids),
                 'deals' => Deal::whereIn('buyer_id', $ids)->count(),
                 'active_deals' => Deal::whereIn('buyer_id', $ids)
                     ->where('progress_percent', '<', 100)
                     ->count(),
+                'introduced_projects' => $introducedProjectsCount,
                 'files' => FileFolder::whereIn('buyer_id', $ids)->count(),
                 'activities' => ActivityLog::where('loggable_type', Buyer::class)
                     ->whereIn('loggable_id', $ids)
@@ -1140,11 +1171,28 @@ class BuyerController extends Controller
                 // 2. Delete file associations
                 FileFolder::whereIn('buyer_id', $idsToDelete)->delete();
 
-                // 3. Delete the buyers (Deals will cascade if set in DB, but we already know they exist)
+                // 3. Clean up introduced_projects references from sellers' company overviews
+                // When a buyer is deleted, any seller that references this buyer in their
+                // introduced_projects JSON must have that reference removed.
+                $intIdsToDelete = array_map('intval', $idsToDelete);
+                $sellerOverviews = SellersCompanyOverview::whereNotNull('introduced_projects')->get();
+                foreach ($sellerOverviews as $sellerOverview) {
+                    $projects = is_array($sellerOverview->introduced_projects) ? $sellerOverview->introduced_projects : json_decode($sellerOverview->introduced_projects, true);
+                    if (!is_array($projects)) continue;
+                    $filtered = array_values(array_filter($projects, function ($project) use ($intIdsToDelete) {
+                        return !isset($project['id']) || !in_array((int)$project['id'], $intIdsToDelete);
+                    }));
+                    if (count($filtered) !== count($projects)) {
+                        $sellerOverview->introduced_projects = $filtered;
+                        $sellerOverview->save();
+                    }
+                }
+
+                // 4. Delete the buyers (Deals will cascade if set in DB, but we already know they exist)
                 // Note: Buyer model doesn't have soft deletes currently.
                 $deletedCount = Buyer::whereIn('id', $idsToDelete)->delete();
 
-                // 4. Clean up the detailed records (orphaned after buyer is deleted)
+                // 5. Clean up the detailed records (orphaned after buyer is deleted)
                 if (!empty($overviewIds)) {
                     BuyersCompanyOverview::whereIn('id', $overviewIds)->delete();
                 }
