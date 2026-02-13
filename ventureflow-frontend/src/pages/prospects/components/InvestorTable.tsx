@@ -256,6 +256,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             ),
             textAccessor: (row) => row.projectCode,
             width: 150,
+            minWidth: 120,
             sortable: true,
             sticky: 'left'
         },
@@ -285,6 +286,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             ),
             textAccessor: (row) => row.companyName,
             width: 200,
+            minWidth: 80,
             sortable: true,
         },
         {
@@ -319,17 +321,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             id: 'originCountry',
             header: 'Origin Country',
             accessor: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                     {row.originCountry?.flag ? (
-                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover" alt="" />
+                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover shrink-0" alt="" />
                     ) : (
-                        <div className="w-5 h-5 rounded-full bg-gray-100" />
+                        <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
                     )}
-                    <span className="text-[13px] font-normal text-gray-600 truncate">{row.originCountry?.name || 'N/A'}</span>
+                    <span className="text-[13px] font-normal text-gray-600 truncate min-w-0">{row.originCountry?.name || 'N/A'}</span>
                 </div>
             ),
             textAccessor: (row) => row.originCountry?.name || '',
             width: 140,
+            minWidth: 70,
             sortable: true,
         },
         {
@@ -367,6 +370,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             },
             textAccessor: (row) => parseWebsiteUrl(row.website),
             width: 160,
+            minWidth: 80,
         },
         {
             id: 'targetIndustries',
@@ -409,7 +413,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             <>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">
                                     <img src={row.targetCountries[0].flag} className="w-4 h-4 rounded-full object-cover shrink-0" alt="" />
-                                    <span className="truncate">{row.targetCountries[0].name}</span>
+                                    <span className="truncate min-w-0">{row.targetCountries[0].name}</span>
                                 </span>
                                 {row.targetCountries.length > 1 && (
                                     <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">
@@ -465,6 +469,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             },
             textAccessor: (row) => formatCompactBudget(row.budget, '$', 1), // Approximate for sizing
             width: 150,
+            minWidth: 100,
         },
         {
             id: 'pipelineStatus',
@@ -482,18 +487,21 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
+            minWidth: 80,
         },
         {
             id: 'primaryContact',
             header: 'Contact',
             accessor: 'primaryContact',
             width: 150,
+            minWidth: 80,
         },
         {
             id: 'internalPIC',
             header: 'Assigned PIC',
             accessor: (row) => row.internalPIC?.join(', ') || 'N/A',
             width: 150,
+            minWidth: 80,
         },
         {
             id: 'investmentCondition',
@@ -523,6 +531,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             header: 'Partner FA',
             accessor: (row) => row.financialAdvisor?.join(', ') || 'N/A',
             width: 150,
+            minWidth: 80,
         },
         {
             id: 'investorProfileLink',
@@ -536,6 +545,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             ),
             textAccessor: (row) => row.investorProfile || '',
             width: 130,
+            minWidth: 80,
         }
     ], [pipelineStages, selectedCurrency]);
 

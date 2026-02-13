@@ -538,6 +538,7 @@ function DataTable<T>({
                                         key={column.id}
                                         style={{
                                             width: `var(--col-width-${column.id})`,
+                                            minWidth: column.minWidth || 50,
                                             ...stickyLeftStyle
                                         }}
                                         className={cn(
@@ -636,7 +637,7 @@ function DataTable<T>({
                                     >
                                         {selectable && (
                                             <td className={cn(
-                                                "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-shadow",
+                                                "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-all duration-150",
                                                 isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
                                                 scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                             )}>
@@ -673,13 +674,14 @@ function DataTable<T>({
                                                     key={column.id}
                                                     style={{
                                                         width: `var(--col-width-${column.id})`,
+                                                        minWidth: column.minWidth || 50,
                                                         ...stickyLeftStyle
                                                     }}
                                                     className={cn(
                                                         'px-4 py-3 text-[13.5px] text-gray-600 border-b border-[#f1f5f9]',
                                                         'align-middle overflow-hidden whitespace-nowrap text-ellipsis',
                                                         isStickyLeft && cn(
-                                                            'sticky z-10 transition-shadow',
+                                                            'sticky z-10 transition-all duration-150',
                                                             isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
                                                             scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                                         ),

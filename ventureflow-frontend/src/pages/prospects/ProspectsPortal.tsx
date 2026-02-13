@@ -11,9 +11,7 @@ import {
     Plus,
     ChevronDown,
     X,
-    Filter,
     RotateCcw,
-    Settings2,
     Download,
     Upload,
     AlertCircle,
@@ -21,6 +19,9 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
+import draftDocumentIcon from '../../assets/icons/prospects/draft-document.svg';
+import filterIcon from '../../assets/icons/prospects/filter.svg';
+import toolsIcon from '../../assets/icons/prospects/tools.svg';
 import DataTableSearch from '../../components/table/DataTableSearch';
 import { Dropdown, Country as DropdownCountry } from './components/Dropdown';
 import { IndustryDropdown, Industry as DropdownIndustry } from './components/IndustryDropdown';
@@ -1513,8 +1514,9 @@ const ProspectsPortal: React.FC = () => {
                         {!isPartner && (
                             <button
                                 onClick={() => navigate('/prospects/drafts')}
-                                className="flex items-center gap-1 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
+                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
+                                <img src={draftDocumentIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                 Drafts{(draftCounts.investors + draftCounts.targets) > 0 && (
                                     <span className="text-gray-400 ml-0.5">({draftCounts.investors + draftCounts.targets})</span>
                                 )}
@@ -1529,7 +1531,7 @@ const ProspectsPortal: React.FC = () => {
                                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
-                            <Filter className="w-4 h-4" />
+                            <img src={filterIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                             <span>Filter</span>
                             {activeFilterCount > 0 && (
                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1 text-[10px] font-medium text-white">
@@ -1543,7 +1545,7 @@ const ProspectsPortal: React.FC = () => {
                                 onClick={() => setIsToolsOpen(!isToolsOpen)}
                                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
-                                <Settings2 className="w-4 h-4 text-gray-400" />
+                                <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                 Tools
                             </button>
                         </div>

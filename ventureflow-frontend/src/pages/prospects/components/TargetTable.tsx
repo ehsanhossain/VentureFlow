@@ -247,6 +247,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             ),
             textAccessor: (row) => row.projectCode,
             width: 150,
+            minWidth: 120,
             sortable: true,
             sticky: 'left'
         },
@@ -276,23 +277,25 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             ),
             textAccessor: (row) => row.companyName,
             width: 200,
+            minWidth: 80,
             sortable: true,
         },
         {
             id: 'originCountry',
             header: 'Origin Country',
             accessor: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                     {row.originCountry?.flag ? (
-                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover" alt="" />
+                        <img src={row.originCountry.flag} className="w-5 h-5 rounded-full object-cover shrink-0" alt="" />
                     ) : (
-                        <div className="w-5 h-5 rounded-full bg-gray-100" />
+                        <div className="w-5 h-5 rounded-full bg-gray-100 shrink-0" />
                     )}
-                    <span className="text-[13px] font-normal text-gray-600 truncate">{row.originCountry?.name || 'N/A'}</span>
+                    <span className="text-[13px] font-normal text-gray-600 truncate min-w-0">{row.originCountry?.name || 'N/A'}</span>
                 </div>
             ),
             textAccessor: (row) => row.originCountry?.name || '',
             width: 140,
+            minWidth: 70,
             sortable: true,
         },
         {
@@ -328,6 +331,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             },
             textAccessor: (row) => parseWebsiteUrl(row.website),
             width: 160,
+            minWidth: 80,
         },
 
         {
@@ -375,6 +379,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             },
             textAccessor: (row) => formatCompactBudget(row.desiredInvestment, '$', 1),
             width: 160,
+            minWidth: 100,
         },
         {
             id: 'ebitda',
@@ -391,6 +396,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             },
             textAccessor: (row) => formatCompactBudget(row.ebitda, '$', 1),
             width: 140,
+            minWidth: 80,
         },
         {
             id: 'investmentCondition',
@@ -454,12 +460,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             },
             textAccessor: (row) => getStagePosition(row.pipelineStatus).display,
             width: 120,
+            minWidth: 80,
         },
         {
             id: 'internalPIC',
             header: 'Assigned PIC',
             accessor: (row) => row.internalPIC?.join(', ') || 'Unassigned',
             width: 150,
+            minWidth: 80,
         },
         {
             id: 'financialAdvisor',
@@ -469,6 +477,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             ),
             textAccessor: (row) => row.financialAdvisor?.[0] || '',
             width: 150,
+            minWidth: 80,
         },
         {
             id: 'primaryContact',
@@ -478,6 +487,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             ),
             textAccessor: (row) => row.primaryContact || '',
             width: 140,
+            minWidth: 80,
         },
         {
             id: 'teaserLink',
@@ -491,6 +501,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             ),
             textAccessor: (row) => row.teaserLink || '',
             width: 120,
+            minWidth: 80,
         },
 
     ], [pipelineStages, selectedCurrency]);
