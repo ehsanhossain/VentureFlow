@@ -589,6 +589,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 data={sortedData}
                 columns={filteredColumns}
                 isLoading={isLoading}
+                columnOrder={columnOrder}
+                onColumnOrderChange={onColumnOrderChange}
                 onRowClick={(row) => navigate(`/prospects/investor/${row.id}`)}
                 onRowContextMenu={(e, row) => {
                     e.preventDefault();

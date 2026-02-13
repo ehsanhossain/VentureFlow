@@ -547,6 +547,8 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 data={sortedData}
                 columns={filteredColumns}
                 isLoading={isLoading}
+                columnOrder={columnOrder}
+                onColumnOrderChange={onColumnOrderChange}
                 onRowClick={(row) => navigate(`/prospects/target/${row.id}`)}
                 onRowContextMenu={(e, row) => {
                     e.preventDefault();
