@@ -273,45 +273,67 @@ function DataTable<T>({
         const column = columns.find(c => c.id === columnId);
         if (!column) return;
 
-        // Approximate calculation - in real app would use canvas measureText
-        let maxWidth = 80;
+        const colMinWidth = column.minWidth || 80;
+
+        // Strategy: Measure actual rendered cell widths from the DOM
+        // Each cell has a wrapping <div> whose scrollWidth reflects the true content width
+        let maxContentWidth = colMinWidth;
+
+        // Measure header width
         if (typeof column.header === 'string') {
-            maxWidth = Math.max(maxWidth, column.header.length * 8.5 + 40);
+            maxContentWidth = Math.max(maxContentWidth, column.header.length * 8.5 + 50);
         }
 
-        data.forEach(row => {
-            let val = '';
-
-            // Priority 1: Use specific textAccessor if available (best for JSX columns)
-            if (column.textAccessor) {
-                val = column.textAccessor(row);
+        // Measure all body cell widths via DOM
+        if (containerRef.current) {
+            // Compute ordered visible column IDs to find DOM index
+            const colIdsSet = new Set(columns.map(c => c.id));
+            const visibleOrdered = columnOrder.filter(id => colIdsSet.has(id));
+            const colIndex = visibleOrdered.indexOf(columnId);
+            if (colIndex >= 0) {
+                const selectorOffset = selectable ? 1 : 0; // skip checkbox <td>
+                const rows = containerRef.current.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const td = row.children[colIndex + selectorOffset] as HTMLElement;
+                    if (td) {
+                        // The inner div wrapping cell content
+                        const inner = td.querySelector(':scope > div') as HTMLElement;
+                        if (inner) {
+                            // scrollWidth gives us the full content width incl. overflow
+                            maxContentWidth = Math.max(maxContentWidth, inner.scrollWidth + 32);
+                        }
+                    }
+                });
             }
-            // Priority 2: Use accessor if it's a string
-            else if (typeof column.accessor === 'function') {
-                const result = column.accessor(row);
-                if (typeof result === 'string' || typeof result === 'number') {
-                    val = String(result);
+        }
+
+        // If DOM measurement failed, fall back to textAccessor-based approximation
+        if (maxContentWidth <= colMinWidth) {
+            data.forEach(row => {
+                let val = '';
+                if (column.textAccessor) {
+                    val = column.textAccessor(row);
+                } else if (typeof column.accessor === 'function') {
+                    const result = column.accessor(row);
+                    if (typeof result === 'string' || typeof result === 'number') {
+                        val = String(result);
+                    }
+                } else {
+                    val = String(row[column.accessor as keyof T] || '');
                 }
-                // If it returns an object/JSX, we skip unless textAccessor provided
-            }
-            // Priority 3: Direct property access
-            else {
-                val = String(row[column.accessor as keyof T] || '');
-            }
+                if (val) {
+                    maxContentWidth = Math.max(maxContentWidth, val.length * 8 + 32);
+                }
+            });
+        }
 
-            if (val) {
-                // improved calculation: approx 7-8px per char for normal font
-                maxWidth = Math.max(maxWidth, val.length * 8 + 32);
-            }
-        });
-
-        const finalWidth = Math.min(600, maxWidth);
+        const finalWidth = Math.max(colMinWidth, Math.min(600, maxContentWidth));
         if (onColumnWidthChange) {
             onColumnWidthChange(columnId, finalWidth);
         } else {
             setInternalColumnWidths(prev => ({ ...prev, [columnId]: finalWidth }));
         }
-    }, [data, columns, onColumnWidthChange]);
+    }, [data, columns, columnOrder, selectable, onColumnWidthChange]);
 
     // ============ SELECT ALL LOGIC ============
     const isAllSelected = data.length > 0 && Array.from(selectedIds || []).length >= data.length;

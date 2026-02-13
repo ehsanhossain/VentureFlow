@@ -6,13 +6,17 @@ import { formatCompactBudget, formatFullBudget } from '../../../utils/formatters
 import CellTooltip from '../../../components/table/CellTooltip';
 import {
     MoreVertical,
-    Zap,
     Trash2,
     Copy,
     Plus,
     Download
 } from 'lucide-react';
 import { ProfileViewIcon, WebsiteIcon, PinnedIcon, UnpinnedIcon } from '../../../components/table/TableIcons';
+import pinActiveIcon from '../../../assets/icons/prospects/pin-active.svg';
+import pinInactiveIcon from '../../../assets/icons/prospects/pin-inactive.svg';
+import viewProfileIcon from '../../../assets/icons/prospects/view-profile.svg';
+import editIcon from '../../../assets/icons/prospects/edit.svg';
+import deleteIcon from '../../../assets/icons/prospects/delete.svg';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import DeleteConfirmationModal from '../../../components/DeleteConfirmationModal';
@@ -268,6 +272,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 </span>
             ),
             width: 80,
+            minWidth: 80,
             sortable: true,
         },
         {
@@ -290,14 +295,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     enabled={!!row.companyIndustry && row.companyIndustry.length > 1}
                     content={<ul className="list-disc pl-4 space-y-0.5">{row.companyIndustry?.map((item, i) => <li key={i}>{item}</li>)}</ul>}
                 >
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
                         {row.companyIndustry?.length ? (
                             <>
-                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
+                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">
                                     {row.companyIndustry[0]}
                                 </span>
                                 {row.companyIndustry.length > 1 && (
-                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">
                                         +{row.companyIndustry.length - 1}
                                     </span>
                                 )}
@@ -306,8 +311,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </div>
                 </CellTooltip>
             ),
-            textAccessor: (row) => row.companyIndustry?.join(', ') || '',
+            textAccessor: (row) => row.companyIndustry?.[0] || '',
             width: 200,
+            minWidth: 100,
         },
         {
             id: 'originCountry',
@@ -370,14 +376,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     enabled={!!row.targetIndustries && row.targetIndustries.length > 1}
                     content={<ul className="list-disc pl-4 space-y-0.5">{row.targetIndustries?.map((item, i) => <li key={i}>{item}</li>)}</ul>}
                 >
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
                         {row.targetIndustries?.length ? (
                             <>
-                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">
+                                <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">
                                     {row.targetIndustries[0]}
                                 </span>
                                 {row.targetIndustries.length > 1 && (
-                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">
                                         +{row.targetIndustries.length - 1}
                                     </span>
                                 )}
@@ -386,8 +392,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </div>
                 </CellTooltip>
             ),
-            textAccessor: (row) => row.targetIndustries?.join(', ') || '',
+            textAccessor: (row) => row.targetIndustries?.[0] || '',
             width: 200,
+            minWidth: 100,
         },
         {
             id: 'targetCountries',
@@ -397,15 +404,15 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     enabled={!!row.targetCountries && row.targetCountries.length > 1}
                     content={<ul className="list-disc pl-4 space-y-0.5">{row.targetCountries?.map((c, i) => <li key={i}>{c.name}</li>)}</ul>}
                 >
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
                         {row.targetCountries?.length ? (
                             <>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[140px]">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">
                                     <img src={row.targetCountries[0].flag} className="w-4 h-4 rounded-full object-cover shrink-0" alt="" />
-                                    {row.targetCountries[0].name}
+                                    <span className="truncate">{row.targetCountries[0].name}</span>
                                 </span>
                                 {row.targetCountries.length > 1 && (
-                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">
+                                    <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">
                                         +{row.targetCountries.length - 1}
                                     </span>
                                 )}
@@ -414,8 +421,9 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     </div>
                 </CellTooltip>
             ),
-            textAccessor: (row) => row.targetCountries?.map(c => c.name).join(', ') || '',
+            textAccessor: (row) => row.targetCountries?.[0]?.name || '',
             width: 200,
+            minWidth: 100,
         },
         {
             id: 'purposeMNA',
@@ -429,15 +437,16 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         enabled={items.length > 1}
                         content={<ul className="list-disc pl-4 space-y-0.5">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>}
                     >
-                        <div className="flex flex-wrap gap-1">
-                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
-                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                        <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">{items[0]}</span>
+                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">+{items.length - 1}</span>
                         </div>
                     </CellTooltip>
                 );
             },
-            textAccessor: (row) => parseMultiField(row.purposeMNA).join(', '),
+            textAccessor: (row) => parseMultiField(row.purposeMNA)[0] || '',
             width: 170,
+            minWidth: 100,
         },
         {
             id: 'budget',
@@ -498,15 +507,16 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         enabled={items.length > 1}
                         content={<ul className="list-disc pl-4 space-y-0.5">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>}
                     >
-                        <div className="flex flex-wrap gap-1">
-                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate max-w-[120px]">{items[0]}</span>
-                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771]">+{items.length - 1}</span>
+                        <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+                            <span className="px-2 py-0.5 rounded-[3px] bg-[#f3f4f6] text-[13px] font-normal text-gray-600 truncate min-w-0">{items[0]}</span>
+                            <span className="px-1.5 py-0.5 rounded-[3px] bg-[#EDF8FF] text-[13px] font-normal text-[#064771] shrink-0 whitespace-nowrap">+{items.length - 1}</span>
                         </div>
                     </CellTooltip>
                 );
             },
-            textAccessor: (row) => parseMultiField(row.investmentCondition).join(', '),
+            textAccessor: (row) => parseMultiField(row.investmentCondition)[0] || '',
             width: 160,
+            minWidth: 100,
         },
         {
             id: 'financialAdvisor',
@@ -659,49 +669,59 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} />
                     <div
                         ref={contextMenuRef}
-                        className="fixed bg-white rounded-xl border border-gray-100 py-1.5 w-64 z-[100] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                        style={{ top: Math.min(contextMenu.y, window.innerHeight - 250), left: Math.min(contextMenu.x, window.innerWidth - 270) }}
+                        className="fixed z-[100] w-36 p-2 bg-white rounded-[3px] border border-[#E5E7EB] overflow-hidden backdrop-blur-[2px] flex flex-col items-start gap-0 animate-in fade-in zoom-in-95 duration-150"
+                        style={{
+                            top: Math.min(contextMenu.y, window.innerHeight - 200),
+                            left: Math.min(contextMenu.x, window.innerWidth - 160),
+                            boxShadow: '0px 1px 4px rgba(0,0,0,0.06), 0px 2px 8px rgba(0,0,0,0.04)'
+                        }}
                     >
-                        <div className="px-4 py-2 border-b border-gray-50 mb-1">
-                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Prospect Actions</p>
+                        <div className="w-full flex flex-col gap-1">
+                            {/* Pin / Unpin */}
+                            <button
+                                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                                onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
+                            >
+                                <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? pinActiveIcon : pinInactiveIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">
+                                    {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin' : 'Pin to Top'}
+                                </span>
+                            </button>
+                            {/* View Profile */}
+                            <button
+                                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                                onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
+                            >
+                                <img src={viewProfileIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">View Profile</span>
+                            </button>
+                            {/* Edit */}
+                            {!isRestricted && (
+                                <button
+                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                                    onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
+                                >
+                                    <img src={editIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                    <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">Edit</span>
+                                </button>
+                            )}
+                            {/* Separator */}
+                            {!isRestricted && <div className="w-full h-0 border-t border-[#E5E7EB]" />}
+                            {/* Delete */}
+                            {!isRestricted && (
+                                <button
+                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-red-50 rounded transition-colors"
+                                    onClick={() => {
+                                        setSelectedIds(new Set([contextMenu.rowId]));
+                                        setIsDeleteModalOpen(true);
+                                        setContextMenu(null);
+                                    }}
+                                >
+                                    <img src={deleteIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">Delete</span>
+                                </button>
+                            )}
                         </div>
-                        <button
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors"
-                            onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
-                        >
-                            {data.find(r => r.id === contextMenu.rowId)?.isPinned ? <PinnedIcon className="w-5 h-5" /> : <UnpinnedIcon className="w-5 h-5" />}
-                            {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
-                        </button>
-                        <button
-                            className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors"
-                            onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
-                        >
-                            <ProfileViewIcon className="w-4 h-4 opacity-50" />
-                            View Full Profile
-                        </button>
-                        {!isRestricted && (
-                            <button
-                                className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-3 transition-colors"
-                                onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
-                            >
-                                <Zap className="w-4 h-4 text-gray-400" />
-                                Edit & Enrich
-                            </button>
-                        )}
-                        <div className="h-px bg-gray-50 my-1" />
-                        {!isRestricted && (
-                            <button
-                                className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
-                                onClick={() => {
-                                    setSelectedIds(new Set([contextMenu.rowId]));
-                                    setIsDeleteModalOpen(true);
-                                    setContextMenu(null);
-                                }}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete Prospect
-                            </button>
-                        )}
                     </div>
                 </>
             )}
