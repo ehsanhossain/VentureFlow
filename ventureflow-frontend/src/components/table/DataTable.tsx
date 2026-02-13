@@ -2,15 +2,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { GripVertical } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-// Custom table icons from Figma
-import SortDefaultIcon from '../../assets/icons/table/sort-default.svg';
-import SortAscIcon from '../../assets/icons/table/sort-asc.svg';
-import SortDescIcon from '../../assets/icons/table/sort-desc.svg';
-import CheckboxDefaultIcon from '../../assets/icons/table/checkbox-default.svg';
-import CheckboxSomeIcon from '../../assets/icons/table/checkbox-some.svg';
-import CheckboxAllIcon from '../../assets/icons/table/checkbox-all.svg';
-import RowUncheckedIcon from '../../assets/icons/table/row-unchecked.svg';
-import RowCheckedIcon from '../../assets/icons/table/row-checked.svg';
+// Custom table icons — inlined as React components for reliability
+import { SortDefaultIcon, SortAscIcon, SortDescIcon, CheckboxAllIcon, CheckboxSomeIcon, CheckboxDefaultIcon, RowCheckedIcon, RowUncheckedIcon } from './TableIcons';
 
 // ============ TYPE DEFINITIONS ============
 export interface DataTableColumn<T> {
@@ -100,9 +93,9 @@ const ResizeHandle: React.FC<{
 );
 
 const SortIcon: React.FC<{ direction: 'asc' | 'desc' | null }> = ({ direction }) => {
-    if (direction === 'asc') return <img src={SortAscIcon} alt="" className="w-4 h-4" draggable={false} />;
-    if (direction === 'desc') return <img src={SortDescIcon} alt="" className="w-4 h-4" draggable={false} />;
-    return <img src={SortDefaultIcon} alt="" className="w-4 h-4 opacity-50 group-hover/header:opacity-80 transition-opacity" draggable={false} />;
+    if (direction === 'asc') return <SortAscIcon className="w-4 h-4" />;
+    if (direction === 'desc') return <SortDescIcon className="w-4 h-4" />;
+    return <SortDefaultIcon className="w-4 h-4 opacity-50 group-hover/header:opacity-80 transition-opacity" />;
 };
 
 const DragHandle: React.FC<{ isDragging?: boolean }> = ({ isDragging }) => (
@@ -503,12 +496,7 @@ function DataTable<T>({
                                             title={isAllSelected ? 'Deselect all rows' : 'Select all rows'}
                                             aria-label={isAllSelected ? 'Deselect all rows' : 'Select all rows'}
                                         >
-                                            <img
-                                                src={isAllSelected ? CheckboxAllIcon : isSomeSelected ? CheckboxSomeIcon : CheckboxDefaultIcon}
-                                                alt=""
-                                                style={{ width: 28, height: 28 }}
-                                                draggable={false}
-                                            />
+                                            {isAllSelected ? <CheckboxAllIcon className="w-7 h-7" /> : isSomeSelected ? <CheckboxSomeIcon className="w-7 h-7" /> : <CheckboxDefaultIcon className="w-7 h-7" />}
                                         </button>
                                     </div>
                                 </th>
@@ -649,7 +637,7 @@ function DataTable<T>({
                                                         title={isSelected ? 'Deselect row' : 'Select row'}
                                                         aria-label={isSelected ? 'Deselect row' : 'Select row'}
                                                     >
-                                                        <img src={isSelected ? RowCheckedIcon : RowUncheckedIcon} alt="" className="w-5 h-5" draggable={false} />
+                                                        {isSelected ? <RowCheckedIcon className="w-5 h-5" /> : <RowUncheckedIcon className="w-5 h-5" />}
                                                     </button>
                                                 </div>
                                             </td>

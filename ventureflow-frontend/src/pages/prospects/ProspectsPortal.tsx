@@ -116,6 +116,7 @@ const ProspectsPortal: React.FC = () => {
     const initialTab = (searchParams.get('tab') as 'investors' | 'targets') || 'investors';
     const [activeTab, setActiveTab] = useState<'investors' | 'targets'>(initialTab);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [investors, setInvestors] = useState<InvestorRowData[]>([]);
     const [targets, setTargets] = useState<TargetRowData[]>([]);
@@ -269,19 +270,10 @@ const ProspectsPortal: React.FC = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            // Fetch currencies first if not already loaded fully (we need them for rate conversion)
-            let currentCurrencies = currencies;
-            if (currencies.length <= 10) {
-                const currencyRes = await api.get('/api/currencies', { params: { per_page: 1000 } });
-                const currDataRaw = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
-                currentCurrencies = currDataRaw.map((c: any) => ({
-                    id: c.id,
-                    code: c.currency_code,
-                    sign: c.currency_sign,
-                    exchange_rate: c.exchange_rate
-                }));
-                setCurrencies(currentCurrencies);
-            }
+            // Use debouncedSearch for the actual API call to avoid hammering on every keystroke
+            const searchTerm = debouncedSearch;
+            // Use currencies already loaded during initial fetch
+            const currentCurrencies = currencies;
 
             // Build clean filter params (only non-empty values)
             const filterParams: Record<string, any> = {};
@@ -298,36 +290,41 @@ const ProspectsPortal: React.FC = () => {
                 if (filters.expected_investment_amount.max) filterParams.expected_investment_amount.max = filters.expected_investment_amount.max;
             }
 
-            const [buyerRes, sellerRes] = await Promise.all([
-                api.get('/api/buyer', {
+            // Only fetch FULL data for the active tab; get just the count for the other tab (per_page=1)
+            const commonParams = { search: searchTerm, ...filterParams };
+
+            const activeApiEndpoint = activeTab === 'investors' ? '/api/buyer' : '/api/seller';
+            const inactiveApiEndpoint = activeTab === 'investors' ? '/api/seller' : '/api/buyer';
+
+            const [activeRes, inactiveCountRes] = await Promise.all([
+                api.get(activeApiEndpoint, {
                     params: {
-                        search: searchQuery,
-                        ...filterParams,
-                        page: activeTab === 'investors' ? pagination.currentPage : undefined,
+                        ...commonParams,
+                        page: pagination.currentPage,
                         per_page: itemsPerPageRef.current
                     }
                 }),
-                api.get('/api/seller', {
+                // Lightweight count-only request for the inactive tab
+                api.get(inactiveApiEndpoint, {
                     params: {
-                        search: searchQuery,
-                        ...filterParams,
-                        page: activeTab === 'targets' ? pagination.currentPage : undefined,
-                        per_page: itemsPerPageRef.current
+                        ...commonParams,
+                        per_page: 1
                     }
                 })
             ]);
 
-            const buyerData = Array.isArray(buyerRes.data?.data) ? buyerRes.data.data : [];
-            const sellerDataRaw = Array.isArray(sellerRes.data?.data) ? sellerRes.data.data : [];
+            const activeData = Array.isArray(activeRes.data?.data) ? activeRes.data.data : [];
+            const activeTotal = activeRes.data?.meta?.total ?? 0;
+            const inactiveTotal = inactiveCountRes.data?.meta?.total ?? 0;
 
-            // Update Counts (total items in DB independent of page if possible, otherwise use meta.total)
+            // Update Counts
             setCounts({
-                investors: buyerRes.data?.meta?.total ?? 0,
-                targets: sellerRes.data?.meta?.total ?? 0
+                investors: activeTab === 'investors' ? activeTotal : inactiveTotal,
+                targets: activeTab === 'targets' ? activeTotal : inactiveTotal
             });
 
             // Update Pagination from Active Tab Meta
-            const activeMeta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
+            const activeMeta = activeRes.data?.meta;
             if (activeMeta) {
                 setPagination(prev => {
                     if (prev.currentPage === activeMeta.current_page &&
@@ -347,11 +344,10 @@ const ProspectsPortal: React.FC = () => {
             }
 
             // Set allowed fields based on active tab
-            const meta = activeTab === 'investors' ? buyerRes.data?.meta : sellerRes.data?.meta;
-            setServerAllowedFields(meta?.allowed_fields || null);
+            setServerAllowedFields(activeMeta?.allowed_fields || null);
 
             if (activeTab === 'investors') {
-                const mappedInvestors: InvestorRowData[] = buyerData.map((b: any) => {
+                const mappedInvestors: InvestorRowData[] = activeData.map((b: any) => {
                     const overview = b.company_overview || {};
                     // hq_country can be: object (loaded relation), or number/string (ID)
                     const hqCountryRaw = overview.hq_country;
@@ -454,7 +450,7 @@ const ProspectsPortal: React.FC = () => {
                 });
                 setInvestors(mappedInvestors);
             } else {
-                const mappedTargets: TargetRowData[] = sellerDataRaw.map((s: any) => {
+                const mappedTargets: TargetRowData[] = activeData.map((s: any) => {
                     const ov = s.company_overview || {};
                     const fin = s.financial_details || {};
                     // hq_country can be: object (loaded relation), or number/string (ID)
@@ -789,24 +785,28 @@ const ProspectsPortal: React.FC = () => {
         fetchData();
     }, []);
 
+    // Debounce search input — only fire API call 400ms after user stops typing
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     // Reset pagination when tab or filters change
     useEffect(() => {
         setPagination(prev => ({ ...prev, currentPage: 1 }));
-    }, [activeTab, searchQuery, filters]);
+    }, [activeTab, debouncedSearch, filters]);
 
-    // Keyboard shortcuts: Ctrl+1 = Investors, Ctrl+2 = Targets
+    // Keyboard shortcut: Alt+T = Toggle tab
+    // Note: Ctrl+T is browser-protected (opens new tab) and cannot be overridden.
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-                if (e.key === '1') {
-                    e.preventDefault();
-                    setActiveTab('investors');
-                    setSearchParams({ tab: 'investors' });
-                } else if (e.key === '2') {
-                    e.preventDefault();
-                    setActiveTab('targets');
-                    setSearchParams({ tab: 'targets' });
-                }
+            if (e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey && (e.key === 't' || e.key === 'T')) {
+                e.preventDefault();
+                setActiveTab(prev => {
+                    const next = prev === 'investors' ? 'targets' : 'investors';
+                    setSearchParams({ tab: next });
+                    return next;
+                });
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -818,7 +818,7 @@ const ProspectsPortal: React.FC = () => {
         if (countries.length > 0) fetchData();
         // Note: pagination.itemsPerPage intentionally excluded to prevent resize-triggered refetch loops
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTab, searchQuery, countries, filters, pagination.currentPage]);
+    }, [activeTab, debouncedSearch, countries, filters, pagination.currentPage]);
 
     const handleTogglePin = async (id: number) => {
         try {
@@ -1272,30 +1272,38 @@ const ProspectsPortal: React.FC = () => {
                     <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
                         <h1 className="text-xl md:text-2xl font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
 
-                        <div className="flex bg-gray-100 rounded-[3px] p-1">
+                        <div className="relative flex bg-gray-100 rounded-[6px] p-1" style={{ minWidth: '260px' }}>
+                            {/* Sliding pill background */}
+                            <div
+                                className="absolute top-1 bottom-1 rounded-[5px] bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                                style={{
+                                    width: 'calc(50% - 4px)',
+                                    left: activeTab === 'investors' ? '4px' : 'calc(50%)',
+                                }}
+                            />
                             <button
                                 onClick={() => {
                                     setActiveTab('investors');
                                     setSearchParams({ tab: 'investors' });
                                 }}
-                                className={`px-4 py-1.5 rounded-[3px] text-sm font-medium transition-all duration-200 ${activeTab === 'investors'
-                                    ? 'bg-white text-[#064771] shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'investors'
+                                    ? 'text-[#064771]'
+                                    : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
-                                Investors <span className={`ml-1 opacity-60`}>({counts.investors})</span>
+                                Investors <span className="ml-1 opacity-60">({counts.investors})</span>
                             </button>
                             <button
                                 onClick={() => {
                                     setActiveTab('targets');
                                     setSearchParams({ tab: 'targets' });
                                 }}
-                                className={`px-4 py-1.5 rounded-[3px] text-sm font-medium transition-all duration-200 ${activeTab === 'targets'
-                                    ? 'bg-white text-[#064771] shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'targets'
+                                    ? 'text-[#064771]'
+                                    : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
-                                Targets <span className={`ml-1 opacity-60`}>({counts.targets})</span>
+                                Targets <span className="ml-1 opacity-60">({counts.targets})</span>
                             </button>
                         </div>
 

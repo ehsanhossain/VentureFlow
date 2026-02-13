@@ -12,10 +12,7 @@ import {
     Plus,
     Download
 } from 'lucide-react';
-import ProfileViewIcon from '../../../assets/icons/table/profile-view.svg';
-import WebsiteIcon from '../../../assets/icons/table/website.svg';
-import PinnedIcon from '../../../assets/icons/table/pinned.svg';
-import UnpinnedIcon from '../../../assets/icons/table/unpinned.svg';
+import { ProfileViewIcon, WebsiteIcon, PinnedIcon, UnpinnedIcon } from '../../../components/table/TableIcons';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import DeleteConfirmationModal from '../../../components/DeleteConfirmationModal';
@@ -233,7 +230,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                         className="p-1 rounded transition-all duration-200 hover:bg-gray-50"
                         aria-label={row.isPinned ? 'Unpin target' : 'Pin target'}
                     >
-                        <img src={row.isPinned ? PinnedIcon : UnpinnedIcon} alt="" className="w-5 h-5" draggable={false} />
+                        {row.isPinned ? <PinnedIcon className="w-5 h-5" /> : <UnpinnedIcon className="w-5 h-5" />}
                     </button>
                     <span className="text-[13px] font-normal text-[#064771] bg-[#EDF8FF] px-2 py-0.5 rounded-[3px]">
                         {row.projectCode}
@@ -304,7 +301,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 bg-[#f3f4f6] text-gray-600 hover:bg-gray-200 px-2 py-0.5 rounded-[3px] text-[13px] font-normal transition-colors"
                         >
-                            <img src={WebsiteIcon} alt="" className="w-3.5 h-3.5" draggable={false} /> Visit
+                            <WebsiteIcon className="w-3.5 h-3.5" /> Visit
                         </a>
                         <button
                             onClick={(e) => {
@@ -476,7 +473,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             accessor: (row) => (
                 row.teaserLink ? (
                     <a href={row.teaserLink} target="_blank" rel="noreferrer" className="text-[13px] font-normal text-gray-600 bg-[#f3f4f6] px-2 py-0.5 rounded-[3px] inline-flex items-center gap-1 hover:bg-gray-200 transition-colors">
-                        <img src={ProfileViewIcon} alt="" className="w-3.5 h-3.5" draggable={false} /> View
+                        <ProfileViewIcon className="w-3.5 h-3.5" /> View
                     </a>
                 ) : <span className="text-[13px] text-gray-400">N/A</span>
             ),
@@ -617,14 +614,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-amber-50 hover:text-amber-700 flex items-center gap-3 transition-colors"
                             onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
                         >
-                            <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? PinnedIcon : UnpinnedIcon} alt="" className="w-5 h-5" draggable={false} />
+                            {data.find(r => r.id === contextMenu.rowId)?.isPinned ? <PinnedIcon className="w-5 h-5" /> : <UnpinnedIcon className="w-5 h-5" />}
                             {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin from Top' : 'Pin to Top'}
                         </button>
                         <button
                             className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-3 transition-colors"
                             onClick={() => { navigate(`/prospects/target/${contextMenu.rowId}`); setContextMenu(null); }}
                         >
-                            <img src={ProfileViewIcon} alt="" className="w-4 h-4 opacity-50" draggable={false} />
+                            <ProfileViewIcon className="w-4 h-4 opacity-50" />
                             View Full Profile
                         </button>
                         {!isRestricted && (

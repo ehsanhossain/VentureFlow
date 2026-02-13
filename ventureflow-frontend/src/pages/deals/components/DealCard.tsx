@@ -14,8 +14,8 @@ interface DealCardProps {
     pipelineView?: 'buyer' | 'seller';
 }
 
-const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipelineView = 'buyer' }: DealCardProps) => {
-    const { attributes, listeners, setNodeRef, transform } = useDraggable({
+const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, pipelineView = 'buyer' }: DealCardProps) => {
+    const { attributes, listeners, setNodeRef, isDragging: isBeingDragged } = useDraggable({
         id: deal.id,
     });
 
@@ -32,10 +32,10 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const style = transform
-        ? {
-            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        }
+    // When using DragOverlay, the original card should not move — the overlay handles the visual.
+    // We just make the original invisible so there's no ghost/duplicate.
+    const style: React.CSSProperties | undefined = isBeingDragged
+        ? { opacity: 0.4, cursor: 'grabbing' }
         : undefined;
 
     const formatValue = (value: number | string | null, currency: string) => {
@@ -113,7 +113,7 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
             style={style}
             {...listeners}
             {...attributes}
-            className={`inline-flex flex-col w-full cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-90' : ''}`}
+            className={`inline-flex flex-col w-full cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isDraggingProp ? 'shadow-2xl scale-[1.02]' : ''}`}
         >
             {/* Main Card Body */}
             <div
