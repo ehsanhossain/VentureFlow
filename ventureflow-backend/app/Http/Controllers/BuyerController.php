@@ -13,6 +13,7 @@ use App\Models\BuyersTeaserCenters;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use DB;
 use Carbon\Carbon;
@@ -55,28 +56,24 @@ class BuyerController extends Controller
      */
     public function budgetRange()
     {
-        $financials = \App\Models\BuyersFinancialDetails::whereNotNull('investment_budget')
-            ->get()
-            ->map(function ($fd) {
-                $budget = $fd->investment_budget;
-                if (!is_array($budget)) return ['min' => null, 'max' => null];
-                return [
-                    'min' => isset($budget['min']) && is_numeric($budget['min']) ? (float) $budget['min'] : null,
-                    'max' => isset($budget['max']) && is_numeric($budget['max']) ? (float) $budget['max'] : null,
-                ];
-            })
-            ->filter(fn ($b) => $b['min'] !== null || $b['max'] !== null);
+        $range = Cache::remember('buyer_budget_range', 1800, function () {
+            // Use SQL aggregation instead of loading all records into PHP memory
+            $result = \DB::table('buyers_financial_details')
+                ->selectRaw("
+                    MIN(CAST(JSON_UNQUOTE(JSON_EXTRACT(investment_budget, '$.min')) AS DECIMAL(20,2))) as min_val,
+                    MAX(CAST(JSON_UNQUOTE(JSON_EXTRACT(investment_budget, '$.max')) AS DECIMAL(20,2))) as max_val
+                ")
+                ->whereNotNull('investment_budget')
+                ->whereRaw("JSON_VALID(investment_budget)")
+                ->first();
 
-        $allMins = $financials->pluck('min')->filter()->values();
-        $allMaxs = $financials->pluck('max')->filter()->values();
+            return [
+                'min' => $result->min_val ?? 0,
+                'max' => $result->max_val ?? 100000000,
+            ];
+        });
 
-        $globalMin = $allMins->count() > 0 ? $allMins->min() : 0;
-        $globalMax = $allMaxs->count() > 0 ? $allMaxs->max() : 100000000;
-
-        return response()->json([
-            'min' => $globalMin,
-            'max' => $globalMax,
-        ]);
+        return response()->json($range);
     }
 
     public function index(Request $request)
@@ -362,43 +359,45 @@ class BuyerController extends Controller
 
     private function getParsedAllowedFields($type)
     {
-        $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
-        
-        $parsed = [
-            'root' => ['id'], // Always include base ID
-            'relationships' => []
-        ];
+        return Cache::remember("parsed_allowed_fields_{$type}", 600, function () use ($type) {
+            $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
+            
+            $parsed = [
+                'root' => ['id'], // Always include base ID
+                'relationships' => []
+            ];
 
-        // If no settings exist, return minimal data
-        if (!$setting || !is_array($setting->setting_value)) {
-            \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
-            return $parsed;
-        }
-
-        // Get only explicitly enabled (true) fields
-        $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
-            return $val === true;
-        }));
-
-        foreach ($enabledFields as $field) {
-            if (str_contains($field, '.')) {
-                // Nested field (e.g., company_overview.hq_country)
-                $parts = explode('.', $field);
-                $relation = \Illuminate\Support\Str::camel($parts[0]); // Convert to camelCase
-                $attribute = $parts[1];
-
-                if (!isset($parsed['relationships'][$relation])) {
-                    $parsed['relationships'][$relation] = ['id'];
-                }
-                
-                $parsed['relationships'][$relation][] = $attribute;
-            } else {
-                // Root field (e.g., buyer_id, seller_id)
-                $parsed['root'][] = $field;
+            // If no settings exist, return minimal data
+            if (!$setting || !is_array($setting->setting_value)) {
+                \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
+                return $parsed;
             }
-        }
 
-        return $parsed;
+            // Get only explicitly enabled (true) fields
+            $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
+                return $val === true;
+            }));
+
+            foreach ($enabledFields as $field) {
+                if (str_contains($field, '.')) {
+                    // Nested field (e.g., company_overview.hq_country)
+                    $parts = explode('.', $field);
+                    $relation = \Illuminate\Support\Str::camel($parts[0]); // Convert to camelCase
+                    $attribute = $parts[1];
+
+                    if (!isset($parsed['relationships'][$relation])) {
+                        $parsed['relationships'][$relation] = ['id'];
+                    }
+                    
+                    $parsed['relationships'][$relation][] = $attribute;
+                } else {
+                    // Root field (e.g., buyer_id, seller_id)
+                    $parsed['root'][] = $field;
+                }
+            }
+
+            return $parsed;
+        });
     }
 
 

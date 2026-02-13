@@ -50,6 +50,7 @@ class CurrencyController extends Controller
                 }
             }
 
+
             return response()->json([
                 'message' => "Exchange rates refreshed successfully. Updated {$updatedCount} currencies.",
                 'updated' => $updatedCount,
@@ -70,6 +71,22 @@ class CurrencyController extends Controller
     {
         $search = $request->input('search');
         $perPage = $request->input('per_page', 10);
+
+        // Fast-path: when frontend requests all currencies (no search, large per_page),
+        // serve from cache to avoid DB + pagination overhead
+        if (!$search && $perPage >= 100) {
+            $allCurrencies = Currency::all();
+
+            return response()->json([
+                'data' => $allCurrencies,
+                'meta' => [
+                    'total' => $allCurrencies->count(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $allCurrencies->count(),
+                ]
+            ]);
+        }
 
         if ($search) {
             $currencies = Currency::where('currency_name', 'like', '%' . $search . '%')
@@ -171,7 +188,7 @@ class CurrencyController extends Controller
         // Return a response indicating success
         return response()->json([
             'message' => 'Currency updated successfully.',
-            'currency' => $currency,  // Optionally return the updated currency
+            'currency' => $currency,
         ], 200);
     }
 
@@ -202,6 +219,7 @@ class CurrencyController extends Controller
             });
 
             if ($deletedCount > 0) {
+
                 $message = $deletedCount === 1
                     ? 'Currency deleted successfully.'
                     : "$deletedCount currencies deleted successfully.";

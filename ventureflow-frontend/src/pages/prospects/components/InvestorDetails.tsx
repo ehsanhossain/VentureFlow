@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
+import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
 import { Globe, User, Mail, Phone, ExternalLink } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
@@ -75,23 +76,22 @@ const InvestorDetails: React.FC = () => {
 
   const fetchBuyer = async () => {
     try {
-      const [response, currenciesRes] = await Promise.all([
+      const [response, currList] = await Promise.all([
         api.get(`/api/buyer/${id}`),
-        api.get('/api/currencies?per_page=999')
+        getCachedCurrencies()
       ]);
       const data = response.data?.data || {};
       setBuyer(data);
       setAllowedFields(response.data?.meta?.allowed_fields || null);
 
       // Set currencies
-      const currList = Array.isArray(currenciesRes.data) ? currenciesRes.data : (currenciesRes.data?.data || []);
       setCurrencies(currList);
 
       // Set notes from formatted_activity_logs
       if (data.formatted_activity_logs) {
         setNotes(parseActivityLogs(data.formatted_activity_logs, getCurrentUserName()));
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       showAlert({ type: "error", message: "Failed to fetch investor details" });
     } finally {

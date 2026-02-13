@@ -5,6 +5,7 @@ import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Link as LinkIcon, Check, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../../../config/api';
+import { getCachedCountries, getCachedCurrencies, getCachedIndustries } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
 import { Dropdown, Country } from '../components/Dropdown';
 import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
@@ -147,13 +148,12 @@ export const InvestorRegistration: React.FC = () => {
     useEffect(() => {
         const fetchCountries = async () => {
             try {
-                const response = await api.get('/api/countries');
-                const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                const data = await getCachedCountries();
                 setCountries(data.map((c: any) => ({
                     id: c.id,
                     name: c.name,
                     alpha: c.alpha_2_code,
-                    flagSrc: c.svg_icon_url,
+                    flagSrc: c.svg_icon_url || c.flagSrc,
                     status: 'registered'
                 })));
             } catch (error) {
@@ -167,23 +167,21 @@ export const InvestorRegistration: React.FC = () => {
     useEffect(() => {
         const fetchInit = async () => {
             try {
-                const [indRes, curRes, staffRes, partRes] = await Promise.all([
-                    api.get('/api/industries'),
-                    api.get('/api/currencies'),
+                const [indData, curData, staffRes, partRes] = await Promise.all([
+                    getCachedIndustries(),
+                    getCachedCurrencies(),
                     api.get('/api/employees/fetch'),
                     api.get('/api/partners/fetch')
                 ]);
 
-                const iData = Array.isArray(indRes.data) ? indRes.data : (indRes.data?.data || []);
-                setIndustries(iData.map((industry: any) => ({
+                setIndustries(indData.map((industry: any) => ({
                     id: industry.id,
                     name: industry.name,
                     status: industry.status,
                     sub_industries: industry.sub_industries || [],
                 })));
 
-                const cData = Array.isArray(curRes.data) ? curRes.data : (curRes.data?.data || []);
-                setCurrencies(cData);
+                setCurrencies(curData);
 
                 const sData = Array.isArray(staffRes.data) ? staffRes.data : (staffRes.data?.data || []);
                 setStaffList(sData.filter((s: any) => s.id).map((s: any) => ({

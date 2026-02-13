@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../../config/api';
+import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
 import { Dropdown } from '../../prospects/components/Dropdown';
 
@@ -119,8 +120,8 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     const [systemCurrencies, setSystemCurrencies] = useState<{ id: number; currency_code: string }[]>([]);
     useEffect(() => {
-        api.get('/api/currencies').then(res => {
-            setSystemCurrencies(Array.isArray(res.data) ? res.data : (res.data?.data || []));
+        getCachedCurrencies().then(data => {
+            setSystemCurrencies(data);
         });
     }, []);
 

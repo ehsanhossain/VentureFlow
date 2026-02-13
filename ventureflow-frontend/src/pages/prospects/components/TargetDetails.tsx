@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
+import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
 import { Globe, User, Mail, Phone, ExternalLink, FileText } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
@@ -40,16 +41,15 @@ const TargetDetails: React.FC = () => {
 
     const fetchSeller = async () => {
         try {
-            const [response, currenciesRes] = await Promise.all([
+            const [response, currList] = await Promise.all([
                 api.get(`/api/seller/${id}`),
-                api.get('/api/currencies?per_page=999')
+                getCachedCurrencies()
             ]);
             const data = response.data?.data || {};
             setSeller(data);
             setAllowedFields(response.data?.meta?.allowed_fields || null);
 
             // Set currencies
-            const currList = Array.isArray(currenciesRes.data) ? currenciesRes.data : (currenciesRes.data?.data || []);
             setCurrencies(currList);
 
             // Load activity logs
@@ -61,7 +61,7 @@ const TargetDetails: React.FC = () => {
             } catch {
                 // Activity logs may not be available, continue
             }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             showAlert({ type: "error", message: "Failed to fetch target details" });
         } finally {

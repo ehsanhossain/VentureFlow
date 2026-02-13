@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../config/api';
+import { getCachedCountries, getCachedCurrencies } from '../../utils/referenceDataCache';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
 import DataTableSearch from '../../components/table/DataTableSearch';
@@ -109,8 +110,7 @@ const DraftsPage: React.FC = () => {
             // Fetch currencies
             let currentCurrencies = currencies;
             if (currencies.length <= 10) {
-                const currencyRes = await api.get('/api/currencies', { params: { per_page: 1000 } });
-                const currDataRaw = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
+                const currDataRaw = await getCachedCurrencies();
                 currentCurrencies = currDataRaw.map((c: any) => ({
                     id: c.id,
                     code: c.currency_code,
@@ -123,8 +123,7 @@ const DraftsPage: React.FC = () => {
             // Fetch countries
             let currentCountries = countries;
             if (countries.length === 0) {
-                const countryRes = await api.get('/api/countries');
-                const countryDataRaw = Array.isArray(countryRes.data) ? countryRes.data : (countryRes.data.data || []);
+                const countryDataRaw = await getCachedCountries();
                 currentCountries = countryDataRaw.map((c: any) => ({
                     id: c.id,
                     name: c.name,

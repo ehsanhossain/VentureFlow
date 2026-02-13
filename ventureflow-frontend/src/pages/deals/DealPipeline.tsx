@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { AuthContext } from '../../routes/AuthContext';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
 import api from '../../config/api';
+import { getCachedCountries } from '../../utils/referenceDataCache';
 import { Country, Dropdown } from '../currency/components/Dropdown';
 import { showAlert } from '../../components/Alert';
 import { BrandSpinner } from '../../components/BrandSpinner';
@@ -127,11 +128,12 @@ const DealPipeline = () => {
     useEffect(() => {
         const fetchCountries = async () => {
             try {
-                const response = await api.get('/api/countries');
-                const formatted = response.data.map((country: { id: number; name: string; svg_icon_url?: string }) => ({
+                const data = await getCachedCountries();
+                const formatted = data.map((country: { id: number; name: string; svg_icon_url?: string }) => ({
                     id: country.id,
                     name: country.name,
-                    flagSrc: country.svg_icon_url,
+                    flagSrc: country.svg_icon_url || '',
+                    status: 'registered' as const,
                 }));
                 setCountries(formatted);
             } catch {

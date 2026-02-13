@@ -9,9 +9,9 @@ class IndustryController extends Controller
 {
     public function index()
     {
-        return response()->json(
-            Industry::with('subIndustries')->get()
-        );
+        $industries = Industry::with('subIndustries')->get();
+
+        return response()->json($industries);
     }
 
 

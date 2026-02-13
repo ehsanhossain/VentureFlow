@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../routes/AuthContext';
 import api from '../../config/api';
+import { getCachedCountries, getCachedCurrencies, getCachedIndustries, getCachedPipelineStages } from '../../utils/referenceDataCache';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
 import {
@@ -698,28 +699,26 @@ const ProspectsPortal: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [countryRes, currencyRes, industryRes, stagesRes, draftBuyerRes, draftSellerRes] = await Promise.all([
-                    api.get('/api/countries'),
-                    api.get('/api/currencies'),
-                    api.get('/api/industries'),
-                    api.get('/api/pipeline-stages'),
+                const [countryData, currencyData, industryData, stagesData, draftBuyerRes, draftSellerRes] = await Promise.all([
+                    getCachedCountries(),
+                    getCachedCurrencies(),
+                    getCachedIndustries(),
+                    getCachedPipelineStages(),
                     api.get('/api/buyer', { params: { status: 'Draft', per_page: 1 } }),
                     api.get('/api/seller', { params: { status: 'Draft', per_page: 1 } }),
                 ]);
 
-                if (countryRes.data) {
-                    const dataArray = Array.isArray(countryRes.data) ? countryRes.data : (countryRes.data.data || []);
-                    setCountries(dataArray.map((c: any) => ({
+                if (countryData) {
+                    setCountries(countryData.map((c: any) => ({
                         id: c.id,
                         name: c.name,
-                        flagSrc: c.svg_icon_url,
+                        flagSrc: c.svg_icon_url || c.flagSrc,
                         status: c.status || 'registered'
                     })));
                 }
 
-                if (currencyRes.data) {
-                    const currDataRaw = Array.isArray(currencyRes.data) ? currencyRes.data : (currencyRes.data.data || []);
-                    const currData = currDataRaw.map((c: any) => ({
+                if (currencyData) {
+                    const currData = currencyData.map((c: any) => ({
                         id: c.id,
                         code: c.currency_code,
                         sign: c.currency_sign,
@@ -747,11 +746,9 @@ const ProspectsPortal: React.FC = () => {
                 }
 
                 // Industries
-                const indData = Array.isArray(industryRes.data) ? industryRes.data : (industryRes.data?.data || []);
-                setFilterIndustries(indData.map((i: any) => ({ id: i.id, name: i.name, sub_industries: i.sub_industries || [] })));
+                setFilterIndustries(industryData.map((i: any) => ({ id: i.id, name: i.name, sub_industries: i.sub_industries || [] })));
 
                 // Pipeline Stages
-                const stagesData = Array.isArray(stagesRes.data) ? stagesRes.data : (stagesRes.data?.data || []);
                 setPipelineStages(stagesData.map((s: any) => ({
                     id: s.id,
                     code: s.code || s.stage_code || '',

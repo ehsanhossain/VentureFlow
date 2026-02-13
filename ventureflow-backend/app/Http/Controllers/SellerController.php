@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use App\Models\Seller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -288,39 +289,41 @@ class SellerController extends Controller
     
     private function getParsedAllowedFields($type)
     {
-        $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
-        
-        $parsed = [
-            'root' => ['id'], 
-            'relationships' => []
-        ];
+        return Cache::remember("parsed_allowed_fields_{$type}", 600, function () use ($type) {
+            $setting = \App\Models\PartnerSetting::where('setting_key', $type . '_sharing_config')->first();
+            
+            $parsed = [
+                'root' => ['id'], 
+                'relationships' => []
+            ];
 
-        if (!$setting || !is_array($setting->setting_value)) {
-            \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
-            return $parsed;
-        }
-
-        $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
-            return $val === true;
-        }));
-
-        foreach ($enabledFields as $field) {
-            if (str_contains($field, '.')) {
-                $parts = explode('.', $field);
-                $relation = \Illuminate\Support\Str::camel($parts[0]);
-                $attribute = $parts[1];
-
-                if (!isset($parsed['relationships'][$relation])) {
-                    $parsed['relationships'][$relation] = ['id'];
-                }
-                
-                $parsed['relationships'][$relation][] = $attribute;
-            } else {
-                $parsed['root'][] = $field;
+            if (!$setting || !is_array($setting->setting_value)) {
+                \Illuminate\Support\Facades\Log::info("No partner sharing settings for type: {$type}");
+                return $parsed;
             }
-        }
 
-        return $parsed;
+            $enabledFields = array_keys(array_filter($setting->setting_value, function($val) {
+                return $val === true;
+            }));
+
+            foreach ($enabledFields as $field) {
+                if (str_contains($field, '.')) {
+                    $parts = explode('.', $field);
+                    $relation = \Illuminate\Support\Str::camel($parts[0]);
+                    $attribute = $parts[1];
+
+                    if (!isset($parsed['relationships'][$relation])) {
+                        $parsed['relationships'][$relation] = ['id'];
+                    }
+                    
+                    $parsed['relationships'][$relation][] = $attribute;
+                } else {
+                    $parsed['root'][] = $field;
+                }
+            }
+
+            return $parsed;
+        });
     }
 
 
