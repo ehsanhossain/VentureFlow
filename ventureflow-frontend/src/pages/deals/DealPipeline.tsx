@@ -20,6 +20,7 @@ import {
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import DealDetailsModal from './components/DealDetailsModal';
 import DealExpandedPreview from './components/DealExpandedPreview';
 import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
@@ -47,6 +48,10 @@ export interface Deal {
     pic_user_id: number | null;
     target_close_date: string | null;
     status: 'active' | 'on_hold' | 'lost' | 'won';
+    ticket_size?: number | string;
+    possibility?: string;
+    shareholding_ratio?: string;
+    share_ratio?: string;
     comment_count: number;
     attachment_count: number;
     updated_at: string;
@@ -106,10 +111,6 @@ const DealPipeline = () => {
     const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-
-    if (isPartner) {
-        return <Navigate to="/" replace />;
-    }
     const [countries, setCountries] = useState<Country[]>([]);
     const [selectedCountries, setSelectedCountries] = useState<Country[]>([]);
     const [pipelineView, setPipelineView] = useState<PipelineView>('buyer');
@@ -129,7 +130,7 @@ const DealPipeline = () => {
         const fetchCountries = async () => {
             try {
                 const response = await api.get('/api/countries');
-                const formatted = response.data.map((country: any) => ({
+                const formatted = response.data.map((country: { id: number; name: string; svg_icon_url?: string }) => ({
                     id: country.id,
                     name: country.name,
                     flagSrc: country.svg_icon_url,
@@ -156,7 +157,7 @@ const DealPipeline = () => {
             const enhancedGrouped = { ...response.data.grouped };
             // Add chat click handler to each deal
             Object.keys(enhancedGrouped).forEach(stage => {
-                enhancedGrouped[stage].deals = enhancedGrouped[stage].deals.map((d: any) => ({
+                enhancedGrouped[stage].deals = enhancedGrouped[stage].deals.map((d: Deal) => ({
                     ...d,
                     onChatClick: (deal: Deal) => setChatDeal(deal),
                     // Mock: randomly add some activity for demo
@@ -179,6 +180,10 @@ const DealPipeline = () => {
         };
         loadData();
     }, [searchQuery, selectedCountries, pipelineView, activeTab]);
+
+    if (isPartner) {
+        return <Navigate to="/" replace />;
+    }
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
@@ -678,18 +683,16 @@ const DealPipeline = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {(deal as any).ticket_size
-                                                        ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(Number((deal as any).ticket_size))}`
-                                                        : deal.estimated_ev_value
-                                                            ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(deal.estimated_ev_value)}`
-                                                            : '-'}
+                                                    {deal.estimated_ev_value
+                                                        ? `${getCurrencySymbol(deal.estimated_ev_currency)}${formatCompactNumber(deal.estimated_ev_value)}`
+                                                        : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <span className={`px-2 py-1 rounded-full text-xs ${(deal as any).possibility === 'High' ? 'bg-green-100 text-green-800' :
-                                                        (deal as any).possibility === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${deal.priority === 'high' ? 'bg-green-100 text-green-800' :
+                                                        deal.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                                                             'bg-gray-100 text-gray-900'
                                                         }`}>
-                                                        {(deal as any).possibility || deal.priority}
+                                                        {deal.priority}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -742,7 +745,7 @@ const DealPipeline = () => {
                         <div className="p-6 space-y-4">
                             <div className="flex flex-col items-center gap-2 py-4">
                                 <div className="text-4xl">😔</div>
-                                <p className="text-sm text-gray-500 text-center">We're sorry to hear that. Please provide a reason for marking this deal as lost.</p>
+                                <p className="text-sm text-gray-500 text-center">We&apos;re sorry to hear that. Please provide a reason for marking this deal as lost.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Reason / Remarks</label>

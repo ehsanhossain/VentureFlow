@@ -1,0 +1,364 @@
+(node:16320) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\components\DeleteConfirmationModal.tsx
+  44:8  warning  React Hook useEffect has a missing dependency: 'fetchImpact'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\components\NotesSection.tsx
+  398:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\context\GeneralSettingsContext.tsx
+  28:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\context\NotificationContext.tsx
+  105:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\Dashboard.tsx
+  379:68   error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  379:113  error  'payload' is missing in props validation        react/prop-types
+  379:121  error  'payload.value' is missing in props validation  react/prop-types
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\auth\ChangePassword.tsx
+  31:25  error  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  48:40  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\auth\Login.tsx
+  45:77  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\CurrencyTable.tsx
+   52:6   warning  React Hook useEffect has a missing dependency: 'fetchCurrencyData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  103:21  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  119:14  error    'error' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
+  133:19  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  133:31  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  134:19  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  134:31  error    Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\Register.tsx
+   12:32  error    Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+   80:6   warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  100:6   warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  161:6   warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  184:21  error    Unexpected any. Specify a different type                                                              @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\components\Dropdown.tsx
+  51:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\DealPipeline.tsx
+   23:8   error    'DealDetailsModal' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+  132:5   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+  178:5   error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+  185:8   warning  React Hook useEffect has a missing dependency: 'fetchDeals'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+  747:84  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                               react/no-unescaped-entities
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\components\CreateDealModal.tsx
+  66:8  warning  React Hook useEffect has a missing dependency: 'fetchStages'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\components\DealCard.tsx
+   49:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\components\DealDetailsModal.tsx
+  83:8  warning  React Hook useEffect has a missing dependency: 'fetchDealDetails'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\notifications\NotificationsPage.tsx
+   83:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  117:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:18  error  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  235:63  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\partner\components\InvestorList.tsx
+  37:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\partner\components\SellerList.tsx
+  36:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\DraftsPage.tsx
+   26:31  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+   30:98  error    Empty block statement                                                                                         no-empty
+   61:37  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  113:57  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  127:59  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  184:74  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  197:65  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  207:51  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  213:43  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  222:37  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  229:48  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  257:74  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  275:25  error    Empty block statement                                                                                         no-empty
+  307:43  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  316:37  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  323:48  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  350:23  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  360:8   warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\ProspectsPortal.tsx
+    99:31  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   103:98  error    Empty block statement                                                                                                               no-empty
+   138:68  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   204:37  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   276:57  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   286:48  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   353:78  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   372:69  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   378:93  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   384:55  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   394:79  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   398:49  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   410:47  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   415:34  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   453:78  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   481:30  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   481:33  error    Empty block statement                                                                                                               no-empty
+   491:47  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   496:34  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   554:57  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   602:25  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   635:33  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   710:52  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   720:58  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   729:60  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   749:53  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   753:54  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+   778:22  error    'e' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   783:8   warning  React Hook useEffect has a missing dependency: 'globalSettings.default_currency'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   832:18  error    'error' is defined but never used                                                                                                   @typescript-eslint/no-unused-vars
+  1070:43  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+  1125:47  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+  1179:62  error    Unexpected any. Specify a different type                                                                                            @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\ActivityLogChat.tsx
+  15:16  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  36:66  error    Unexpected any. Specify a different type                                                                      @typescript-eslint/no-explicit-any
+  50:8   warning  React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  70:18  error    'err' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\Dropdown.tsx
+   50:25  error  'React' is not defined                    no-undef
+  145:63  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  189:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  203:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\IndustryDropdown.tsx
+  193:79  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  193:88  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\InvestorDetails.tsx
+   12:44   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   68:38   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   69:54   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   71:48   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   93:14   error    'err' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+  104:6    warning  React Hook useEffect has a missing dependency: 'fetchBuyer'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  109:30   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  127:28   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  127:47   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  137:90   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  138:86   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  147:25   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  150:51   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  178:41   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  194:33   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  198:96   error    Empty block statement                                                                                          no-empty
+  291:72   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                react/no-unescaped-entities
+  393:103  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  418:47   error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  478:206  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\InvestorTable.tsx
+   30:13  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   49:31  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   53:98  error    Empty block statement                                                                                                                                                                                                                                                                                      no-empty
+  129:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  136:43  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  143:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  164:22  error    'e' is defined but never used                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  187:25  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  526:8   warning  React Hook useMemo has missing dependencies: 'getBudgetDisplay', 'getFullBudgetDisplay', 'getStagePosition', and 'onTogglePin'. Either include them or remove the dependency array. If 'onTogglePin' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  549:29  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  549:37  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\TargetDetails.tsx
+   11:44   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   35:42   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   36:56   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   63:18   error    'err' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   74:8    warning  React Hook useEffect has a missing dependency: 'fetchSeller'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   77:34   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   95:30   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+   95:49   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  105:68   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  108:83   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  125:35   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  129:102  error    Empty block statement                                                                                           no-empty
+  149:47   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  152:49   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  264:82   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                 react/no-unescaped-entities
+  369:87   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  388:65   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  495:91   error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  547:117  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\TargetTable.tsx
+   32:24  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   41:13  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   51:31  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   55:98  error    Empty block statement                                                                                                                                                                                                                                                                                      no-empty
+  131:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  138:43  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  145:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  157:22  error    'e' is defined but never used                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+  177:25  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  484:8   warning  React Hook useMemo has missing dependencies: 'getBudgetDisplay', 'getFullBudgetDisplay', 'getStagePosition', and 'onTogglePin'. Either include them or remove the dependency array. If 'onTogglePin' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+  507:29  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  507:37  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\forms\InvestorRegistration.tsx
+   50:19  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+   51:23  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  115:48  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  116:52  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  117:50  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  151:43  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  177:52  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  188:47  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  188:69  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  196:54  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  207:45  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  263:8   warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  281:36  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  292:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  300:48  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  303:98  error    Empty block statement                                                                                                   no-empty
+  307:50  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  310:98  error    Empty block statement                                                                                                   no-empty
+  322:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  322:33  error    Empty block statement                                                                                                   no-empty
+  359:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  359:33  error    Empty block statement                                                                                                   no-empty
+  368:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  368:33  error    Empty block statement                                                                                                   no-empty
+  373:61  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  381:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  381:33  error    Empty block statement                                                                                                   no-empty
+  395:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  395:33  error    Empty block statement                                                                                                   no-empty
+  400:75  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  407:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  407:33  error    Empty block statement                                                                                                   no-empty
+  412:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  412:33  error    Empty block statement                                                                                                   no-empty
+  418:73  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  420:68  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  423:30  error    'e' is defined but never used                                                                                           @typescript-eslint/no-unused-vars
+  423:33  error    Empty block statement                                                                                                   no-empty
+  425:22  error    'err' is defined but never used                                                                                         @typescript-eslint/no-unused-vars
+  431:8   warning  React Hook useEffect has a missing dependency: 'industries'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+  492:25  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\forms\TargetRegistration.tsx
+   32:19  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+   33:23  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  126:48  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  127:52  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  128:54  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  189:44  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  201:47  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  201:69  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  209:54  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  220:49  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  276:8   warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+  295:42  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  298:94  error    Empty block statement                                                                                                            no-empty
+  306:32  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  317:32  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  336:57  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  344:26  error    'e' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
+  344:29  error    Empty block statement                                                                                                            no-empty
+  372:56  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  379:26  error    'e' is defined but never used                                                                                                    @typescript-eslint/no-unused-vars
+  379:29  error    Empty block statement                                                                                                            no-empty
+  394:41  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  413:75  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  415:64  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+  428:8   warning  React Hook useEffect has missing dependencies: 'countries' and 'industries'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  496:25  error    Unexpected any. Specify a different type                                                                                         @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\AuditLog.tsx
+  67:8  warning  React Hook useEffect has missing dependencies: 'fetchLogs', 'isAdmin', and 'navigate'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\CreatePartner.tsx
+   63:8    warning  React Hook useEffect has a missing dependency: 'fetchPartner'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+   78:8    warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   84:44   error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  143:18   error    'error' is defined but never used                                                                                       @typescript-eslint/no-unused-vars
+  188:28   error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  219:25   error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+  334:115  error    Unexpected any. Specify a different type                                                                                @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\CreateStaff.tsx
+    7:10  error    'BrandSpinner' is defined but never used                                                                                                @typescript-eslint/no-unused-vars
+   70:11  error    'watchedRole' is assigned a value but never used                                                                                        @typescript-eslint/no-unused-vars
+   86:43  error    Unexpected any. Specify a different type                                                                                                @typescript-eslint/no-explicit-any
+  105:8   warning  React Hook useEffect has missing dependencies: 'generateId' and 'generatePassword'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  112:8   warning  React Hook useEffect has a missing dependency: 'fetchStaff'. Either include it or remove the dependency array                           react-hooks/exhaustive-deps
+  141:49  error    Unexpected any. Specify a different type                                                                                                @typescript-eslint/no-explicit-any
+  227:25  error    Unexpected any. Specify a different type                                                                                                @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\FeeStructureSettings.tsx
+   47:18  error    'error' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   56:8   warning  React Hook useEffect has a missing dependency: 'fetchTiers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   86:75  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+  140:25  error    Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\GeneralSettings.tsx
+  134:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerDetails.tsx
+   26:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   31:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  144:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerManagement.tsx
+   59:8   warning  React Hook useEffect has a missing dependency: 'fetchPartners'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   85:18  error    'error' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  101:27  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  102:27  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  122:38  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+  123:38  error    Unexpected any. Specify a different type                                                                          @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerProfile.tsx
+  44:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerSharingSettings.tsx
+  18:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  52:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  96:11  error    Unexpected empty object pattern                                                                                                 no-empty-pattern
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PipelineSettings.tsx
+   34:18  error    'error' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+   43:8   warning  React Hook useEffect has a missing dependency: 'fetchStages'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   65:82  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  108:25  error    Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+  152:33  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                 react/no-unescaped-entities
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\StaffDetails.tsx
+  3:44  error  'User' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\StaffManagement.tsx
+  105:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 279 problems (247 errors, 32 warnings)
+

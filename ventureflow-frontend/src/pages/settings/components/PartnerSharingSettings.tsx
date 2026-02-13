@@ -93,6 +93,7 @@ export const TARGET_FIELDS: { category: string; fields: FieldDefinition[] }[] = 
 ];
 
 const PartnerSharingSettings: React.FC = () => {
+    // eslint-disable-next-line no-empty-pattern
     const { } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);

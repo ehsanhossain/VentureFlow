@@ -1,0 +1,5 @@
+# Suppress false positives from axe-linter VS Code extension
+# The linter cannot resolve JSX expressions in ARIA attributes
+rules:
+  aria-valid-attr-value: off
+  aria-allowed-attr: off

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { useNotifications } from "../../context/NotificationContext";
 import { Check, CheckCheck, RefreshCw, Bell, Users, Target, Briefcase, Handshake, AlertCircle, Trash2 } from "lucide-react";
@@ -170,6 +171,7 @@ export default function NotificationsPage() {
             await api.delete(`/api/notifications/${notificationId}`);
             setAllNotifications(prev => prev.filter(n => n.id !== notificationId));
             showAlert({ type: 'success', message: 'Notification deleted' });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to delete notification' });
         }

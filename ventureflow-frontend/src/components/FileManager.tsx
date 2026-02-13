@@ -573,6 +573,8 @@ export const FileManager = ({
                             className="ml-4 text-[13px] font-medium text-gray-900 flex-grow outline-none border-b border-blue-500 bg-transparent"
                             onClick={(e) => e.stopPropagation()} // Stop propagation on input click
                             autoFocus
+                            aria-label="Rename folder"
+                            title="Rename folder"
                           />
                         ) : (
                           <div className="ml-4 text-[13px] font-medium text-gray-900 truncate flex-grow">

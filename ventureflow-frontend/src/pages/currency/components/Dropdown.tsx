@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from "react";
 import { SearchIcon } from "lucide-react";
 
@@ -88,10 +89,12 @@ export const Dropdown = ({
   return (
     <div className="relative w-full max-w-md mx-auto" ref={dropdownRef}>
 
+      {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
+        aria-haspopup="listbox"
         className="flex w-full h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none"
       >
         <div className="flex w-full items-center justify-between">

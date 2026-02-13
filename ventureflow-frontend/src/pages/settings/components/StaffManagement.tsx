@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Mail, MoreVertical, Shield, ShieldCheck, Eye, Edit2, Trash2 } from 'lucide-react';

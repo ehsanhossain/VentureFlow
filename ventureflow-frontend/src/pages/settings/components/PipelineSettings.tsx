@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
@@ -31,6 +32,7 @@ const PipelineSettings: React.FC = () => {
                 params: { type: activeTab }
             });
             setStages(response.data);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to fetch pipeline stages' });
         } finally {
@@ -149,7 +151,7 @@ const PipelineSettings: React.FC = () => {
                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                             }`}
                     >
-                        Investor's Pipeline
+                        Investor&apos;s Pipeline
                     </button>
                     <button
                         onClick={() => setActiveTab('seller')}

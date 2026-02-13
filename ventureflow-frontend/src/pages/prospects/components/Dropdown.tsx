@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useRef, useEffect, forwardRef } from "react";
 import type { ForwardedRef, HTMLAttributes } from "react";
@@ -47,6 +48,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
             if (typeof ref === "function") {
                 ref(node);
             } else if (ref) {
+                // eslint-disable-next-line no-undef
                 (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
             }
         };

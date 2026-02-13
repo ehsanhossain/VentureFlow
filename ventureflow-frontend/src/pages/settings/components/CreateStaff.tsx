@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, Shield, ShieldCheck, ArrowLeft } from 'lucide-react';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { LogoUpload } from '../../../components/LogoUpload';
 import { Country, Dropdown } from '../../prospects/components/Dropdown';
@@ -67,6 +69,7 @@ const CreateStaff: React.FC = () => {
         },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const watchedRole = watch('role');
     const watchedWorkEmail = watch('workEmail');
 

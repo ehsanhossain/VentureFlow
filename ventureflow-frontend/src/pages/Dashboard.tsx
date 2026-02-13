@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/prop-types */
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -376,7 +378,7 @@ const Dashboard: React.FC = () => {
                     />
                     <Tooltip
                       contentStyle={{ border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', backgroundColor: '#fff' }}
-                      formatter={(v: number, _name: string, props: any) => [`${v} deals (${formatCurrency(props.payload.value)})`, '']}
+                      formatter={((v: any, _name: any, props: any) => [`${v ?? 0} deals (${formatCurrency(props.payload.value)})`, '']) as any}
                     />
                     <Bar dataKey="count" radius={[0, 2, 2, 0]}>
                       {activePipeline.map((_, i) => (

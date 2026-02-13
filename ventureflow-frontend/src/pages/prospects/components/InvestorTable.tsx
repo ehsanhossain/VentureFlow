@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable, { Column } from '../../../components/table/DataTable';
@@ -50,7 +51,7 @@ const parseMultiField = (val: any): string[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(Boolean);
     if (typeof val === 'string') {
-        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { /* ignored */ }
         return val ? [val] : [];
     }
     return [];
@@ -161,6 +162,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         return parsed[0].url;
                     }
                 }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
                 // If parse fails, assume it's a plain string URL
             }

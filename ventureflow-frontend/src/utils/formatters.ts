@@ -1,3 +1,10 @@
+interface BudgetInput {
+    min?: number | string;
+    max?: number | string;
+    minimum?: number | string;
+    maximum?: number | string;
+}
+
 /**
  * Formats a number or string into a currency string with commas
  */
@@ -69,7 +76,7 @@ export const formatCompactNumber = (number: number): string => {
  * @param currencySymbol The currency symbol to display
  * @param exchangeRate Optional exchange rate for currency conversion (rate relative to base currency like USD)
  */
-export const formatCompactBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
+export const formatCompactBudget = (budget: BudgetInput | string | null | undefined, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
     if (typeof budget === 'string') {
         const rangeMatch = budget.match(/^([\d.,]+)\s*-\s*([\d.,]+)$/);
@@ -107,7 +114,7 @@ export const formatCompactBudget = (budget: any, currencySymbol: string = '$', e
         } else if (max !== undefined) {
             return `Up to ${symbol}${formatCompactNumber(Number(max))}`;
         }
-    } catch (e) {
+    } catch {
         return 'Flexible';
     }
 
@@ -120,7 +127,7 @@ export const formatCompactBudget = (budget: any, currencySymbol: string = '$', e
  * @param currencySymbol The currency symbol to display
  * @param exchangeRate Optional exchange rate for currency conversion
  */
-export const formatFullBudget = (budget: any, currencySymbol: string = '$', exchangeRate?: number): string => {
+export const formatFullBudget = (budget: BudgetInput | string | null | undefined, currencySymbol: string = '$', exchangeRate?: number): string => {
     if (!budget) return 'N/A';
     if (typeof budget === 'string') {
         const rangeMatch = budget.match(/^([\d.,]+)\s*-\s*([\d.,]+)$/);
@@ -145,7 +152,7 @@ export const formatFullBudget = (budget: any, currencySymbol: string = '$', exch
             if (max !== undefined) max = Number(max) * exchangeRate;
         }
 
-        const fmt = (n: any) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+        const fmt = (n: number | string) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
         if (min !== undefined && max !== undefined) {
             if (Number(min) === 0 && Number(max) === 0) return 'Flexible';
@@ -155,7 +162,7 @@ export const formatFullBudget = (budget: any, currencySymbol: string = '$', exch
         } else if (max !== undefined) {
             return `Up to ${symbol}${fmt(max)}`;
         }
-    } catch (e) {
+    } catch {
         return 'Flexible';
     }
     return 'Flexible';

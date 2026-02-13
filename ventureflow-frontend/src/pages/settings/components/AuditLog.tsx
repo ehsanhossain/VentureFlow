@@ -306,26 +306,30 @@ const AuditLog: React.FC = () => {
 
                             {/* Date Range */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date</label>
+                                <label htmlFor="audit-start-date" className="block text-xs font-medium text-gray-500 mb-1.5">Start Date</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
+                                        id="audit-start-date"
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
+                                        title="Start date filter"
                                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1.5">End Date</label>
+                                <label htmlFor="audit-end-date" className="block text-xs font-medium text-gray-500 mb-1.5">End Date</label>
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
+                                        id="audit-end-date"
                                         type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
+                                        title="End date filter"
                                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
                                     />
                                 </div>
@@ -333,12 +337,14 @@ const AuditLog: React.FC = () => {
 
                             {/* User Type */}
                             <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-1.5">User Type</label>
+                                <label htmlFor="audit-user-type" className="block text-xs font-medium text-gray-500 mb-1.5">User Type</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <select
+                                        id="audit-user-type"
                                         value={userType}
                                         onChange={(e) => setUserType(e.target.value)}
+                                        title="Filter by user type"
                                         className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] bg-white appearance-none"
                                     >
                                         <option value="">All Users</option>

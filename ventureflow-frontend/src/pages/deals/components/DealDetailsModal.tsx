@@ -9,8 +9,69 @@ interface DealDetailsModalProps {
     onUpdate?: () => void;
 }
 
+interface UserObj {
+    name?: string;
+    employee?: {
+        first_name?: string;
+        last_name?: string;
+    };
+}
+
+interface ActivityLog {
+    id: number;
+    type: string;
+    content: string;
+    created_at: string;
+    user?: UserObj;
+}
+
+interface DocumentItem {
+    id: number;
+    file_name: string;
+    document_type?: string;
+}
+
+interface StageHistoryEntry {
+    from_stage?: string;
+    to_stage: string;
+    changed_by?: UserObj;
+    created_at?: string;
+    changed_at?: string;
+}
+
+interface DealDetail {
+    name: string;
+    status: string;
+    stage_code: string;
+    updated_at: string;
+    progress_percent: number;
+    estimated_ev_value?: number;
+    estimated_ev_currency?: string;
+    possibility?: string;
+    priority?: string;
+    pic?: UserObj;
+    region?: string;
+    target_close_date?: string;
+    industry?: string;
+    buyer_id?: number;
+    buyer?: {
+        company_overview?: {
+            reg_name?: string;
+            hq_country?: { name?: string };
+        };
+    };
+    seller?: {
+        company_overview?: {
+            reg_name?: string;
+        };
+    };
+    documents?: DocumentItem[];
+    activity_logs?: ActivityLog[];
+    stage_history?: StageHistoryEntry[];
+}
+
 const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, onUpdate }) => {
-    const [deal, setDeal] = useState<any>(null);
+    const [deal, setDeal] = useState<DealDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'details' | 'history' | 'comments'>('details');
@@ -56,7 +117,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
         }
     };
 
-    const getDisplayName = (userObj: any) => {
+    const getDisplayName = (userObj: UserObj | undefined) => {
         if (!userObj) return 'System';
         if (userObj.employee) {
             return `${userObj.employee.first_name || ''} ${userObj.employee.last_name || ''}`.trim() || userObj.name;
@@ -133,6 +194,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                         <button
                             onClick={onClose}
                             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all group lg:mt-1"
+                            title="Close modal"
+                            aria-label="Close modal"
                         >
                             <X className="w-6 h-6 group-hover:scale-110 transition-transform" />
                         </button>
@@ -290,7 +353,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                         </h4>
                                         {deal?.documents && deal.documents.length > 0 ? (
                                             <div className="space-y-3">
-                                                {deal.documents.map((doc: any) => (
+                                                {deal.documents.map((doc: DocumentItem) => (
                                                     <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-transparent hover:border-gray-100 hover:bg-gray-50 transition-all cursor-pointer group">
                                                         <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
                                                             <FileText className="w-4 h-4 text-[#064771]" />
@@ -314,10 +377,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                             {activeTab === 'comments' && (
                                 <div className="flex flex-col h-full">
                                     <div className="flex-1 space-y-6 mb-6">
-                                        {deal?.activity_logs?.filter((l: any) => l.type === 'comment').length > 0 ? (
+                                        {deal?.activity_logs?.filter((l: ActivityLog) => l.type === 'comment').length ? (
                                             deal.activity_logs
-                                                .filter((l: any) => l.type === 'comment')
-                                                .map((log: any) => (
+                                                .filter((l: ActivityLog) => l.type === 'comment')
+                                                .map((log: ActivityLog) => (
                                                     <div key={log.id} className="flex gap-4 group">
                                                         <div className="w-8 h-8 rounded-full bg-[#064771]/10 flex items-center justify-center flex-shrink-0 text-[#064771] font-semibold text-[10px] shadow-sm ring-2 ring-white">
                                                             {getDisplayName(log.user).substring(0, 2).toUpperCase()}
@@ -355,6 +418,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                 type="submit"
                                                 disabled={!newComment.trim() || isSubmitting}
                                                 className="absolute bottom-3 right-3 p-2 bg-[#064771] text-white rounded-xl hover:bg-[#053a5c] disabled:opacity-30 disabled:grayscale transition-all shadow-lg hover:shadow-[#064771]/20 active:scale-95"
+                                                title="Send comment"
+                                                aria-label="Send comment"
                                             >
                                                 <X className="w-4 h-4 rotate-45" />
                                             </button>
@@ -367,7 +432,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                 <div className="space-y-6">
                                     {deal?.stage_history && deal.stage_history.length > 0 ? (
                                         <div className="relative pl-6 space-y-8 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-blue-500 before:to-transparent">
-                                            {deal.stage_history.map((history: any, idx: number) => (
+                                            {deal.stage_history.map((history: StageHistoryEntry, idx: number) => (
                                                 <div key={idx} className="relative">
                                                     <div className="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500 shadow-sm" />
                                                     <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">

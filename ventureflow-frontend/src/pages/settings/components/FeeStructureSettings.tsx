@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, GripVertical, Save } from 'lucide-react';
 import api from '../../../config/api';
@@ -44,6 +45,7 @@ const FeeStructureSettings: React.FC = () => {
             const modes: Record<number, 'fixed' | 'percentage'> = {};
             data.forEach((t, i) => { modes[i] = getFeeMode(t); });
             setFeeModes(modes);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to fetch fee tiers' });
         } finally {

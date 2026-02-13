@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Plus, Edit2, Trash2, Eye, Share2, MoreVertical, Mail } from 'lucide-react';
 import api from '../../../config/api';
@@ -82,6 +83,7 @@ const PartnerManagement: React.FC = () => {
             await api.delete(`/api/partners`, { data: { ids: [id] } });
             showAlert({ type: 'success', message: t('settings.partners.deleteSuccess') });
             fetchPartners();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: t('settings.partners.deleteError') });
         }

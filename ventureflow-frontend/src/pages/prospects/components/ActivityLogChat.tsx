@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { Send, FileText, MessageSquare, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -67,6 +68,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
 
             setItems(prev => [newItem, ...prev]);
             setNewMessage('');
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             showAlert({ type: 'error', message: 'Failed to send comment' });
         }

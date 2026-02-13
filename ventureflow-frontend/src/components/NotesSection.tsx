@@ -336,6 +336,8 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                             <button
                                 onClick={() => setDeleteModal({ isOpen: false, noteId: null, noteAuthor: '' })}
                                 className="p-1 hover:bg-gray-100 rounded transition-colors"
+                                title="Close dialog"
+                                aria-label="Close dialog"
                             >
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
@@ -381,8 +383,22 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
  * Parse formatted activity logs (from buyer/seller detail APIs)
  * into the Note[] shape used by the NotesSection component.
  */
+interface ActivityLogRecord {
+    id: number;
+    author?: string;
+    user?: string;
+    avatar?: string | null;
+    content: string;
+    timestamp?: string;
+    created_at?: string;
+    type?: string;
+    isSystem?: boolean;
+    isDeleted?: boolean;
+    deletedBy?: string;
+}
+
 export const parseActivityLogs = (
-    logs: any[],
+    logs: ActivityLogRecord[],
     currentUserName: string
 ): Note[] => {
     if (!logs || !Array.isArray(logs)) return [];
@@ -390,7 +406,7 @@ export const parseActivityLogs = (
     // Reverse so oldest is first, newest last (chat order)
     const ordered = [...logs].reverse();
 
-    return ordered.map((log: any) => {
+    return ordered.map((log: ActivityLogRecord) => {
         const isSystem = log.isSystem ?? log.type === 'system';
         return {
             id: log.id,
@@ -398,7 +414,7 @@ export const parseActivityLogs = (
             author: isSystem ? 'Ventureflow' : (log.author || log.user || 'System'),
             avatar: log.avatar || null,
             content: log.content,
-            timestamp: formatTimestamp(log.timestamp || log.created_at),
+            timestamp: formatTimestamp(log.timestamp || log.created_at || ''),
             isSystem,
             // System messages are never "self" — always appear on the left
             isSelf: !isSystem && (log.author || log.user) === currentUserName,

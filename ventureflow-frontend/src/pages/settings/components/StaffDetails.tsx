@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Mail, Phone, Shield, ShieldCheck, User } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';

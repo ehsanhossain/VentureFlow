@@ -28,7 +28,7 @@ CardContent.displayName = "CardContent";
 
 interface DealroomIDProps {
   name: string;
-  control: Control<any>;
+  control: Control<Record<string, string>>;
   label: string;
   description: string;
   iconSrc?: string | React.ReactNode;

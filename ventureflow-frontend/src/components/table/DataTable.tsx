@@ -1,4 +1,3 @@
-/* eslint-disable react/prop-types */
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { GripVertical } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -149,7 +148,7 @@ const EmptyState: React.FC<{
                     />
                     <p className="text-lg font-medium text-gray-700 ">{message}</p>
                     <p className="text-sm text-gray-400  text-center max-w-[320px]">
-                        We couldn't find any results matching your search or filters.
+                        We couldn&apos;t find any results matching your search or filters.
                         Would you like to register a new prospect instead?
                     </p>
                     {emptyAction && (
@@ -334,7 +333,7 @@ function DataTable<T>({
                 const id = getRowId ? getRowId(row) : idx;
                 return typeof id === 'string' ? String(id) : Number(id);
             });
-            onSelectionChange(new Set(allIds as any));
+            onSelectionChange(new Set<string | number>(allIds));
         }
     }, [data, isAllSelected, onSelectionChange, getRowId]);
 
@@ -501,6 +500,8 @@ function DataTable<T>({
                                             onClick={toggleSelectAll}
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                                             style={{ width: 28, height: 28 }}
+                                            title={isAllSelected ? 'Deselect all rows' : 'Select all rows'}
+                                            aria-label={isAllSelected ? 'Deselect all rows' : 'Select all rows'}
                                         >
                                             <img
                                                 src={isAllSelected ? CheckboxAllIcon : isSomeSelected ? CheckboxSomeIcon : CheckboxDefaultIcon}
@@ -638,13 +639,15 @@ function DataTable<T>({
                                                             const newSet = new Set(selectedIds);
                                                             const id = typeof rowId === 'string' ? String(rowId) : Number(rowId);
                                                             if (isSelected) {
-                                                                (newSet as any).delete(id);
+                                                                (newSet as Set<string | number>).delete(id);
                                                             } else {
-                                                                (newSet as any).add(id);
+                                                                (newSet as Set<string | number>).add(id);
                                                             }
                                                             onSelectionChange(newSet);
                                                         }}
                                                         className="flex items-center justify-center w-5 h-5 cursor-pointer hover:opacity-80 transition-opacity"
+                                                        title={isSelected ? 'Deselect row' : 'Select row'}
+                                                        aria-label={isSelected ? 'Deselect row' : 'Select row'}
                                                     >
                                                         <img src={isSelected ? RowCheckedIcon : RowUncheckedIcon} alt="" className="w-5 h-5" draggable={false} />
                                                     </button>
@@ -718,6 +721,8 @@ function DataTable<T>({
                             onClick={() => pagination.onPageChange(Math.max(1, pagination.currentPage - 1))}
                             disabled={pagination.currentPage === 1}
                             className="p-1.5 rounded-[3px] text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            title="Previous page"
+                            aria-label="Previous page"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -747,6 +752,8 @@ function DataTable<T>({
                                                 ? "bg-[#064771] text-white shadow-sm shadow-blue-900/10"
                                                 : "text-gray-500 hover:bg-gray-100"
                                         )}
+                                        title={`Go to page ${pageNum}`}
+                                        aria-label={`Page ${pageNum}${pagination.currentPage === pageNum ? ', current page' : ''}`}
                                     >
                                         {pageNum}
                                     </button>
@@ -758,6 +765,8 @@ function DataTable<T>({
                             onClick={() => pagination.onPageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
                             disabled={pagination.currentPage === pagination.totalPages}
                             className="p-1.5 rounded-[3px] text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            title="Next page"
+                            aria-label="Next page"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

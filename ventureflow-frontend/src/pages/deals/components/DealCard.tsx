@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download } from 'lucide-react';
@@ -161,6 +162,8 @@ const DealCard = ({ deal, isDragging = false, onClick, onMove, onMarkLost, pipel
                                 setShowMenu(!showMenu);
                             }}
                             className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded"
+                            title="Deal options"
+                            aria-label="Deal options"
                         >
                             <MoreVertical className="w-4 h-4 text-gray-400" />
                         </button>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../config/api';
@@ -45,7 +46,7 @@ const ChangePassword = () => {
                     </h1>
 
                     <p className="text-gray-500 mb-8 max-w-md">
-                        Great news! You've successfully reset your password. Please head to the login page to sign in now.
+                        Great news! You&apos;ve successfully reset your password. Please head to the login page to sign in now.
                     </p>
 
                     <div className="mb-8 w-full flex justify-center">

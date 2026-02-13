@@ -1,9 +1,10 @@
 import React from 'react';
 import { X, MessageSquare, Clock, SkipBack, SkipForward } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
+import { Deal } from '../DealPipeline';
 
 interface DealExpandedPreviewProps {
-    deal: any;
+    deal: Deal;
     onClose: () => void;
     onMove?: (direction: 'forward' | 'backward') => void;
 }
@@ -33,7 +34,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     const displayCountry = targetCountries[0]?.name || 'Not Specified';
     const additionalCountries = targetCountries.length > 1 ? targetCountries.length - 1 : 0;
     const targetIndustries = deal.buyer?.investment_critera?.target_industries || [];
-    const displayIndustries = targetIndustries.slice(0, 3).map((i: any) => i.name).join(', ') || 'Not Specified';
+    const displayIndustries = targetIndustries.slice(0, 3).map((i: { name: string }) => i.name).join(', ') || 'Not Specified';
     const additionalIndustries = targetIndustries.length > 3 ? targetIndustries.length - 3 : 0;
 
     // Seller details

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useContext, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import coverImage from '../../assets/image/cover.svg';

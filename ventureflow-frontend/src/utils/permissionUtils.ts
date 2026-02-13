@@ -1,4 +1,15 @@
-export const ALLOWED_FIELD_MAPPING: any = {
+interface FieldMapEntry {
+    root?: boolean;
+    rel?: string;
+    key: string;
+}
+
+interface AllowedConfig {
+    root?: string[];
+    relationships?: Record<string, string[]>;
+}
+
+export const ALLOWED_FIELD_MAPPING: Record<string, Record<string, FieldMapEntry>> = {
     investors: {
         projectCode: { root: true, key: 'buyer_id' },
         rank: { rel: 'companyOverview', key: 'rank' },
@@ -38,7 +49,7 @@ export const ALLOWED_FIELD_MAPPING: any = {
     }
 };
 
-export const isFieldAllowed = (colId: string, allowedConfig: any, type: 'investors' | 'targets') => {
+export const isFieldAllowed = (colId: string, allowedConfig: AllowedConfig | null | undefined, type: 'investors' | 'targets') => {
     if (!allowedConfig) return true;
     const map = ALLOWED_FIELD_MAPPING[type][colId];
     if (!map) return true;
@@ -50,7 +61,7 @@ export const isFieldAllowed = (colId: string, allowedConfig: any, type: 'investo
     return false;
 };
 
-export const isBackendPropertyAllowed = (allowedConfig: any, section: string, key: string) => {
+export const isBackendPropertyAllowed = (allowedConfig: AllowedConfig | null | undefined, section: string, key: string) => {
     if (!allowedConfig) return true; // Admin allowed
     if (section === 'root') return allowedConfig.root?.includes(key);
     return allowedConfig.relationships?.[section]?.includes(key);

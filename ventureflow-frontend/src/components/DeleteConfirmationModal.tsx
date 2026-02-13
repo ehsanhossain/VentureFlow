@@ -41,7 +41,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             setError(null);
             setConfirmText('');
         }
-    }, [isOpen, selectedIds]);
+    }, [isOpen, selectedIds, itemType]);
 
     const fetchImpact = async () => {
         setIsLoading(true);
@@ -50,7 +50,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             const endpoint = itemType === 'investors' ? '/api/buyer/delete-analyze' : '/api/seller/delete-analyze';
             const response = await api.get(endpoint, { params: { ids: selectedIds } });
             setImpact(response.data);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to fetch deletion impact', err);
             setError('Failed to analyze the impact of this deletion. Please try again.');
         } finally {
@@ -72,7 +72,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                         <Trash2 className="w-4 h-4 text-gray-500" />
                         {title}
                     </h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[3px] transition-colors">
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-[3px] transition-colors" title="Close" aria-label="Close">
                         <X className="w-4 h-4 text-gray-400" />
                     </button>
                 </div>

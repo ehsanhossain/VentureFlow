@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
@@ -90,6 +91,7 @@ const InvestorDetails: React.FC = () => {
       if (data.formatted_activity_logs) {
         setNotes(parseActivityLogs(data.formatted_activity_logs, getCurrentUserName()));
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       showAlert({ type: "error", message: "Failed to fetch investor details" });
     } finally {
@@ -195,7 +197,7 @@ const InvestorDetails: React.FC = () => {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(Boolean);
     if (typeof val === 'string') {
-      try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+      try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { /* ignored */ }
       return val ? [val] : [];
     }
     return [];
@@ -288,7 +290,7 @@ const InvestorDetails: React.FC = () => {
             </button>
 
             {/* Page Title */}
-            <h1 className="text-2xl font-medium text-gray-900">Investor's Profile</h1>
+            <h1 className="text-2xl font-medium text-gray-900">Investor&apos;s Profile</h1>
           </div>
 
           {/* Edit Button - Secondary Style */}

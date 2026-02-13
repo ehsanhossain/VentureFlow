@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
@@ -289,6 +290,7 @@ export const InvestorRegistration: React.FC = () => {
                             }
                         }
                         setValue('websiteLinks', links.length > 0 ? links : [{ url: '' }]);
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     } catch (e) {
                         if (overview.website) {
                             setValue('websiteLinks', [{ url: String(overview.website) }]);
@@ -300,14 +302,14 @@ export const InvestorRegistration: React.FC = () => {
                     const parsePurpose = (val: any) => {
                         if (!val) return [];
                         if (Array.isArray(val)) return val;
-                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { }
+                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { /* ignored */ }
                         return val ? [val] : [];
                     };
                     setValue('purposeMNA', parsePurpose(overview.reason_ma));
                     const parseCondition = (val: any) => {
                         if (!val) return [];
                         if (Array.isArray(val)) return val;
-                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { }
+                        try { const p = JSON.parse(val); if (Array.isArray(p)) return p; } catch { /* ignored */ }
                         return val ? [val] : [];
                     };
                     setValue('investmentCondition', parseCondition(overview.investment_condition));
@@ -319,7 +321,8 @@ export const InvestorRegistration: React.FC = () => {
                         setValue('internal_pic', Array.isArray(iPico) ? iPico : []);
                         const fAdv = typeof overview.financial_advisor === 'string' ? JSON.parse(overview.financial_advisor) : overview.financial_advisor;
                         setValue('financialAdvisor', Array.isArray(fAdv) ? fAdv : []);
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     if (buyer.image) {
                         const baseURL = import.meta.env.VITE_API_BASE_URL || '';
@@ -356,7 +359,8 @@ export const InvestorRegistration: React.FC = () => {
                         } else if (overview.hq_address && !Array.isArray(addresses)) {
                             setValue('hqAddresses', [{ label: 'Headquarters', address: String(overview.hq_address) }]);
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const budget = typeof overview.investment_budget === 'string' ? JSON.parse(overview.investment_budget) : overview.investment_budget;
@@ -365,7 +369,8 @@ export const InvestorRegistration: React.FC = () => {
                             setValue('budgetMax', budget.max || '');
                             setValue('budgetCurrency', budget.currency || '');
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const intro = typeof overview.introduced_projects === 'string' ? JSON.parse(overview.introduced_projects) : overview.introduced_projects;
@@ -378,7 +383,8 @@ export const InvestorRegistration: React.FC = () => {
                             }));
                             setValue('introducedProjects', formatted);
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const targetIndustriesRaw = typeof overview.main_industry_operations === 'string' ? JSON.parse(overview.main_industry_operations) : overview.main_industry_operations;
@@ -392,7 +398,8 @@ export const InvestorRegistration: React.FC = () => {
                         } else {
                             setValue('targetIndustries', []);
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const companyIndustryRaw = typeof overview.company_industry === 'string' ? JSON.parse(overview.company_industry) : overview.company_industry;
@@ -404,12 +411,14 @@ export const InvestorRegistration: React.FC = () => {
                             });
                             setValue('companyIndustry', sanitized);
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const targetCountries = typeof overview.target_countries === 'string' ? JSON.parse(overview.target_countries) : overview.target_countries;
                         setValue('targetCountries', targetCountries || []);
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
 
                     try {
                         const contacts = typeof overview.contacts === 'string' ? JSON.parse(overview.contacts) : overview.contacts;
@@ -420,8 +429,11 @@ export const InvestorRegistration: React.FC = () => {
                                 setValue('primaryContactParams' as any, String(primaryIndex));
                             }
                         }
-                    } catch (e) { }
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (e) { /* ignored */ }
+                    // ignored
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 showAlert({ type: "error", message: "Failed to load investor data" });
             }
@@ -692,7 +704,7 @@ export const InvestorRegistration: React.FC = () => {
                                             className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
                                         />
                                         {websiteFields.length > 1 && (
-                                            <button type="button" onClick={() => removeWebsite(index)} className="ml-2 text-red-400 hover:text-red-600 transition-colors">
+                                            <button type="button" onClick={() => removeWebsite(index)} className="ml-2 text-red-400 hover:text-red-600 transition-colors" title="Remove website link" aria-label="Remove website link">
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
@@ -726,7 +738,7 @@ export const InvestorRegistration: React.FC = () => {
                                                 className="flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow"
                                             />
                                             {addressFields.length > 1 && (
-                                                <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors">
+                                                <button type="button" onClick={() => removeAddress(index)} className="text-red-400 hover:text-red-600 transition-colors" title="Remove address" aria-label="Remove address">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
                                             )}

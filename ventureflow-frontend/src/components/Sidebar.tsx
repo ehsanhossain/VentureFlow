@@ -1,7 +1,7 @@
 import { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
-import { menuItems } from "../config/menuItems";
+import { menuItems, SubMenuItem } from "../config/menuItems";
 import { Label } from "../assets/label";
 import { AuthContext } from "../routes/AuthContext";
 import { useTranslation } from "react-i18next";
@@ -52,14 +52,14 @@ export function Sidebar({
   });
 
   // Filter sub-items based on partner visibility
-  const getFilteredSubItems = (subItems: any[] | undefined) => {
+  const getFilteredSubItems = (subItems: SubMenuItem[] | undefined) => {
     if (!subItems) return [];
     if (!context?.isPartner) return subItems;
     // Partners only see sub-items marked as partnerVisible
-    return subItems.filter((sub: any) => sub.partnerVisible);
+    return subItems.filter((sub: SubMenuItem) => sub.partnerVisible);
   };
 
-  const isSubItemActive = (subItems: any[]) => {
+  const isSubItemActive = (subItems: SubMenuItem[]) => {
     const filtered = getFilteredSubItems(subItems);
     return filtered.some((sub) => location.pathname === sub.path);
   };

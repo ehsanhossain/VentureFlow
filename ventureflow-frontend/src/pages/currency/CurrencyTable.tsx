@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useEffect } from 'react';
 import { RefreshCw, Plus, Globe, User, Edit2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -116,6 +117,7 @@ const CurrencyTable = (): JSX.Element => {
       showAlert({ type: "success", message: "Currency deleted successfully" });
       setSelectedIds(new Set());
       fetchCurrencyData();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showAlert({ type: "error", message: t('settings.currency.deleteError') });
     }

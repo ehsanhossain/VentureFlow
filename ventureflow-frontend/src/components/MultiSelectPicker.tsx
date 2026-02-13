@@ -83,6 +83,8 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
                                     type="button"
                                     onClick={(e) => removeChip(opt.value, e)}
                                     className="text-[#064771]/50 hover:text-[#064771] flex-shrink-0"
+                                    title={`Remove ${opt.label}`}
+                                    aria-label={`Remove ${opt.label}`}
                                 >
                                     <X className="w-3 h-3" />
                                 </button>

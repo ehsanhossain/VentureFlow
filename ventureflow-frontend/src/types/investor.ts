@@ -59,7 +59,7 @@ export interface Investor {
     company_overview?: InvestorCompanyOverview;
 
     // Relations
-    target_preference?: any;
-    financial_details?: any;
-    partnership_details?: any;
+    target_preference?: Record<string, unknown>;
+    financial_details?: Record<string, unknown>;
+    partnership_details?: Record<string, unknown>;
 }

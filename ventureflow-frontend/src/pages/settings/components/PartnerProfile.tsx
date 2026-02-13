@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useContext, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Loader2, User } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';

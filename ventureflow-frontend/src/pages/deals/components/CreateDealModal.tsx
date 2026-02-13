@@ -13,7 +13,7 @@ interface Buyer {
     id: number;
     company_overview?: {
         reg_name: string;
-        financial_advisor?: string | any[];
+        financial_advisor?: string | Record<string, string>[];
     };
 }
 
@@ -21,7 +21,7 @@ interface Seller {
     id: number;
     company_overview?: {
         reg_name: string;
-        financial_advisor?: string | any[];
+        financial_advisor?: string | Record<string, string>[];
     };
 }
 
@@ -50,7 +50,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         estimated_ev_currency: 'USD',
         priority: 'medium',
         possibility: 'Medium',
-        internal_pic: [] as any[],
+        internal_pic: [] as User[],
         target_close_date: '',
         stage_code: '',
     });
@@ -72,7 +72,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
             });
             const stagesData = response.data || [];
             // Backend filters by type, but ensuring client-side match as well
-            const filteredStages = stagesData.filter((s: any) => s.pipeline_type === defaultView);
+            const filteredStages = stagesData.filter((s: { pipeline_type: string }) => s.pipeline_type === defaultView);
             setStages(filteredStages);
 
             if (filteredStages.length > 0) {
@@ -106,7 +106,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             const response = await api.get('/api/employees/fetch');
             const employees = response.data || [];
-            setUsers(employees.map((e: any) => ({
+            setUsers(employees.map((e: { id: number; first_name?: string; last_name?: string; name?: string; full_name?: string }) => ({
                 id: e.id,
                 name: e.first_name && e.last_name ? `${e.first_name} ${e.last_name}` : (e.first_name || e.last_name || e.name || e.full_name || 'Unknown'),
                 flagSrc: '',
@@ -149,12 +149,12 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         }
     };
 
-    const getFANames = (fa: any) => {
+    const getFANames = (fa: string | Record<string, string>[] | undefined) => {
         try {
             const parsed = typeof fa === 'string' ? JSON.parse(fa) : fa;
-            if (Array.isArray(parsed)) return parsed.map(f => f.name || f.reg_name).join(', ');
+            if (Array.isArray(parsed)) return parsed.map((f: Record<string, string>) => f.name || f.reg_name).join(', ');
             return parsed?.name || parsed?.reg_name || 'None';
-        } catch (e) { return 'None'; }
+        } catch { return 'None'; }
     };
 
     const handleSubmit = async () => {
@@ -196,7 +196,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b">
                     <h2 className="text-lg font-medium text-gray-900">Create New Deal</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Close modal" aria-label="Close modal">
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -370,7 +370,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 <Dropdown
                                     countries={users}
                                     selected={formData.internal_pic}
-                                    onSelect={(selected: any) => setFormData(prev => ({ ...prev, internal_pic: selected as any[] }))}
+                                    onSelect={(selected) => setFormData(prev => ({ ...prev, internal_pic: (Array.isArray(selected) ? selected : [selected]) as User[] }))}
                                     multiSelect={true}
                                     placeholder="Select Staff"
                                 />

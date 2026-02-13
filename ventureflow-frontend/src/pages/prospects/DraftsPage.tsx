@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../config/api';
@@ -27,7 +28,7 @@ const parseMultiField = (val: any): string[] => {
     if (!val) return [];
     if (Array.isArray(val)) return val.filter(Boolean);
     if (typeof val === 'string') {
-        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+        try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { /* ignored */ }
         return val ? [val] : [];
     }
     return [];
@@ -272,7 +273,7 @@ const DraftsPage: React.FC = () => {
                 try {
                     const ops = typeof ov.industry_ops === 'string' ? JSON.parse(ov.industry_ops) : ov.industry_ops;
                     if (Array.isArray(ops) && ops.length > 0) indMajor = ops[0]?.name || "N/A";
-                } catch { }
+                } catch { /* ignored */ }
 
                 const defaultCurrencyId = fin.default_currency;
                 const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));

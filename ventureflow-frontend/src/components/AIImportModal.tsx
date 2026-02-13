@@ -14,7 +14,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 interface AIImportModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onApply: (data: any) => void;
+    onApply: (data: Record<string, unknown>) => void;
     type: 'buyer' | 'seller';
 }
 
@@ -23,7 +23,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
     const [file, setFile] = useState<File | null>(null);
     const [url, setUrl] = useState('');
     const [loading, setLoading] = useState(false);
-    const [extractedData, setExtractedData] = useState<any | null>(null);
+    const [extractedData, setExtractedData] = useState<Record<string, unknown> | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
@@ -43,7 +43,8 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const pageText = textContent.items.map((item: any) => ('str' in item ? item.str : '')).join(' ');
                 fullText += pageText + '\n';
             }
             return fullText;
@@ -67,7 +68,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
 
         try {
             let text = '';
-            let requestData: any = { type };
+            let requestData: Record<string, string> = { type };
 
             if (mode === 'file') {
                 if (!file) {
@@ -91,9 +92,9 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
 
             const response = await api.post('/api/ai/extract', requestData);
             setExtractedData(response.data.data);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Extraction Error:', err);
-            const msg = err.response?.data?.message || err.message || 'Failed to process request';
+            const msg = (err instanceof Error ? err.message : null) || 'Failed to process request';
             setError(msg);
             showAlert({ type: 'error', message: msg });
         } finally {
@@ -116,7 +117,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
                     <h3 className="text-lg font-medium text-gray-900">
                         AI Auto-Fill ({type === 'buyer' ? 'Buyer' : 'Seller'})
                     </h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700" title="Close" aria-label="Close">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -240,8 +241,8 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
                                             if (value.length > 0 && typeof value[0] === 'object') {
                                                 displayValue = (
                                                     <ul className="list-disc list-inside">
-                                                        {value.map((item: any, idx: number) => (
-                                                            <li key={idx} className="truncate">{item.name || item.address || JSON.stringify(item)}</li>
+                                                        {value.map((item: Record<string, unknown>, idx: number) => (
+                                                            <li key={idx} className="truncate">{String(item.name || item.address || JSON.stringify(item))}</li>
                                                         ))}
                                                     </ul>
                                                 );

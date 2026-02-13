@@ -46,17 +46,19 @@ const Pagination = ({ totalPages, currentPage, onPageChange }: { totalPages: num
 
       {/* Page Numbers */}
       <div className="flex justify-start items-center flex-row gap-[29.538463592529297px]">
-        <button className="flex justify-start items-center flex-row gap-[33.230770111083984px]">
+        <div className="flex justify-start items-center flex-row gap-[33.230770111083984px]">
           {pages.map((page) => (
             <button
               key={page}
               onClick={() => handlePageClick(page)}
               className={`text-center leading-[33.21394348144531px] ${page === currentPage ? 'text-[#0C5577] font-medium' : 'text-gray-900'}`}
+              title={`Go to page ${page}`}
+              aria-label={`Go to page ${page}`}
             >
               {page}
             </button>
           ))}
-        </button>
+        </div>
       </div>
 
       {/* Next Button */}

@@ -85,6 +85,7 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSel
                 accept="image/png, image/jpeg, image/jpg, image/webp"
                 className="hidden"
                 onChange={handleFileChange}
+                aria-label="Upload company logo"
             />
             {/* Label */}
             <span className="mt-2 text-xs text-gray-500 font-medium">Company Avatar</span>

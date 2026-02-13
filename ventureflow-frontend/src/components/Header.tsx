@@ -23,13 +23,28 @@ interface HeaderProps {
   sidebarExpanded: boolean;
 }
 
+interface SearchResult {
+  id: number | string;
+  name?: string;
+  status?: string;
+  project_code?: string;
+  country_flag?: string;
+  first_name?: string;
+  last_name?: string;
+  work_email?: string;
+  partner_id?: string;
+  filename?: string;
+  size?: number;
+  [key: string]: unknown;
+}
+
 interface SearchResults {
-  deals: any[];
-  investors: any[];
-  targets: any[];
-  staff: any[];
-  partners: any[];
-  documents: any[];
+  deals: SearchResult[];
+  investors: SearchResult[];
+  targets: SearchResult[];
+  staff: SearchResult[];
+  partners: SearchResult[];
+  documents: SearchResult[];
 }
 
 export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: HeaderProps) {
@@ -270,6 +285,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             <button
               className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded"
               onClick={() => setSearchOpen(true)}
+              title="Search"
+              aria-label="Search"
             >
               <Search className="w-5 h-5" />
             </button>
@@ -394,7 +411,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {/* Empty State */}
                 {(!results.deals.length && !results.investors.length && !results.targets.length && !results.staff.length && !results.partners.length && !results.documents.length) && (
                   <div className="py-14 px-6 text-center text-sm sm:px-14">
-                    <p className="mt-2 text-gray-500">No results found for "{query}".</p>
+                    <p className="mt-2 text-gray-500">No results found for &quot;{query}&quot;.</p>
                   </div>
                 )}
 

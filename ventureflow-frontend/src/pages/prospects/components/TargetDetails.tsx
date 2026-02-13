@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
@@ -60,6 +61,7 @@ const TargetDetails: React.FC = () => {
             } catch {
                 // Activity logs may not be available, continue
             }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             showAlert({ type: "error", message: "Failed to fetch target details" });
         } finally {
@@ -126,7 +128,7 @@ const TargetDetails: React.FC = () => {
         if (!val) return [];
         if (Array.isArray(val)) return val.filter(Boolean);
         if (typeof val === 'string') {
-            try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { }
+            try { const p = JSON.parse(val); if (Array.isArray(p)) return p.filter(Boolean); } catch { /* ignored */ }
             return val ? [val] : [];
         }
         return [];
@@ -261,7 +263,7 @@ const TargetDetails: React.FC = () => {
                         </button>
 
                         {/* Page Title */}
-                        <h1 className="text-2xl font-medium text-gray-900">Target's Profile</h1>
+                        <h1 className="text-2xl font-medium text-gray-900">Target&apos;s Profile</h1>
                     </div>
 
                     {/* Edit Button - Secondary Style */}

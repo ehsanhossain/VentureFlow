@@ -190,7 +190,7 @@ export const IndustryDropdown = ({
                                     className="flex items-center w-full justify-start gap-3 py-3 px-3 hover:bg-[#F1FBFF] rounded-lg border border-dashed border-[#064771]/30 text-[#064771] transition-all"
                                 >
                                     <PlusIcon className="w-4 h-4" />
-                                    <span className="text-sm font-medium">Add "{search}" as new industry</span>
+                                    <span className="text-sm font-medium">Add &quot;{search}&quot; as new industry</span>
                                 </button>
                             ) : (
                                 <div className="py-8 text-center text-gray-400 text-sm">
