@@ -135,6 +135,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                         <button
                             onClick={onClose}
                             className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full flex-shrink-0 transition-colors"
+                            aria-label="Close preview"
                         >
                             <X className="w-5 h-5 text-gray-400" />
                         </button>

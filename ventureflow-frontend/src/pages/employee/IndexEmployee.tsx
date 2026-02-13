@@ -749,7 +749,7 @@ const IndexEmployee = ({
                 onClose={handleComponentClose}
               />
 
-              <button>
+              <button aria-label="Filter">
                 <div
                   className="flex justify-center items-center gap-2 py-2 px-3 bg-white border border-gray-500 rounded-md h-[35px] cursor-pointer"
                   ref={filterButtonRef}
@@ -811,6 +811,7 @@ const IndexEmployee = ({
                     <button
                       className="w-[30px] h-[30px] rounded-[15px] border-2 border-solid border-[#30313d] p-0 hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center bg-white"
                       onClick={handleCloseModal}
+                      aria-label="Close filter modal"
                     >
                       <svg
                         className="w-3 h-3"

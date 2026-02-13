@@ -105,7 +105,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                     type="button"
                     disabled={disabled}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
-                    aria-expanded={isOpen}
+                    aria-expanded={isOpen ? "true" : "false"}
                     className={`flex w-full min-h-[44px] items-center gap-2 px-3 py-2 rounded-[3px] border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
                 >
                     {selectedCountries.length > 0 ? (

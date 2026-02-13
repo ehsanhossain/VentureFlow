@@ -1,0 +1,90 @@
+(node:14364) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\components\DeleteConfirmationModal.tsx
+  44:8  warning  React Hook useEffect has a missing dependency: 'fetchImpact'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\components\NotesSection.tsx
+  400:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\context\GeneralSettingsContext.tsx
+  28:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\context\NotificationContext.tsx
+  105:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\CurrencyTable.tsx
+  53:6  warning  React Hook useEffect has a missing dependency: 'fetchCurrencyData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\Register.tsx
+   81:6  warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  101:6  warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  162:6  warning  React Hook useEffect has a missing dependency: 't'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\currency\components\Dropdown.tsx
+  92:8  error  Definition for rule 'jsx-a11y/aria-proptypes' was not found  jsx-a11y/aria-proptypes
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\DealPipeline.tsx
+  182:8  warning  React Hook useEffect has a missing dependency: 'fetchDeals'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\components\CreateDealModal.tsx
+  66:8  warning  React Hook useEffect has a missing dependency: 'fetchStages'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\deals\components\DealDetailsModal.tsx
+  83:8  warning  React Hook useEffect has a missing dependency: 'fetchDealDetails'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\DraftsPage.tsx
+  361:8  warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\ProspectsPortal.tsx
+  790:8  warning  React Hook useEffect has a missing dependency: 'globalSettings.default_currency'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\ActivityLogChat.tsx
+  51:8  warning  React Hook useEffect has a missing dependency: 'fetchLogs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\InvestorDetails.tsx
+  106:6  warning  React Hook useEffect has a missing dependency: 'fetchBuyer'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\InvestorTable.tsx
+  528:8  warning  React Hook useMemo has missing dependencies: 'getBudgetDisplay', 'getFullBudgetDisplay', 'getStagePosition', and 'onTogglePin'. Either include them or remove the dependency array. If 'onTogglePin' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\TargetDetails.tsx
+  76:8  warning  React Hook useEffect has a missing dependency: 'fetchSeller'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\TargetTable.tsx
+  486:8  warning  React Hook useMemo has missing dependencies: 'getBudgetDisplay', 'getFullBudgetDisplay', 'getStagePosition', and 'onTogglePin'. Either include them or remove the dependency array. If 'onTogglePin' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\forms\InvestorRegistration.tsx
+  264:8  warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  443:8  warning  React Hook useEffect has a missing dependency: 'industries'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\forms\TargetRegistration.tsx
+  277:8  warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array           react-hooks/exhaustive-deps
+  431:8  warning  React Hook useEffect has missing dependencies: 'countries' and 'industries'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\AuditLog.tsx
+  67:8  warning  React Hook useEffect has missing dependencies: 'fetchLogs', 'isAdmin', and 'navigate'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\CreatePartner.tsx
+  64:8  warning  React Hook useEffect has a missing dependency: 'fetchPartner'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+  79:8  warning  React Hook useEffect has a missing dependency: 'checkIdAvailability'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\CreateStaff.tsx
+  108:8  warning  React Hook useEffect has missing dependencies: 'generateId' and 'generatePassword'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  115:8  warning  React Hook useEffect has a missing dependency: 'fetchStaff'. Either include it or remove the dependency array                           react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\FeeStructureSettings.tsx
+  58:8  warning  React Hook useEffect has a missing dependency: 'fetchTiers'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerManagement.tsx
+  60:8  warning  React Hook useEffect has a missing dependency: 'fetchPartners'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PartnerSharingSettings.tsx
+  18:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  52:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\settings\components\PipelineSettings.tsx
+  45:8  warning  React Hook useEffect has a missing dependency: 'fetchStages'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 33 problems (1 error, 32 warnings)
+

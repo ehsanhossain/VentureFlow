@@ -389,6 +389,7 @@ const CreateStaff: React.FC = () => {
                                                     <select
                                                         value={field.value}
                                                         onChange={field.onChange}
+                                                        aria-label="Gender"
                                                         className={inputClass + ' bg-white'}
                                                     >
                                                         <option value="">Select</option>

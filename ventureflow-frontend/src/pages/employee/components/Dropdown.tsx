@@ -26,7 +26,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
   const [selectedCountries, setSelectedCountries] = useState<Country[]>(
     Array.isArray(selected) ? selected : selected ? [selected] : []
   );
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const setRefs = (node: HTMLDivElement | null) => {
     dropdownRef.current = node;
@@ -34,7 +34,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
     if (typeof forwardedRef === "function") {
       forwardedRef(node);
     } else if (forwardedRef) {
-      forwardedRef.current = node;
+      (forwardedRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
     }
   };
 
@@ -88,7 +88,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
+        aria-expanded={isOpen ? "true" : "false"}
         className="flex w-full min-h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none flex-wrap overflow-hidden"
       >
         {selectedCountries.length > 0 ? (

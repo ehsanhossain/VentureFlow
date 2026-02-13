@@ -155,7 +155,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                     const parsed = JSON.parse(website);
                     if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].url) return parsed[0].url;
                 }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) { /* plain string URL */ }
             return website;
         }
@@ -231,6 +231,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             onTogglePin(row.id);
                         }}
                         className="p-1 rounded transition-all duration-200 hover:bg-gray-50"
+                        aria-label={row.isPinned ? 'Unpin target' : 'Pin target'}
                     >
                         <img src={row.isPinned ? PinnedIcon : UnpinnedIcon} alt="" className="w-5 h-5" draggable={false} />
                     </button>
@@ -495,6 +496,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             <button
                 className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 transition-all"
                 onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id }); }}
+                aria-label="More actions"
             >
                 <MoreVertical className="w-4 h-4" />
             </button>
@@ -552,6 +554,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                         <button
                             onClick={() => setBulkMenuOpen(!bulkMenuOpen)}
                             className="p-1.5 rounded-[3px] hover:bg-gray-200 transition-all"
+                            aria-label="Bulk actions menu"
                         >
                             <MoreVertical className="w-4 h-4 text-gray-600" />
                         </button>

@@ -90,7 +90,7 @@ export const IndustryDropdown = ({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                aria-expanded={isOpen}
+                aria-expanded={isOpen ? "true" : "false"}
                 className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 rounded-[3px] border border-gray-300 bg-white focus:outline-none flex-wrap overflow-hidden"
             >
                 {selectedIndustries.length > 0 ? (

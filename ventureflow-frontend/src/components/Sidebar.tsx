@@ -175,6 +175,7 @@ export function Sidebar({
                       {sidebarExpanded && (
                         <button
                           onClick={() => toggleMenu(item.label)}
+                          aria-label={`Toggle ${item.label} submenu`}
                           className={`
                           p-1 rounded-[3px] hover:bg-gray-200/50 transition-colors cursor-pointer mr-2
                           ${sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}

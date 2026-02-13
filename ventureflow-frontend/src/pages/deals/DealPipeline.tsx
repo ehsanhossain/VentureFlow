@@ -20,8 +20,6 @@ import {
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import DealDetailsModal from './components/DealDetailsModal';
 import DealExpandedPreview from './components/DealExpandedPreview';
 import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
 
@@ -738,7 +736,7 @@ const DealPipeline = () => {
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
                         <div className="px-6 py-4 border-b flex items-center justify-between">
                             <h3 className="text-lg font-medium text-gray-900">Mark Deal as Lost</h3>
-                            <button onClick={() => setLostDeal(null)} className="text-gray-400 hover:text-gray-600 focus:outline-none">
+                            <button onClick={() => setLostDeal(null)} className="text-gray-400 hover:text-gray-600 focus:outline-none" aria-label="Close modal">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -780,7 +778,7 @@ const DealPipeline = () => {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[120] p-4 animate-in fade-in duration-300">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden relative p-8 text-center flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
                         <div className="absolute top-4 right-4">
-                            <button onClick={() => { setShowWonCelebration(false); fetchDeals(); }} className="text-gray-400 hover:text-gray-600 p-2">
+                            <button onClick={() => { setShowWonCelebration(false); fetchDeals(); }} className="text-gray-400 hover:text-gray-600 p-2" aria-label="Close celebration">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
@@ -820,6 +818,7 @@ const DealPipeline = () => {
                             <button
                                 onClick={() => setChatDeal(null)}
                                 className="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                                aria-label="Close chat"
                             >
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>

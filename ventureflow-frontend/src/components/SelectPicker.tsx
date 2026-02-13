@@ -65,10 +65,12 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
         onKeyDown={handleKeyDown}
         className="h-11 relative cursor-pointer"
         role="combobox"
-        aria-expanded={isDropdownOpen}
+        aria-expanded={isDropdownOpen ? "true" : "false"}
         aria-haspopup="listbox"
+        aria-controls="select-picker-listbox"
         tabIndex={0}
-        aria-labelledby="select-label"
+        title={placeholder}
+        aria-label={placeholder}
         aria-activedescendant={selectedOption ? `option-${selectedOption.value}` : undefined}
       >
         {icon && (
@@ -111,7 +113,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
       {isDropdownOpen && (
         <div
           className="absolute top-full mt-1 w-full border border-gray-200 rounded-[3px] bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
-          role="listbox"
+          id="select-picker-listbox"
         >
           <div className="p-3.5">
             {searchable && (
@@ -129,18 +131,17 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
                 <input
-                  className="ml-2 w-full bg-transparent outline-none text-sm" // is inherited
+                  className="ml-2 w-full bg-transparent outline-none text-sm"
                   placeholder="Search here"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  role="searchbox"
                   aria-label="Search options"
+                  title="Search options"
                 />
               </div>
             )}
-
-            <div className="pt-1">
+            <div role="listbox" aria-label={placeholder}>
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option) => (
                   <div
@@ -149,7 +150,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                     className={`flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-gray-100 transition ${value === option.value ? "bg-gray-100" : ""
                       }`}
                     role="option"
-                    aria-selected={value === option.value}
+                    aria-selected={value === option.value ? "true" : "false"}
                     onClick={() => handleSelect(option)}
                   >
                     {option.image && (
@@ -159,13 +160,13 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
                         className="w-5 h-5 rounded-full object-cover"
                       />
                     )}
-                    <span className="text-sm text-black truncate"> {/* is inherited */}
+                    <span className="text-sm text-black truncate">
                       {option.label}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="px-4 py-2 text-sm text-gray-500">No results found</div> // is inherited
+                <div className="px-4 py-2 text-sm text-gray-500">No results found</div>
               )}
             </div>
           </div>

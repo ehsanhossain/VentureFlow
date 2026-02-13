@@ -211,6 +211,7 @@ const Register: React.FC = () => {
                     <button
                       onClick={() => navigate(-1)}
                       className="flex flex-col flex-shrink-0 justify-center items-center gap-1 py-1 px-3 w-[4.125rem] rounded bg-[#064771]"
+                      aria-label={t('common.back', 'Back')}
                     >
                       <div className="flex items-center gap-1">
                         <svg
@@ -236,9 +237,9 @@ const Register: React.FC = () => {
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <button>
+                        <span>
                           <span className="text-white text-[.8125rem] font-semibold">{t('common.back', 'Back')}</span>
-                        </button>
+                        </span>
                       </div>
                     </button>
                     <div className="flex items-start">

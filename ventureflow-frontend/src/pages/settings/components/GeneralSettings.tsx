@@ -189,8 +189,9 @@ const GeneralSettings: React.FC = () => {
                                 <LanguageSelect />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">Default Currency</label>
+                                <label htmlFor="default-currency" className="text-sm font-medium text-gray-700">Default Currency</label>
                                 <select
+                                    id="default-currency"
                                     value={defaultCurrency}
                                     onChange={(e) => setDefaultCurrency(e.target.value)}
                                     disabled={isLoadingCurrencies || isLoadingSettings}
@@ -213,8 +214,9 @@ const GeneralSettings: React.FC = () => {
                                 )}
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">{t('settings.general.timezoneLabel', 'Preferred Timezone')}</label>
+                                <label htmlFor="preferred-timezone" className="text-sm font-medium text-gray-700">{t('settings.general.timezoneLabel', 'Preferred Timezone')}</label>
                                 <select
+                                    id="preferred-timezone"
                                     value={timezone}
                                     onChange={(e) => setTimezone(e.target.value)}
                                     disabled={isLoadingSettings}
@@ -226,8 +228,9 @@ const GeneralSettings: React.FC = () => {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">{t('settings.general.dateFormatLabel', 'Date Format')}</label>
+                                <label htmlFor="date-format" className="text-sm font-medium text-gray-700">{t('settings.general.dateFormatLabel', 'Date Format')}</label>
                                 <select
+                                    id="date-format"
                                     value={dateFormat}
                                     onChange={(e) => setDateFormat(e.target.value)}
                                     disabled={isLoadingSettings}
@@ -251,6 +254,9 @@ const GeneralSettings: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => setSystemNotifications(!systemNotifications)}
+                                    role="switch"
+                                    aria-checked={systemNotifications ? "true" : "false"}
+                                    aria-label="Toggle system notifications"
                                     className={`w-12 h-6 rounded-full relative transition-colors ${systemNotifications ? 'bg-[#064771]' : 'bg-gray-200'}`}
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${systemNotifications ? 'right-1' : 'left-1'}`}></div>
@@ -262,6 +268,9 @@ const GeneralSettings: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={handleBrowserNotificationToggle}
+                                    role="switch"
+                                    aria-checked={browserNotifications ? "true" : "false"}
+                                    aria-label="Toggle browser notifications"
                                     className={`w-12 h-6 rounded-full relative transition-colors ${browserNotifications ? 'bg-[#064771]' : 'bg-gray-200'}`}
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${browserNotifications ? 'right-1' : 'left-1'}`}></div>

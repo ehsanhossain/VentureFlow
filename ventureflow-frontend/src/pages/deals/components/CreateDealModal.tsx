@@ -319,6 +319,8 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             placeholder="Amount"
                                         />
                                         <select
+                                            id="deal-currency"
+                                            aria-label="Currency"
                                             value={formData.estimated_ev_currency}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
                                             className="w-24 px-2 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -328,8 +330,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                                    <label htmlFor="deal-stage" className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
                                     <select
+                                        id="deal-stage"
                                         value={formData.stage_code}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, stage_code: e.target.value }))}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -344,8 +347,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Possibility</label>
+                                    <label htmlFor="deal-possibility" className="block text-sm font-medium text-gray-700 mb-1">Possibility</label>
                                     <select
+                                        id="deal-possibility"
                                         value={formData.possibility}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, possibility: e.target.value }))}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
