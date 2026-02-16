@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
 
@@ -11,10 +12,11 @@ interface DealCardProps {
     onClick?: () => void;
     onMove?: (deal: Deal, direction: 'forward' | 'backward') => void;
     onMarkLost?: (deal: Deal) => void;
+    onDelete?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
 }
 
-const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, pipelineView = 'buyer' }: DealCardProps) => {
+const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, onDelete, pipelineView = 'buyer' }: DealCardProps) => {
     const { attributes, listeners, setNodeRef, isDragging: isBeingDragged } = useDraggable({
         id: deal.id,
     });
@@ -118,7 +120,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
             {/* Main Card Body */}
             <div
                 onClick={onClick}
-                className="flex flex-col gap-2.5 px-3 py-4 bg-white rounded-t-lg border border-gray-200 shadow-sm"
+                className="flex flex-col gap-2 px-3 py-3 bg-white rounded-t-[3px] border border-[#E5E7EB]"
                 style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}
             >
                 {/* Primary Entity Row */}
@@ -126,7 +128,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         {/* Primary Avatar */}
                         <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                            className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                             style={{ backgroundColor: primaryColor.bg }}
                         >
                             {primaryImageUrl ? (
@@ -149,7 +151,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                         </div>
                         {/* Primary Name */}
                         <div className="flex-1 min-w-0 overflow-hidden">
-                            <span className="text-sm font-medium text-gray-900 truncate block">
+                            <span className="text-xs font-medium text-[#111827] leading-4 truncate block">
                                 {primaryEntity}
                             </span>
                         </div>
@@ -194,13 +196,20 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                                 <button className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2 border-t">
                                     View Details
                                 </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onDelete?.(deal); setShowMenu(false); }}
+                                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 flex items-center gap-2 border-t"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                </button>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Relation Label */}
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-[#6B7280] leading-4">
                     {relationLabel}
                 </div>
 
@@ -208,7 +217,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                 <div className="flex items-center gap-1.5">
                     {/* Secondary Avatar */}
                     <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                        className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
                         style={{ backgroundColor: secondaryColor.bg }}
                     >
                         {secondaryImageUrl ? (
@@ -231,7 +240,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                     </div>
                     {/* Secondary Name */}
                     <div className="flex-1 min-w-0 overflow-hidden">
-                        <span className="text-sm font-medium text-gray-900 truncate block">
+                        <span className="text-xs font-medium text-[#111827] leading-4 truncate block">
                             {secondaryEntity}
                         </span>
                     </div>
@@ -243,12 +252,12 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                         {shareholdingRatio && (
                             <span className="text-xs text-gray-500">{shareholdingRatio}</span>
                         )}
-                        <span className="text-base font-medium text-gray-900">{dealValue}</span>
+                        <span className="text-sm font-medium text-[#111827] leading-5">{dealValue}</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <Download className="w-4 h-4" style={{ color: priorityInfo.color }} />
                         <span
-                            className="text-[13px] font-medium"
+                            className="text-xs font-medium"
                             style={{ color: priorityInfo.color }}
                         >
                             {priorityInfo.label}
@@ -259,7 +268,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
 
             {/* Footer */}
             <div
-                className="flex items-center justify-between px-3 h-[34px] bg-white rounded-b-lg border border-t-0 border-gray-200"
+                className="flex items-center justify-between px-3 h-[30px] bg-white rounded-b-[3px] border-l border-r border-b border-[#E5E7EB]"
             >
                 {/* Left: Comment count & navigation */}
                 <div className="flex items-center gap-1.5">

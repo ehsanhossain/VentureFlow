@@ -40,7 +40,7 @@ const DataTableSearch: React.FC<DataTableSearchProps> = ({
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full pl-9 pr-14 py-2 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771] transition-all"
+                className="w-full h-10 pl-9 pr-14 bg-white border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771] transition-all"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <span className="text-xs">⌘</span> F

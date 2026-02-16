@@ -564,7 +564,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Ticket Size
+                                        Transaction Size
                                         {selectedSeller && !ticketSizeManuallyEdited && formData.ticket_size && (
                                             <span className="ml-1 text-xs text-green-600 font-normal">(auto-filled from target)</span>
                                         )}

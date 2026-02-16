@@ -21,6 +21,7 @@ class Deal extends Model
         'estimated_ev_value',
         'estimated_ev_currency',
         'stage_code',
+        'pipeline_type',
         'progress_percent',
         'priority',
         'possibility',
@@ -90,6 +91,27 @@ class Deal extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(DealComment::class)->orderBy('created_at', 'desc');
+    }
+
+    public function fees(): HasMany
+    {
+        return $this->hasMany(DealFee::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get total fees charged for this deal.
+     */
+    public function getTotalFeesAttribute(): float
+    {
+        return $this->fees()->sum('final_amount');
+    }
+
+    /**
+     * Get total deductions (fees that reduce the success fee).
+     */
+    public function getTotalDeductionsAttribute(): float
+    {
+        return $this->fees()->where('deducted_from_success', true)->sum('final_amount');
     }
 
     public function getStageName(?string $side = null)

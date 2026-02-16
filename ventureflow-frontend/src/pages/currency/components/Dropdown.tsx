@@ -94,7 +94,7 @@ export const Dropdown = ({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen ? "true" : "false"}
         aria-haspopup="listbox"
-        className="flex w-full h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-md border border-gray-300 bg-white focus:outline-none"
+        className="flex w-full h-10 items-center gap-2 px-4 sm:px-5 py-2 rounded-[3px] border border-gray-300 bg-white focus:outline-none"
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2 flex-wrap max-w-[calc(100%-24px)]">
@@ -152,7 +152,7 @@ export const Dropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-md border border-t-0 border-gray-300 bg-white overflow-hidden shadow-lg">
+        <div className="absolute z-50 mt-1 w-full max-h-[80vh] rounded-[3px] border border-t-0 border-gray-300 bg-white overflow-hidden shadow-lg">
           <div className="flex flex-col w-full items-start gap-4 px-4 py-3">
 
             <div className="relative w-full">
@@ -160,7 +160,7 @@ export const Dropdown = ({
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-10 pr-3 py-2 rounded-full border border-[#828282] text-sm placeholder:text-gray-500 focus:outline-none"
+                className="w-full h-9 pl-10 pr-3 py-2 rounded-[3px] border border-[#828282] text-sm placeholder:text-gray-500 focus:outline-none"
                 placeholder="Search Here"
               />
             </div>
@@ -169,7 +169,7 @@ export const Dropdown = ({
             <div className="w-full max-h-[60vh] overflow-y-auto pr-1.5 custom-scrollbar">
               <div className="flex flex-col w-full items-start gap-1">
                 <button
-                  className="flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-md transition text-left text-sm font-medium text-[#064771]"
+                  className="flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-[3px] transition text-left text-sm font-medium text-[#064771]"
                   onClick={() => handleSelect('all')}
                 >
                   All Countries
@@ -180,7 +180,7 @@ export const Dropdown = ({
                   return (
                     <button
                       key={country.id.toString()}
-                      className={`flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-md transition text-left ${isSelected ? 'bg-blue-50' : ''}`}
+                      className={`flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-[3px] transition text-left ${isSelected ? 'bg-blue-50' : ''}`}
                       onClick={() => handleSelect(country)}
                     >
                       <div className="flex items-center gap-2.5">

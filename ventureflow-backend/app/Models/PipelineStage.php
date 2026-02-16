@@ -18,11 +18,15 @@ class PipelineStage extends Model
         'progress',
         'order_index',
         'is_active',
+        'gate_rules',
+        'monetization_config',
     ];
 
     protected $casts = [
         'progress' => 'integer',
         'order_index' => 'integer',
         'is_active' => 'boolean',
+        'gate_rules' => 'array',
+        'monetization_config' => 'array',
     ];
 }

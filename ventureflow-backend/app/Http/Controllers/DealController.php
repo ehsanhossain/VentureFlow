@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Deal;
+use App\Models\DealFee;
 use App\Models\DealStageHistory;
+use App\Models\FeeTier;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -69,21 +71,8 @@ class DealController extends Controller
             });
         }
 
-        // UNBREAKABLE: Ensure deals only appear if they have a valid ACTIVE entity for the current view
-        // Support 1-sided deals: only filter on the side that exists
-        if ($view === 'buyer') {
-            $query->where(function ($q) {
-                $q->whereHas('buyer.companyOverview', function ($bq) {
-                    $bq->where('status', 'Active');
-                })->orWhereNull('buyer_id'); // Seller-only mandate still visible
-            });
-        } else {
-            $query->where(function ($q) {
-                $q->whereHas('seller', function ($sq) {
-                    $sq->where('status', '1');
-                })->orWhereNull('seller_id'); // Buyer-only mandate still visible
-            });
-        }
+        // Filter deals by the pipeline they belong to
+        $query->where('pipeline_type', $view);
 
         $deals = $query->withCount(['activityLogs as comment_count' => function($q) {
             $q->where('type', 'comment');
@@ -283,6 +272,98 @@ class DealController extends Controller
     }
 
     /**
+     * Pre-check stage transition: validate gate rules and return monetization info.
+     * Frontend calls this BEFORE attempting a move to show confirmation UI.
+     */
+    public function stageCheck(Request $request, Deal $deal): JsonResponse
+    {
+        $validated = $request->validate([
+            'to_stage' => 'required|string|max:2',
+            'pipeline_type' => 'nullable|in:buyer,seller',
+        ]);
+
+        $toStage = $validated['to_stage'];
+        // Use the deal's own pipeline_type, not a request parameter
+        $pipelineType = $deal->pipeline_type ?? ($validated['pipeline_type'] ?? 'buyer');
+
+        // Look up destination stage from the deal's pipeline
+        $stage = \App\Models\PipelineStage::where('pipeline_type', $pipelineType)
+            ->where('code', $toStage)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$stage) {
+            return response()->json(['message' => 'Invalid target stage.'], 422);
+        }
+
+        // Evaluate gate rules
+        $gateRules = $stage->gate_rules ?? [];
+        $gateErrors = $this->evaluateGateRules($deal, $gateRules);
+
+        if (!empty($gateErrors)) {
+            return response()->json([
+                'gate_passed' => false,
+                'gate_errors' => $gateErrors,
+                'monetization' => null,
+            ]);
+        }
+
+        // Check monetization config
+        $monetization = $stage->monetization_config ?? [];
+        $monetizationInfo = null;
+
+        if (!empty($monetization['enabled'])) {
+            $ticketSizeUsd = (float) ($deal->ticket_size ?? 0);
+            // Determine fee side from the deal's pipeline
+            $feeSide = $pipelineType === 'seller' ? 'target' : 'investor';
+
+            // Find matching fee tier
+            $feeTier = FeeTier::where('fee_type', $feeSide)
+                ->where('min_amount', '<=', $ticketSizeUsd)
+                ->where(function ($q) use ($ticketSizeUsd) {
+                    $q->whereNull('max_amount')
+                      ->orWhere('max_amount', '>=', $ticketSizeUsd);
+                })
+                ->where('is_active', true)
+                ->orderBy('order_index')
+                ->first();
+
+            $calculatedAmount = 0;
+            if ($feeTier) {
+                if ($feeTier->success_fee_fixed !== null && $feeTier->success_fee_fixed > 0) {
+                    $calculatedAmount = (float) $feeTier->success_fee_fixed;
+                } elseif ($feeTier->success_fee_rate !== null && $feeTier->success_fee_rate > 0) {
+                    $calculatedAmount = $ticketSizeUsd * ((float) $feeTier->success_fee_rate / 100);
+                }
+            }
+
+            $monetizationInfo = [
+                'enabled' => true,
+                'type' => $monetization['type'] ?? 'one_time',
+                'payment_name' => $monetization['payment_name'] ?? '',
+                'amount' => $monetization['amount'] ?? null,
+                'deduct_from_success_fee' => $monetization['deduct_from_success_fee'] ?? false,
+                'ticket_size_usd' => $ticketSizeUsd,
+                'fee_side' => $feeSide,
+                'fee_tier' => $feeTier ? [
+                    'id' => $feeTier->id,
+                    'min_amount' => $feeTier->min_amount,
+                    'max_amount' => $feeTier->max_amount,
+                    'success_fee_fixed' => $feeTier->success_fee_fixed,
+                    'success_fee_rate' => $feeTier->success_fee_rate,
+                ] : null,
+                'calculated_amount' => $monetization['amount'] ?? round($calculatedAmount, 2),
+            ];
+        }
+
+        return response()->json([
+            'gate_passed' => true,
+            'gate_errors' => [],
+            'monetization' => $monetizationInfo,
+        ]);
+    }
+
+    /**
      * Update deal stage (for drag-and-drop)
      */
     public function updateStage(Request $request, Deal $deal): JsonResponse
@@ -290,11 +371,20 @@ class DealController extends Controller
         $validated = $request->validate([
             'stage_code' => 'required|string|max:2',
             'pipeline_type' => 'nullable|in:buyer,seller',
+            // Optional fee confirmation from monetization modal
+            'fee_confirmation' => 'nullable|array',
+            'fee_confirmation.fee_tier_id' => 'nullable|integer',
+            'fee_confirmation.fee_side' => 'nullable|in:investor,target',
+            'fee_confirmation.fee_type' => 'nullable|in:success,retainer,monthly,one_time',
+            'fee_confirmation.calculated_amount' => 'nullable|numeric|min:0',
+            'fee_confirmation.final_amount' => 'nullable|numeric|min:0',
+            'fee_confirmation.deducted_from_success' => 'nullable|boolean',
         ]);
 
         $fromStage = $deal->stage_code;
         $toStage = $validated['stage_code'];
-        $pipelineType = $validated['pipeline_type'] ?? 'buyer';
+        // Use the deal's own pipeline_type for stage resolution
+        $pipelineType = $deal->pipeline_type ?? ($validated['pipeline_type'] ?? 'buyer');
 
         if ($fromStage !== $toStage) {
             // Look up stage to get correct progress
@@ -310,11 +400,39 @@ class DealController extends Controller
                     ->first();
             }
 
+            // Enforce gate rules
+            if ($stage) {
+                $gateRules = $stage->gate_rules ?? [];
+                $gateErrors = $this->evaluateGateRules($deal, $gateRules);
+
+                if (!empty($gateErrors)) {
+                    return response()->json([
+                        'message' => 'Cannot move to this stage — conditions not met.',
+                        'gate_errors' => $gateErrors,
+                    ], 422);
+                }
+            }
+
             // Update deal
             $deal->update([
                 'stage_code' => $toStage,
                 'progress_percent' => $stage ? $stage->progress : 0,
             ]);
+
+            // Record fee if confirmation was provided
+            if (!empty($validated['fee_confirmation'])) {
+                $fc = $validated['fee_confirmation'];
+                DealFee::create([
+                    'deal_id' => $deal->id,
+                    'fee_tier_id' => $fc['fee_tier_id'] ?? null,
+                    'stage_code' => $toStage,
+                    'fee_side' => $fc['fee_side'] ?? 'investor',
+                    'fee_type' => $fc['fee_type'] ?? 'one_time',
+                    'calculated_amount' => $fc['calculated_amount'] ?? 0,
+                    'final_amount' => $fc['final_amount'] ?? $fc['calculated_amount'] ?? 0,
+                    'deducted_from_success' => $fc['deducted_from_success'] ?? false,
+                ]);
+            }
 
             // Log stage change
             DealStageHistory::create([
@@ -324,29 +442,147 @@ class DealController extends Controller
                 'changed_by_user_id' => Auth::id(),
             ]);
 
-            // Add Activity Log
+            // Resolve human-readable stage names
+            $fromStageName = \App\Models\PipelineStage::where('pipeline_type', $pipelineType)
+                ->where('code', $fromStage)
+                ->where('is_active', true)
+                ->value('name') ?? $fromStage;
+            $toStageName = $stage ? $stage->name : $toStage;
+
+            // Add Activity Log (using stage names, not codes)
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'loggable_id' => $deal->id,
                 'loggable_type' => Deal::class,
                 'type' => 'system',
-                'content' => "Deal phase updated from {$fromStage} to {$toStage}",
+                'content' => "Deal phase updated from {$fromStageName} to {$toStageName}",
             ]);
 
             // Notify Admins and PIC
             try {
+                $investorName = $deal->buyer?->companyOverview?->reg_name ?? 'Unknown Investor';
+                $sellerName = $deal->seller?->companyOverview?->reg_name ?? 'Unknown Seller';
+
                 $recipients = User::role('System Admin')->get();
                 if ($deal->pic_user_id) {
                     $recipients = $recipients->push(User::find($deal->pic_user_id));
                 }
                 $recipients = $recipients->unique('id');
-                Notification::send($recipients, new DealStatusNotification($deal, 'stage_changed'));
+                Notification::send($recipients, new DealStatusNotification($deal, 'stage_changed', [
+                    'from_stage_name' => $fromStageName,
+                    'to_stage_name'   => $toStageName,
+                    'investor_name'   => $investorName,
+                    'seller_name'     => $sellerName,
+                ]));
             } catch (\Exception $e) { /* Ignore */ }
         }
 
         return response()->json([
             'message' => 'Stage updated successfully',
-            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic']),
+            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'fees']),
+        ]);
+    }
+
+    /**
+     * Evaluate gate rules against a deal.
+     */
+    private function evaluateGateRules(Deal $deal, array $rules): array
+    {
+        $errors = [];
+
+        foreach ($rules as $rule) {
+            $field = $rule['field'] ?? null;
+            $operator = $rule['operator'] ?? 'equals';
+            $value = $rule['value'] ?? null;
+
+            if (!$field) continue;
+
+            switch ($field) {
+                case 'both_parties':
+                    if ($value && (!$deal->buyer_id || !$deal->seller_id)) {
+                        $errors[] = 'Both a buyer and seller must be assigned before moving to this stage.';
+                    }
+                    break;
+
+                case 'has_buyer':
+                    if ($value && !$deal->buyer_id) {
+                        $errors[] = 'A buyer (investor) must be assigned before moving to this stage.';
+                    }
+                    break;
+
+                case 'has_seller':
+                    if ($value && !$deal->seller_id) {
+                        $errors[] = 'A seller (target) must be assigned before moving to this stage.';
+                    }
+                    break;
+
+                case 'ticket_size':
+                    $actual = (float) ($deal->ticket_size ?? 0);
+                    if ($operator === 'greater_than' && $actual <= (float) $value) {
+                        $errors[] = 'Ticket size must be greater than $' . number_format((float) $value) . '.';
+                    } elseif ($operator === 'less_than' && $actual >= (float) $value) {
+                        $errors[] = 'Ticket size must be less than $' . number_format((float) $value) . '.';
+                    } elseif ($operator === 'equals' && $actual != (float) $value) {
+                        $errors[] = 'Ticket size must equal $' . number_format((float) $value) . '.';
+                    }
+                    break;
+
+                case 'priority':
+                    $actual = $deal->priority ?? '';
+                    if ($operator === 'equals' && $actual !== $value) {
+                        $errors[] = "Deal priority must be '{$value}' to enter this stage.";
+                    } elseif ($operator === 'not_equals' && $actual === $value) {
+                        $errors[] = "Deal priority must not be '{$value}' to enter this stage.";
+                    }
+                    break;
+
+                case 'probability':
+                    $actual = $deal->possibility ?? '';
+                    if ($operator === 'equals' && $actual !== $value) {
+                        $errors[] = "Deal probability must be '{$value}' to enter this stage.";
+                    } elseif ($operator === 'not_equals' && $actual === $value) {
+                        $errors[] = "Deal probability must not be '{$value}' to enter this stage.";
+                    }
+                    break;
+
+                case 'has_documents':
+                    $count = $deal->documents()->count();
+                    if ($operator === 'greater_than' && $count <= (int) $value) {
+                        $errors[] = 'Deal must have more than ' . (int) $value . ' document(s) attached.';
+                    }
+                    break;
+
+                case 'industry':
+                    if ($operator === 'not_empty' && empty($deal->industry)) {
+                        $errors[] = 'Deal industry must be set before moving to this stage.';
+                    }
+                    break;
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Analyze deletion impact for a deal.
+     */
+    public function deleteAnalyze(Deal $deal): JsonResponse
+    {
+        $activityLogs = \App\Models\ActivityLog::where('loggable_type', Deal::class)
+            ->where('loggable_id', $deal->id)
+            ->count();
+
+        $stageHistory = DealStageHistory::where('deal_id', $deal->id)->count();
+
+        $fees = DealFee::where('deal_id', $deal->id)->count();
+
+        return response()->json([
+            'name' => $deal->name,
+            'impact' => [
+                'activity_logs' => $activityLogs,
+                'stage_history' => $stageHistory,
+                'fees'          => $fees,
+            ],
         ]);
     }
 

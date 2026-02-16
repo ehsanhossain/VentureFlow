@@ -149,7 +149,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Deal Pipeline Routes
     Route::get('/deals/dashboard', [\App\Http\Controllers\DealController::class, 'dashboard']);
+    Route::get('/deals/{deal}/stage-check', [\App\Http\Controllers\DealController::class, 'stageCheck']);
     Route::patch('/deals/{deal}/stage', [\App\Http\Controllers\DealController::class, 'updateStage']);
+    Route::get('/deals/{deal}/delete-analyze', [\App\Http\Controllers\DealController::class, 'deleteAnalyze']);
     Route::apiResource('deals', \App\Http\Controllers\DealController::class);
 
     // Notifications

@@ -54,21 +54,8 @@ const formatTimestamp = (timestamp: string) => {
     });
 };
 
-// ─────────────────────────────────────────────────────
-//  Notes Icon (SVG)
-// ─────────────────────────────────────────────────────
 
-const NotesIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path
-            d="M15.75 17.25V20.625C15.75 21.2463 15.2463 21.75 14.625 21.75H4.875C4.25368 21.75 3.75 21.2463 3.75 20.625V7.875C3.75 7.25368 4.25368 6.75 4.875 6.75H6.75C7.26107 6.75 7.76219 6.7926 8.25 6.87444M15.75 17.25H19.125C19.7463 17.25 20.25 16.7463 20.25 16.125V11.25C20.25 6.79051 17.0066 3.08855 12.75 2.37444C12.2622 2.2926 11.7611 2.25 11.25 2.25H9.375C8.75368 2.25 8.25 2.75368 8.25 3.375V6.87444M20.25 13.5V11.625C20.25 9.76104 18.739 8.25 16.875 8.25H15.375C14.7537 8.25 14.25 7.74632 14.25 7.125V5.625C14.25 3.76104 12.739 2.25 10.875 2.25H9.75"
-            stroke="#6B7280"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        />
-    </svg>
-);
+
 
 // ─────────────────────────────────────────────────────
 //  Component
@@ -181,128 +168,134 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
     // ── Render ────────────────────────────────────────
     return (
         <>
-            <section className="border border-[#F3F4F6] rounded overflow-hidden">
-                {/* Notes Header */}
-                <div className="px-3 py-2 bg-[rgba(249,250,251,0.8)] border-b border-[#F3F4F6] flex items-center gap-3">
-                    <NotesIcon />
-                    <h2 className="text-base font-medium text-gray-500 capitalize">Notes</h2>
-                </div>
-
+            <section className="border border-[#F3F4F6] rounded overflow-hidden flex flex-col h-full">
                 {/* Notes Content – WhatsApp Style */}
                 <div
                     ref={notesContainerRef}
-                    className="p-5 bg-[#F8FAFC] min-h-[200px] max-h-[400px] overflow-y-auto flex flex-col gap-4"
+                    className="px-3 py-3 bg-[#F8FAFC] flex-1 overflow-y-auto flex flex-col gap-2"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: '#CBD5E1 transparent' }}
                 >
                     {notes.length > 0 ? (
                         notes.map((note) => (
                             <div
                                 key={note.id}
-                                className={`flex ${note.isSelf ? 'justify-end' : 'justify-start'}`}
+                                className="flex items-end w-full"
                                 onContextMenu={(e) => !note.isDeleted && note.isSelf && handleNoteContextMenu(e, note.id)}
                             >
-                                <div className={`flex gap-2 max-w-[75%] ${note.isSelf ? 'flex-row-reverse' : ''}`}>
-                                    {/* Avatar */}
-                                    {!note.isDeleted &&
-                                        (note.isSystem ? (
-                                            <img
-                                                src="/system-avatar.png"
-                                                className="w-8 h-8 rounded-full shrink-0 object-cover self-end"
-                                                alt="System"
-                                            />
-                                        ) : note.avatar ? (
-                                            <img
-                                                src={note.avatar}
-                                                className="w-8 h-8 rounded-full shrink-0 object-cover self-end"
-                                                alt=""
-                                            />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full bg-[#064771] flex items-center justify-center shrink-0 self-end">
-                                                <span className="text-white text-xs font-medium">{getInitials(note.author)}</span>
-                                            </div>
-                                        ))}
-
-                                    {/* Message Bubble */}
-                                    {note.isDeleted ? (
-                                        <div className="px-3 py-2 bg-[#F3F4F6] rounded-lg border border-[#E5E7EB] italic">
-                                            <span className="text-sm text-gray-400">
-                                                <Trash2 className="w-3 h-3 inline mr-1" />
-                                                {note.deletedBy || note.author} deleted this message
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div
-                                            className={`relative flex flex-col gap-1 px-3 py-2 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md ${note.isSelf
-                                                ? 'bg-[#064771] text-white rounded-br-none'
-                                                : note.isSystem
-                                                    ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] rounded-bl-none border border-[#BAE6FD]'
-                                                    : 'bg-white text-gray-700 rounded-bl-none border border-[#E5E7EB]'
-                                                }`}
-                                        >
-                                            {/* Author & System Badge */}
-                                            <div className={`flex items-center gap-2 ${note.isSelf ? 'justify-end' : ''}`}>
-                                                <span className={`text-xs font-semibold ${note.isSelf ? 'text-white/90' : 'text-gray-700'}`}>
-                                                    {note.author}
-                                                </span>
-                                                {note.isSystem && (
-                                                    <span className="px-1.5 py-0.5 bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 rounded text-[9px] font-medium text-[#0369A1]">
-                                                        System
+                                {/* Self messages: timestamp extreme left, bubble right */}
+                                {note.isSelf ? (
+                                    <div className="flex items-end justify-between w-full">
+                                        {!note.isDeleted && (
+                                            <span className="text-[9px] text-gray-400 shrink-0 mb-0.5">{formatTimestamp(note.timestamp)}</span>
+                                        )}
+                                        <div className="flex gap-1.5 flex-row-reverse max-w-[70%]">
+                                            {/* Avatar */}
+                                            {!note.isDeleted &&
+                                                (note.avatar ? (
+                                                    <img src={note.avatar} className="w-5 h-5 rounded-full shrink-0 object-cover self-end" alt="" />
+                                                ) : (
+                                                    <div className="w-5 h-5 rounded-full bg-[#064771] flex items-center justify-center shrink-0 self-end">
+                                                        <span className="text-white text-[8px] font-medium">{getInitials(note.author)}</span>
+                                                    </div>
+                                                ))}
+                                            {note.isDeleted ? (
+                                                <div className="px-2 py-1 bg-[#F3F4F6] rounded-md border border-[#E5E7EB] italic">
+                                                    <span className="text-[11px] text-gray-400">
+                                                        <Trash2 className="w-2.5 h-2.5 inline mr-0.5" />
+                                                        {note.deletedBy || note.author} deleted this message
                                                     </span>
-                                                )}
-                                            </div>
-
-                                            {/* Message Content */}
-                                            <p className={`text-sm leading-relaxed ${note.isSelf ? 'text-white' : ''}`}>{note.content}</p>
-
-                                            {/* Timestamp */}
-                                            <span className={`text-[10px] self-end ${note.isSelf ? 'text-white/70' : 'text-gray-400'}`}>
-                                                {note.timestamp}
-                                            </span>
+                                                </div>
+                                            ) : (
+                                                <div className="relative px-2.5 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md bg-[#064771] text-white rounded-br-none">
+                                                    <div className="flex items-center gap-1.5 justify-end">
+                                                        <span className="text-[10px] font-semibold text-white/90">{note.author}</span>
+                                                    </div>
+                                                    <p className="text-xs leading-snug text-white">{note.content}</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                ) : (
+                                    /* Non-self messages: bubble left, timestamp extreme right */
+                                    <div className="flex items-end justify-between w-full">
+                                        <div className="flex gap-1.5 max-w-[70%]">
+                                            {/* Avatar */}
+                                            {!note.isDeleted &&
+                                                (note.isSystem ? (
+                                                    <img src="/system-avatar.png" className="w-5 h-5 rounded-full shrink-0 object-cover self-end" alt="System" />
+                                                ) : note.avatar ? (
+                                                    <img src={note.avatar} className="w-5 h-5 rounded-full shrink-0 object-cover self-end" alt="" />
+                                                ) : (
+                                                    <div className="w-5 h-5 rounded-full bg-[#064771] flex items-center justify-center shrink-0 self-end">
+                                                        <span className="text-white text-[8px] font-medium">{getInitials(note.author)}</span>
+                                                    </div>
+                                                ))}
+                                            {note.isDeleted ? (
+                                                <div className="px-2 py-1 bg-[#F3F4F6] rounded-md border border-[#E5E7EB] italic">
+                                                    <span className="text-[11px] text-gray-400">
+                                                        <Trash2 className="w-2.5 h-2.5 inline mr-0.5" />
+                                                        {note.deletedBy || note.author} deleted this message
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className={`relative px-2.5 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all hover:shadow-md rounded-bl-none ${note.isSystem
+                                                    ? 'bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] text-[#0C4A6E] border border-[#BAE6FD]'
+                                                    : 'bg-white text-gray-700 border border-[#E5E7EB]'
+                                                    }`}>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] font-semibold text-gray-700">{note.author}</span>
+                                                        {note.isSystem && (
+                                                            <span className="px-1 py-px bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 rounded text-[8px] font-medium text-[#0369A1]">System</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs leading-snug">{note.content}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!note.isDeleted && (
+                                            <span className="text-[9px] text-gray-400 shrink-0 mb-0.5">{formatTimestamp(note.timestamp)}</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))
                     ) : (
-                        <div className="text-center text-gray-400 italic py-8">
+                        <div className="text-center text-gray-400 italic py-8 text-xs">
                             No notes yet. Add a note to start the conversation.
                         </div>
                     )}
                 </div>
 
                 {/* Notes Input */}
-                <div className="p-3 bg-[rgba(249,250,251,0.5)] border-t border-[#E5E7EB]">
-                    <div className="p-4 bg-white border border-[#E2E8F0] rounded">
-                        <div className="flex flex-col gap-4">
-                            <textarea
-                                value={newNote}
-                                onChange={(e) => setNewNote(e.target.value)}
-                                placeholder="Write a comment or note..."
-                                className="w-full h-12 resize-none text-base text-gray-600 placeholder-[#475569] focus:outline-none"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleAddNote();
-                                    }
-                                }}
-                            />
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={handleAddNote}
-                                    disabled={submittingNote || !newNote.trim()}
-                                    className="flex items-center gap-2 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {submittingNote ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <>
-                                            Add
-                                            <Send className="w-5 h-5" />
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
+                <div className="px-3 py-2 bg-[rgba(249,250,251,0.5)] border-t border-[#E5E7EB] shrink-0">
+                    <div className="flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-3 py-1.5">
+                        <textarea
+                            value={newNote}
+                            onChange={(e) => setNewNote(e.target.value)}
+                            placeholder="Write a comment or note..."
+                            className="flex-1 resize-none text-xs text-gray-600 placeholder-[#94A3B8] focus:outline-none"
+                            rows={1}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleAddNote();
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={handleAddNote}
+                            disabled={submittingNote || !newNote.trim()}
+                            className="flex items-center gap-1.5 px-3 py-1 bg-[#064771] text-white rounded text-xs font-semibold hover:bg-[#053a5c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                        >
+                            {submittingNote ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                                <>
+                                    Add
+                                    <Send className="w-3.5 h-3.5" />
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
             </section>

@@ -88,7 +88,7 @@ const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
         return (
             <div className="grid grid-cols-5 gap-4">
                 {[...Array(5)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-lg border p-4 animate-pulse">
+                    <div key={i} className="bg-white rounded-[3px] border p-4 animate-pulse">
                         <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
                         <div className="h-8 bg-gray-200 rounded w-20 mb-1"></div>
                         <div className="h-3 bg-gray-200 rounded w-32"></div>
@@ -103,7 +103,7 @@ const KPIDashboard = ({ kpis, loading }: KPIDashboardProps) => {
             {kpiCards.map((card, index) => (
                 <div
                     key={index}
-                    className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    className="bg-white rounded-[3px] border p-4 hover:shadow-md transition-shadow cursor-pointer"
                 >
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm text-gray-500">{card.title}</span>

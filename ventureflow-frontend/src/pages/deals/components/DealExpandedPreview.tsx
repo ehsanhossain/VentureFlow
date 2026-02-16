@@ -57,10 +57,10 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     const updatedDate = new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
     return (
-        <div className="w-full inline-flex flex-col shadow-xl rounded-lg">
+        <div className="w-full inline-flex flex-col shadow-xl rounded-[3px]">
             {/* Main Card Body */}
             <div
-                className="px-6 py-6 bg-white rounded-t-lg flex flex-col"
+                className="px-6 py-6 bg-white rounded-t-[3px] flex flex-col"
                 style={{
                     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
                     border: '1px solid #E5E7EB'
@@ -217,7 +217,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
 
             {/* Footer */}
             <div
-                className="h-12 px-6 bg-white rounded-b-lg flex items-center justify-between border-t-0"
+                className="h-12 px-6 bg-white rounded-b-[3px] flex items-center justify-between border-t-0"
                 style={{
                     border: '1px solid #E5E7EB',
                     borderTop: 'none'
