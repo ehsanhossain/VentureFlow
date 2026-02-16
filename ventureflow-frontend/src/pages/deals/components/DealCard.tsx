@@ -66,8 +66,8 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         return priorityMap[priority] || priorityMap.medium;
     };
 
-    const buyerName = deal.buyer?.company_overview?.reg_name || 'Unknown Buyer';
-    const sellerName = deal.seller?.company_overview?.reg_name || 'Unknown Seller';
+    const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'Unknown Buyer' : 'Investor TBD');
+    const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'Unknown Seller' : 'Target TBD');
     const buyerImage = deal.buyer?.image;
     const sellerImage = deal.seller?.image;
 

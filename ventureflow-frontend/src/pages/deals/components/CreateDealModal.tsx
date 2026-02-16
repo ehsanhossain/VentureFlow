@@ -24,6 +24,10 @@ interface Seller {
         reg_name: string;
         financial_advisor?: string | Record<string, string>[];
     };
+    financial_details?: {
+        expected_investment_amount?: { min?: string; max?: string } | string;
+        default_currency?: string;
+    } | null;
 }
 
 interface User {
@@ -58,6 +62,13 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
+
+    // TBD flags for 1-sided deals
+    const [buyerTBD, setBuyerTBD] = useState(false);
+    const [sellerTBD, setSellerTBD] = useState(false);
+
+    // Track if ticket size was manually edited
+    const [ticketSizeManuallyEdited, setTicketSizeManuallyEdited] = useState(false);
 
     useEffect(() => {
         fetchBuyers();
@@ -125,28 +136,88 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         });
     }, []);
 
+    /** Extract the high (max) value from seller's expected_investment_amount */
+    const getSellerInvestmentMax = (seller: Seller): string => {
+        const fin = seller.financial_details;
+        if (!fin || !fin.expected_investment_amount) return '';
+        const amount = fin.expected_investment_amount;
+        if (typeof amount === 'string') {
+            try {
+                const parsed = JSON.parse(amount);
+                return parsed?.max || parsed?.min || amount;
+            } catch {
+                return amount;
+            }
+        }
+        if (typeof amount === 'object') {
+            return amount.max || amount.min || '';
+        }
+        return '';
+    };
+
     const handleSelectBuyer = (buyer: Buyer) => {
         setSelectedBuyer(buyer);
+        setBuyerTBD(false);
         setFormData((prev) => ({ ...prev, buyer_id: buyer.id }));
-        // Auto-generate deal name if seller is selected
+        // Auto-generate deal name
+        const buyerName = buyer.company_overview?.reg_name || 'Buyer';
         if (selectedSeller) {
-            const buyerName = buyer.company_overview?.reg_name || 'Buyer';
             const sellerName = selectedSeller.company_overview?.reg_name || 'Seller';
             setFormData((prev) => ({ ...prev, name: `${buyerName} – ${sellerName}` }));
+        } else if (sellerTBD) {
+            setFormData((prev) => ({ ...prev, name: `${buyerName} – TBD` }));
         }
     };
 
     const handleSelectSeller = (seller: Seller) => {
         setSelectedSeller(seller);
+        setSellerTBD(false);
         setFormData((prev) => ({ ...prev, seller_id: seller.id }));
+
+        // Auto-grab ticket size from seller's investment range (high value)
+        if (!ticketSizeManuallyEdited) {
+            const maxVal = getSellerInvestmentMax(seller);
+            if (maxVal) {
+                setFormData((prev) => ({ ...prev, ticket_size: maxVal }));
+            }
+            // Also grab currency if available
+            if (seller.financial_details?.default_currency) {
+                setFormData((prev) => ({ ...prev, estimated_ev_currency: seller.financial_details!.default_currency! }));
+            }
+        }
+
         // Auto-generate deal name
+        const sellerName = seller.company_overview?.reg_name || 'Target';
         if (selectedBuyer) {
             const buyerName = selectedBuyer.company_overview?.reg_name || 'Investor';
-            const sellerName = seller.company_overview?.reg_name || 'Target';
             setFormData((prev) => ({
                 ...prev,
                 name: `${buyerName} – ${sellerName}`,
             }));
+        } else if (buyerTBD) {
+            setFormData((prev) => ({ ...prev, name: `TBD – ${sellerName}` }));
+        }
+    };
+
+    const handleSkipBuyer = () => {
+        setBuyerTBD(true);
+        setSelectedBuyer(null);
+        setFormData((prev) => ({ ...prev, buyer_id: 0 }));
+        // Auto-name with TBD if seller exists
+        if (selectedSeller) {
+            const sellerName = selectedSeller.company_overview?.reg_name || 'Target';
+            setFormData((prev) => ({ ...prev, name: `TBD – ${sellerName}` }));
+        }
+    };
+
+    const handleSkipSeller = () => {
+        setSellerTBD(true);
+        setSelectedSeller(null);
+        setFormData((prev) => ({ ...prev, seller_id: 0 }));
+        // Auto-name with TBD if buyer exists
+        if (selectedBuyer) {
+            const buyerName = selectedBuyer.company_overview?.reg_name || 'Investor';
+            setFormData((prev) => ({ ...prev, name: `${buyerName} – TBD` }));
         }
     };
 
@@ -159,8 +230,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
     };
 
     const handleSubmit = async () => {
-        if (!formData.buyer_id || !formData.seller_id) {
-            showAlert({ type: 'error', message: 'Please select both buyer and seller' });
+        // Allow 1-sided: at least one party required
+        if (!formData.buyer_id && !formData.seller_id) {
+            showAlert({ type: 'error', message: 'Please select at least one party (buyer or seller)' });
             return;
         }
         if (!formData.name) {
@@ -172,6 +244,8 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             await api.post('/api/deals', {
                 ...formData,
+                buyer_id: formData.buyer_id || null,
+                seller_id: formData.seller_id || null,
                 pipeline_type: defaultView,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
@@ -191,13 +265,41 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         s.company_overview?.reg_name?.toLowerCase().includes(searchSeller.toLowerCase())
     );
 
+    // Determine step labels based on defaultView
+    const step1Label = defaultView === 'seller' ? 'Select Target' : 'Select Investor';
+    const step2Label = defaultView === 'seller' ? 'Select Investor' : 'Select Target';
+
+    // Determine whether step 1 deals with buyers or sellers
+    const step1IsBuyer = defaultView === 'buyer';
+
+    // Can proceed from step 1: selected or TBD
+    const canProceedStep1 = step1IsBuyer
+        ? (!!selectedBuyer || buyerTBD)
+        : (!!selectedSeller || sellerTBD);
+
+    // Can proceed from step 2: selected or TBD (but at least ONE party must be real)
+    const canProceedStep2 = step1IsBuyer
+        ? (!!selectedSeller || sellerTBD)
+        : (!!selectedBuyer || buyerTBD);
+
+    const hasAtLeastOneParty = !!selectedBuyer || !!selectedSeller;
+
+    // Shared input/component style with 3px border-radius
+    const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+    const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+    const buttonItemClass = (isSelected: boolean, accentColor: string) =>
+        `w-full flex items-center gap-3 px-4 py-3 rounded-[3px] border transition-colors ${isSelected
+            ? `border-${accentColor}-500 bg-${accentColor}-50`
+            : 'hover:bg-gray-50'
+        }`;
+
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="bg-white rounded-[3px] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b">
                     <h2 className="text-lg font-medium text-gray-900">Create New Deal</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Close modal" aria-label="Close modal">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-[3px] transition-colors" title="Close modal" aria-label="Close modal">
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -215,11 +317,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 {s}
                             </div>
                             <span className={`ml-2 text-sm ${step >= s ? 'text-gray-900' : 'text-gray-500'}`}>
-                                {s === 1
-                                    ? (defaultView === 'seller' ? 'Select Target' : 'Select Investor')
-                                    : s === 2
-                                        ? (defaultView === 'seller' ? 'Select Investor' : 'Select Target')
-                                        : 'Deal Details'}
+                                {s === 1 ? step1Label : s === 2 ? step2Label : 'Deal Details'}
                             </span>
                             {s < 3 && <div className="w-12 h-0.5 mx-4 bg-gray-200" />}
                         </div>
@@ -228,95 +326,258 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto max-h-[50vh]">
+                    {/* ===== STEP 1 ===== */}
                     {step === 1 && (
                         <div>
-                            <input
-                                type="text"
-                                placeholder="Search investors..."
-                                value={searchBuyer}
-                                onChange={(e) => setSearchBuyer(e.target.value)}
-                                className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {filteredBuyers.map((buyer) => (
+                            {step1IsBuyer ? (
+                                /* Step 1 is Select Investor (Buyer) */
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder="Search investors..."
+                                        value={searchBuyer}
+                                        onChange={(e) => setSearchBuyer(e.target.value)}
+                                        className={`${inputClass} mb-4`}
+                                    />
+                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                        {filteredBuyers.map((buyer) => (
+                                            <button
+                                                key={buyer.id}
+                                                onClick={() => handleSelectBuyer(buyer)}
+                                                className={buttonItemClass(selectedBuyer?.id === buyer.id, 'blue')}
+                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' } : {}}
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
+                                                    {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {filteredBuyers.length === 0 && (
+                                            <p className="text-center text-gray-500 py-4">No investors found</p>
+                                        )}
+                                    </div>
+                                    {/* Skip option */}
                                     <button
-                                        key={buyer.id}
-                                        onClick={() => handleSelectBuyer(buyer)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${selectedBuyer?.id === buyer.id
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'hover:bg-gray-50'
+                                        onClick={handleSkipBuyer}
+                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${buyerTBD
+                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
                                             }`}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
-                                            {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
-                                        </span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                        <span className="text-sm font-medium">Skip for now (Investor TBD)</span>
                                     </button>
-                                ))}
-                                {filteredBuyers.length === 0 && (
-                                    <p className="text-center text-gray-500 py-4">No investors found</p>
-                                )}
-                            </div>
+                                    {buyerTBD && (
+                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                            Deal will be created as a <strong>Seller Mandate</strong> — you can assign an investor later.
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                /* Step 1 is Select Target (Seller) */
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder="Search targets..."
+                                        value={searchSeller}
+                                        onChange={(e) => setSearchSeller(e.target.value)}
+                                        className={`${inputClass} mb-4`}
+                                    />
+                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                        {filteredSellers.map((seller) => (
+                                            <button
+                                                key={seller.id}
+                                                onClick={() => handleSelectSeller(seller)}
+                                                className={buttonItemClass(selectedSeller?.id === seller.id, 'green')}
+                                                style={selectedSeller?.id === seller.id ? { borderColor: '#22C55E', backgroundColor: '#F0FDF4' } : {}}
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
+                                                    {seller.company_overview?.reg_name?.charAt(0) || 'S'}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {seller.company_overview?.reg_name || `Seller #${seller.id}`}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {filteredSellers.length === 0 && (
+                                            <p className="text-center text-gray-500 py-4">No targets found</p>
+                                        )}
+                                    </div>
+                                    {/* Skip option */}
+                                    <button
+                                        onClick={handleSkipSeller}
+                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${sellerTBD
+                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
+                                            }`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                        <span className="text-sm font-medium">Skip for now (Target TBD)</span>
+                                    </button>
+                                    {sellerTBD && (
+                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                            Deal will be created as a <strong>Buyer Mandate</strong> — you can assign a target later.
+                                        </p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     )}
 
+                    {/* ===== STEP 2 ===== */}
                     {step === 2 && (
                         <div>
-                            <input
-                                type="text"
-                                placeholder="Search targets..."
-                                value={searchSeller}
-                                onChange={(e) => setSearchSeller(e.target.value)}
-                                className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {filteredSellers.map((seller) => (
+                            {step1IsBuyer ? (
+                                /* Step 2 is Select Target (Seller) */
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder="Search targets..."
+                                        value={searchSeller}
+                                        onChange={(e) => setSearchSeller(e.target.value)}
+                                        className={`${inputClass} mb-4`}
+                                    />
+                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                        {filteredSellers.map((seller) => (
+                                            <button
+                                                key={seller.id}
+                                                onClick={() => handleSelectSeller(seller)}
+                                                className={buttonItemClass(selectedSeller?.id === seller.id, 'green')}
+                                                style={selectedSeller?.id === seller.id ? { borderColor: '#22C55E', backgroundColor: '#F0FDF4' } : {}}
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
+                                                    {seller.company_overview?.reg_name?.charAt(0) || 'S'}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {seller.company_overview?.reg_name || `Seller #${seller.id}`}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {filteredSellers.length === 0 && (
+                                            <p className="text-center text-gray-500 py-4">No targets found</p>
+                                        )}
+                                    </div>
+                                    {/* Skip option */}
                                     <button
-                                        key={seller.id}
-                                        onClick={() => handleSelectSeller(seller)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border transition-colors ${selectedSeller?.id === seller.id
-                                            ? 'border-green-500 bg-green-50'
-                                            : 'hover:bg-gray-50'
+                                        onClick={handleSkipSeller}
+                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${sellerTBD
+                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
                                             }`}
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
-                                            {seller.company_overview?.reg_name?.charAt(0) || 'S'}
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900">
-                                            {seller.company_overview?.reg_name || `Seller #${seller.id}`}
-                                        </span>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                        <span className="text-sm font-medium">Skip for now (Target TBD)</span>
                                     </button>
-                                ))}
-                                {filteredSellers.length === 0 && (
-                                    <p className="text-center text-gray-500 py-4">No targets found</p>
-                                )}
-                            </div>
+                                    {sellerTBD && (
+                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                            Deal will be created as a <strong>Buyer Mandate</strong> — you can assign a target later.
+                                        </p>
+                                    )}
+                                </>
+                            ) : (
+                                /* Step 2 is Select Investor (Buyer) */
+                                <>
+                                    <input
+                                        type="text"
+                                        placeholder="Search investors..."
+                                        value={searchBuyer}
+                                        onChange={(e) => setSearchBuyer(e.target.value)}
+                                        className={`${inputClass} mb-4`}
+                                    />
+                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                        {filteredBuyers.map((buyer) => (
+                                            <button
+                                                key={buyer.id}
+                                                onClick={() => handleSelectBuyer(buyer)}
+                                                className={buttonItemClass(selectedBuyer?.id === buyer.id, 'blue')}
+                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' } : {}}
+                                            >
+                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
+                                                    {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
+                                                </span>
+                                            </button>
+                                        ))}
+                                        {filteredBuyers.length === 0 && (
+                                            <p className="text-center text-gray-500 py-4">No investors found</p>
+                                        )}
+                                    </div>
+                                    {/* Skip option */}
+                                    <button
+                                        onClick={handleSkipBuyer}
+                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${buyerTBD
+                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
+                                            }`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                        <span className="text-sm font-medium">Skip for now (Investor TBD)</span>
+                                    </button>
+                                    {buyerTBD && (
+                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                            Deal will be created as a <strong>Seller Mandate</strong> — you can assign an investor later.
+                                        </p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     )}
 
+                    {/* ===== STEP 3: Deal Details ===== */}
                     {step === 3 && (
                         <div className="space-y-4">
+                            {/* Mandate indicator */}
+                            {(buyerTBD || sellerTBD) && (
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-[3px] bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>
+                                        Creating as <strong>{buyerTBD ? 'Seller Mandate' : 'Buyer Mandate'}</strong> — {buyerTBD ? 'Investor' : 'Target'} is TBD and can be assigned later.
+                                    </span>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Deal Name</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className={inputClass}
                                     placeholder="e.g., Buyer Corp – Seller Inc"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Size</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Ticket Size
+                                        {selectedSeller && !ticketSizeManuallyEdited && formData.ticket_size && (
+                                            <span className="ml-1 text-xs text-green-600 font-normal">(auto-filled from target)</span>
+                                        )}
+                                    </label>
                                     <div className="flex gap-2">
                                         <input
                                             type="number"
                                             value={formData.ticket_size}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, ticket_size: e.target.value }))}
-                                            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            onChange={(e) => {
+                                                setTicketSizeManuallyEdited(true);
+                                                setFormData((prev) => ({ ...prev, ticket_size: e.target.value }));
+                                            }}
+                                            className={`flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
                                             placeholder="Amount"
                                         />
                                         <select
@@ -324,7 +585,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             aria-label="Currency"
                                             value={formData.estimated_ev_currency}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
-                                            className="w-24 px-2 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-24 px-2 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                         >
                                             {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
                                         </select>
@@ -336,7 +597,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         id="deal-stage"
                                         value={formData.stage_code}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, stage_code: e.target.value }))}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={selectClass}
                                     >
                                         {stages.map((stage) => (
                                             <option key={stage.code} value={stage.code}>
@@ -348,12 +609,12 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="deal-possibility" className="block text-sm font-medium text-gray-700 mb-1">Possibility</label>
+                                    <label htmlFor="deal-probability" className="block text-sm font-medium text-gray-700 mb-1">Probability</label>
                                     <select
-                                        id="deal-possibility"
+                                        id="deal-probability"
                                         value={formData.possibility}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, possibility: e.target.value }))}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={selectClass}
                                     >
                                         <option value="Low">Low</option>
                                         <option value="Medium">Medium</option>
@@ -366,7 +627,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         type="date"
                                         value={formData.target_close_date}
                                         onChange={(e) => setFormData((prev) => ({ ...prev, target_close_date: e.target.value }))}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={inputClass}
                                     />
                                 </div>
                             </div>
@@ -382,7 +643,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             </div>
 
                             {/* FA Info Section */}
-                            <div className="bg-blue-50 p-4 rounded-lg space-y-2 text-xs text-blue-800 border border-blue-100">
+                            <div className="bg-blue-50 p-4 rounded-[3px] space-y-2 text-xs text-blue-800 border border-blue-100">
                                 <p className="font-semibold flex items-center gap-1">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     Financial Advisor (FA) Information
@@ -390,11 +651,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <span className="opacity-70">Investor FA:</span>
-                                        <p className="font-medium">{selectedBuyer ? getFANames(selectedBuyer.company_overview?.financial_advisor) : 'None'}</p>
+                                        <p className="font-medium">{selectedBuyer ? getFANames(selectedBuyer.company_overview?.financial_advisor) : (buyerTBD ? 'TBD' : 'None')}</p>
                                     </div>
                                     <div>
                                         <span className="opacity-70">Target FA:</span>
-                                        <p className="font-medium">{selectedSeller ? getFANames(selectedSeller.company_overview?.financial_advisor) : 'None'}</p>
+                                        <p className="font-medium">{selectedSeller ? getFANames(selectedSeller.company_overview?.financial_advisor) : (sellerTBD ? 'TBD' : 'None')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -406,18 +667,22 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
                     <button
                         onClick={() => (step > 1 ? setStep(step - 1) : onClose())}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-[3px] transition-colors"
                     >
                         {step === 1 ? 'Cancel' : 'Back'}
                     </button>
                     <button
                         onClick={() => {
-                            if (step === 1 && !selectedBuyer) {
-                                showAlert({ type: 'error', message: 'Please select a buyer' });
+                            if (step === 1 && !canProceedStep1) {
+                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'an investor' : 'a target'} or skip for now` });
                                 return;
                             }
-                            if (step === 2 && !selectedSeller) {
-                                showAlert({ type: 'error', message: 'Please select a seller' });
+                            if (step === 2 && !canProceedStep2) {
+                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'a target' : 'an investor'} or skip for now` });
+                                return;
+                            }
+                            if (step === 2 && !hasAtLeastOneParty) {
+                                showAlert({ type: 'error', message: 'At least one party (buyer or seller) must be selected. You cannot skip both.' });
                                 return;
                             }
                             if (step < 3) {
@@ -427,7 +692,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             }
                         }}
                         disabled={loading}
-                        className="px-6 py-2 bg-[#064771] text-white rounded-lg hover:bg-[#053a5c] transition-colors disabled:opacity-50"
+                        className="px-6 py-2 bg-[#064771] text-white rounded-[3px] hover:bg-[#053a5c] transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Creating...' : step < 3 ? 'Next' : 'Create Deal'}
                     </button>

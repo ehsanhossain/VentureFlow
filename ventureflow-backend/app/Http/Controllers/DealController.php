@@ -70,13 +70,18 @@ class DealController extends Controller
         }
 
         // UNBREAKABLE: Ensure deals only appear if they have a valid ACTIVE entity for the current view
+        // Support 1-sided deals: only filter on the side that exists
         if ($view === 'buyer') {
-            $query->whereHas('buyer.companyOverview', function ($q) {
-                $q->where('status', 'Active');
+            $query->where(function ($q) {
+                $q->whereHas('buyer.companyOverview', function ($bq) {
+                    $bq->where('status', 'Active');
+                })->orWhereNull('buyer_id'); // Seller-only mandate still visible
             });
         } else {
-            $query->whereHas('seller', function ($q) {
-                $q->where('status', '1');
+            $query->where(function ($q) {
+                $q->whereHas('seller', function ($sq) {
+                    $sq->where('status', '1');
+                })->orWhereNull('seller_id'); // Buyer-only mandate still visible
             });
         }
 
@@ -148,8 +153,8 @@ class DealController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'buyer_id' => 'required|exists:buyers,id',
-            'seller_id' => 'required|exists:sellers,id',
+            'buyer_id' => 'nullable|exists:buyers,id',
+            'seller_id' => 'nullable|exists:sellers,id',
             'name' => 'required|string|max:255',
             'industry' => 'nullable|string|max:255',
             'region' => 'nullable|string|max:255',
@@ -164,6 +169,14 @@ class DealController extends Controller
             'target_close_date' => 'nullable|date',
             'pipeline_type' => 'nullable|in:buyer,seller',
         ]);
+
+        // At least one party (buyer or seller) must be selected
+        if (empty($validated['buyer_id']) && empty($validated['seller_id'])) {
+            return response()->json([
+                'message' => 'At least one party (buyer or seller) must be selected.',
+                'errors' => ['parties' => ['At least one party (buyer or seller) must be selected.']],
+            ], 422);
+        }
 
         // Determine stage code and look up progress from pipeline stages
         $stageCode = $validated['stage_code'] ?? null;

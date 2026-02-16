@@ -35,8 +35,8 @@ type PipelineView = 'buyer' | 'seller';
 export interface Deal {
     id: number;
     name: string;
-    buyer_id: number;
-    seller_id: number;
+    buyer_id: number | null;
+    seller_id: number | null;
     industry: string | null;
     region: string | null;
     estimated_ev_value: number | null;
@@ -651,7 +651,7 @@ const DealPipeline = () => {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{pipelineView === 'buyer' ? 'Investor' : 'Target'}</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Possibility</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
                                     </tr>
                                 </thead>
