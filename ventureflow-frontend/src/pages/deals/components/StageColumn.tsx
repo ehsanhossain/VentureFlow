@@ -28,7 +28,7 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
                     </div>
                     <span className="text-sm font-medium text-[#1C2536] leading-[21px] truncate">{name}</span>
                 </div>
-                <div className={`inline-flex items-center justify-center px-2 py-1 rounded-[3px] shrink-0 ${pipelineView === 'buyer' ? 'bg-[#064771]' : 'bg-green-600'}`}>
+                <div className="inline-flex items-center justify-center px-2 py-1 rounded-[3px] shrink-0 bg-[#064771]">
                     <span className="text-[12px] font-bold text-white leading-[14px] text-center">{deals.length}</span>
                 </div>
             </div>
@@ -36,11 +36,9 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
             {/* Droppable Area */}
             <div
                 ref={setNodeRef}
-                className={`flex-1 p-2 space-y-3 rounded-b-[3px] min-h-[200px] transition-colors border-l border-r border-b ${isOver
-                    ? pipelineView === 'buyer'
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'bg-green-50 border-green-300'
-                    : 'bg-white border-[#E5E7EB]'
+                className={`flex-1 p-2 space-y-3 rounded-b-[3px] min-h-[200px] transition-all duration-200 border-l border-r border-b ${isOver
+                    ? 'bg-blue-50 border-blue-300'
+                    : 'bg-[#F9FAFB] border-[#E5E7EB]'
                     }`}
             >
                 {deals.length === 0 ? (
@@ -66,4 +64,3 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
 };
 
 export default StageColumn;
-

@@ -249,6 +249,8 @@ class DealController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
+            'buyer_id' => 'nullable|exists:buyers,id',
+            'seller_id' => 'nullable|exists:sellers,id',
             'industry' => 'nullable|string|max:255',
             'region' => 'nullable|string|max:255',
             'estimated_ev_value' => 'nullable|numeric|min:0',
@@ -296,14 +298,42 @@ class DealController extends Controller
             return response()->json(['message' => 'Invalid target stage.'], 422);
         }
 
-        // Evaluate gate rules
-        $gateRules = $stage->gate_rules ?? [];
-        $gateErrors = $this->evaluateGateRules($deal, $gateRules);
+        // Evaluate gate rules for ALL intermediate stages (not just target)
+        $allStages = \App\Models\PipelineStage::where('pipeline_type', $pipelineType)
+            ->where('is_active', true)
+            ->orderBy('order_index')
+            ->get();
+
+        $fromIdx = $allStages->search(fn($s) => $s->code === $deal->stage_code);
+        $toIdx = $allStages->search(fn($s) => $s->code === $toStage);
+
+        $gateErrors = [];
+
+        if ($fromIdx !== false && $toIdx !== false && $fromIdx !== $toIdx) {
+            if ($toIdx > $fromIdx) {
+                // Forward move: check all stages from (current+1) to target (inclusive)
+                $stagesToCheck = $allStages->slice($fromIdx + 1, $toIdx - $fromIdx);
+            } else {
+                // Backward move: check only the target stage
+                $stagesToCheck = collect([$allStages[$toIdx]]);
+            }
+
+            foreach ($stagesToCheck as $checkStage) {
+                $rules = $checkStage->gate_rules ?? [];
+                $errors = $this->evaluateGateRules($deal, $rules);
+                foreach ($errors as $err) {
+                    $err['stage_name'] = $checkStage->name;
+                    $err['message'] = "[{$checkStage->name}] " . $err['message'];
+                    $gateErrors[] = $err;
+                }
+            }
+        }
 
         if (!empty($gateErrors)) {
             return response()->json([
                 'gate_passed' => false,
-                'gate_errors' => $gateErrors,
+                'gate_errors' => array_map(fn($e) => $e['message'], $gateErrors),
+                'gate_error_details' => array_values($gateErrors),
                 'monetization' => null,
             ]);
         }
@@ -400,15 +430,41 @@ class DealController extends Controller
                     ->first();
             }
 
-            // Enforce gate rules
+            // Enforce gate rules for ALL intermediate stages (not just target)
             if ($stage) {
-                $gateRules = $stage->gate_rules ?? [];
-                $gateErrors = $this->evaluateGateRules($deal, $gateRules);
+                $allStages = \App\Models\PipelineStage::where('pipeline_type', $pipelineType)
+                    ->where('is_active', true)
+                    ->orderBy('order_index')
+                    ->get();
+
+                $fromIdx = $allStages->search(fn($s) => $s->code === $fromStage);
+                $toIdx = $allStages->search(fn($s) => $s->code === $toStage);
+
+                $gateErrors = [];
+
+                if ($fromIdx !== false && $toIdx !== false && $fromIdx !== $toIdx) {
+                    if ($toIdx > $fromIdx) {
+                        $stagesToCheck = $allStages->slice($fromIdx + 1, $toIdx - $fromIdx);
+                    } else {
+                        $stagesToCheck = collect([$allStages[$toIdx]]);
+                    }
+
+                    foreach ($stagesToCheck as $checkStage) {
+                        $rules = $checkStage->gate_rules ?? [];
+                        $errors = $this->evaluateGateRules($deal, $rules);
+                        foreach ($errors as $err) {
+                            $err['stage_name'] = $checkStage->name;
+                            $err['message'] = "[{$checkStage->name}] " . $err['message'];
+                            $gateErrors[] = $err;
+                        }
+                    }
+                }
 
                 if (!empty($gateErrors)) {
                     return response()->json([
                         'message' => 'Cannot move to this stage — conditions not met.',
-                        'gate_errors' => $gateErrors,
+                        'gate_errors' => array_map(fn($e) => $e['message'], $gateErrors),
+                        'gate_error_details' => array_values($gateErrors),
                     ], 422);
                 }
             }
@@ -485,6 +541,7 @@ class DealController extends Controller
 
     /**
      * Evaluate gate rules against a deal.
+     * Returns an array of structured error objects: { message, action_type, missing_fields }
      */
     private function evaluateGateRules(Deal $deal, array $rules): array
     {
@@ -500,61 +557,112 @@ class DealController extends Controller
             switch ($field) {
                 case 'both_parties':
                     if ($value && (!$deal->buyer_id || !$deal->seller_id)) {
-                        $errors[] = 'Both a buyer and seller must be assigned before moving to this stage.';
+                        $missing = [];
+                        if (!$deal->buyer_id) $missing[] = 'buyer';
+                        if (!$deal->seller_id) $missing[] = 'seller';
+                        $errors[] = [
+                            'message' => 'Both a buyer and seller must be assigned before moving to this stage.',
+                            'action_type' => count($missing) === 2 ? 'assign_both' : ($missing[0] === 'buyer' ? 'assign_buyer' : 'assign_seller'),
+                            'missing_fields' => $missing,
+                        ];
                     }
                     break;
 
                 case 'has_buyer':
                     if ($value && !$deal->buyer_id) {
-                        $errors[] = 'A buyer (investor) must be assigned before moving to this stage.';
+                        $errors[] = [
+                            'message' => 'A buyer (investor) must be assigned before moving to this stage.',
+                            'action_type' => 'assign_buyer',
+                            'missing_fields' => ['buyer'],
+                        ];
                     }
                     break;
 
                 case 'has_seller':
                     if ($value && !$deal->seller_id) {
-                        $errors[] = 'A seller (target) must be assigned before moving to this stage.';
+                        $errors[] = [
+                            'message' => 'A seller (target) must be assigned before moving to this stage.',
+                            'action_type' => 'assign_seller',
+                            'missing_fields' => ['seller'],
+                        ];
                     }
                     break;
 
                 case 'ticket_size':
                     $actual = (float) ($deal->ticket_size ?? 0);
                     if ($operator === 'greater_than' && $actual <= (float) $value) {
-                        $errors[] = 'Ticket size must be greater than $' . number_format((float) $value) . '.';
+                        $errors[] = [
+                            'message' => 'Ticket size must be greater than $' . number_format((float) $value) . '.',
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['ticket_size'],
+                        ];
                     } elseif ($operator === 'less_than' && $actual >= (float) $value) {
-                        $errors[] = 'Ticket size must be less than $' . number_format((float) $value) . '.';
+                        $errors[] = [
+                            'message' => 'Ticket size must be less than $' . number_format((float) $value) . '.',
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['ticket_size'],
+                        ];
                     } elseif ($operator === 'equals' && $actual != (float) $value) {
-                        $errors[] = 'Ticket size must equal $' . number_format((float) $value) . '.';
+                        $errors[] = [
+                            'message' => 'Ticket size must equal $' . number_format((float) $value) . '.',
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['ticket_size'],
+                        ];
                     }
                     break;
 
                 case 'priority':
                     $actual = $deal->priority ?? '';
                     if ($operator === 'equals' && $actual !== $value) {
-                        $errors[] = "Deal priority must be '{$value}' to enter this stage.";
+                        $errors[] = [
+                            'message' => "Deal priority must be '{$value}' to enter this stage.",
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['priority'],
+                        ];
                     } elseif ($operator === 'not_equals' && $actual === $value) {
-                        $errors[] = "Deal priority must not be '{$value}' to enter this stage.";
+                        $errors[] = [
+                            'message' => "Deal priority must not be '{$value}' to enter this stage.",
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['priority'],
+                        ];
                     }
                     break;
 
                 case 'probability':
                     $actual = $deal->possibility ?? '';
                     if ($operator === 'equals' && $actual !== $value) {
-                        $errors[] = "Deal probability must be '{$value}' to enter this stage.";
+                        $errors[] = [
+                            'message' => "Deal probability must be '{$value}' to enter this stage.",
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['probability'],
+                        ];
                     } elseif ($operator === 'not_equals' && $actual === $value) {
-                        $errors[] = "Deal probability must not be '{$value}' to enter this stage.";
+                        $errors[] = [
+                            'message' => "Deal probability must not be '{$value}' to enter this stage.",
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['probability'],
+                        ];
                     }
                     break;
 
                 case 'has_documents':
                     $count = $deal->documents()->count();
                     if ($operator === 'greater_than' && $count <= (int) $value) {
-                        $errors[] = 'Deal must have more than ' . (int) $value . ' document(s) attached.';
+                        $errors[] = [
+                            'message' => 'Deal must have more than ' . (int) $value . ' document(s) attached.',
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['documents'],
+                        ];
                     }
                     break;
 
                 case 'industry':
                     if ($operator === 'not_empty' && empty($deal->industry)) {
-                        $errors[] = 'Deal industry must be set before moving to this stage.';
+                        $errors[] = [
+                            'message' => 'Deal industry must be set before moving to this stage.',
+                            'action_type' => 'edit_deal',
+                            'missing_fields' => ['industry'],
+                        ];
                     }
                     break;
             }

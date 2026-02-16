@@ -130,7 +130,8 @@ const DealPipeline = () => {
     const [monetizationModal, setMonetizationModal] = useState<{ deal: Deal; stageName: string; stageCode: string; monetization: any } | null>(null);
 
     // Gate blocked modal state
-    const [gateBlockedModal, setGateBlockedModal] = useState<{ errors: string[]; stageName: string } | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [gateBlockedModal, setGateBlockedModal] = useState<{ errors: string[]; errorDetails?: any[]; stageName: string; deal?: Deal; stageCode?: string } | null>(null);
 
     // Delete deal modal state
     const [deleteDeal, setDeleteDeal] = useState<Deal | null>(null);
@@ -247,27 +248,52 @@ const DealPipeline = () => {
      * Perform a stage transition, optionally with fee confirmation.
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const executeStageMove = async (dealId: number, newStage: string, feeConfirmation?: any) => {
+    const executeStageMove = async (deal: Deal, newStage: string, feeConfirmation?: any) => {
+        const targetStage = deals[newStage];
+        const stageName = targetStage?.name || newStage;
+
+        // ── Optimistic update FIRST ──
+        const oldDeals = { ...deals };
+        const updatedDeals = { ...deals };
+
+        if (updatedDeals[deal.stage_code]) {
+            updatedDeals[deal.stage_code] = {
+                ...updatedDeals[deal.stage_code],
+                deals: updatedDeals[deal.stage_code].deals.filter((d) => d.id !== deal.id),
+            };
+        }
+
+        if (updatedDeals[newStage]) {
+            updatedDeals[newStage] = {
+                ...updatedDeals[newStage],
+                deals: [...updatedDeals[newStage].deals, { ...deal, stage_code: newStage, progress_percent: targetStage?.progress || 0 }],
+            };
+        }
+
+        setDeals(updatedDeals);
+
+        // ── Server call in background ──
         try {
-            await api.patch(`/api/deals/${dealId}/stage`, {
+            await api.patch(`/api/deals/${deal.id}/stage`, {
                 stage_code: newStage,
                 pipeline_type: pipelineView,
                 fee_confirmation: feeConfirmation ?? undefined,
             });
-            const stageName = deals[newStage]?.name || newStage;
             showAlert({ type: 'success', message: `Moved to ${stageName}` });
-            fetchDeals();
         } catch (error: unknown) {
-            const err = error as { response?: { data?: { gate_errors?: string[]; message?: string } } };
+            setDeals(oldDeals);
+            const err = error as { response?: { data?: { gate_errors?: string[]; gate_error_details?: any[]; message?: string } } };
             if (err?.response?.data?.gate_errors) {
                 setGateBlockedModal({
                     errors: err.response.data.gate_errors,
-                    stageName: deals[newStage]?.name || newStage,
+                    errorDetails: err.response.data.gate_error_details || [],
+                    stageName,
+                    deal,
+                    stageCode: newStage,
                 });
             } else {
                 showAlert({ type: 'error', message: err?.response?.data?.message || 'Failed to move deal' });
             }
-            fetchDeals(); // revert view
         }
     };
 
@@ -285,7 +311,10 @@ const DealPipeline = () => {
             if (!data.gate_passed) {
                 setGateBlockedModal({
                     errors: data.gate_errors || ['Cannot move to this stage — conditions not met.'],
+                    errorDetails: data.gate_error_details || [],
                     stageName: toStageName,
+                    deal,
+                    stageCode: toStageCode,
                 });
                 return false;
             }
@@ -332,11 +361,7 @@ const DealPipeline = () => {
             return;
         }
 
-        // Pre-flight check (gate rules + monetization)
-        const canProceed = await preflightStageCheck(currentDeal, newStage, targetStage.name);
-        if (!canProceed) return;
-
-        // Optimistic update
+        // ── Optimistic update FIRST (instant visual move) ──
         const oldDeals = { ...deals };
         const updatedDeals = { ...deals };
 
@@ -360,6 +385,15 @@ const DealPipeline = () => {
 
         setDeals(updatedDeals);
 
+        // ── Pre-flight check (gate rules + monetization) — runs AFTER visual move ──
+        const canProceed = await preflightStageCheck(currentDeal, newStage, targetStage.name);
+        if (!canProceed) {
+            // Gate blocked or monetization modal shown — revert the optimistic move
+            setDeals(oldDeals);
+            return;
+        }
+
+        // ── Server-side stage update ──
         try {
             await api.patch(`/api/deals/${dealId}/stage`, {
                 stage_code: newStage,
@@ -369,11 +403,14 @@ const DealPipeline = () => {
         } catch (error: unknown) {
             console.error("Failed to move deal:", error);
             setDeals(oldDeals);
-            const err = error as { response?: { data?: { gate_errors?: string[]; message?: string } } };
+            const err = error as { response?: { data?: { gate_errors?: string[]; gate_error_details?: any[]; message?: string } } };
             if (err?.response?.data?.gate_errors) {
                 setGateBlockedModal({
                     errors: err.response.data.gate_errors,
+                    errorDetails: err.response.data.gate_error_details || [],
                     stageName: targetStage.name || newStage,
+                    deal: currentDeal,
+                    stageCode: newStage,
                 });
             } else {
                 showAlert({ type: 'error', message: 'Failed to update stage. Please refresh and try again.' });
@@ -390,18 +427,62 @@ const DealPipeline = () => {
 
         const nextStage = stages[nextIndex];
 
-        // Pre-flight check (gate rules + monetization)
+        // ── Optimistic update FIRST (instant visual move) ──
+        const oldDeals = { ...deals };
+        const updatedDeals = { ...deals };
+
+        if (updatedDeals[deal.stage_code]) {
+            updatedDeals[deal.stage_code] = {
+                ...updatedDeals[deal.stage_code],
+                deals: updatedDeals[deal.stage_code].deals.filter((d) => d.id !== deal.id),
+            };
+        }
+
+        if (updatedDeals[nextStage.code]) {
+            updatedDeals[nextStage.code] = {
+                ...updatedDeals[nextStage.code],
+                deals: [...updatedDeals[nextStage.code].deals, { ...deal, stage_code: nextStage.code, progress_percent: nextStage.progress || 0 }],
+            };
+        }
+
+        setDeals(updatedDeals);
+
+        // ── Pre-flight check (runs AFTER visual move) ──
         const canProceed = await preflightStageCheck(deal, nextStage.code, nextStage.name);
-        if (!canProceed) return;
+        if (!canProceed) {
+            setDeals(oldDeals);
+            return;
+        }
 
-        await executeStageMove(deal.id, nextStage.code);
+        // ── Server call (executeStageMove does its own optimistic, but we already did it) ──
+        try {
+            await api.patch(`/api/deals/${deal.id}/stage`, {
+                stage_code: nextStage.code,
+                pipeline_type: pipelineView,
+            });
+            showAlert({ type: 'success', message: `Moved to ${nextStage.name}` });
 
-        // Check for Won state
-        if (direction === 'forward' && nextIndex === stages.length - 1) {
-            setShowWonCelebration(true);
-            try {
-                await api.patch(`/api/deals/${deal.id}`, { status: 'won' });
-            } catch { /* ignore */ }
+            // Check for Won state
+            if (direction === 'forward' && nextIndex === stages.length - 1) {
+                setShowWonCelebration(true);
+                try {
+                    await api.patch(`/api/deals/${deal.id}`, { status: 'won' });
+                } catch { /* ignore */ }
+            }
+        } catch (error: unknown) {
+            setDeals(oldDeals);
+            const err = error as { response?: { data?: { gate_errors?: string[]; gate_error_details?: any[]; message?: string } } };
+            if (err?.response?.data?.gate_errors) {
+                setGateBlockedModal({
+                    errors: err.response.data.gate_errors,
+                    errorDetails: err.response.data.gate_error_details || [],
+                    stageName: nextStage.name,
+                    deal,
+                    stageCode: nextStage.code,
+                });
+            } else {
+                showAlert({ type: 'error', message: err?.response?.data?.message || 'Failed to move deal' });
+            }
         }
     };
 
@@ -452,9 +533,9 @@ const DealPipeline = () => {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 text-white bg-[#064771] rounded-[3px] hover:bg-[#053a5c] transition-all"
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2 text-white bg-[#064771] rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95"
                 >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Create New Deal
@@ -498,21 +579,29 @@ const DealPipeline = () => {
                         {!sidebarCollapsed ? (
                             <>
                                 {/* Buyer/Seller Toggle */}
-                                <div className="flex bg-gray-100 rounded-[3px] p-1 mb-4">
+                                <div className="relative flex bg-gray-100 rounded-[6px] p-1 mb-4" style={{ minWidth: '200px' }}>
+                                    {/* Sliding pill background */}
+                                    <div
+                                        className="absolute top-1 bottom-1 rounded-[5px] bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                                        style={{
+                                            width: 'calc(50% - 4px)',
+                                            left: pipelineView === 'buyer' ? '4px' : 'calc(50%)',
+                                        }}
+                                    />
                                     <button
                                         onClick={() => setPipelineView('buyer')}
-                                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-[3px] transition-all duration-200 ${pipelineView === 'buyer'
-                                            ? 'bg-white text-[#064771] shadow-sm'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${pipelineView === 'buyer'
+                                            ? 'text-[#064771]'
+                                            : 'text-gray-400 hover:text-gray-600'
                                             }`}
                                     >
                                         Investor
                                     </button>
                                     <button
                                         onClick={() => setPipelineView('seller')}
-                                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-[3px] transition-all duration-200 ${pipelineView === 'seller'
-                                            ? 'bg-white text-green-600 shadow-sm'
-                                            : 'text-gray-500 hover:text-gray-700'
+                                        className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${pipelineView === 'seller'
+                                            ? 'text-[#064771]'
+                                            : 'text-gray-400 hover:text-gray-600'
                                             }`}
                                     >
                                         Target
@@ -523,14 +612,14 @@ const DealPipeline = () => {
                                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-[3px] p-3 mb-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium text-gray-500">Total Deals</span>
-                                        <span className={`text-lg font-medium ${pipelineView === 'buyer' ? 'text-[#064771]' : 'text-green-600'}`}>
+                                        <span className="text-lg font-medium text-[#064771]">
                                             {Object.values(deals).reduce((sum, s) => sum + (s.deals?.length || 0), 0)}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="flex-1 bg-gray-200 rounded-full h-1.5 overflow-hidden">
                                             <div
-                                                className={`h-full rounded-full transition-all ${pipelineView === 'buyer' ? 'bg-[#064771]' : 'bg-green-500'}`}
+                                                className="h-full rounded-full transition-all bg-[#064771]"
                                                 style={{
                                                     width: `${stages.length > 0
                                                         ? Math.round((Object.values(deals).filter(s => s.deals?.length > 0).length / stages.length) * 100)
@@ -572,9 +661,7 @@ const DealPipeline = () => {
                                                 key={code}
                                                 onClick={() => setSelectedStage(isSelected ? null : code)}
                                                 className={`group w-full text-left px-2.5 py-2 rounded-[3px] text-xs transition-all ${isSelected
-                                                    ? pipelineView === 'buyer'
-                                                        ? 'bg-blue-50 ring-1 ring-blue-200'
-                                                        : 'bg-green-50 ring-1 ring-green-200'
+                                                    ? 'bg-blue-50 ring-1 ring-blue-200'
                                                     : 'hover:bg-gray-50'
                                                     }`}
                                                 title={stage.name}
@@ -582,24 +669,22 @@ const DealPipeline = () => {
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0 flex-1">
                                                         <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${isSelected
-                                                            ? pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-green-600 text-white'
+                                                            ? 'bg-[#064771] text-white'
                                                             : stageDeals.length > 0
-                                                                ? pipelineView === 'buyer' ? 'bg-blue-100 text-[#064771]' : 'bg-green-100 text-green-700'
+                                                                ? 'bg-blue-100 text-[#064771]'
                                                                 : 'bg-gray-100 text-gray-400'
                                                             }`}>
                                                             {code}
                                                         </span>
                                                         <span className={`truncate ${isSelected ? 'font-medium' : ''} ${isSelected
-                                                            ? pipelineView === 'buyer' ? 'text-[#064771]' : 'text-green-700'
+                                                            ? 'text-[#064771]'
                                                             : 'text-gray-600'
                                                             }`}>
                                                             {stage.name}
                                                         </span>
                                                     </div>
                                                     <span className={`flex-shrink-0 min-w-[20px] text-center px-1.5 py-0.5 rounded text-[10px] font-medium ${stageDeals.length > 0
-                                                        ? pipelineView === 'buyer'
-                                                            ? 'bg-blue-100 text-[#064771]'
-                                                            : 'bg-green-100 text-green-700'
+                                                        ? 'bg-blue-100 text-[#064771]'
                                                         : 'bg-gray-100 text-gray-400'
                                                         }`}>
                                                         {stageDeals.length}
@@ -609,7 +694,7 @@ const DealPipeline = () => {
                                                 <div className="mt-1.5 flex items-center gap-2">
                                                     <div className="flex-1 bg-gray-100 rounded-full h-1 overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-full transition-all ${pipelineView === 'buyer' ? 'bg-[#064771]/60' : 'bg-green-500/60'
+                                                            className={`h-full rounded-full transition-all bg-[#064771]/60
                                                                 }`}
                                                             style={{ width: `${dealPercentage}%` }}
                                                         />
@@ -651,7 +736,7 @@ const DealPipeline = () => {
                                     <button
                                         onClick={() => setPipelineView('seller')}
                                         className={`w-10 h-10 rounded-[3px] flex items-center justify-center transition-all ${pipelineView === 'seller'
-                                            ? 'bg-green-600 text-white shadow-md'
+                                            ? 'bg-[#064771] text-white shadow-md'
                                             : 'bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-100'
                                             }`}
                                         title="Target Pipeline"
@@ -671,16 +756,16 @@ const DealPipeline = () => {
                                             key={code}
                                             onClick={() => setSelectedStage(isSelected ? null : code)}
                                             className={`w-10 h-10 rounded-[3px] flex items-center justify-center font-medium text-sm transition-all relative ${isSelected
-                                                ? pipelineView === 'buyer' ? 'bg-[#064771] text-white shadow-md' : 'bg-green-600 text-white shadow-md'
+                                                ? 'bg-[#064771] text-white shadow-md'
                                                 : stageDeals.length > 0
-                                                    ? pipelineView === 'buyer' ? 'bg-blue-50 text-[#064771] border border-blue-100' : 'bg-green-50 text-green-700 border border-green-100'
+                                                    ? 'bg-blue-50 text-[#064771] border border-blue-100'
                                                     : 'bg-white text-gray-400 border border-gray-100 hover:border-gray-300'
                                                 }`}
                                             title={`${stage.name} (${stageDeals.length})`}
                                         >
                                             {code}
                                             {stageDeals.length > 0 && (
-                                                <span className={`absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] flex items-center justify-center border-2 border-white ${pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-green-600 text-white'
+                                                <span className={`absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] flex items-center justify-center border-2 border-white bg-[#064771] text-white
                                                     }`}>
                                                     {stageDeals.length}
                                                 </span>
@@ -743,7 +828,7 @@ const DealPipeline = () => {
                                                 />
                                             ))}
                                     </div>
-                                    <DragOverlay>
+                                    <DragOverlay dropAnimation={null}>
                                         {activeDeal ? <DealCard deal={activeDeal} isDragging pipelineView={pipelineView} /> : null}
                                     </DragOverlay>
                                 </DndContext>
@@ -786,7 +871,7 @@ const DealPipeline = () => {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${deal.status === 'won' ? 'bg-green-100 text-green-800' :
                                                         deal.status === 'lost' ? 'bg-red-100 text-red-800' :
-                                                            pipelineView === 'buyer' ? 'bg-blue-100 text-[#064771]' : 'bg-green-100 text-green-800'
+                                                            'bg-blue-100 text-[#064771]'
                                                         }`}>
                                                         {deals[deal.stage_code]?.name || deal.stage_code}
                                                     </span>
@@ -965,7 +1050,7 @@ const DealPipeline = () => {
                     onClose={() => setMonetizationModal(null)}
                     onConfirm={(feeConfirmation) => {
                         setMonetizationModal(null);
-                        executeStageMove(monetizationModal.deal.id, monetizationModal.stageCode, feeConfirmation);
+                        executeStageMove(monetizationModal.deal, monetizationModal.stageCode, feeConfirmation);
                     }}
                     dealName={monetizationModal.deal.name}
                     stageName={monetizationModal.stageName}
@@ -980,6 +1065,14 @@ const DealPipeline = () => {
                     onClose={() => setGateBlockedModal(null)}
                     stageName={gateBlockedModal.stageName}
                     errors={gateBlockedModal.errors}
+                    errorDetails={gateBlockedModal.errorDetails}
+                    dealId={gateBlockedModal.deal?.id}
+                    pipelineType={pipelineView}
+                    stageCode={gateBlockedModal.stageCode}
+                    onResolved={() => {
+                        setGateBlockedModal(null);
+                        fetchDeals();
+                    }}
                 />
             )}
 

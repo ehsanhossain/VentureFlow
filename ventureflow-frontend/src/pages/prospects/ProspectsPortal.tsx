@@ -1465,7 +1465,7 @@ const ProspectsPortal: React.FC = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                        <h1 className="text-xl md:text-2xl font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
+                        <h1 className="text-sm font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
 
                         <div className="relative flex bg-gray-100 rounded-[6px] p-1" style={{ minWidth: '260px' }}>
                             {/* Sliding pill background */}

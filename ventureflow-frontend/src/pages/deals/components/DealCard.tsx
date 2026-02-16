@@ -34,11 +34,11 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // When using DragOverlay, the original card should not move — the overlay handles the visual.
-    // We just make the original invisible so there's no ghost/duplicate.
+    // When using DragOverlay, the original card stays in place but fades.
+    // The overlay handles the cursor-following visual.
     const style: React.CSSProperties | undefined = isBeingDragged
-        ? { opacity: 0.4, cursor: 'grabbing' }
-        : undefined;
+        ? { opacity: 0.3, cursor: 'grabbing', transition: 'opacity 200ms ease' }
+        : { transition: 'opacity 200ms ease, transform 200ms ease' };
 
     const formatValue = (value: number | string | null, currency: string) => {
         if (!value) return 'N/A';
@@ -96,12 +96,10 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const primaryImageUrl = getImageUrl(primaryImage);
     const secondaryImageUrl = getImageUrl(secondaryImage);
 
-    // Generate avatar color based on view type
+    // Generate avatar color — consistent across all views
     const getAvatarColor = (isPrimary: boolean) => {
         if (isPrimary) {
-            return pipelineView === 'buyer'
-                ? { bg: '#F2B200', text: '#3E2C06' }  // Gold for buyer
-                : { bg: '#10B981', text: '#FFFFFF' }; // Green for seller
+            return { bg: '#F2B200', text: '#3E2C06' };  // Gold for primary
         }
         return { bg: '#030042', text: '#FFFFFF' }; // Dark blue for secondary
     };

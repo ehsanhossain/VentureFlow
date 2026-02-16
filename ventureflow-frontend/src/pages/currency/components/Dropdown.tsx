@@ -102,7 +102,7 @@ export const Dropdown = ({
               isMulti ? (
                 selectedCountries.map(c => (
                   <div key={c.id} className="flex items-center gap-1 bg-blue-50 text-[#064771] px-2 py-0.5 rounded text-xs border border-blue-200">
-                    <img src={c.flagSrc} alt="" className="w-3 h-3" />
+                    <img src={c.flagSrc} alt="" className="w-3 h-3 rounded-full object-cover" />
                     <span>{c.name}</span>
                     <button
                       onClick={(e) => {
@@ -118,7 +118,7 @@ export const Dropdown = ({
               ) : (
                 <div className="flex items-center gap-3">
                   <img
-                    className="w-6 h-6 sm:w-[26px] sm:h-[26px]"
+                    className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-full object-cover"
                     alt="Selected country flag"
                     src={selectedCountries[0].flagSrc}
                   />
@@ -166,7 +166,7 @@ export const Dropdown = ({
             </div>
 
 
-            <div className="w-full max-h-[60vh] overflow-y-auto pr-1.5 custom-scrollbar">
+            <div className="w-full max-h-[60vh] overflow-y-auto pr-1.5 scrollbar-premium">
               <div className="flex flex-col w-full items-start gap-1">
                 <button
                   className="flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-[3px] transition text-left text-sm font-medium text-[#064771]"
@@ -185,7 +185,7 @@ export const Dropdown = ({
                     >
                       <div className="flex items-center gap-2.5">
                         <img
-                          className="w-5 h-5 rounded-sm object-cover"
+                          className="w-5 h-5 rounded-full object-cover"
                           alt={`${country.name} flag`}
                           src={country.flagSrc}
                         />

@@ -376,28 +376,36 @@ const DraftsPage: React.FC = () => {
                             </svg>
                             Back
                         </button>
-                        <h1 className="text-xl md:text-2xl font-medium text-gray-900">Drafts</h1>
+                        <h1 className="text-sm font-medium text-gray-900">Drafts</h1>
                     </div>
 
-                    {/* Tab Switcher — same position & style as ProspectsPortal */}
-                    <div className="flex bg-gray-100 rounded-[3px] p-1">
+                    {/* Tab Switcher — same design as ProspectsPortal with sliding pill */}
+                    <div className="relative flex bg-gray-100 rounded-[6px] p-1" style={{ minWidth: '260px' }}>
+                        {/* Sliding pill background */}
+                        <div
+                            className="absolute top-1 bottom-1 rounded-[5px] bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                            style={{
+                                width: 'calc(50% - 4px)',
+                                left: activeTab === 'investors' ? '4px' : 'calc(50%)',
+                            }}
+                        />
                         <button
                             onClick={() => handleTabChange('investors')}
-                            className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'investors'
-                                ? 'bg-white text-[#064771] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'investors'
+                                ? 'text-[#064771]'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                         >
-                            Investors <span className="ml-1 text-[10px] opacity-60">({counts.investors})</span>
+                            Investors <span className="ml-1 opacity-60">({counts.investors})</span>
                         </button>
                         <button
                             onClick={() => handleTabChange('targets')}
-                            className={`px-4 py-1.5 rounded-[3px] text-xs font-medium transition-all duration-200 ${activeTab === 'targets'
-                                ? 'bg-white text-[#064771] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                            className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'targets'
+                                ? 'text-[#064771]'
+                                : 'text-gray-400 hover:text-gray-600'
                                 }`}
                         >
-                            Targets <span className="ml-1 text-[10px] opacity-60">({counts.targets})</span>
+                            Targets <span className="ml-1 opacity-60">({counts.targets})</span>
                         </button>
                     </div>
 
