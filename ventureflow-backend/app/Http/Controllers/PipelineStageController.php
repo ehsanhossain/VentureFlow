@@ -93,7 +93,8 @@ class PipelineStageController extends Controller
             'stages.*.monetization_config' => 'nullable|array',
             'stages.*.monetization_config.enabled' => 'nullable|boolean',
             'stages.*.monetization_config.type' => 'nullable|in:one_time,monthly',
-            'stages.*.monetization_config.monthly_amount' => 'nullable|numeric|min:0',
+            'stages.*.monetization_config.payment_name' => 'nullable|string|max:255',
+            'stages.*.monetization_config.amount' => 'nullable|numeric|min:0',
             'stages.*.monetization_config.deduct_from_success_fee' => 'nullable|boolean',
         ]);
 

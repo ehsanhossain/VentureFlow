@@ -4,6 +4,8 @@ import { DollarSign, X, AlertTriangle, Check } from 'lucide-react';
 interface MonetizationInfo {
     enabled: boolean;
     type: 'one_time' | 'monthly';
+    payment_name?: string;
+    amount?: number | null;
     deduct_from_success_fee: boolean;
     ticket_size_usd: number;
     fee_side: 'investor' | 'target';
@@ -24,6 +26,7 @@ interface FeeConfirmation {
     calculated_amount: number;
     final_amount: number;
     deducted_from_success: boolean;
+    payment_name?: string;
 }
 
 interface MonetizationConfirmModalProps {
@@ -57,6 +60,10 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
         }).format(amount);
     };
 
+    // Determine if fee comes from a configured amount vs. fee tier
+    const hasConfiguredAmount = monetization.amount != null && monetization.amount > 0;
+    const hasFeetier = monetization.fee_tier != null;
+
     const tierLabel = monetization.fee_tier
         ? `${formatCurrency(monetization.fee_tier.min_amount)} – ${monetization.fee_tier.max_amount ? formatCurrency(monetization.fee_tier.max_amount) : 'Above'}`
         : 'No matching tier';
@@ -67,6 +74,8 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
             ? formatCurrency(monetization.fee_tier.success_fee_fixed) + ' (fixed)'
             : '—';
 
+    const paymentTypeLabel = monetization.type === 'monthly' ? 'Monthly' : 'One-time';
+
     const handleConfirm = () => {
         onConfirm({
             fee_tier_id: monetization.fee_tier?.id ?? null,
@@ -75,6 +84,7 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
             calculated_amount: monetization.calculated_amount,
             final_amount: finalAmount,
             deducted_from_success: deductFromSuccess,
+            payment_name: monetization.payment_name || undefined,
         });
     };
 
@@ -113,25 +123,50 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
 
                     {/* Fee Details */}
                     <div className="space-y-3">
+                        {/* Payment Name (if configured) */}
+                        {monetization.payment_name && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Payment Name</span>
+                                <span className="font-medium text-gray-900">{monetization.payment_name}</span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Transaction Size</span>
                             <span className="font-medium text-gray-900">{formatCurrency(monetization.ticket_size_usd)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Fee Tier</span>
-                            <span className="font-medium text-gray-900">{tierLabel}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Fee Rate</span>
-                            <span className="font-medium text-gray-900">{feeMethodLabel}</span>
-                        </div>
+
+                        {/* Show fee tier details only if no configured amount */}
+                        {!hasConfiguredAmount && hasFeetier && (
+                            <>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Fee Tier</span>
+                                    <span className="font-medium text-gray-900">{tierLabel}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Fee Rate</span>
+                                    <span className="font-medium text-gray-900">{feeMethodLabel}</span>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Show configured amount source */}
+                        {hasConfiguredAmount && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Configured Amount</span>
+                                <span className="font-medium text-gray-900">
+                                    {formatCurrency(monetization.amount!)}{monetization.type === 'monthly' ? ' / month' : ''}
+                                </span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Calculated Fee</span>
                             <span className="font-medium text-gray-900">{formatCurrency(monetization.calculated_amount)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Payment Type</span>
-                            <span className="font-medium text-gray-900 capitalize">{monetization.type.replace('_', '-')}</span>
+                            <span className="font-medium text-gray-900">{paymentTypeLabel}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span className="text-gray-500">Fee Side</span>
@@ -157,6 +192,9 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
                                 step="0.01"
                                 className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-[3px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
                             />
+                            {monetization.type === 'monthly' && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">/ month</span>
+                            )}
                         </div>
                         {isEdited && (
                             <p className="mt-1 text-xs text-amber-600">
