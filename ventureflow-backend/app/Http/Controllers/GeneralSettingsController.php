@@ -26,6 +26,7 @@ class GeneralSettingsController extends Controller
             'default_currency' => 'nullable|string|max:10',
             'timezone'         => 'nullable|string|max:255',
             'date_format'      => 'nullable|string|max:20',
+            'language'         => 'nullable|string|max:10',
         ]);
 
         foreach ($validated as $key => $value) {

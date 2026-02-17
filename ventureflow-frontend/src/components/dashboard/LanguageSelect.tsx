@@ -8,7 +8,11 @@ const languages = [
   { code: "th", label: "TH", name: "ไทย", flag: "https://flagcdn.com/th.svg" },
 ];
 
-export const LanguageSelect: React.FC = () => {
+interface LanguageSelectProps {
+  onLanguageChange?: (langCode: string) => void;
+}
+
+export const LanguageSelect: React.FC<LanguageSelectProps> = ({ onLanguageChange }) => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,7 +33,11 @@ export const LanguageSelect: React.FC = () => {
   }, []);
 
   const handleLanguageChange = (langCode: string) => {
-    i18n.changeLanguage(langCode);
+    if (onLanguageChange) {
+      onLanguageChange(langCode);
+    } else {
+      i18n.changeLanguage(langCode);
+    }
     setIsOpen(false);
   };
 

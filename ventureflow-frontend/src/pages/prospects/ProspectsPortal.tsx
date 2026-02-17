@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../routes/AuthContext';
@@ -34,6 +35,7 @@ import { isFieldAllowed } from '../../utils/permissionUtils';
 import { BudgetRangeSlider } from './components/BudgetRangeSlider';
 import { useGeneralSettings } from '../../context/GeneralSettingsContext';
 
+
 interface Country {
     id: number;
     name: string;
@@ -58,22 +60,22 @@ interface PipelineStage {
 }
 
 const ALL_INVESTOR_COLUMNS = [
-    { id: 'projectCode', label: 'Project Code' },
-    { id: 'rank', label: 'Rank' },
-    { id: 'companyName', label: 'Company Name' },
-    { id: 'originCountry', label: 'Origin Country' },
-    { id: 'companyIndustry', label: 'Industry' },
-    { id: 'targetCountries', label: 'Target Countries' },
-    { id: 'targetIndustries', label: 'Target Industry' },
-    { id: 'purposeMNA', label: 'Purpose of M&A' },
-    { id: 'investmentCondition', label: 'Condition' },
-    { id: 'budget', label: 'Budget' },
-    { id: 'investorProfileLink', label: 'Investor Profile' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
-    { id: 'website', label: 'Website' },
-    { id: 'primaryContact', label: 'Contact' },
-    { id: 'internalPIC', label: 'Assigned PIC' },
-    { id: 'financialAdvisor', label: 'Partner FA' },
+    { id: 'projectCode', labelKey: 'prospects.table.projectCode' },
+    { id: 'rank', labelKey: 'prospects.table.rank' },
+    { id: 'companyName', labelKey: 'prospects.table.companyName' },
+    { id: 'originCountry', labelKey: 'prospects.table.originCountry' },
+    { id: 'companyIndustry', labelKey: 'prospects.table.industry' },
+    { id: 'targetCountries', labelKey: 'prospects.table.targetCountries' },
+    { id: 'targetIndustries', labelKey: 'prospects.table.targetIndustry' },
+    { id: 'purposeMNA', labelKey: 'prospects.table.purposeMA' },
+    { id: 'investmentCondition', labelKey: 'prospects.table.condition' },
+    { id: 'budget', labelKey: 'prospects.table.budget' },
+    { id: 'investorProfileLink', labelKey: 'prospects.table.investorProfile' },
+    { id: 'pipelineStatus', labelKey: 'prospects.table.pipeline' },
+    { id: 'website', labelKey: 'prospects.table.website' },
+    { id: 'primaryContact', labelKey: 'prospects.table.contact' },
+    { id: 'internalPIC', labelKey: 'prospects.table.assignedPIC' },
+    { id: 'financialAdvisor', labelKey: 'prospects.table.partnerFA' },
 ];
 
 // System default VISIBLE columns
@@ -93,21 +95,21 @@ const DEFAULT_INVESTOR_ORDER = [
 ];
 
 const ALL_TARGET_COLUMNS = [
-    { id: 'projectCode', label: 'Project Code' },
-    { id: 'rank', label: 'Rank' },
-    { id: 'companyName', label: 'Company Name' },
-    { id: 'originCountry', label: 'Origin Country' },
-    { id: 'industry', label: 'Industry' },
-    { id: 'reasonForMA', label: 'Purpose of M&A' },
-    { id: 'investmentCondition', label: 'Condition' },
-    { id: 'desiredInvestment', label: 'Desired Investment' },
-    { id: 'teaserLink', label: 'Teaser' },
-    { id: 'ebitda', label: 'EBITDA' },
-    { id: 'pipelineStatus', label: 'Pipeline' },
-    { id: 'website', label: 'Website' },
-    { id: 'primaryContact', label: 'Contact' },
-    { id: 'internalPIC', label: 'Assigned PIC' },
-    { id: 'financialAdvisor', label: 'Partner FA' },
+    { id: 'projectCode', labelKey: 'prospects.table.projectCode' },
+    { id: 'rank', labelKey: 'prospects.table.rank' },
+    { id: 'companyName', labelKey: 'prospects.table.companyName' },
+    { id: 'originCountry', labelKey: 'prospects.table.originCountry' },
+    { id: 'industry', labelKey: 'prospects.table.industry' },
+    { id: 'reasonForMA', labelKey: 'prospects.table.purposeMA' },
+    { id: 'investmentCondition', labelKey: 'prospects.table.condition' },
+    { id: 'desiredInvestment', labelKey: 'prospects.table.desiredInvestment' },
+    { id: 'teaserLink', labelKey: 'prospects.table.teaser' },
+    { id: 'ebitda', labelKey: 'prospects.table.ebitda' },
+    { id: 'pipelineStatus', labelKey: 'prospects.table.pipeline' },
+    { id: 'website', labelKey: 'prospects.table.website' },
+    { id: 'primaryContact', labelKey: 'prospects.table.contact' },
+    { id: 'internalPIC', labelKey: 'prospects.table.assignedPIC' },
+    { id: 'financialAdvisor', labelKey: 'prospects.table.partnerFA' },
 ];
 
 // System default VISIBLE columns
@@ -139,6 +141,7 @@ const parseMultiField = (val: any): string[] => {
 };
 
 const ProspectsPortal: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const auth = useContext(AuthContext);
     const isPartner = auth?.isPartner;
@@ -1021,7 +1024,7 @@ const ProspectsPortal: React.FC = () => {
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            showAlert({ type: 'error', message: 'Failed to update pinned status' });
+            showAlert({ type: 'error', message: t('common.error') });
         }
     };
 
@@ -1141,7 +1144,7 @@ const ProspectsPortal: React.FC = () => {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 max-w-lg w-full transform transition-all animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-medium text-gray-900">Import Data</h3>
+                            <h3 className="text-xl font-medium text-gray-900">{t('prospects.portal.importData', 'Import Data')}</h3>
                             <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Close import modal" aria-label="Close import modal">
                                 <X className="w-5 h-5 text-gray-400" />
                             </button>
@@ -1153,13 +1156,13 @@ const ProspectsPortal: React.FC = () => {
                                     onClick={() => setImportType('investors')}
                                     className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    Investors
+                                    {t('prospects.portal.tabInvestors')}
                                 </button>
                                 <button
                                     onClick={() => setImportType('targets')}
                                     className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
-                                    Targets
+                                    {t('prospects.portal.tabTargets')}
                                 </button>
                             </div>
 
@@ -1187,10 +1190,10 @@ const ProspectsPortal: React.FC = () => {
                                     </div>
                                     <div className="text-center">
                                         <p className="text-sm font-medium text-gray-900">
-                                            {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
+                                            {selectedFile ? selectedFile.name : t('prospects.portal.clickToUpload', 'Click to upload or drag and drop')}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">
-                                            {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'CSV, XLSX files only, max 10MB'}
+                                            {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : t('prospects.portal.csvOnly', 'CSV, XLSX files only, max 10MB')}
                                         </p>
                                     </div>
                                 </div>
@@ -1217,7 +1220,7 @@ const ProspectsPortal: React.FC = () => {
                                             className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-[3px] text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                                         >
                                             <Download className="w-4 h-4" />
-                                            Download Template
+                                            {t('prospects.portal.downloadTemplate', 'Download Template')}
                                         </button>
                                         <button
                                             onClick={(e) => {
@@ -1227,14 +1230,14 @@ const ProspectsPortal: React.FC = () => {
                                             disabled={!selectedFile}
                                             className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Start Import
+                                            {t('prospects.portal.startImport', 'Start Import')}
                                         </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="mt-8 pt-4 border-t border-gray-100 flex gap-3">
-                            <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
+                            <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('common.cancel')}</button>
                         </div>
                     </div>
                 </div>
@@ -1247,7 +1250,7 @@ const ProspectsPortal: React.FC = () => {
                     <div ref={filterDrawerRef} className="fixed right-0 top-0 h-full w-[440px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl overflow-x-hidden">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-base font-medium text-gray-900 ">Filters</h2>
+                            <h2 className="text-base font-medium text-gray-900 ">{t('prospects.portal.filters', 'Filters')}</h2>
                             <button
                                 onClick={() => setIsFilterOpen(false)}
                                 className="p-1.5 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
@@ -1262,7 +1265,7 @@ const ProspectsPortal: React.FC = () => {
                             {/* Origin Country */}
                             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
                                 <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    Origin Country
+                                    {t('prospects.table.originCountry')}
                                 </label>
                                 <Dropdown
                                     countries={countries as DropdownCountry[]}
@@ -1274,21 +1277,21 @@ const ProspectsPortal: React.FC = () => {
                                             setFilterOriginCountry(filterOriginCountry?.id === c.id ? null : c);
                                         }
                                     }) as any}
-                                    placeholder="Select Country"
+                                    placeholder={t('prospects.portal.filterByCountry')}
                                 />
                             </div>
 
                             {/* Industry (investor's own industry) */}
                             <div className="px-6 pt-4 pb-4 border-b border-gray-100">
                                 <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    Industry
+                                    {t('prospects.table.industry')}
                                 </label>
                                 <IndustryDropdown
                                     industries={filterIndustries}
                                     selected={filterIndustry}
                                     onSelect={(val) => setFilterIndustry(Array.isArray(val) ? val : [val])}
                                     multiSelect={true}
-                                    placeholder="Select Industries"
+                                    placeholder={t('prospects.portal.filterByIndustry')}
                                 />
                             </div>
 
@@ -1296,14 +1299,14 @@ const ProspectsPortal: React.FC = () => {
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 border-b border-gray-100">
                                     <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        Target Business & Industry
+                                        {t('prospects.table.targetIndustries')}
                                     </label>
                                     <IndustryDropdown
                                         industries={filterIndustries}
                                         selected={filterTargetIndustry}
                                         onSelect={(val) => setFilterTargetIndustry(Array.isArray(val) ? val : [val])}
                                         multiSelect={true}
-                                        placeholder="Select Target Industries"
+                                        placeholder={t('prospects.portal.filterByIndustry')}
                                     />
                                 </div>
                             )}
@@ -1312,7 +1315,7 @@ const ProspectsPortal: React.FC = () => {
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 border-b border-gray-100">
                                     <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        Interested Country
+                                        {t('prospects.table.targetCountries')}
                                     </label>
                                     <Dropdown
                                         countries={countries as DropdownCountry[]}
@@ -1330,7 +1333,7 @@ const ProspectsPortal: React.FC = () => {
                                             }
                                         }) as any}
                                         multiSelect
-                                        placeholder="Select Countries"
+                                        placeholder={t('prospects.portal.filterByCountry')}
                                     />
                                 </div>
                             )}
@@ -1338,7 +1341,7 @@ const ProspectsPortal: React.FC = () => {
                             {/* Pipeline Stage */}
                             <div className="px-6 pt-4 pb-4 border-b border-gray-100">
                                 <label htmlFor="pipeline-stage-filter" className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    Pipeline Stage
+                                    {t('prospects.details.dealPipelineStage')}
                                 </label>
                                 <div className="relative">
                                     <select
@@ -1403,7 +1406,7 @@ const ProspectsPortal: React.FC = () => {
                             {activeTab === 'investors' && (
                                 <div className="px-6 pt-4 pb-4 overflow-hidden">
                                     <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        Investment Budget
+                                        {t('prospects.table.investmentBudget')}
                                     </label>
                                     <div className="flex items-center gap-2 w-full">
                                         <input
@@ -1454,7 +1457,7 @@ const ProspectsPortal: React.FC = () => {
                                 className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                             >
                                 <RotateCcw className="w-3.5 h-3.5" />
-                                Reset All Filters
+                                {t('prospects.portal.clearAllFilters')}
                             </button>
                         </div>
                     </div>
@@ -1465,7 +1468,7 @@ const ProspectsPortal: React.FC = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                     <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                        <h1 className="text-sm font-medium text-gray-900 w-full md:w-auto">Prospects</h1>
+                        <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">{t('prospects.title')}</h1>
 
                         <div className="relative flex bg-gray-100 rounded-[6px] p-1" style={{ minWidth: '260px' }}>
                             {/* Sliding pill background */}
@@ -1486,7 +1489,7 @@ const ProspectsPortal: React.FC = () => {
                                     : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
-                                Investors <span className="ml-1 opacity-60">({counts.investors})</span>
+                                {t('prospects.portal.tabInvestors')} <span className="ml-1 opacity-60">({counts.investors})</span>
                             </button>
                             <button
                                 onClick={() => {
@@ -1498,14 +1501,14 @@ const ProspectsPortal: React.FC = () => {
                                     : 'text-gray-400 hover:text-gray-600'
                                     }`}
                             >
-                                Targets <span className="ml-1 opacity-60">({counts.targets})</span>
+                                {t('prospects.portal.tabTargets')} <span className="ml-1 opacity-60">({counts.targets})</span>
                             </button>
                         </div>
 
                         <DataTableSearch
                             value={searchQuery}
                             onChange={setSearchQuery}
-                            placeholder={`Search for ${activeTab}...`}
+                            placeholder={activeTab === 'investors' ? t('prospects.searchInvestors') : t('prospects.searchTargets')}
                             className="w-full md:w-72"
                         />
                     </div>
@@ -1517,7 +1520,7 @@ const ProspectsPortal: React.FC = () => {
                                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
                                 <img src={draftDocumentIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                Drafts{(draftCounts.investors + draftCounts.targets) > 0 && (
+                                {t('prospects.drafts')}{(draftCounts.investors + draftCounts.targets) > 0 && (
                                     <span className="text-gray-400 ml-0.5">({draftCounts.investors + draftCounts.targets})</span>
                                 )}
                             </button>
@@ -1532,7 +1535,7 @@ const ProspectsPortal: React.FC = () => {
                                 }`}
                         >
                             <img src={filterIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                            <span>Filter</span>
+                            <span>{t('prospects.portal.filters', 'Filter')}</span>
                             {activeFilterCount > 0 && (
                                 <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1 text-[10px] font-medium text-white">
                                     {activeFilterCount}
@@ -1546,7 +1549,7 @@ const ProspectsPortal: React.FC = () => {
                                 className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
                             >
                                 <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                Tools
+                                {t('prospects.portal.tools', 'Tools')}
                             </button>
                         </div>
 
@@ -1557,7 +1560,7 @@ const ProspectsPortal: React.FC = () => {
                                 <div className="fixed right-0 top-0 h-full w-[440px] bg-white border-l border-gray-100 z-[201] flex flex-col animate-in slide-in-from-right duration-300 shadow-2xl overflow-x-hidden">
                                     {/* Header — matches Filters */}
                                     <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                                        <h2 className="text-base font-medium text-gray-900">Tools</h2>
+                                        <h2 className="text-base font-medium text-gray-900">{t('prospects.portal.tools', 'Tools')}</h2>
                                         <button
                                             onClick={() => setIsToolsOpen(false)}
                                             className="p-1.5 hover:bg-gray-100 rounded-[3px] transition-all duration-200 text-gray-400 hover:text-gray-600"
@@ -1572,7 +1575,7 @@ const ProspectsPortal: React.FC = () => {
                                         {/* Currency Section */}
                                         <div className="px-6 pt-5 pb-4 border-b border-gray-100">
                                             <label htmlFor="display-currency-select" className="block mb-1.5 text-[13px] font-medium text-gray-700">
-                                                Display Currency
+                                                {t('prospects.portal.displayCurrency', 'Display Currency')}
                                             </label>
                                             <div className="relative">
                                                 <select
@@ -1595,17 +1598,17 @@ const ProspectsPortal: React.FC = () => {
                                         <div className="px-6 pt-5 pb-4">
                                             <div className="flex items-center justify-between mb-3">
                                                 <label className="text-[13px] font-medium text-gray-700">
-                                                    Visible Columns
+                                                    {t('prospects.customizeColumns')}
                                                 </label>
                                                 <span className="text-[11px] font-medium text-gray-400">
-                                                    {visibleColumns.length} of {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length} active
+                                                    {visibleColumns.length} / {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length}
                                                 </span>
                                             </div>
                                             <div className="space-y-1">
                                                 {/* Iterate in columnOrder sequence so toggle list matches table header */}
                                                 {columnOrder
                                                     .map(colId => (activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).find(c => c.id === colId))
-                                                    .filter((col): col is { id: string; label: string } => !!col && isFieldAllowed(col.id, serverAllowedFields, activeTab))
+                                                    .filter((col): col is { id: string; labelKey: string } => !!col && isFieldAllowed(col.id, serverAllowedFields, activeTab))
                                                     .map(col => {
                                                         const isActive = visibleColumns.includes(col.id);
                                                         return (
@@ -1623,7 +1626,7 @@ const ProspectsPortal: React.FC = () => {
                                                                         : <EyeOff className="w-4 h-4 text-gray-400 group-hover:text-gray-400" />
                                                                     }
                                                                     <span className={`text-sm ${isActive ? 'font-medium' : 'font-normal'}`}>
-                                                                        {col.label}
+                                                                        {t(col.labelKey)}
                                                                     </span>
                                                                 </div>
                                                                 {/* Toggle Switch */}
@@ -1659,7 +1662,7 @@ const ProspectsPortal: React.FC = () => {
                                             className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                                         >
                                             <RotateCcw className="w-3.5 h-3.5" />
-                                            Reset to Default
+                                            {t('prospects.resetColumns')}
                                         </button>
                                     </div>
                                 </div>
@@ -1673,25 +1676,25 @@ const ProspectsPortal: React.FC = () => {
                                     className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all hover:bg-[#053a5c] active:scale-95"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span>Create</span>
+                                    <span>{t('common.create', 'Create')}</span>
                                     <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isCreateOpen && (
                                     <div className="absolute right-0 mt-2 w-60 bg-white rounded-[3px] border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl border border-gray-100">
                                         <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-investor')}>
                                             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
-                                            Add Investor
+                                            {t('prospects.createInvestor')}
                                         </button>
                                         <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-target')}>
                                             <div className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" />
-                                            Add Target
+                                            {t('prospects.createTarget')}
                                         </button>
                                         <div className="h-px bg-gray-50 my-1.5 mx-3" />
                                         <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                            <Upload className="w-4 h-4 text-gray-400" /> Import Investors
+                                            <Upload className="w-4 h-4 text-gray-400" /> {t('prospects.portal.importInvestors', 'Import Investors')}
                                         </button>
                                         <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                            <Upload className="w-4 h-4 text-gray-400" /> Import Targets
+                                            <Upload className="w-4 h-4 text-gray-400" /> {t('prospects.portal.importTargets', 'Import Targets')}
                                         </button>
                                     </div>
                                 )}

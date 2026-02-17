@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Loader2, Link as LinkIcon, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../../../config/api';
 import { getCachedCountries, getCachedCurrencies, getCachedIndustries } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
@@ -121,6 +122,7 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 export const TargetRegistration: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { t } = useTranslation();
 
     const [countries, setCountries] = useState<ExtendedCountry[]>([]);
     const [industries, setIndustries] = useState<Industry[]>([]);
@@ -420,7 +422,7 @@ export const TargetRegistration: React.FC = () => {
 
             } catch (err) {
                 console.error(err);
-                showAlert({ type: 'error', message: 'Failed to load Target data' });
+                showAlert({ type: 'error', message: t('prospects.registration.failedToLoadTarget') });
             }
         };
 
@@ -491,11 +493,11 @@ export const TargetRegistration: React.FC = () => {
             };
             await api.post('/api/seller/financial-details', financePayload);
 
-            showAlert({ type: 'success', message: `Target ${isDraft ? 'draft' : ''} saved successfully` });
+            showAlert({ type: 'success', message: isDraft ? t('prospects.registration.targetDraftSaved') : t('prospects.registration.targetSavedSuccess') });
             navigate(`/prospects/target/${savedSellerId}`);
 
         } catch (error: any) {
-            const errorMsg = error.response?.data?.message || 'Failed to save Target';
+            const errorMsg = error.response?.data?.message || t('prospects.registration.failedToSaveTarget');
             showAlert({ type: 'error', message: errorMsg });
             if (errorMsg.toLowerCase().includes('project code') || errorMsg.toLowerCase().includes('id')) {
                 setIsIdAvailable(false);
@@ -556,7 +558,7 @@ export const TargetRegistration: React.FC = () => {
                     SECTION 1: IDENTITY
                 ═══════════════════════════════════════════════ */}
                 <div className="flex flex-col gap-10">
-                    <SectionHeader title="Identity" />
+                    <SectionHeader title={t('prospects.registration.identity')} />
 
                     <div className="flex items-start gap-12">
                         {/* Company Avatar - LEFT side */}
@@ -572,7 +574,7 @@ export const TargetRegistration: React.FC = () => {
                             {/* Row: Origin Country + Project Code */}
                             <div className="flex gap-6">
                                 <div className="flex-1">
-                                    <FieldLabel text="Origin Country" required />
+                                    <FieldLabel text={t('prospects.registration.originCountry')} required />
                                     <Controller
                                         control={control}
                                         name="originCountry"
@@ -582,20 +584,20 @@ export const TargetRegistration: React.FC = () => {
                                                 countries={countries}
                                                 selected={field.value}
                                                 onSelect={field.onChange}
-                                                placeholder="Select option"
-                                                searchPlaceholder="Search country..."
+                                                placeholder={t('prospects.registration.selectOption')}
+                                                searchPlaceholder={t('prospects.registration.searchCountry')}
                                             />
                                         )}
                                     />
-                                    {errors.originCountry && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                    {errors.originCountry && <span className="text-red-500 text-xs mt-1">{t('prospects.registration.required')}</span>}
                                 </div>
                                 <div className="flex-1">
-                                    <FieldLabel text="Project Code" required />
+                                    <FieldLabel text={t('prospects.registration.projectCode')} required />
                                     <div className="relative flex items-center">
                                         <input
                                             {...register('projectCode')}
                                             className={`${inputClass} ${isIdAvailable === false ? 'border-red-500 bg-red-50' : isIdAvailable === true ? 'border-green-500 bg-green-50' : ''}`}
-                                            placeholder="XX-S-XXX"
+                                            placeholder={t('prospects.registration.projectCodePlaceholderTarget')}
                                         />
                                         <div className="absolute right-3 flex items-center gap-2">
                                             {isCheckingId && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
@@ -603,33 +605,33 @@ export const TargetRegistration: React.FC = () => {
                                             {!isCheckingId && isIdAvailable === false && <AlertCircle className="w-4 h-4 text-red-500" />}
                                         </div>
                                     </div>
-                                    {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">This code is already in use.</p>}
+                                    {isIdAvailable === false && <p className="text-red-500 text-xs mt-1">{t('prospects.registration.codeAlreadyInUse')}</p>}
                                 </div>
                             </div>
 
                             {/* Row: Rank + Lead Channel */}
                             <div className="flex gap-6">
                                 <div className="flex-1">
-                                    <FieldLabel text="Rank" />
+                                    <FieldLabel text={t('prospects.registration.rank')} />
                                     <Controller
                                         control={control}
                                         name="rank"
                                         render={({ field }) => (
                                             <SelectPicker
                                                 options={[
-                                                    { value: 'A', label: 'A - High Priority' },
-                                                    { value: 'B', label: 'B - Standard' },
-                                                    { value: 'C', label: 'C - Low' }
+                                                    { value: 'A', label: t('prospects.registration.rankA') },
+                                                    { value: 'B', label: t('prospects.registration.rankB') },
+                                                    { value: 'C', label: t('prospects.registration.rankC') }
                                                 ]}
                                                 value={field.value}
                                                 onChange={field.onChange}
-                                                placeholder="Select a rank"
+                                                placeholder={t('prospects.registration.selectRank')}
                                             />
                                         )}
                                     />
                                 </div>
                                 <div className="flex-1">
-                                    <FieldLabel text="Lead Channel" />
+                                    <FieldLabel text={t('prospects.registration.leadChannel')} />
                                     <Controller
                                         control={control}
                                         name="channel"
@@ -638,7 +640,7 @@ export const TargetRegistration: React.FC = () => {
                                                 options={CHANNEL_OPTIONS.map(o => ({ value: o.name, label: o.name }))}
                                                 value={field.value}
                                                 onChange={field.onChange}
-                                                placeholder="Where did we get the lead from?"
+                                                placeholder={t('prospects.registration.leadChannelPlaceholder')}
                                             />
                                         )}
                                     />
@@ -652,22 +654,22 @@ export const TargetRegistration: React.FC = () => {
                     SECTION 2: COMPANY PROFILE
                 ═══════════════════════════════════════════════ */}
                 <div className="flex flex-col gap-10">
-                    <SectionHeader title="Company Profile" />
+                    <SectionHeader title={t('prospects.registration.companyProfile')} />
 
                     <div className="flex flex-col gap-8">
                         {/* Row: Company Name + Industry */}
                         <div className="flex gap-7">
                             <div className="flex-1">
-                                <FieldLabel text="Company Name" required />
+                                <FieldLabel text={t('prospects.registration.companyName')} required />
                                 <input
                                     {...register('companyName', { required: true })}
                                     className={inputClass}
-                                    placeholder="Enter company registered name"
+                                    placeholder={t('prospects.registration.enterCompanyName')}
                                 />
-                                {errors.companyName && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                {errors.companyName && <span className="text-red-500 text-xs mt-1">{t('prospects.registration.required')}</span>}
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Industry" required />
+                                <FieldLabel text={t('prospects.registration.industry')} required />
                                 <Controller
                                     control={control}
                                     name="targetIndustries"
@@ -678,18 +680,18 @@ export const TargetRegistration: React.FC = () => {
                                             selected={field.value || []}
                                             onSelect={(selected) => field.onChange(selected)}
                                             multiSelect={true}
-                                            placeholder="Select from the industries"
+                                            placeholder={t('prospects.registration.selectFromIndustries')}
                                         />
                                     )}
                                 />
-                                {errors.targetIndustries && <span className="text-red-500 text-xs mt-1">At least one industry is required</span>}
+                                {errors.targetIndustries && <span className="text-red-500 text-xs mt-1">{t('prospects.registration.required')}</span>}
                             </div>
                         </div>
 
                         {/* Website links */}
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-col gap-2">
-                                <FieldLabel text="Website" />
+                                <FieldLabel text={t('prospects.registration.website')} />
                                 {websiteFields.map((field, index) => (
                                     <div key={field.id} className="flex items-center">
                                         <div className="w-11 h-11 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center justify-center">
@@ -698,7 +700,7 @@ export const TargetRegistration: React.FC = () => {
                                         <input
                                             {...register(`websiteLinks.${index}.url` as const)}
                                             type="text"
-                                            placeholder="www.example.com"
+                                            placeholder={t('prospects.registration.websitePlaceholder')}
                                             className="flex-1 h-11 px-3 py-2 bg-white rounded-tr-[3px] rounded-br-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300"
                                         />
                                         {websiteFields.length > 1 && (
@@ -714,25 +716,25 @@ export const TargetRegistration: React.FC = () => {
                                 onClick={() => appendWebsite({ url: '' })}
                                 className="flex items-center gap-2 text-[#064771] text-sm font-medium  hover:underline w-fit"
                             >
-                                <Plus className="w-3 h-3" /> Add another Link
+                                <Plus className="w-3 h-3" /> {t('prospects.registration.addAnotherLink')}
                             </button>
                         </div>
 
                         {/* Addresses / Entities */}
                         <div className="flex flex-col gap-3">
                             <div className="flex flex-col gap-2">
-                                <FieldLabel text="Addresses / Entities" />
+                                <FieldLabel text={t('prospects.registration.addressesEntities')} />
                                 {addressFields.map((field, index) => (
                                     <div key={field.id} className="flex items-center gap-4">
                                         <input
                                             {...register(`hqAddresses.${index}.label` as const)}
-                                            placeholder="Entity Name/Address Name"
+                                            placeholder={t('prospects.registration.entityNamePlaceholder')}
                                             className={`w-1/3 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow`}
                                         />
                                         <div className="flex-1 flex items-center gap-2">
                                             <input
                                                 {...register(`hqAddresses.${index}.address` as const)}
-                                                placeholder="Full Address"
+                                                placeholder={t('prospects.registration.fullAddressPlaceholder')}
                                                 className={`flex-1 h-11 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-shadow`}
                                             />
                                             {addressFields.length > 1 && (
@@ -749,7 +751,7 @@ export const TargetRegistration: React.FC = () => {
                                 onClick={() => appendAddress({ label: '', address: '' })}
                                 className="flex items-center gap-2 text-[#064771] text-sm font-medium  hover:underline w-fit"
                             >
-                                <Plus className="w-4 h-4" /> Add another Address/ Entity
+                                <Plus className="w-4 h-4" /> {t('prospects.registration.addAnotherAddress')}
                             </button>
                         </div>
                     </div>
@@ -759,13 +761,13 @@ export const TargetRegistration: React.FC = () => {
                     SECTION 3: DEAL CONTEXT
                 ═══════════════════════════════════════════════ */}
                 <div className="flex flex-col gap-10">
-                    <SectionHeader title="Deal Context" />
+                    <SectionHeader title={t('prospects.registration.dealContext')} />
 
                     <div className="flex flex-col gap-8">
                         {/* Row: Purpose of M&A + Investment Condition */}
                         <div className="flex gap-6">
                             <div className="flex-1">
-                                <FieldLabel text="Purpose of M&A" />
+                                <FieldLabel text={t('prospects.registration.purposeMA')} />
                                 <Controller
                                     control={control}
                                     name="reasonForMA"
@@ -774,13 +776,13 @@ export const TargetRegistration: React.FC = () => {
                                             options={REASONS_MA}
                                             value={field.value || []}
                                             onChange={field.onChange}
-                                            placeholder="Select Purpose of M&A"
+                                            placeholder={t('prospects.registration.selectPurposeMA')}
                                         />
                                     )}
                                 />
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Investment Condition" />
+                                <FieldLabel text={t('prospects.registration.investmentCondition')} />
                                 <Controller
                                     control={control}
                                     name="investmentCondition"
@@ -789,7 +791,7 @@ export const TargetRegistration: React.FC = () => {
                                             options={INVESTMENT_CONDITIONS}
                                             value={field.value || []}
                                             onChange={field.onChange}
-                                            placeholder="Select investment condition"
+                                            placeholder={t('prospects.registration.selectInvestmentCondition')}
                                         />
                                     )}
                                 />
@@ -798,19 +800,19 @@ export const TargetRegistration: React.FC = () => {
 
                         {/* Row: Desired Investment Range (full width) */}
                         <div>
-                            <FieldLabel text="Desired Investment Range" />
+                            <FieldLabel text={t('prospects.registration.desiredInvestmentRange')} />
                             <div className="flex items-center gap-3">
                                 <input
                                     {...register('desiredInvestmentMin')}
                                     type="number"
-                                    placeholder="Min"
+                                    placeholder={t('prospects.registration.minPlaceholder')}
                                     className={`flex-1 ${inputClass}`}
                                 />
                                 <span className="text-gray-400 text-base font-normal">—</span>
                                 <input
                                     {...register('desiredInvestmentMax')}
                                     type="number"
-                                    placeholder="Max"
+                                    placeholder={t('prospects.registration.maxPlaceholder')}
                                     className={`flex-1 ${inputClass}`}
                                 />
                             </div>
@@ -819,16 +821,16 @@ export const TargetRegistration: React.FC = () => {
                         {/* Row: EBITDA + Default Currency */}
                         <div className="flex gap-6">
                             <div className="flex-1">
-                                <FieldLabel text="EBITDA" />
+                                <FieldLabel text={t('prospects.registration.ebitda')} />
                                 <input
                                     {...register('ebitdaMin')}
                                     type="number"
-                                    placeholder="write EBITDA here"
+                                    placeholder={t('prospects.registration.ebitdaPlaceholder')}
                                     className={inputClass}
                                 />
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Default Currency" />
+                                <FieldLabel text={t('prospects.registration.defaultCurrency')} />
                                 <Controller
                                     control={control}
                                     name="desiredInvestmentCurrency"
@@ -837,7 +839,7 @@ export const TargetRegistration: React.FC = () => {
                                             options={currencies.map(c => ({ value: c.currency_code, label: c.currency_code }))}
                                             value={field.value}
                                             onChange={field.onChange}
-                                            placeholder="Select default currency"
+                                            placeholder={t('prospects.registration.selectDefaultCurrency')}
                                         />
                                     )}
                                 />
@@ -846,11 +848,11 @@ export const TargetRegistration: React.FC = () => {
 
                         {/* Project Details */}
                         <div>
-                            <FieldLabel text="Project Details" />
+                            <FieldLabel text={t('prospects.registration.projectDetails')} />
                             <textarea
                                 {...register('projectDetails')}
                                 className="w-full px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 min-h-[100px] resize-y"
-                                placeholder="Brief description of the deal..."
+                                placeholder={t('prospects.registration.projectDetailsPlaceholder')}
                             />
                         </div>
                     </div>
@@ -861,7 +863,7 @@ export const TargetRegistration: React.FC = () => {
                 ═══════════════════════════════════════════════ */}
                 <div className="flex flex-col items-center gap-10">
                     <div className="self-stretch">
-                        <SectionHeader title="Contacts" />
+                        <SectionHeader title={t('prospects.registration.contacts')} />
                     </div>
 
                     {contactFields.map((field, index) => (
@@ -870,26 +872,26 @@ export const TargetRegistration: React.FC = () => {
                                 {/* Row: Name + Designation + Department */}
                                 <div className="flex gap-7">
                                     <div className="flex-1">
-                                        <FieldLabel text="Name" />
+                                        <FieldLabel text={t('prospects.registration.name')} />
                                         <input
                                             {...register(`contacts.${index}.name` as const)}
-                                            placeholder="Contact Name"
+                                            placeholder={t('prospects.registration.contactNamePlaceholder')}
                                             className={inputClass}
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <FieldLabel text="Designation" />
+                                        <FieldLabel text={t('prospects.registration.designation')} />
                                         <input
                                             {...register(`contacts.${index}.designation` as const)}
-                                            placeholder="Position / Job Title"
+                                            placeholder={t('prospects.registration.designationPlaceholder')}
                                             className={inputClass}
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <FieldLabel text="Department" />
+                                        <FieldLabel text={t('prospects.registration.department')} />
                                         <input
                                             {...register(`contacts.${index}.department` as const)}
-                                            placeholder="Dept."
+                                            placeholder={t('prospects.registration.departmentPlaceholder')}
                                             className={inputClass}
                                         />
                                     </div>
@@ -898,18 +900,18 @@ export const TargetRegistration: React.FC = () => {
                                 {/* Row: Phone + Email + Toggle/Delete */}
                                 <div className="flex items-end gap-7">
                                     <div className="flex-1">
-                                        <FieldLabel text="Phone" />
+                                        <FieldLabel text={t('prospects.registration.phone')} />
                                         <input
                                             {...register(`contacts.${index}.phone` as const)}
-                                            placeholder="+1 234..."
+                                            placeholder={t('prospects.registration.phonePlaceholder')}
                                             className={inputClass}
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <FieldLabel text="Email" />
+                                        <FieldLabel text={t('prospects.registration.email')} />
                                         <input
                                             {...register(`contacts.${index}.email` as const)}
-                                            placeholder="email@example.com"
+                                            placeholder={t('prospects.registration.emailPlaceholder')}
                                             className={inputClass}
                                         />
                                     </div>
@@ -929,7 +931,7 @@ export const TargetRegistration: React.FC = () => {
                                                 </div>
                                             </div>
                                             <span className={`text-sm  transition-colors ${String(primaryContactParams) === String(index) ? 'text-gray-900 font-medium' : 'text-gray-500 font-normal'}`}>
-                                                {String(primaryContactParams) === String(index) ? 'Primary Contact' : 'Set as Primary'}
+                                                {String(primaryContactParams) === String(index) ? t('prospects.registration.primaryContact') : t('prospects.registration.setAsPrimary')}
                                             </span>
                                         </label>
 
@@ -945,7 +947,7 @@ export const TargetRegistration: React.FC = () => {
                                                     }`}
                                             >
                                                 <Trash2 className="w-5 h-5" />
-                                                <span className="text-sm font-normal ">Delete</span>
+                                                <span className="text-sm font-normal ">{t('prospects.registration.delete')}</span>
                                             </button>
                                         )}
                                     </div>
@@ -959,7 +961,7 @@ export const TargetRegistration: React.FC = () => {
                         onClick={() => appendContact({ name: '', designation: '', department: '', email: '', phone: '', isPrimary: false })}
                         className="self-stretch flex items-center gap-3 text-sky-900 text-base font-medium "
                     >
-                        <Plus className="w-4 h-4" /> Add another Contact
+                        <Plus className="w-4 h-4" /> {t('prospects.registration.addAnotherContact')}
                     </button>
                 </div>
 
@@ -967,13 +969,13 @@ export const TargetRegistration: React.FC = () => {
                     SECTION 5: DOCUMENTS & RELATIONSHIPS
                 ═══════════════════════════════════════════════ */}
                 <div className="flex flex-col gap-10">
-                    <SectionHeader title="Documents & Relationships" />
+                    <SectionHeader title={t('prospects.registration.documentsRelationships')} />
 
                     <div className="flex flex-col gap-8">
                         {/* Row: Assigned PIC + Financial Advisor */}
                         <div className="flex gap-8">
                             <div className="flex-1">
-                                <FieldLabel text="Assigned PIC" />
+                                <FieldLabel text={t('prospects.registration.assignedPIC')} />
                                 <Controller
                                     control={control}
                                     name="internal_pic"
@@ -983,14 +985,14 @@ export const TargetRegistration: React.FC = () => {
                                             selected={field.value}
                                             onSelect={(selected) => field.onChange(selected)}
                                             multiSelect={true}
-                                            placeholder="Select Internal Staff"
-                                            searchPlaceholder="Search staff names..."
+                                            placeholder={t('prospects.registration.selectInternalStaff')}
+                                            searchPlaceholder={t('prospects.registration.searchStaffNames')}
                                         />
                                     )}
                                 />
                             </div>
                             <div className="flex-1">
-                                <FieldLabel text="Financial Advisor Roles (Partner) If any" />
+                                <FieldLabel text={t('prospects.registration.financialAdvisorRoles')} />
                                 <Controller
                                     control={control}
                                     name="financialAdvisor"
@@ -1000,8 +1002,8 @@ export const TargetRegistration: React.FC = () => {
                                             selected={field.value}
                                             onSelect={(selected) => field.onChange(selected)}
                                             multiSelect={true}
-                                            placeholder="Select Financial Advisor"
-                                            searchPlaceholder="Search partner names..."
+                                            placeholder={t('prospects.registration.selectFinancialAdvisor')}
+                                            searchPlaceholder={t('prospects.registration.searchPartnerNames')}
                                         />
                                     )}
                                 />
@@ -1010,7 +1012,7 @@ export const TargetRegistration: React.FC = () => {
 
                         {/* Teaser Profile Link */}
                         <div className="flex flex-col gap-3">
-                            <FieldLabel text="Teaser Profile" />
+                            <FieldLabel text={t('prospects.registration.teaserProfile')} />
                             <div className="flex items-center">
                                 <div className="px-4 py-3 bg-gray-50 rounded-tl-[3px] rounded-bl-[3px] border-l border-t border-b border-gray-300 flex items-center">
                                     <LinkIcon className="w-5 h-5 text-gray-500" />
@@ -1025,7 +1027,7 @@ export const TargetRegistration: React.FC = () => {
 
                         {/* Introduced Projects */}
                         <div className="flex flex-col gap-3">
-                            <FieldLabel text="Introduced Projects" />
+                            <FieldLabel text={t('prospects.registration.introducedProjects')} />
                             <Controller
                                 control={control}
                                 name="introducedProjects"
@@ -1035,8 +1037,8 @@ export const TargetRegistration: React.FC = () => {
                                         selected={field.value || []}
                                         onSelect={(val) => field.onChange(val)}
                                         multiSelect={true}
-                                        placeholder="Select from investors"
-                                        searchPlaceholder="Search by code or name..."
+                                        placeholder={t('prospects.registration.selectFromInvestors')}
+                                        searchPlaceholder={t('prospects.registration.searchByCodeOrName')}
                                         dropUp={true}
                                     />
                                 )}
@@ -1053,7 +1055,7 @@ export const TargetRegistration: React.FC = () => {
                     onClick={() => navigate('/prospects?tab=targets')}
                     className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium  hover:bg-gray-50 transition-colors"
                 >
-                    Cancel
+                    {t('prospects.registration.cancel')}
                 </button>
                 <button
                     type="button"
@@ -1064,14 +1066,14 @@ export const TargetRegistration: React.FC = () => {
                     disabled={isSubmitting}
                     className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium  hover:bg-sky-50 transition-colors"
                 >
-                    Save as Draft
+                    {t('prospects.registration.saveAsDraft')}
                 </button>
                 <button
                     type="submit"
                     disabled={isSubmitting || (isIdAvailable === false)}
                     className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium  hover:bg-[#042d48] transition-colors disabled:opacity-50"
                 >
-                    {isSubmitting ? 'Saving...' : 'Save Target'}
+                    {isSubmitting ? t('prospects.registration.saving') : id ? t('prospects.registration.updateTarget') : t('prospects.registration.saveTarget')}
                 </button>
             </div>
         </form>

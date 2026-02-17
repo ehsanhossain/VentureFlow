@@ -347,43 +347,92 @@ class DealController extends Controller
             // Determine fee side from the deal's pipeline
             $feeSide = $pipelineType === 'seller' ? 'target' : 'investor';
 
-            // Find matching fee tier
-            $feeTier = FeeTier::where('fee_type', $feeSide)
-                ->where('min_amount', '<=', $ticketSizeUsd)
-                ->where(function ($q) use ($ticketSizeUsd) {
-                    $q->whereNull('max_amount')
-                      ->orWhere('max_amount', '>=', $ticketSizeUsd);
-                })
-                ->where('is_active', true)
-                ->orderBy('order_index')
-                ->first();
+            // Determine if this is the LAST active stage (final settlement)
+            $isLastStage = ($toIdx !== false && $toIdx === $allStages->count() - 1);
 
-            $calculatedAmount = 0;
-            if ($feeTier) {
-                if ($feeTier->success_fee_fixed !== null && $feeTier->success_fee_fixed > 0) {
-                    $calculatedAmount = (float) $feeTier->success_fee_fixed;
-                } elseif ($feeTier->success_fee_rate !== null && $feeTier->success_fee_rate > 0) {
-                    $calculatedAmount = $ticketSizeUsd * ((float) $feeTier->success_fee_rate / 100);
+            if ($isLastStage) {
+                // ── FINAL SETTLEMENT MODE ──
+                // Look up fee tier for the deal's transaction size
+                $feeTier = FeeTier::where('fee_type', $feeSide)
+                    ->where('min_amount', '<=', $ticketSizeUsd)
+                    ->where(function ($q) use ($ticketSizeUsd) {
+                        $q->whereNull('max_amount')
+                          ->orWhere('max_amount', '>=', $ticketSizeUsd);
+                    })
+                    ->where('is_active', true)
+                    ->orderBy('order_index')
+                    ->first();
+
+                $successFee = 0;
+                if ($feeTier) {
+                    if ($feeTier->success_fee_fixed !== null && $feeTier->success_fee_fixed > 0) {
+                        $successFee = (float) $feeTier->success_fee_fixed;
+                    } elseif ($feeTier->success_fee_rate !== null && $feeTier->success_fee_rate > 0) {
+                        $successFee = $ticketSizeUsd * ((float) $feeTier->success_fee_rate / 100);
+                    }
                 }
-            }
 
-            $monetizationInfo = [
-                'enabled' => true,
-                'type' => $monetization['type'] ?? 'one_time',
-                'payment_name' => $monetization['payment_name'] ?? '',
-                'amount' => $monetization['amount'] ?? null,
-                'deduct_from_success_fee' => $monetization['deduct_from_success_fee'] ?? false,
-                'ticket_size_usd' => $ticketSizeUsd,
-                'fee_side' => $feeSide,
-                'fee_tier' => $feeTier ? [
-                    'id' => $feeTier->id,
-                    'min_amount' => $feeTier->min_amount,
-                    'max_amount' => $feeTier->max_amount,
-                    'success_fee_fixed' => $feeTier->success_fee_fixed,
-                    'success_fee_rate' => $feeTier->success_fee_rate,
-                ] : null,
-                'calculated_amount' => $monetization['amount'] ?? round($calculatedAmount, 2),
-            ];
+                // Query accumulated monthly payments for this deal (deductible ones)
+                $accumulatedFees = DealFee::where('deal_id', $deal->id)
+                    ->where('deducted_from_success', true)
+                    ->orderBy('created_at')
+                    ->get();
+
+                $totalMonthlyReceived = $accumulatedFees->sum('final_amount');
+                $monthsCount = $accumulatedFees->count();
+
+                // Build payment history for the modal
+                $paymentHistory = $accumulatedFees->map(function ($fee) {
+                    return [
+                        'id' => $fee->id,
+                        'stage_code' => $fee->stage_code,
+                        'fee_type' => $fee->fee_type,
+                        'amount' => $fee->final_amount,
+                        'date' => $fee->created_at->format('Y-m-d'),
+                        'month_label' => $fee->created_at->format('M Y'),
+                    ];
+                })->values()->toArray();
+
+                $netPayout = round($successFee - $totalMonthlyReceived, 2);
+
+                $monetizationInfo = [
+                    'enabled' => true,
+                    'mode' => 'final_settlement',
+                    'payment_name' => $monetization['payment_name'] ?? 'Final Settlement',
+                    'ticket_size_usd' => $ticketSizeUsd,
+                    'fee_side' => $feeSide,
+                    'fee_tier' => $feeTier ? [
+                        'id' => $feeTier->id,
+                        'min_amount' => $feeTier->min_amount,
+                        'max_amount' => $feeTier->max_amount,
+                        'success_fee_fixed' => $feeTier->success_fee_fixed,
+                        'success_fee_rate' => $feeTier->success_fee_rate,
+                    ] : null,
+                    'success_fee' => round($successFee, 2),
+                    'accumulated_payments' => [
+                        'total_received' => round($totalMonthlyReceived, 2),
+                        'months_count' => $monthsCount,
+                        'history' => $paymentHistory,
+                    ],
+                    'net_payout' => $netPayout,
+                    'deduct_from_success_fee' => $monetization['deduct_from_success_fee'] ?? true,
+                ];
+            } else {
+                // ── STAGE FEE MODE (intermediate stage) ──
+                // Use the configured amount from pipeline settings, NOT fee tier calculation
+                $configuredAmount = (float) ($monetization['amount'] ?? 0);
+
+                $monetizationInfo = [
+                    'enabled' => true,
+                    'mode' => 'stage_fee',
+                    'payment_name' => $monetization['payment_name'] ?? '',
+                    'amount' => $configuredAmount,
+                    'type' => $monetization['type'] ?? 'one_time',
+                    'deduct_from_success_fee' => $monetization['deduct_from_success_fee'] ?? false,
+                    'ticket_size_usd' => $ticketSizeUsd,
+                    'fee_side' => $feeSide,
+                ];
+            }
         }
 
         return response()->json([

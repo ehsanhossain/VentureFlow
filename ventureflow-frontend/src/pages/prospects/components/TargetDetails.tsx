@@ -508,13 +508,15 @@ const TargetDetails: React.FC = () => {
                     </section>
 
                     {/* Notes Section */}
-                    <NotesSection
-                        notes={notes}
-                        onNotesChange={setNotes}
-                        entityId={id!}
-                        entityType="seller"
-                        currentUserName={getCurrentUserName()}
-                    />
+                    <div style={{ maxHeight: '500px' }}>
+                        <NotesSection
+                            notes={notes}
+                            onNotesChange={setNotes}
+                            entityId={id!}
+                            entityType="seller"
+                            currentUserName={getCurrentUserName()}
+                        />
+                    </div>
                 </div>
 
                 {/* Right Column - Sidebar */}

@@ -177,7 +177,23 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
                 {pathSegments.slice(-3).map((segment, index) => {
                   const url = `/${pathSegments.slice(0, pathSegments.length - 3 + index + 1).join('/')}`;
-                  const name = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+                  const rawName = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+                  // Map URL segments to translation keys for breadcrumb titles
+                  const segmentTranslationMap: Record<string, string> = {
+                    'prospects': 'navigation.companies',
+                    'deal-pipeline': 'navigation.dealPipeline',
+                    'dashboard': 'navigation.dashboard',
+                    'settings': 'navigation.settings',
+                    'employee': 'navigation.employees',
+                    'general': 'navigation.general',
+                    'currency': 'navigation.currency',
+                    'partner-management': 'navigation.partnerManagement',
+                    'staff-accounts': 'navigation.staffAndAccounts',
+                    'notifications': 'navigation.notifications',
+                    'profile': 'navigation.profile',
+                  };
+                  const translationKey = segmentTranslationMap[segment];
+                  const name = translationKey ? t(translationKey) : (rawName === 'Employee' ? 'HRVC' : rawName);
                   const isLast = (pathSegments.length - 3 + index) === pathSegments.length - 1;
 
                   return (
@@ -194,7 +210,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       `}
                         title={name}
                       >
-                        {name === 'Employee' ? 'HRVC' : name}
+                        {name}
                       </Link>
                     </span>
                   );

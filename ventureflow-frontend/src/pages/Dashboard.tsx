@@ -2,6 +2,7 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Users, Target, Briefcase, Activity, ArrowUpRight, AlertTriangle,
   Plus, Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap
@@ -113,14 +114,14 @@ const formatCurrency = (value: number): string => {
 
 const PIPELINE_COLORS = ['#064771', '#0a6e9e', '#2196F3', '#64B5F6', '#90CAF9', '#BBDEFB', '#0d8bc2', '#3aa8d8', '#1976D2', '#0D47A1'];
 
-const getUrgencyBadge = (urgency: string) => {
+const getUrgencyBadge = (urgency: string, t: (key: string) => string) => {
   switch (urgency) {
     case 'overdue':
-      return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: 'Overdue' };
+      return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: t('dashboard.overdue') };
     case 'stale':
-      return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'Stale' };
+      return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: t('dashboard.stale') };
     default:
-      return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'On Track' };
+      return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: t('dashboard.onTrack') };
   }
 };
 
@@ -136,6 +137,7 @@ const getActivityIcon = (entityType: string) => {
 // =============== COMPONENT ===============
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [pipelineView, setPipelineView] = useState<'buyer' | 'seller'>('buyer');
@@ -185,7 +187,7 @@ const Dashboard: React.FC = () => {
       <div className="sticky top-0 z-20 bg-white border-b border-[#E5E7EB] px-5 py-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-medium text-gray-900">Command Center</h1>
+            <h1 className="text-2xl font-medium text-gray-900">{t('dashboard.commandCenter')}</h1>
             <span className="text-[13px] font-medium text-gray-400">{stats.month_name}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -194,14 +196,14 @@ const Dashboard: React.FC = () => {
               className="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5E7EB] rounded-[3px] text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
-              Refresh
+              {t('dashboard.refresh')}
             </button>
             <button
               onClick={() => navigate('/prospects?tab=investors&action=new')}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New Prospect
+              {t('dashboard.newProspect')}
             </button>
           </div>
         </div>
@@ -214,16 +216,16 @@ const Dashboard: React.FC = () => {
           <div className="px-4 py-3 flex items-center justify-between border-b border-[#F3F4F6]">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Deals Requiring Action</h2>
+              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.dealsRequiringAction')}</h2>
               <span className="text-[11px] text-gray-400 font-medium ml-1">
-                {data.deals_needing_action.length} deal{data.deals_needing_action.length !== 1 ? 's' : ''}
+                {t('dashboard.dealCount', { count: data.deals_needing_action.length })}
               </span>
             </div>
             <button
               onClick={() => navigate('/deal-pipeline')}
               className="text-[11px] text-[#064771] font-medium hover:underline flex items-center gap-0.5"
             >
-              View Pipeline <ChevronRight className="w-3 h-3" />
+              {t('dashboard.viewPipeline')} <ChevronRight className="w-3 h-3" />
             </button>
           </div>
 
@@ -232,18 +234,18 @@ const Dashboard: React.FC = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-[#F3F4F6]">
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Deal</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Buyer → Seller</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Stage</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Value</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">PIC</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Status</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">Idle</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.deal')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.buyerToSeller')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.stage')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.value')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.pic')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.status')}</th>
+                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.idle')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.deals_needing_action.map((deal) => {
-                    const badge = getUrgencyBadge(deal.urgency);
+                    const badge = getUrgencyBadge(deal.urgency, t);
                     return (
                       <tr
                         key={deal.id}
@@ -288,7 +290,7 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="py-8 text-center">
               <Zap className="w-8 h-8 mx-auto mb-2 text-green-400" />
-              <p className="text-sm text-gray-500">All deals are on track!</p>
+              <p className="text-sm text-gray-500">{t('dashboard.allDealsOnTrack')}</p>
             </div>
           )}
         </div>
@@ -297,47 +299,47 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-5 border border-t-0 border-[#E5E7EB] divide-x divide-[#E5E7EB]">
           {/* Pipeline Value */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/deal-pipeline')}>
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Pipeline Value</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.pipelineValue')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{formatCurrency(stats.pipeline_value)}</p>
-            <p className="text-[11px] text-gray-400">{stats.active_deals} active deal{stats.active_deals !== 1 ? 's' : ''}</p>
+            <p className="text-[11px] text-gray-400">{t('dashboard.activeDeals', { count: stats.active_deals })}</p>
           </div>
 
           {/* Investors */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/prospects?tab=investors')}>
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Investors</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.investors')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.total_investors}</p>
             {stats.investors_this_month > 0 && (
               <div className="flex items-center gap-1">
                 <ArrowUpRight className="w-3 h-3 text-green-600" />
-                <span className="text-[11px] text-green-600 font-medium">+{stats.investors_this_month} this month</span>
+                <span className="text-[11px] text-green-600 font-medium">{t('dashboard.thisMonth', { count: stats.investors_this_month })}</span>
               </div>
             )}
           </div>
 
           {/* Targets */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/prospects?tab=targets')}>
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Targets</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.targets')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.total_targets}</p>
             {stats.targets_this_month > 0 && (
               <div className="flex items-center gap-1">
                 <ArrowUpRight className="w-3 h-3 text-green-600" />
-                <span className="text-[11px] text-green-600 font-medium">+{stats.targets_this_month} this month</span>
+                <span className="text-[11px] text-green-600 font-medium">{t('dashboard.thisMonth', { count: stats.targets_this_month })}</span>
               </div>
             )}
           </div>
 
           {/* Unmatched Investors */}
           <div className="p-3.5">
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Unmatched Investors</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.unmatchedInvestors')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.unmatched_investors}</p>
-            <p className="text-[11px] text-gray-400">seeking targets</p>
+            <p className="text-[11px] text-gray-400">{t('dashboard.seekingTargets')}</p>
           </div>
 
           {/* Unmatched Targets */}
           <div className="p-3.5">
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Unmatched Targets</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.unmatchedTargets')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.unmatched_targets}</p>
-            <p className="text-[11px] text-gray-400">seeking buyers</p>
+            <p className="text-[11px] text-gray-400">{t('dashboard.seekingBuyers')}</p>
           </div>
         </div>
 
@@ -347,8 +349,8 @@ const Dashboard: React.FC = () => {
           <div className="col-span-3 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Pipeline Stages</h2>
-                <span className="text-[11px] text-gray-400 font-medium">{totalPipelineDeals} deals</span>
+                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.pipelineStages')}</h2>
+                <span className="text-[11px] text-gray-400 font-medium">{t('dashboard.deals', { count: totalPipelineDeals })}</span>
               </div>
               <div className="flex border border-[#E5E7EB] rounded-[3px] overflow-hidden">
                 <button
@@ -356,14 +358,14 @@ const Dashboard: React.FC = () => {
                   className={`px-3 py-1 text-[11px] font-medium transition-colors ${pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
                     }`}
                 >
-                  Investor Side
+                  {t('dashboard.investorSide')}
                 </button>
                 <button
                   onClick={() => setPipelineView('seller')}
                   className={`px-3 py-1 text-[11px] font-medium border-l border-[#E5E7EB] transition-colors ${pipelineView === 'seller' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
                     }`}
                 >
-                  Target Side
+                  {t('dashboard.targetSide')}
                 </button>
               </div>
             </div>
@@ -380,7 +382,7 @@ const Dashboard: React.FC = () => {
                     />
                     <Tooltip
                       contentStyle={{ border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', backgroundColor: '#fff' }}
-                      formatter={((v: any, _name: any, props: any) => [`${v ?? 0} deals (${formatCurrency(props.payload.value)})`, '']) as any}
+                      formatter={((v: any, _name: any, props: any) => [`${v ?? 0} ${t('dashboard.deals', { count: v ?? 0 })} (${formatCurrency(props.payload.value)})`, '']) as any}
                     />
                     <Bar dataKey="count" radius={[0, 2, 2, 0]}>
                       {activePipeline.map((_, i) => (
@@ -392,7 +394,7 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center">
-                <p className="text-sm text-gray-400">No pipeline data available</p>
+                <p className="text-sm text-gray-400">{t('dashboard.noPipelineData')}</p>
               </div>
             )}
           </div>
@@ -400,8 +402,8 @@ const Dashboard: React.FC = () => {
           {/* Deal Flow Trend (2 cols) */}
           <div className="col-span-2 p-4">
             <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Deal Flow</h2>
-              <span className="text-[11px] text-gray-400 font-medium">Last 6 Months</span>
+              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.dealFlow')}</h2>
+              <span className="text-[11px] text-gray-400 font-medium">{t('dashboard.lastSixMonths')}</span>
             </div>
 
             {data.deal_flow_trend.length > 0 ? (
@@ -415,15 +417,15 @@ const Dashboard: React.FC = () => {
                       contentStyle={{ border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', backgroundColor: '#fff' }}
                     />
                     <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '11px', color: '#6B7280' }} />
-                    <Line type="monotone" dataKey="created" stroke="#064771" strokeWidth={2} dot={{ r: 3 }} name="Created" />
-                    <Line type="monotone" dataKey="won" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} name="Won" />
-                    <Line type="monotone" dataKey="lost" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} name="Lost" />
+                    <Line type="monotone" dataKey="created" stroke="#064771" strokeWidth={2} dot={{ r: 3 }} name={t('dashboard.created')} />
+                    <Line type="monotone" dataKey="won" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} name={t('dashboard.won')} />
+                    <Line type="monotone" dataKey="lost" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} name={t('dashboard.lost')} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <div className="h-[220px] flex items-center justify-center">
-                <p className="text-sm text-gray-400">No trend data yet</p>
+                <p className="text-sm text-gray-400">{t('dashboard.noTrendData')}</p>
               </div>
             )}
           </div>
@@ -436,8 +438,8 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#064771]" />
-                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Global Coverage</h2>
-                <span className="text-[11px] text-gray-400 font-medium">{data.geo_distribution.length} countries</span>
+                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.globalCoverage')}</h2>
+                <span className="text-[11px] text-gray-400 font-medium">{t('dashboard.countries', { count: data.geo_distribution.length })}</span>
               </div>
             </div>
 
@@ -458,15 +460,15 @@ const Dashboard: React.FC = () => {
                       contentStyle={{ border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', backgroundColor: '#fff' }}
                     />
                     <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '11px', color: '#6B7280' }} />
-                    <Bar dataKey="investors" name="Investors" fill="#064771" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="targets" name="Targets" fill="#f97316" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="investors" name={t('dashboard.investors')} fill="#064771" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="targets" name={t('dashboard.targets')} fill="#f97316" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <div className="h-[200px] flex items-center justify-center">
                 <Globe className="w-10 h-10 text-gray-400 mb-2" />
-                <p className="text-sm text-gray-400">No geographic data available</p>
+                <p className="text-sm text-gray-400">{t('dashboard.noGeoData')}</p>
               </div>
             )}
           </div>
@@ -474,7 +476,7 @@ const Dashboard: React.FC = () => {
           {/* Activity Feed (2 cols) */}
           <div className="col-span-2 p-4 flex flex-col">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Recent Activity</h2>
+              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.recentActivity')}</h2>
               <Clock className="w-3.5 h-3.5 text-gray-400" />
             </div>
 
@@ -501,7 +503,7 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-xs text-gray-400">No recent activity</p>
+                <p className="text-xs text-gray-400">{t('dashboard.noRecentActivity')}</p>
               </div>
             )}
           </div>
@@ -514,13 +516,13 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5 text-[#064771]" />
-                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Recent Investors</h2>
+                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.recentInvestors')}</h2>
               </div>
               <button
                 onClick={() => navigate('/prospects?tab=investors')}
                 className="text-[11px] text-[#064771] font-medium hover:underline flex items-center gap-0.5"
               >
-                View all <ChevronRight className="w-3 h-3" />
+                {t('dashboard.viewAll')} <ChevronRight className="w-3 h-3" />
               </button>
             </div>
             {data.recent_investors.length > 0 ? (
@@ -545,7 +547,7 @@ const Dashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-gray-400 text-center py-4">No investors yet</p>
+              <p className="text-[11px] text-gray-400 text-center py-4">{t('dashboard.noInvestorsYet')}</p>
             )}
           </div>
 
@@ -554,13 +556,13 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Target className="w-3.5 h-3.5 text-orange-500" />
-                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">Recent Targets</h2>
+                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.recentTargets')}</h2>
               </div>
               <button
                 onClick={() => navigate('/prospects?tab=targets')}
                 className="text-[11px] text-[#064771] font-medium hover:underline flex items-center gap-0.5"
               >
-                View all <ChevronRight className="w-3 h-3" />
+                {t('dashboard.viewAll')} <ChevronRight className="w-3 h-3" />
               </button>
             </div>
             {data.recent_targets.length > 0 ? (
@@ -585,7 +587,7 @@ const Dashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-gray-400 text-center py-4">No targets yet</p>
+              <p className="text-[11px] text-gray-400 text-center py-4">{t('dashboard.noTargetsYet')}</p>
             )}
           </div>
         </div>

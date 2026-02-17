@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import LanguageSelect from '../../../components/dashboard/LanguageSelect';
 import { useTranslation } from 'react-i18next';
 import api from '../../../config/api';
@@ -50,7 +50,7 @@ const timezones = [
 const dateFormats = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD'];
 
 const GeneralSettings: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { refreshSettings: refreshGlobalSettings } = useGeneralSettings();
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
@@ -63,12 +63,14 @@ const GeneralSettings: React.FC = () => {
     const [defaultCurrency, setDefaultCurrency] = useState('USD');
     const [timezone, setTimezone] = useState('(GMT+07:00) Bangkok, Hanoi, Jakarta');
     const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+    const [language, setLanguage] = useState(i18n.language || 'en');
 
     // Track initial values for dirty checking
     const [initialSettings, setInitialSettings] = useState({
         defaultCurrency: 'USD',
         timezone: '(GMT+07:00) Bangkok, Hanoi, Jakarta',
         dateFormat: 'DD/MM/YYYY',
+        language: i18n.language || 'en',
     });
 
     useEffect(() => {
@@ -100,11 +102,20 @@ const GeneralSettings: React.FC = () => {
             if (settings.default_currency) setDefaultCurrency(settings.default_currency);
             if (settings.timezone) setTimezone(settings.timezone);
             if (settings.date_format) setDateFormat(settings.date_format);
+            if (settings.language) {
+                setLanguage(settings.language);
+                // Sync i18next with saved language from backend
+                if (i18n.language !== settings.language) {
+                    i18n.changeLanguage(settings.language);
+                }
+            }
 
+            const currentLang = settings.language || i18n.language || 'en';
             setInitialSettings({
                 defaultCurrency: settings.default_currency || 'USD',
                 timezone: settings.timezone || '(GMT+07:00) Bangkok, Hanoi, Jakarta',
                 dateFormat: settings.date_format || 'DD/MM/YYYY',
+                language: currentLang,
             });
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -120,12 +131,19 @@ const GeneralSettings: React.FC = () => {
                 default_currency: defaultCurrency,
                 timezone: timezone,
                 date_format: dateFormat,
+                language: language,
             });
+
+            // Apply language change via i18next
+            if (i18n.language !== language) {
+                i18n.changeLanguage(language);
+            }
 
             setInitialSettings({
                 defaultCurrency,
                 timezone,
                 dateFormat,
+                language,
             });
 
             showAlert({ type: 'success', message: 'Settings saved successfully' });
@@ -144,12 +162,25 @@ const GeneralSettings: React.FC = () => {
         setDefaultCurrency(initialSettings.defaultCurrency);
         setTimezone(initialSettings.timezone);
         setDateFormat(initialSettings.dateFormat);
+        setLanguage(initialSettings.language);
+        // Revert i18next language as well
+        if (i18n.language !== initialSettings.language) {
+            i18n.changeLanguage(initialSettings.language);
+        }
     };
+
+    // Callback for when language is changed via the LanguageSelect dropdown
+    const handleLanguageChange = useCallback((langCode: string) => {
+        setLanguage(langCode);
+        // Apply the language immediately for preview, but it's only "saved" when Save is clicked
+        i18n.changeLanguage(langCode);
+    }, [i18n]);
 
     const isDirty =
         defaultCurrency !== initialSettings.defaultCurrency ||
         timezone !== initialSettings.timezone ||
-        dateFormat !== initialSettings.dateFormat;
+        dateFormat !== initialSettings.dateFormat ||
+        language !== initialSettings.language;
 
     const handleBrowserNotificationToggle = async () => {
         if (!("Notification" in window)) {
@@ -186,7 +217,7 @@ const GeneralSettings: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">{t('settings.general.languagePreference', 'Primary Language')}</label>
-                                <LanguageSelect />
+                                <LanguageSelect onLanguageChange={handleLanguageChange} />
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="default-currency" className="text-sm font-medium text-gray-700">Default Currency</label>

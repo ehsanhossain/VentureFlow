@@ -272,10 +272,10 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
     // Determine whether step 1 deals with buyers or sellers
     const step1IsBuyer = defaultView === 'buyer';
 
-    // Can proceed from step 1: selected or TBD
+    // Can proceed from step 1: must select primary party (no skip)
     const canProceedStep1 = step1IsBuyer
-        ? (!!selectedBuyer || buyerTBD)
-        : (!!selectedSeller || sellerTBD);
+        ? !!selectedBuyer
+        : !!selectedSeller;
 
     // Can proceed from step 2: selected or TBD (but at least ONE party must be real)
     const canProceedStep2 = step1IsBuyer
@@ -359,24 +359,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <p className="text-center text-gray-500 py-4">No investors found</p>
                                         )}
                                     </div>
-                                    {/* Skip option */}
-                                    <button
-                                        onClick={handleSkipBuyer}
-                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${buyerTBD
-                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
-                                            }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
-                                        <span className="text-sm font-medium">Skip for now (Investor TBD)</span>
-                                    </button>
-                                    {buyerTBD && (
-                                        <p className="mt-2 text-xs text-amber-600 text-center">
-                                            Deal will be created as a <strong>Seller Mandate</strong> — you can assign an investor later.
-                                        </p>
-                                    )}
+                                    {/* No skip on step 1 — primary party is required */}
                                 </>
                             ) : (
                                 /* Step 1 is Select Target (Seller) */
@@ -408,24 +391,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <p className="text-center text-gray-500 py-4">No targets found</p>
                                         )}
                                     </div>
-                                    {/* Skip option */}
-                                    <button
-                                        onClick={handleSkipSeller}
-                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${sellerTBD
-                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
-                                            }`}
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
-                                        <span className="text-sm font-medium">Skip for now (Target TBD)</span>
-                                    </button>
-                                    {sellerTBD && (
-                                        <p className="mt-2 text-xs text-amber-600 text-center">
-                                            Deal will be created as a <strong>Buyer Mandate</strong> — you can assign a target later.
-                                        </p>
-                                    )}
+                                    {/* No skip on step 1 — primary party is required */}
                                 </>
                             )}
                         </div>
@@ -674,7 +640,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                     <button
                         onClick={() => {
                             if (step === 1 && !canProceedStep1) {
-                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'an investor' : 'a target'} or skip for now` });
+                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'an investor' : 'a target'} to proceed` });
                                 return;
                             }
                             if (step === 2 && !canProceedStep2) {

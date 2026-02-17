@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { AuthContext } from '../../routes/AuthContext';
 import { X, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -23,6 +24,7 @@ import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
 import DealExpandedPreview from './components/DealExpandedPreview';
 import MonetizationConfirmModal from './components/MonetizationConfirmModal';
+import FinalSettlementModal from './components/FinalSettlementModal';
 import GateBlockedModal from './components/GateBlockedModal';
 import DealDeleteModal from './components/DealDeleteModal';
 import { getCurrencySymbol, formatCompactNumber } from '../../utils/formatters';
@@ -103,6 +105,7 @@ interface GroupedDeals {
 }
 
 const DealPipeline = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const auth = useContext(AuthContext);
     const isPartner = auth?.isPartner;
@@ -513,7 +516,7 @@ const DealPipeline = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
                 <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                    <h1 className="text-sm font-medium text-gray-900 w-full md:w-auto">Deal Pipeline</h1>
+                    <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">{t('navigation.dealPipeline')}</h1>
 
                     <div className="w-full md:w-72">
                         <Dropdown
@@ -1043,8 +1046,20 @@ const DealPipeline = () => {
                 />
             )}
 
-            {/* Monetization Confirmation Modal */}
-            {monetizationModal && (
+            {/* Monetization Confirmation Modal (Stage Fee or Final Settlement) */}
+            {monetizationModal && monetizationModal.monetization?.mode === 'final_settlement' ? (
+                <FinalSettlementModal
+                    isOpen={true}
+                    onClose={() => setMonetizationModal(null)}
+                    onConfirm={(confirmation) => {
+                        setMonetizationModal(null);
+                        executeStageMove(monetizationModal.deal, monetizationModal.stageCode, confirmation);
+                    }}
+                    dealName={monetizationModal.deal.name}
+                    stageName={monetizationModal.stageName}
+                    monetization={monetizationModal.monetization}
+                />
+            ) : monetizationModal ? (
                 <MonetizationConfirmModal
                     isOpen={true}
                     onClose={() => setMonetizationModal(null)}
@@ -1056,7 +1071,7 @@ const DealPipeline = () => {
                     stageName={monetizationModal.stageName}
                     monetization={monetizationModal.monetization}
                 />
-            )}
+            ) : null}
 
             {/* Gate Rule Blocked Modal */}
             {gateBlockedModal && (

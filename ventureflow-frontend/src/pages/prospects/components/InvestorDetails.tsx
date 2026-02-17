@@ -575,13 +575,15 @@ const InvestorDetails: React.FC = () => {
           </section>
 
           {/* Notes Section */}
-          <NotesSection
-            notes={notes}
-            onNotesChange={setNotes}
-            entityId={id!}
-            entityType="buyer"
-            currentUserName={getCurrentUserName()}
-          />
+          <div style={{ maxHeight: '500px' }}>
+            <NotesSection
+              notes={notes}
+              onNotesChange={setNotes}
+              entityId={id!}
+              entityType="buyer"
+              currentUserName={getCurrentUserName()}
+            />
+          </div>
         </div>
 
         {/* Right Column - Sidebar */}

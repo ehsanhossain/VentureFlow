@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useTranslation } from 'react-i18next';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable, { Column } from '../../../components/table/DataTable';
@@ -92,6 +93,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     pagination
 }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, rowId: number } | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -227,7 +229,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     const columns: Column<TargetRowData>[] = useMemo(() => [
         {
             id: 'projectCode',
-            header: 'Project Code',
+            header: t('prospects.table.projectCode'),
             accessor: (row) => (
                 <div className="flex items-center gap-2">
                     <button
@@ -253,7 +255,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'rank',
-            header: 'Rank',
+            header: t('prospects.table.rank'),
             accessor: (row) => (
                 <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-[3px] text-[13px] font-normal ${row.rank === 'A' ? 'bg-[#ECFDF5] text-[#065F46]' :
                     row.rank === 'B' ? 'bg-[#FEFCE8] text-[#854D0E]' :
@@ -269,7 +271,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'companyName',
-            header: 'Company Name',
+            header: t('prospects.table.companyName'),
             accessor: (row) => (
                 <div className="flex flex-col min-w-0">
                     <span className="text-[14px] font-normal text-gray-900 truncate tracking-tight">{row.companyName}</span>
@@ -282,7 +284,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'originCountry',
-            header: 'Origin Country',
+            header: t('prospects.table.originCountry'),
             accessor: (row) => (
                 <div className="flex items-center gap-2 min-w-0">
                     {row.originCountry?.flag ? (
@@ -300,7 +302,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'website',
-            header: 'Website',
+            header: t('prospects.table.website'),
             accessor: (row) => {
                 const url = parseWebsiteUrl(row.website);
                 if (!url) return <span className="text-gray-400 text-sm">N/A</span>;
@@ -313,7 +315,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 bg-[#f3f4f6] text-gray-600 hover:bg-gray-200 px-2 py-0.5 rounded-[3px] text-[13px] font-normal transition-colors"
                         >
-                            <WebsiteIcon className="w-3.5 h-3.5" /> Visit
+                            <WebsiteIcon className="w-3.5 h-3.5" /> {t('prospects.table.visit')}
                         </a>
                         <button
                             onClick={(e) => {
@@ -336,7 +338,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
         {
             id: 'industry',
-            header: 'Industry',
+            header: t('prospects.table.industry'),
             accessor: (row) => (
                 <CellTooltip
                     enabled={!!row.industry && row.industry.length > 1}
@@ -364,7 +366,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'desiredInvestment',
-            header: 'Desired Investment',
+            header: t('prospects.table.desiredInvestment'),
             accessor: (row) => {
                 const compact = getBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate);
                 const full = getFullBudgetDisplay(row.desiredInvestment, row.sourceCurrencyRate);
@@ -383,7 +385,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'ebitda',
-            header: 'EBITDA',
+            header: t('prospects.table.ebitda'),
             accessor: (row) => {
                 const compact = getBudgetDisplay(row.ebitda, row.sourceCurrencyRate);
                 const full = getFullBudgetDisplay(row.ebitda, row.sourceCurrencyRate);
@@ -400,7 +402,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'investmentCondition',
-            header: 'Condition',
+            header: t('prospects.table.condition'),
             accessor: (row) => {
                 const items = parseMultiField(row.investmentCondition);
                 if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
@@ -423,7 +425,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'reasonForMA',
-            header: 'Purpose of M&A',
+            header: t('prospects.table.purposeMA'),
             accessor: (row) => {
                 const items = parseMultiField(row.reasonForMA);
                 if (!items.length) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
@@ -446,7 +448,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'pipelineStatus',
-            header: 'Pipeline',
+            header: t('prospects.table.pipeline'),
             accessor: (row) => {
                 const stageInfo = getStagePosition(row.pipelineStatus);
                 const showTooltip = stageInfo.stageName !== 'N/A';
@@ -464,14 +466,14 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'internalPIC',
-            header: 'Assigned PIC',
+            header: t('prospects.table.assignedPIC'),
             accessor: (row) => row.internalPIC?.join(', ') || 'Unassigned',
             width: 150,
             minWidth: 80,
         },
         {
             id: 'financialAdvisor',
-            header: 'Partner FA',
+            header: t('prospects.table.partnerFA'),
             accessor: (row) => (
                 <span className="text-[13px] font-normal text-gray-700">{row.financialAdvisor?.length ? row.financialAdvisor[0] : 'N/A'}</span>
             ),
@@ -481,7 +483,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'primaryContact',
-            header: 'Contact',
+            header: t('prospects.table.contact'),
             accessor: (row) => (
                 <span className="text-[13px] font-normal text-gray-700">{row.primaryContact || 'N/A'}</span>
             ),
@@ -491,11 +493,11 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         },
         {
             id: 'teaserLink',
-            header: 'Teaser',
+            header: t('prospects.table.teaser'),
             accessor: (row) => (
                 row.teaserLink ? (
                     <a href={row.teaserLink} target="_blank" rel="noreferrer" className="text-[13px] font-normal text-gray-600 bg-[#f3f4f6] px-2 py-0.5 rounded-[3px] inline-flex items-center gap-1 hover:bg-gray-200 transition-colors">
-                        <ProfileViewIcon className="w-3.5 h-3.5" /> View
+                        <ProfileViewIcon className="w-3.5 h-3.5" /> {t('prospects.table.viewProfile').split(' ').pop()}
                     </a>
                 ) : <span className="text-[13px] text-gray-400">N/A</span>
             ),
@@ -504,7 +506,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             minWidth: 80,
         },
 
-    ], [pipelineStages, selectedCurrency]);
+    ], [pipelineStages, selectedCurrency, t]);
 
     const filteredColumns = useMemo(() => {
         const visible = columns.filter(col => visibleColumns.includes(col.id));
@@ -592,21 +594,21 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 <div className="fixed inset-0 z-[90]" onClick={() => setBulkMenuOpen(false)} />
                                 <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-[3px] border border-gray-200 py-1.5 z-[100] shadow-lg animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                                     <div className="px-3 py-1.5 border-b border-gray-100 mb-1">
-                                        <p className="text-[11px] font-medium text-gray-400">{selectedIds.size} selected</p>
+                                        <p className="text-[11px] font-medium text-gray-400">{selectedIds.size} {t('prospects.table.selected')}</p>
                                     </div>
                                     <button
                                         onClick={() => { setIsDeleteModalOpen(true); setBulkMenuOpen(false); }}
                                         className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        Delete
+                                        {t('bulkDelete')}
                                     </button>
                                     <button
                                         onClick={handleExportCSV}
                                         className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
                                     >
                                         <Download className="w-4 h-4" />
-                                        Export CSV
+                                        {t('prospects.table.exportCSV')}
                                     </button>
                                 </div>
                             </>
@@ -623,7 +625,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                         className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95 shadow-sm shadow-[#064771]/10"
                     >
                         <Plus className="w-4 h-4" />
-                        Add New Target
+                        {t('prospects.table.addNewTarget')}
                     </button>
                 )}
                 className="flex-1 min-h-0"
@@ -651,7 +653,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                             >
                                 <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? pinActiveIcon : pinInactiveIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                 <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">
-                                    {data.find(r => r.id === contextMenu.rowId)?.isPinned ? 'Unpin' : 'Pin to Top'}
+                                    {data.find(r => r.id === contextMenu.rowId)?.isPinned ? t('prospects.table.unpin') : t('prospects.table.pinToTop')}
                                 </span>
                             </button>
                             {/* View Profile */}
@@ -660,7 +662,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                 onClick={() => { navigate(`/prospects/target/${contextMenu.rowId}`); setContextMenu(null); }}
                             >
                                 <img src={viewProfileIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">View Profile</span>
+                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('prospects.table.viewProfile')}</span>
                             </button>
                             {/* Edit */}
                             {!isRestricted && (
@@ -669,7 +671,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     onClick={() => { navigate(`/prospects/edit-target/${contextMenu.rowId}`); setContextMenu(null); }}
                                 >
                                     <img src={editIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                    <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">Edit</span>
+                                    <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('prospects.table.edit')}</span>
                                 </button>
                             )}
                             {/* Separator */}
@@ -685,7 +687,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     }}
                                 >
                                     <img src={deleteIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">Delete</span>
+                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('bulkDelete')}</span>
                                 </button>
                             )}
                         </div>
