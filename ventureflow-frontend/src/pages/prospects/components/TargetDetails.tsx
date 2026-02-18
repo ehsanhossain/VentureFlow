@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink, FileText } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, FileText, Copy, Check } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
@@ -36,6 +36,7 @@ const TargetDetails: React.FC = () => {
     const authContext = useContext(AuthContext);
     const user = authContext?.user;
     const [loading, setLoading] = useState(true);
+    const [copiedField, setCopiedField] = useState<string | null>(null);
     const [seller, setSeller] = useState<any>(null);
     const [allowedFields, setAllowedFields] = useState<any>(null);
     const [notes, setNotes] = useState<Note[]>([]);
@@ -109,17 +110,30 @@ const TargetDetails: React.FC = () => {
     const industries = parseJSON(overview.industry_ops).filter((i: any) => i && (i.name || typeof i === 'string'));
     const internalPICs: InternalPIC[] = parseJSON(overview.internal_pic);
     const financialAdvisors: FinancialAdvisor[] = parseJSON(overview.financial_advisor);
-    const introducedProjects = parseJSON(overview.introduced_projects).map((proj: any) => {
-        let code = proj.seller_id || proj.buyer_id || proj.code || '';
-        let name = proj.name || proj.reg_name || '';
-        // Parse combined "CODE — Company Name" format
-        if (!code && name.includes('—')) {
-            const parts = name.split('—');
-            code = parts[0].trim();
-            name = parts.slice(1).join('—').trim();
+    const introducedProjects = (() => {
+        const fromDeals: any[] = seller?.formatted_introduced_projects || [];
+        const fromOverview: any[] = parseJSON(overview.introduced_projects);
+        const combined = fromDeals.map((proj: any) => ({
+            id: proj.id || 0,
+            code: proj.code || '',
+            name: proj.name || '',
+            introduced_at: proj.introduced_at || null,
+        }));
+        const existingIds = new Set(fromDeals.map((p: any) => p.id));
+        for (const proj of fromOverview) {
+            if (existingIds.has(proj.id)) continue;
+            let code = proj.seller_id || proj.buyer_id || proj.code || '';
+            let name = proj.name || proj.reg_name || '';
+            if (!code && name.includes('\u2014')) {
+                const parts = name.split('\u2014');
+                code = parts[0].trim();
+                name = parts.slice(1).join('\u2014').trim();
+            }
+            combined.push({ id: proj.id || 0, code, name, introduced_at: null });
+            existingIds.add(proj.id);
         }
-        return { id: proj.id || 0, code, name };
-    });
+        return combined;
+    })();
 
     const rank = overview.company_rank || overview.rank || 'N/A';
     const projectCode = seller?.seller_id || 'N/A';
@@ -344,15 +358,36 @@ const TargetDetails: React.FC = () => {
                                     <div className="flex flex-col gap-1.5">
                                         <span className="text-[11px] font-medium text-gray-400 uppercase">Website</span>
                                         {website ? (
-                                            <a
-                                                href={website.startsWith('http') ? website : `https://${website}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
-                                            >
-                                                <Globe className="w-3.5 h-3.5" />
-                                                {website.replace('https://', '').replace('http://', '').replace('www.', '')}
-                                            </a>
+                                            <div className="flex items-center gap-1.5">
+                                                <a
+                                                    href={website.startsWith('http') ? website : `https://${website}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
+                                                >
+                                                    <Globe className="w-3.5 h-3.5" />
+                                                    {website.replace('https://', '').replace('http://', '').replace('www.', '')}
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    title="Copy website URL"
+                                                    className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
+                                                        setCopiedField('website');
+                                                        setTimeout(() => setCopiedField(null), 2000);
+                                                    }}
+                                                >
+                                                    {copiedField === 'website' ? (
+                                                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                                    ) : (
+                                                        <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                                                    )}
+                                                    {copiedField === 'website' && (
+                                                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                                                    )}
+                                                </button>
+                                            </div>
                                         ) : (
                                             <span className="text-sm text-gray-400">Not specified</span>
                                         )}
@@ -452,11 +487,27 @@ const TargetDetails: React.FC = () => {
                                 <span className="text-sm font-medium text-gray-900">
                                     {getEbitdaDisplay()}
                                     {defaultCurrencyCode && getEbitdaDisplay() !== 'N/A' && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
+                                    {financial.ebitda_times && (
+                                        <span className="ml-2 px-2 py-0.5 rounded bg-[#f0f7ff] text-[#064771] text-xs font-semibold">
+                                            {financial.ebitda_times}x
+                                        </span>
+                                    )}
                                 </span>
                             </div>
 
                         </div>
                     </section>
+
+                    {/* EBITDA Details Section */}
+                    {financial.ebitda_details && (
+                        <section className="space-y-7">
+                            <h2 className="text-base font-medium text-gray-500 capitalize">EBITDA Details</h2>
+                            <div className="h-px bg-[#E5E7EB]" />
+                            <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
+                                {financial.ebitda_details}
+                            </p>
+                        </section>
+                    )}
 
                     {/* Key Personnel Section */}
                     <section className="space-y-7">
@@ -525,18 +576,39 @@ const TargetDetails: React.FC = () => {
                     <div className="space-y-5">
                         <h3 className="text-base font-medium text-gray-500 capitalize">Documents & Links</h3>
                         {teaserLink ? (
-                            <a
-                                href={teaserLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between w-full p-3 bg-[#064771] rounded text-white hover:bg-[#053a5c] transition-colors"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <FileText className="w-5 h-5" />
-                                    <span className="text-sm font-medium">Teaser Document</span>
-                                </div>
-                                <ExternalLink className="w-4 h-4" />
-                            </a>
+                            <div className="flex items-stretch gap-1.5">
+                                <a
+                                    href={teaserLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between flex-1 p-3 bg-[#064771] rounded text-white hover:bg-[#053a5c] transition-colors"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-5 h-5" />
+                                        <span className="text-sm font-medium">Teaser Document</span>
+                                    </div>
+                                    <ExternalLink className="w-4 h-4" />
+                                </a>
+                                <button
+                                    type="button"
+                                    title="Copy teaser link"
+                                    className="relative flex items-center px-3 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(teaserLink);
+                                        setCopiedField('teaser');
+                                        setTimeout(() => setCopiedField(null), 2000);
+                                    }}
+                                >
+                                    {copiedField === 'teaser' ? (
+                                        <Check className="w-4 h-4 text-emerald-500" />
+                                    ) : (
+                                        <Copy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                                    )}
+                                    {copiedField === 'teaser' && (
+                                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                                    )}
+                                </button>
+                            </div>
                         ) : (
                             <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded">
                                 <span className="text-xs text-gray-400">No teaser uploaded</span>
@@ -554,15 +626,22 @@ const TargetDetails: React.FC = () => {
                             {introducedProjects && introducedProjects.length > 0 ? introducedProjects.map((project: any, idx: number) => (
                                 <div
                                     key={project.id || idx}
-                                    className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                                    className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
                                     onClick={() => navigate(`/prospects/investor/${project.id}`)}
                                 >
                                     <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
                                         {project.code}
                                     </span>
-                                    <span className="flex-1 text-base font-medium text-[#064771] truncate">
-                                        {project.name}
-                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="block text-base font-medium text-[#064771] truncate">
+                                            {project.name}
+                                        </span>
+                                        {project.introduced_at && (
+                                            <span className="block text-[11px] text-gray-400 mt-0.5">
+                                                Introduced {new Date(project.introduced_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )) : (
                                 <div className="text-sm text-gray-400 italic">
@@ -582,29 +661,32 @@ const TargetDetails: React.FC = () => {
                     {(() => {
                         const pipeInfo = getDealPipelineInfo();
                         return (
-                            <div className="space-y-3">
+                            <div className="space-y-5">
                                 <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
                                     <img src={dealsPipelineIcon} alt="" className="w-5 h-5" />
                                     Deal Pipeline Stage
                                 </h3>
                                 {pipeInfo ? (
-                                    <>
+                                    <div className="flex flex-col gap-4">
                                         <span className="text-base font-semibold text-black">{pipeInfo.stageName}</span>
                                         {pipeInfo.pairedId && (
-                                            <div
-                                                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
-                                                onClick={() => navigate(`/prospects/investor/${pipeInfo.pairedId}`)}
-                                            >
-                                                <ExternalLink className="w-4 h-4 text-[#064771]" />
-                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
-                                                    {pipeInfo.pairedCode}
-                                                </span>
-                                                <span className="text-sm font-medium text-[#064771] truncate">
-                                                    {pipeInfo.pairedName}
-                                                </span>
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className="text-[11px] font-medium text-gray-400 uppercase">Paired Investor</span>
+                                                <div
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded border border-gray-100 transition-colors"
+                                                    onClick={() => navigate(`/prospects/investor/${pipeInfo.pairedId}`)}
+                                                >
+                                                    <ExternalLink className="w-4 h-4 text-[#064771] shrink-0" />
+                                                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                                                        {pipeInfo.pairedCode}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-[#064771] truncate">
+                                                        {pipeInfo.pairedName}
+                                                    </span>
+                                                </div>
                                             </div>
                                         )}
-                                    </>
+                                    </div>
                                 ) : (
                                     <span className="text-base font-normal text-black">N/A</span>
                                 )}

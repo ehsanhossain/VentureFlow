@@ -1039,6 +1039,7 @@ class BuyerController extends Controller
                     'buyer_stage_name' => $deal->buyer_stage_name,
                     'seller_stage_name' => $deal->seller_stage_name,
                     'progress' => $deal->progress_percent,
+                    'introduced_at' => $deal->created_at,
                 ];
             });
 

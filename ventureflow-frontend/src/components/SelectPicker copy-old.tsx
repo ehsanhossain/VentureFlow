@@ -67,7 +67,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
 
       {isOpen && (
         <div
-          className="absolute left-0 w-full mt-1 bg-white border border-gray-300 shadow-lg rounded-md max-h-40 overflow-y-auto z-50 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+          className="absolute left-0 w-full mt-1 bg-white border border-gray-300 shadow-lg rounded-md max-h-40 overflow-y-auto z-50 scrollbar-premium"
         >
           {searchable && (
             <input
@@ -78,7 +78,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
               className="w-full px-4 py-2 border-b border-gray-300 focus:outline-none"
             />
           )}
-          <ul className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200">
+          <ul className="max-h-40 overflow-y-auto scrollbar-premium">
             {filteredOptions.map((option, index) => (
               <li
                 key={index}

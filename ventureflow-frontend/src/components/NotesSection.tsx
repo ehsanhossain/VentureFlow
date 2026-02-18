@@ -172,8 +172,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                 {/* Notes Content – WhatsApp Style */}
                 <div
                     ref={notesContainerRef}
-                    className="px-3 py-3 bg-[#F8FAFC] flex-1 overflow-y-auto flex flex-col gap-2"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: '#CBD5E1 transparent' }}
+                    className="px-3 py-3 bg-[#F8FAFC] flex-1 overflow-y-auto flex flex-col gap-2 scrollbar-premium"
                 >
                     {notes.length > 0 ? (
                         notes.map((note) => (

@@ -21,6 +21,7 @@ class SellersFinancialDetail extends Model
         'maximum_investor_shareholding_percentage',
         'ebitda_value',
         'ebitda_times',
+        'ebitda_details',
         'investment_condition',
     ];
 

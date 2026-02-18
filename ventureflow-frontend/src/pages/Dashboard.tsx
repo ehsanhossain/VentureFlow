@@ -230,7 +230,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {data.deals_needing_action.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-premium">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-[#F3F4F6]">
@@ -481,7 +481,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {data.activities.length > 0 ? (
-              <div className="flex-1 overflow-y-auto max-h-[230px] divide-y divide-[#F3F4F6]">
+              <div className="flex-1 overflow-y-auto max-h-[230px] divide-y divide-[#F3F4F6] scrollbar-premium">
                 {data.activities.map((act) => (
                   <div
                     key={act.id}

@@ -609,12 +609,16 @@ class SellerController extends Controller
             $financialDetails->maximum_investor_shareholding_percentage = $request->input('maximum_investor_shareholding_percentage');
             $financialDetails->ebitda_value = $request->input('ebitda_value');
             $financialDetails->investment_condition = $request->input('investment_condition');
+            $financialDetails->ebitda_details = $request->input('ebitda_details');
 
-
-
-            // $financialDetails->ebitda_times = $request->input('ebitda_times');
-            if (is_array($request->input('ebitda_times'))) {
-                $financialDetails->ebitda_times = json_encode($request->input('ebitda_times'));
+            // ebitda_times: accept either a simple numeric value or legacy JSON array
+            $ebitdaTimesInput = $request->input('ebitda_times');
+            if (is_numeric($ebitdaTimesInput)) {
+                $financialDetails->ebitda_times = $ebitdaTimesInput;
+            } elseif (is_array($ebitdaTimesInput)) {
+                $financialDetails->ebitda_times = json_encode($ebitdaTimesInput);
+            } else {
+                $financialDetails->ebitda_times = $ebitdaTimesInput;
             }
 
             $financialDetails->save();
@@ -816,6 +820,7 @@ class SellerController extends Controller
                     'buyer_stage_name' => $deal->buyer_stage_name,
                     'seller_stage_name' => $deal->seller_stage_name,
                     'progress' => $deal->progress_percent,
+                    'introduced_at' => $deal->created_at,
                 ];
             });
 

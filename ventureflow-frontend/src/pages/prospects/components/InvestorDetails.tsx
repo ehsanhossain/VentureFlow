@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, Copy, Check } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { formatCurrency } from '../../../utils/formatters';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
@@ -48,6 +48,7 @@ interface IntroducedProject {
   stage_code?: string;
   stage_name?: string;
   progress?: number;
+  introduced_at?: string | null;
 }
 
 interface InternalPIC {
@@ -69,6 +70,7 @@ const InvestorDetails: React.FC = () => {
   const authContext = useContext(AuthContext);
   const user = authContext?.user;
   const [loading, setLoading] = useState(true);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [buyer, setBuyer] = useState<any>(null);
   const [allowedFields, setAllowedFields] = useState<any>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -147,26 +149,30 @@ const InvestorDetails: React.FC = () => {
 
   // Get introduced projects from deals AND from overview, merged
   const introducedProjects: IntroducedProject[] = (() => {
-    const fromDeals: IntroducedProject[] = buyer?.formatted_introduced_projects || [];
+    const fromDeals: IntroducedProject[] = (buyer?.formatted_introduced_projects || []).map((p: any) => ({
+      ...p,
+      introduced_at: p.introduced_at || null,
+    }));
     const fromOverview: any[] = parseJSON(overview.introduced_projects);
     // Combine both sources, dedup by id
     const combined = [...fromDeals];
     const existingIds = new Set(fromDeals.map((p: any) => p.id));
     for (const proj of fromOverview) {
       if (existingIds.has(proj.id)) continue;
-      // The overview stores items as { id, name: "CODE — Company Name" }
+      // The overview stores items as { id, name: "CODE \u2014 Company Name" }
       // Parse the combined name to extract code and display name
       let code = proj.seller_id || proj.code || '';
       let name = proj.name || proj.reg_name || '';
-      if (!code && name.includes('—')) {
-        const parts = name.split('—');
+      if (!code && name.includes('\u2014')) {
+        const parts = name.split('\u2014');
         code = parts[0].trim();
-        name = parts.slice(1).join('—').trim();
+        name = parts.slice(1).join('\u2014').trim();
       }
       combined.push({
         id: proj.id || 0,
         code: code,
         name: name,
+        introduced_at: null,
       });
       existingIds.add(proj.id);
     }
@@ -371,15 +377,36 @@ const InvestorDetails: React.FC = () => {
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-medium text-gray-400 uppercase">Website</span>
                     {website ? (
-                      <a
-                        href={website.startsWith('http') ? website : `https://${website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
-                      >
-                        <Globe className="w-3.5 h-3.5" />
-                        {website.replace('https://', '').replace('http://', '').replace('www.', '')}
-                      </a>
+                      <div className="flex items-center gap-1.5">
+                        <a
+                          href={website.startsWith('http') ? website : `https://${website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
+                        >
+                          <Globe className="w-3.5 h-3.5" />
+                          {website.replace('https://', '').replace('http://', '').replace('www.', '')}
+                        </a>
+                        <button
+                          type="button"
+                          title="Copy website URL"
+                          className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
+                          onClick={() => {
+                            navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
+                            setCopiedField('website');
+                            setTimeout(() => setCopiedField(null), 2000);
+                          }}
+                        >
+                          {copiedField === 'website' ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                          )}
+                          {copiedField === 'website' && (
+                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-sm text-gray-400">Not specified</span>
                     )}
@@ -626,15 +653,22 @@ const InvestorDetails: React.FC = () => {
               {introducedProjects.length > 0 ? introducedProjects.map((project, idx) => (
                 <div
                   key={project.id || idx}
-                  className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                  className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
                   onClick={() => navigate(`/prospects/target/${project.id}`)}
                 >
                   <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
                     {project.code}
                   </span>
-                  <span className="flex-1 text-base font-medium text-[#064771] truncate">
-                    {project.name}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-base font-medium text-[#064771] truncate">
+                      {project.name}
+                    </span>
+                    {project.introduced_at && (
+                      <span className="block text-[11px] text-gray-400 mt-0.5">
+                        Introduced {new Date(project.introduced_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )) : (
                 <div className="text-sm text-gray-400 italic">
@@ -654,29 +688,32 @@ const InvestorDetails: React.FC = () => {
           {(() => {
             const pipeInfo = getDealPipelineInfo();
             return (
-              <div className="space-y-3">
+              <div className="space-y-5">
                 <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
                   <img src={dealsPipelineIcon} alt="" className="w-5 h-5" />
                   Deal Pipeline Stage
                 </h3>
                 {pipeInfo ? (
-                  <>
+                  <div className="flex flex-col gap-4">
                     <span className="text-base font-semibold text-black">{pipeInfo.stageName}</span>
                     {pipeInfo.pairedId && (
-                      <div
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
-                        onClick={() => navigate(`/prospects/${pipeInfo.pairedType}/${pipeInfo.pairedId}`)}
-                      >
-                        <ExternalLink className="w-4 h-4 text-[#064771]" />
-                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
-                          {pipeInfo.pairedCode}
-                        </span>
-                        <span className="text-sm font-medium text-[#064771] truncate">
-                          {pipeInfo.pairedName}
-                        </span>
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-medium text-gray-400 uppercase">Paired Target</span>
+                        <div
+                          className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded border border-gray-100 transition-colors"
+                          onClick={() => navigate(`/prospects/${pipeInfo.pairedType}/${pipeInfo.pairedId}`)}
+                        >
+                          <ExternalLink className="w-4 h-4 text-[#064771] shrink-0" />
+                          <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                            {pipeInfo.pairedCode}
+                          </span>
+                          <span className="text-sm font-medium text-[#064771] truncate">
+                            {pipeInfo.pairedName}
+                          </span>
+                        </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 ) : (
                   <span className="text-base font-normal text-black">N/A</span>
                 )}

@@ -118,7 +118,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, handl
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto scrollbar-premium">
           <div
             className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-[#e0e2e5] rounded-lg relative hover:border-[#064771] transition-colors"
             onDragOver={handleDragOver}

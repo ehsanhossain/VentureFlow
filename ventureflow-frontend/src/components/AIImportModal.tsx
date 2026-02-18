@@ -125,7 +125,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 scrollbar-premium">
                     {!extractedData ? (
                         <>
                             <div className="flex gap-4 mb-6">
@@ -224,7 +224,7 @@ export const AIImportModal: React.FC<AIImportModalProps> = ({ isOpen, onClose, o
                                 </button>
                             </div>
 
-                            <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 shadow-sm max-h-[60vh] overflow-y-auto scrollbar-premium">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {Object.entries(extractedData).map(([key, value]) => {
                                         if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) return null;

@@ -380,7 +380,7 @@ const PipelineSettings: React.FC = () => {
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6">
+                                <div className="flex-1 overflow-y-auto p-6 scrollbar-premium">
                                     <div className="space-y-4">
                                         {/* Column Headers */}
                                         <div className="flex gap-4 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-100/50">

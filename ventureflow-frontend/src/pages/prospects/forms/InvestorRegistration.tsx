@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Link as LinkIcon, Check, AlertCircle, Loader2 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { IndustryDropdown, Industry } from '../components/IndustryDropdown';
 import SelectPicker from '../../../components/SelectPicker';
 import MultiSelectPicker from '../../../components/MultiSelectPicker';
 import { LogoUpload } from '../../../components/LogoUpload';
+import NumericInput from '../../../components/NumericInput';
 
 // Types
 interface FormValues {
@@ -120,6 +121,46 @@ export const InvestorRegistration: React.FC = () => {
     const [partnerList, setPartnerList] = useState<any[]>([]);
     const [targetList, setTargetList] = useState<any[]>([]); // registered sellers for Introduced Projects
 
+    // Section navigation
+    const [activeSection, setActiveSection] = useState(0);
+    const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const setSectionRef = useCallback((index: number) => (el: HTMLDivElement | null) => {
+        sectionRefs.current[index] = el;
+    }, []);
+
+    const sections = [
+        { key: 'identity', label: t('prospects.registration.identity') },
+        { key: 'companyProfile', label: t('prospects.registration.companyProfile') },
+        { key: 'dealContext', label: t('prospects.registration.dealContext') },
+        { key: 'contacts', label: t('prospects.registration.contacts') },
+        { key: 'documents', label: t('prospects.registration.documentsRelationships') },
+    ];
+
+    // Track active section on scroll
+    useEffect(() => {
+        const observers: IntersectionObserver[] = [];
+        sectionRefs.current.forEach((ref, idx) => {
+            if (!ref) return;
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) setActiveSection(idx);
+                },
+                { rootMargin: '-120px 0px -60% 0px', threshold: 0 }
+            );
+            observer.observe(ref);
+            observers.push(observer);
+        });
+        return () => observers.forEach(o => o.disconnect());
+    }, [isLoadingData]);
+
+    const scrollToSection = (index: number) => {
+        const el = sectionRefs.current[index];
+        if (el) {
+            const y = el.getBoundingClientRect().top + window.scrollY - 110;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
+
     const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {
             projectCode: '',
@@ -145,6 +186,38 @@ export const InvestorRegistration: React.FC = () => {
 
     const originCountry = useWatch({ control, name: 'originCountry' });
     const primaryContactParams = useWatch({ control, name: 'primaryContactParams' });
+    const companyNameValue = useWatch({ control, name: 'companyName' });
+    const projectCodeValue = useWatch({ control, name: 'projectCode' });
+
+    // "Project + Full Code" toggle
+    const [projectNameMode, setProjectNameMode] = useState(false);
+
+    const getProjectName = useCallback(() => {
+        return projectCodeValue ? `Project ${projectCodeValue}` : 'Project';
+    }, [projectCodeValue]);
+
+    // When toggle turns ON → set company name
+    useEffect(() => {
+        if (projectNameMode) {
+            setValue('companyName', getProjectName());
+        }
+    }, [projectNameMode, getProjectName, setValue]);
+
+    // When project code changes while toggle is ON → update the name
+    useEffect(() => {
+        if (projectNameMode && projectCodeValue) {
+            setValue('companyName', getProjectName());
+        }
+    }, [projectCodeValue, projectNameMode, getProjectName, setValue]);
+
+    // Auto-detect projectNameMode on edit load (if companyName matches "Project XX-X-XXX")
+    useEffect(() => {
+        if (companyNameValue && /^Project [A-Z]{2}-[SB]-\d{3}$/i.test(companyNameValue) && !projectNameMode) {
+            setProjectNameMode(true);
+        }
+        // Only run on initial load
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoadingData]);
 
     // Fetch Countries
     useEffect(() => {
@@ -253,7 +326,6 @@ export const InvestorRegistration: React.FC = () => {
         }
     };
 
-    const projectCodeValue = useWatch({ control, name: 'projectCode' });
     useEffect(() => {
         const timer = setTimeout(() => {
             if (projectCodeValue) {
@@ -558,12 +630,31 @@ export const InvestorRegistration: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 ">
+            {/* ═══ Sticky Section Tabs ═══ */}
+            <div className="sticky top-0 z-40 bg-white border-b border-gray-200 mb-8">
+                <div className="max-w-[1197px] mx-auto flex">
+                    {sections.map((s, idx) => (
+                        <button
+                            key={s.key}
+                            type="button"
+                            onClick={() => scrollToSection(idx)}
+                            className={`flex-1 py-3 text-sm font-medium text-center transition-colors border-b-2 ${activeSection === idx
+                                ? 'text-[#064771] border-[#064771]'
+                                : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-300'
+                                }`}
+                        >
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
                 {/* ═══════════════════════════════════════════════
                     SECTION 1: IDENTITY
                 ═══════════════════════════════════════════════ */}
-                <div className="flex flex-col gap-10">
+                <div ref={setSectionRef(0)} className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.identity')} />
 
                     <div className="flex items-start gap-12">
@@ -656,18 +747,51 @@ export const InvestorRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 2: COMPANY PROFILE
                 ═══════════════════════════════════════════════ */}
-                <div className="flex flex-col gap-10">
+                <div ref={setSectionRef(1)} className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.companyProfile')} />
 
                     <div className="flex flex-col gap-8">
                         {/* Row: Company Name + Industry */}
                         <div className="flex gap-7">
                             <div className="flex-1">
-                                <FieldLabel text={t('prospects.registration.companyName')} required />
+                                <div className="flex items-center justify-between mb-1">
+                                    <FieldLabel text={t('prospects.registration.companyName')} required />
+                                    <label className="flex items-center gap-2 cursor-pointer select-none" title={!originCountry ? 'Select an origin country first' : 'Use project code as company name'}>
+                                        <span className="text-xs text-gray-500">Use as Project</span>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={projectNameMode}
+                                            disabled={!originCountry}
+                                            onClick={() => {
+                                                if (projectNameMode) {
+                                                    setProjectNameMode(false);
+                                                    setValue('companyName', '');
+                                                } else {
+                                                    setProjectNameMode(true);
+                                                }
+                                            }}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${projectNameMode ? 'bg-[#064771]' : 'bg-gray-300'
+                                                } ${!originCountry ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                        >
+                                            <span
+                                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${projectNameMode ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                                                    }`}
+                                            />
+                                        </button>
+                                    </label>
+                                </div>
                                 <input
                                     {...register('companyName', { required: true })}
-                                    className={inputClass}
+                                    className={`${inputClass} ${projectNameMode ? 'bg-gray-50 text-gray-500' : ''}`}
                                     placeholder={t('prospects.registration.enterCompanyName')}
+                                    readOnly={projectNameMode}
+                                    onChange={(e) => {
+                                        if (projectNameMode) {
+                                            setProjectNameMode(false);
+                                        }
+                                        register('companyName').onChange(e);
+                                    }}
                                 />
                                 {errors.companyName && <span className="text-red-500 text-xs mt-1">{t('prospects.registration.required')}</span>}
                             </div>
@@ -760,7 +884,7 @@ export const InvestorRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 3: DEAL CONTEXT
                 ═══════════════════════════════════════════════ */}
-                <div className="flex flex-col gap-10">
+                <div ref={setSectionRef(2)} className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.dealContext')} />
 
                     <div className="flex flex-col gap-8">
@@ -840,18 +964,30 @@ export const InvestorRegistration: React.FC = () => {
                             <div className="flex-1">
                                 <FieldLabel text={t('prospects.registration.investmentBudget')} />
                                 <div className="flex items-center gap-2">
-                                    <input
-                                        {...register('budgetMin')}
-                                        type="number"
-                                        placeholder={t('prospects.registration.minPlaceholder')}
-                                        className={`flex-1 ${inputClass}`}
+                                    <Controller
+                                        control={control}
+                                        name="budgetMin"
+                                        render={({ field }) => (
+                                            <NumericInput
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder={t('prospects.registration.minPlaceholder')}
+                                                className={`flex-1 ${inputClass}`}
+                                            />
+                                        )}
                                     />
                                     <span className="text-black text-base font-normal">-</span>
-                                    <input
-                                        {...register('budgetMax')}
-                                        type="number"
-                                        placeholder={t('prospects.registration.maxPlaceholder')}
-                                        className={`flex-1 ${inputClass}`}
+                                    <Controller
+                                        control={control}
+                                        name="budgetMax"
+                                        render={({ field }) => (
+                                            <NumericInput
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                placeholder={t('prospects.registration.maxPlaceholder')}
+                                                className={`flex-1 ${inputClass}`}
+                                            />
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -887,7 +1023,7 @@ export const InvestorRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 4: CONTACTS
                 ═══════════════════════════════════════════════ */}
-                <div className="flex flex-col items-center gap-10">
+                <div ref={setSectionRef(3)} className="flex flex-col items-center gap-10">
                     <div className="self-stretch">
                         <SectionHeader title={t('prospects.registration.contacts')} />
                     </div>
@@ -994,7 +1130,7 @@ export const InvestorRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 5: DOCUMENTS & RELATIONSHIPS
                 ═══════════════════════════════════════════════ */}
-                <div className="flex flex-col gap-10">
+                <div ref={setSectionRef(4)} className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.documentsRelationships')} />
 
                     <div className="flex flex-col gap-8">

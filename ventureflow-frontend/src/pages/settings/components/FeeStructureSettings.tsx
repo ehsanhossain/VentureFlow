@@ -6,6 +6,76 @@ import { showAlert } from '../../../components/Alert';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import DataTableSearch from '../../../components/table/DataTableSearch';
 
+/** Format a number with commas (1000000 → "1,000,000") */
+const formatWithCommas = (value: number | string | null | undefined): string => {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '';
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
+};
+
+/** Strip commas and parse to number */
+const parseFormattedNumber = (formatted: string): number | null => {
+    const cleaned = formatted.replace(/,/g, '');
+    if (cleaned === '' || cleaned === '-') return null;
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
+};
+
+/** Input that shows commas while viewing, raw number while editing */
+const FormattedAmountInput: React.FC<{
+    value: number | null | undefined;
+    onChange: (value: number | null) => void;
+    placeholder?: string;
+    className?: string;
+}> = ({ value, onChange, placeholder, className }) => {
+    const [focused, setFocused] = useState(false);
+    const [displayValue, setDisplayValue] = useState(() => formatWithCommas(value));
+
+    // Sync display when value changes externally (not while user is typing)
+    useEffect(() => {
+        if (!focused) {
+            setDisplayValue(formatWithCommas(value));
+        }
+    }, [value, focused]);
+
+    const handleFocus = () => {
+        setFocused(true);
+        // Show raw number for easier editing
+        if (value !== null && value !== undefined) {
+            setDisplayValue(String(value));
+        }
+    };
+
+    const handleBlur = () => {
+        setFocused(false);
+        const parsed = parseFormattedNumber(displayValue);
+        onChange(parsed);
+        setDisplayValue(formatWithCommas(parsed));
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value;
+        // Allow only digits, dots, and commas while typing
+        if (/^[\d.,]*$/.test(raw)) {
+            setDisplayValue(raw);
+        }
+    };
+
+    return (
+        <input
+            type="text"
+            inputMode="decimal"
+            value={displayValue}
+            onChange={handleChange}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder={placeholder}
+            className={className}
+        />
+    );
+};
+
 interface FeeTier {
     id?: number;
     fee_type: 'investor' | 'target';
@@ -213,13 +283,13 @@ const FeeStructureSettings: React.FC = () => {
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 overflow-y-auto p-6">
+                                <div className="flex-1 overflow-y-auto p-6 scrollbar-premium">
                                     <div className="space-y-4">
                                         {/* Column Headers — unified for both tabs */}
                                         <div className="flex gap-4 px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider border-b border-gray-100/50">
                                             <div className="w-12">Order</div>
-                                            <div className="flex-1">Min Amount (USD)</div>
-                                            <div className="flex-1">Max Amount (USD)</div>
+                                            <div className="flex-1">Minimum Transaction Amount</div>
+                                            <div className="flex-1">Maximum Transaction Amount</div>
                                             <div className="w-56">Success Fee</div>
                                             <div className="w-[60px]"></div>
                                         </div>
@@ -243,49 +313,50 @@ const FeeStructureSettings: React.FC = () => {
                                                             <span className="text-sm font-medium text-gray-400">{index + 1}</span>
                                                         </div>
 
-                                                        {/* Min Amount */}
+                                                        {/* Minimum Transaction Amount */}
                                                         <div className="flex-1">
-                                                            <input
-                                                                type="number"
+                                                            <FormattedAmountInput
                                                                 value={tier.min_amount}
-                                                                onChange={(e) => handleTierChange(index, 'min_amount', parseFloat(e.target.value) || 0)}
+                                                                onChange={(v) => handleTierChange(index, 'min_amount', v ?? 0)}
                                                                 placeholder="0"
-                                                                min="0"
                                                                 className={inputClass}
                                                             />
                                                         </div>
 
-                                                        {/* Max Amount */}
+                                                        {/* Maximum Transaction Amount */}
                                                         <div className="flex-1">
-                                                            <input
-                                                                type="number"
-                                                                value={tier.max_amount ?? ''}
-                                                                onChange={(e) => handleTierChange(index, 'max_amount', e.target.value ? parseFloat(e.target.value) : null)}
+                                                            <FormattedAmountInput
+                                                                value={tier.max_amount}
+                                                                onChange={(v) => handleTierChange(index, 'max_amount', v)}
                                                                 placeholder="No limit"
-                                                                min="0"
                                                                 className={inputClass}
                                                             />
                                                         </div>
 
                                                         {/* Success Fee — with $ / % toggle */}
                                                         <div className="w-56 flex items-center gap-0">
-                                                            <input
-                                                                type="number"
-                                                                value={feeValue}
-                                                                onChange={(e) => {
-                                                                    const v = e.target.value ? parseFloat(e.target.value) : null;
-                                                                    if (mode === 'fixed') {
-                                                                        handleTierChange(index, 'success_fee_fixed', v);
-                                                                    } else {
+                                                            {mode === 'fixed' ? (
+                                                                <FormattedAmountInput
+                                                                    value={tier.success_fee_fixed}
+                                                                    onChange={(v) => handleTierChange(index, 'success_fee_fixed', v)}
+                                                                    placeholder="0"
+                                                                    className="flex-1 min-w-0 px-3 py-1.5 bg-white border border-gray-200 rounded-l-[3px] border-r-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                                                />
+                                                            ) : (
+                                                                <input
+                                                                    type="number"
+                                                                    value={feeValue}
+                                                                    onChange={(e) => {
+                                                                        const v = e.target.value ? parseFloat(e.target.value) : null;
                                                                         handleTierChange(index, 'success_fee_rate', v);
-                                                                    }
-                                                                }}
-                                                                placeholder={mode === 'fixed' ? '0' : '0.0'}
-                                                                min="0"
-                                                                max={mode === 'percentage' ? 100 : undefined}
-                                                                step={mode === 'percentage' ? 0.1 : 1}
-                                                                className="flex-1 min-w-0 px-3 py-1.5 bg-white border border-gray-200 rounded-l-[3px] border-r-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                                                            />
+                                                                    }}
+                                                                    placeholder="0.0"
+                                                                    min="0"
+                                                                    max={100}
+                                                                    step={0.1}
+                                                                    className="flex-1 min-w-0 px-3 py-1.5 bg-white border border-gray-200 rounded-l-[3px] border-r-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                                                />
+                                                            )}
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleFeeModeToggle(index)}

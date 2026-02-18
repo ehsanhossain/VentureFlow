@@ -141,7 +141,7 @@ const CreatePartner: React.FC = () => {
         try {
             const response = await api.get(`/api/partner/check-id?id=${code}${id ? `&exclude=${id}` : ''}`);
             setIsIdAvailable(response.data.available);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             // If endpoint doesn't exist, assume available
             setIsIdAvailable(true);
@@ -257,7 +257,7 @@ const CreatePartner: React.FC = () => {
                         {isEditing ? 'Edit Partner' : 'Create Partner'}
                     </h1>
                 </div>
-                <div className="flex-1 overflow-auto p-4 md:p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6 scrollbar-premium">
                     <div className="w-full pb-24 ">
                         <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
                             <div className="flex flex-col gap-6">

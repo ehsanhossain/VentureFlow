@@ -316,7 +316,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {unreadCount > 0 ? (
                   <>
                     <NotificationTrueIcon className="w-8 h-8 text-[#064771]" />
-                    <span className="text-base font-medium text-[#064771]">{unreadCount}</span>
+                    <span className="text-base font-medium text-[#064771]">{unreadCount > 99 ? '99+' : unreadCount}</span>
                   </>
                 ) : (
                   <NotificationFalseIcon className="w-8 h-8 text-gray-500" />
@@ -324,7 +324,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               </button>
 
               {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded border border-gray-100 py-1 max-h-[400px] overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded border border-gray-100 py-1 max-h-[400px] overflow-y-auto z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg scrollbar-premium">
                   <div className="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-medium text-gray-700 text-sm">{t('header.notifications')}</h3>
                     {unreadCount > 0 && (
@@ -395,7 +395,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
       {/* Global Search Modal Overlay */}
       {searchOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 md:p-20">
+        <div className="fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 md:p-20 scrollbar-premium">
           <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onClick={closeSearch} />
 
           <div className="mx-auto max-w-2xl transform divide-y divide-gray-100 overflow-hidden rounded bg-white ring-1 ring-black ring-opacity-5 transition-all">
@@ -423,7 +423,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
 
             {/* Search Results */}
             {(query.length > 1 && results) ? (
-              <div className="max-h-[60vh] overflow-y-auto py-2">
+              <div className="max-h-[60vh] overflow-y-auto py-2 scrollbar-premium">
                 {/* Empty State */}
                 {(!results.deals.length && !results.investors.length && !results.targets.length && !results.staff.length && !results.partners.length && !results.documents.length) && (
                   <div className="py-14 px-6 text-center text-sm sm:px-14">

@@ -209,7 +209,7 @@ const GeneralSettings: React.FC = () => {
                 </h1>
             </div>
 
-            <div className="flex-1 overflow-auto px-8 pb-8">
+            <div className="flex-1 overflow-auto px-8 pb-8 scrollbar-premium">
                 <div className="space-y-6 max-w-4xl">
                     {/* Regional & Localization */}
                     <div className="bg-white rounded-[3px] border border-gray-200 p-8 shadow-sm">

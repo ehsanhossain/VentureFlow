@@ -83,7 +83,7 @@ const PartnerManagement: React.FC = () => {
             await api.delete(`/api/partners`, { data: { ids: [id] } });
             showAlert({ type: 'success', message: t('settings.partners.deleteSuccess') });
             fetchPartners();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: t('settings.partners.deleteError') });
         }
@@ -341,7 +341,7 @@ const PartnerManagement: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 overflow-auto p-8">
+                    <div className="flex-1 overflow-auto p-8 scrollbar-premium">
                         <PartnerSharingSettings />
                     </div>
                 )}

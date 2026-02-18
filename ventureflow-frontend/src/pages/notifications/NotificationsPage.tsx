@@ -171,7 +171,7 @@ export default function NotificationsPage() {
             await api.delete(`/api/notifications/${notificationId}`);
             setAllNotifications(prev => prev.filter(n => n.id !== notificationId));
             showAlert({ type: 'success', message: 'Notification deleted' });
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             showAlert({ type: 'error', message: 'Failed to delete notification' });
         }
@@ -252,7 +252,7 @@ export default function NotificationsPage() {
             </div>
 
             {/* Notification List */}
-            <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-premium">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {filteredNotifications.length === 0 ? (
                         <div className="p-16 text-center">

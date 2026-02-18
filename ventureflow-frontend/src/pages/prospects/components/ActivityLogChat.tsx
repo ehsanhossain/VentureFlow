@@ -112,7 +112,7 @@ export const ActivityLogChat: React.FC<ActivityLogChatProps> = ({ entityId, enti
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white scrollbar-premium">
                 {isLoading ? (
                     <div className="min-h-[400px] flex items-center justify-center">
                         <BrandSpinner size="md" />

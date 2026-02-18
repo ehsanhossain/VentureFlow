@@ -155,7 +155,7 @@ export const IndustryDropdown = ({
                             />
                         </div>
 
-                        <div className="flex flex-col w-full max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                        <div className="flex flex-col w-full max-h-60 overflow-y-auto scrollbar-premium">
                             {filteredIndustries.length > 0 ? (
                                 filteredIndustries.map((industry) => (
                                     <button

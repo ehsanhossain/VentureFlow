@@ -236,7 +236,7 @@ const GateBlockedModal: React.FC<GateBlockedModalProps> = ({
                                                 />
                                             </div>
                                             {showBuyerDropdown && filteredBuyers.length > 0 && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-[3px] shadow-lg max-h-40 overflow-y-auto">
+                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-[3px] shadow-lg max-h-40 overflow-y-auto scrollbar-premium">
                                                     {filteredBuyers.slice(0, 10).map((p) => (
                                                         <button
                                                             key={p.id}
@@ -310,7 +310,7 @@ const GateBlockedModal: React.FC<GateBlockedModalProps> = ({
                                                 />
                                             </div>
                                             {showSellerDropdown && filteredSellers.length > 0 && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-[3px] shadow-lg max-h-40 overflow-y-auto">
+                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-[3px] shadow-lg max-h-40 overflow-y-auto scrollbar-premium">
                                                     {filteredSellers.slice(0, 10).map((p) => (
                                                         <button
                                                             key={p.id}
@@ -364,8 +364,8 @@ const GateBlockedModal: React.FC<GateBlockedModalProps> = ({
                             onClick={handleAssignAndMove}
                             disabled={!canSubmit() || isSubmitting}
                             className={`px-5 py-2 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 ${canSubmit() && !isSubmitting
-                                    ? 'bg-[#064771] hover:bg-[#053a5e] text-white'
-                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                ? 'bg-[#064771] hover:bg-[#053a5e] text-white'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 }`}
                         >
                             {isSubmitting ? 'Assigning...' : `Assign & Move to ${stageName}`}

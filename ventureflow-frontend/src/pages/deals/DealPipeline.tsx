@@ -840,7 +840,7 @@ const DealPipeline = () => {
                     )}
 
                     {(activeTab === 'table' || activeTab === 'lost' || activeTab === 'won') && (
-                        <div className="flex-1 w-full px-4 md:px-8 overflow-auto py-6">
+                        <div className="flex-1 w-full px-4 md:px-8 overflow-auto py-6 scrollbar-premium">
                             <table className="min-w-full bg-white border border-gray-200 rounded-[3px] overflow-hidden shadow-sm">
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>

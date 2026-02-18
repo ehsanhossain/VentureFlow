@@ -259,7 +259,7 @@ const CreateStaff: React.FC = () => {
                         {id ? 'Edit Staff Member' : 'Create Staff Member'}
                     </h1>
                 </div>
-                <div className="flex-1 overflow-auto p-4 md:p-6">
+                <div className="flex-1 overflow-auto p-4 md:p-6 scrollbar-premium">
                     <div className="w-full pb-24 ">
                         <div className="max-w-[1197px] mx-auto flex flex-col gap-12 animate-pulse">
                             <div className="flex gap-8 items-start">

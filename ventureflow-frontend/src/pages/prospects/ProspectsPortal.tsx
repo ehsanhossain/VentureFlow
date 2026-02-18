@@ -105,6 +105,7 @@ const ALL_TARGET_COLUMNS = [
     { id: 'desiredInvestment', labelKey: 'prospects.table.desiredInvestment' },
     { id: 'teaserLink', labelKey: 'prospects.table.teaser' },
     { id: 'ebitda', labelKey: 'prospects.table.ebitda' },
+    { id: 'ebitdaTimes', labelKey: 'EBITDA Times' },
     { id: 'pipelineStatus', labelKey: 'prospects.table.pipeline' },
     { id: 'website', labelKey: 'prospects.table.website' },
     { id: 'primaryContact', labelKey: 'prospects.table.contact' },
@@ -125,7 +126,7 @@ const DEFAULT_TARGET_ORDER = [
     'industry', 'reasonForMA', 'investmentCondition',
     'desiredInvestment', 'teaserLink',
     // Hidden by default
-    'ebitda', 'pipelineStatus', 'website', 'primaryContact',
+    'ebitda', 'ebitdaTimes', 'pipelineStatus', 'website', 'primaryContact',
     'internalPIC', 'financialAdvisor',
 ];
 
@@ -752,6 +753,7 @@ const ProspectsPortal: React.FC = () => {
                         website: ov.website || "",
                         teaserLink: ov.teaser_link || "",
                         ebitda: fin.ttm_profit,
+                        ebitdaTimes: fin.ebitda_times || null,
                         channel: ov.channel,
                         isPinned: !!s.pinned,
                         sourceCurrencyRate: sourceRate,
@@ -1261,7 +1263,7 @@ const ProspectsPortal: React.FC = () => {
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-premium">
                             {/* Origin Country */}
                             <div className="px-6 pt-5 pb-4 border-b border-gray-100">
                                 <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
@@ -1571,7 +1573,7 @@ const ProspectsPortal: React.FC = () => {
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                                    <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-premium">
                                         {/* Currency Section */}
                                         <div className="px-6 pt-5 pb-4 border-b border-gray-100">
                                             <label htmlFor="display-currency-select" className="block mb-1.5 text-[13px] font-medium text-gray-700">

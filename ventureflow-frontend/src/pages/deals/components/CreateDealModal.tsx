@@ -15,6 +15,7 @@ interface Buyer {
     company_overview?: {
         reg_name: string;
         financial_advisor?: string | Record<string, string>[];
+        internal_pic?: { id: number; name: string }[] | string;
     };
 }
 
@@ -23,6 +24,7 @@ interface Seller {
     company_overview?: {
         reg_name: string;
         financial_advisor?: string | Record<string, string>[];
+        internal_pic?: { id: number; name: string }[] | string;
     };
     financial_details?: {
         expected_investment_amount?: { min?: string; max?: string } | string;
@@ -69,6 +71,36 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     // Track if ticket size was manually edited
     const [ticketSizeManuallyEdited, setTicketSizeManuallyEdited] = useState(false);
+    // Track if internal PIC was manually edited
+    const [picManuallyEdited, setPicManuallyEdited] = useState(false);
+
+    /** Parse internal_pic from a company_overview — handles both array and JSON string */
+    const parsePICs = (raw: { id: number; name: string }[] | string | undefined): User[] => {
+        if (!raw) return [];
+        try {
+            const arr = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (!Array.isArray(arr)) return [];
+            return arr
+                .filter((p: { id?: number; name?: string }) => p.id && p.name)
+                .map((p: { id: number; name: string }) => ({
+                    id: p.id,
+                    name: p.name,
+                    flagSrc: '',
+                    status: 'registered' as const,
+                }));
+        } catch {
+            return [];
+        }
+    };
+
+    /** Merge PICs from buyer and seller, deduped by id */
+    const mergePICs = (buyerPics: User[], sellerPics: User[]): User[] => {
+        const map = new Map<number, User>();
+        for (const p of [...buyerPics, ...sellerPics]) {
+            if (!map.has(p.id)) map.set(p.id, p);
+        }
+        return Array.from(map.values());
+    };
 
     useEffect(() => {
         fetchBuyers();
@@ -167,6 +199,12 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         } else if (sellerTBD) {
             setFormData((prev) => ({ ...prev, name: `${buyerName} – TBD` }));
         }
+        // Auto-fill PICs from buyer (merged with existing seller PICs)
+        if (!picManuallyEdited) {
+            const buyerPics = parsePICs(buyer.company_overview?.internal_pic);
+            const sellerPics = selectedSeller ? parsePICs(selectedSeller.company_overview?.internal_pic) : [];
+            setFormData((prev) => ({ ...prev, internal_pic: mergePICs(buyerPics, sellerPics) }));
+        }
     };
 
     const handleSelectSeller = (seller: Seller) => {
@@ -196,6 +234,13 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
             }));
         } else if (buyerTBD) {
             setFormData((prev) => ({ ...prev, name: `TBD – ${sellerName}` }));
+        }
+
+        // Auto-fill PICs from seller (merged with existing buyer PICs)
+        if (!picManuallyEdited) {
+            const sellerPics = parsePICs(seller.company_overview?.internal_pic);
+            const buyerPics = selectedBuyer ? parsePICs(selectedBuyer.company_overview?.internal_pic) : [];
+            setFormData((prev) => ({ ...prev, internal_pic: mergePICs(buyerPics, sellerPics) }));
         }
     };
 
@@ -325,7 +370,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[50vh]">
+                <div className="p-6 overflow-y-auto max-h-[50vh] scrollbar-premium">
                     {/* ===== STEP 1 ===== */}
                     {step === 1 && (
                         <div>
@@ -339,7 +384,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         onChange={(e) => setSearchBuyer(e.target.value)}
                                         className={`${inputClass} mb-4`}
                                     />
-                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
                                         {filteredBuyers.map((buyer) => (
                                             <button
                                                 key={buyer.id}
@@ -371,7 +416,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         onChange={(e) => setSearchSeller(e.target.value)}
                                         className={`${inputClass} mb-4`}
                                     />
-                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
                                         {filteredSellers.map((seller) => (
                                             <button
                                                 key={seller.id}
@@ -410,7 +455,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         onChange={(e) => setSearchSeller(e.target.value)}
                                         className={`${inputClass} mb-4`}
                                     />
-                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
                                         {filteredSellers.map((seller) => (
                                             <button
                                                 key={seller.id}
@@ -459,7 +504,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         onChange={(e) => setSearchBuyer(e.target.value)}
                                         className={`${inputClass} mb-4`}
                                     />
-                                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
                                         {filteredBuyers.map((buyer) => (
                                             <button
                                                 key={buyer.id}
@@ -598,11 +643,19 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Internal PIC (Assigned Staff)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Internal PIC (Assigned Staff)
+                                    {!picManuallyEdited && formData.internal_pic.length > 0 && (
+                                        <span className="ml-1 text-xs text-green-600 font-normal">(auto-filled from profiles)</span>
+                                    )}
+                                </label>
                                 <Dropdown
                                     countries={users}
                                     selected={formData.internal_pic}
-                                    onSelect={(selected) => setFormData(prev => ({ ...prev, internal_pic: (Array.isArray(selected) ? selected : [selected]) as User[] }))}
+                                    onSelect={(selected) => {
+                                        setPicManuallyEdited(true);
+                                        setFormData(prev => ({ ...prev, internal_pic: (Array.isArray(selected) ? selected : [selected]) as User[] }));
+                                    }}
                                     multiSelect={true}
                                     placeholder="Select Staff"
                                 />

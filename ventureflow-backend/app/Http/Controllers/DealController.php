@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Deal;
+use App\Models\Currency;
 use App\Models\DealFee;
 use App\Models\DealStageHistory;
 use App\Models\FeeTier;
@@ -343,7 +344,20 @@ class DealController extends Controller
         $monetizationInfo = null;
 
         if (!empty($monetization['enabled'])) {
-            $ticketSizeUsd = (float) ($deal->ticket_size ?? 0);
+            $rawTicketSize = (float) ($deal->ticket_size ?? 0);
+
+            // Convert ticket_size from deal currency to USD
+            $dealCurrency = strtoupper(trim($deal->estimated_ev_currency ?? 'USD'));
+            $ticketSizeUsd = $rawTicketSize;
+
+            if ($dealCurrency && $dealCurrency !== 'USD' && $rawTicketSize > 0) {
+                $currencyRecord = Currency::where('currency_code', $dealCurrency)->first();
+                if ($currencyRecord && (float) $currencyRecord->exchange_rate > 0) {
+                    // exchange_rate = how many units of this currency per 1 USD
+                    // So USD amount = raw amount / exchange_rate
+                    $ticketSizeUsd = round($rawTicketSize / (float) $currencyRecord->exchange_rate, 2);
+                }
+            }
             // Determine fee side from the deal's pipeline
             $feeSide = $pipelineType === 'seller' ? 'target' : 'investor';
 
@@ -400,6 +414,8 @@ class DealController extends Controller
                     'mode' => 'final_settlement',
                     'payment_name' => $monetization['payment_name'] ?? 'Final Settlement',
                     'ticket_size_usd' => $ticketSizeUsd,
+                    'source_currency' => $dealCurrency,
+                    'original_ticket_size' => $rawTicketSize,
                     'fee_side' => $feeSide,
                     'fee_tier' => $feeTier ? [
                         'id' => $feeTier->id,
@@ -430,6 +446,8 @@ class DealController extends Controller
                     'type' => $monetization['type'] ?? 'one_time',
                     'deduct_from_success_fee' => $monetization['deduct_from_success_fee'] ?? false,
                     'ticket_size_usd' => $ticketSizeUsd,
+                    'source_currency' => $dealCurrency,
+                    'original_ticket_size' => $rawTicketSize,
                     'fee_side' => $feeSide,
                 ];
             }

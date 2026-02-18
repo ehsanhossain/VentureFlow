@@ -54,7 +54,7 @@ const PartnerLayout: React.FC = () => {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+                <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-premium">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = item.exact
@@ -139,7 +139,7 @@ const PartnerLayout: React.FC = () => {
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto scrollbar-premium">
                     <Outlet />
                 </div>
             </main>

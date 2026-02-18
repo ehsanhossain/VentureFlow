@@ -208,7 +208,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
 
                 {/* Main Content Area */}
                 <div className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-gray-50/30">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                    <div className="flex-1 overflow-y-auto scrollbar-premium p-6 space-y-8">
                         {isLoading ? (
                             <div className="space-y-8">
                                 <div className="grid grid-cols-2 gap-4">
@@ -347,7 +347,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                             ))}
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/20 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/20 scrollbar-premium">
                             {activeTab === 'details' && (
                                 <div className="space-y-6">
                                     <div className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm">

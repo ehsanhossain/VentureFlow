@@ -10,6 +10,8 @@ interface StageFeeInfo {
     deduct_from_success_fee: boolean;
     ticket_size_usd: number;
     fee_side: 'investor' | 'target';
+    source_currency?: string;
+    original_ticket_size?: number;
 }
 
 export interface StageFeeConfirmation {
@@ -38,7 +40,7 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
     stageName,
     monetization,
 }) => {
-    const [finalAmount, setFinalAmount] = useState<number>(monetization.amount);
+    const [amountStr, setAmountStr] = useState<string>(String(monetization.amount));
     const [deductFromSuccess, setDeductFromSuccess] = useState<boolean>(monetization.deduct_from_success_fee);
 
     if (!isOpen) return null;
@@ -52,8 +54,24 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
         }).format(amount);
     };
 
+    const finalAmount = amountStr === '' ? 0 : parseFloat(amountStr) || 0;
     const isMonthly = monetization.type === 'monthly';
     const isEdited = finalAmount !== monetization.amount;
+
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        // Allow empty, or valid number patterns (digits, one dot, decimals)
+        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+            setAmountStr(val);
+        }
+    };
+
+    const handleAmountBlur = () => {
+        // On blur, set to 0 if empty
+        if (amountStr === '' || amountStr === '.') {
+            setAmountStr('0');
+        }
+    };
 
     const handleConfirm = () => {
         onConfirm({
@@ -66,135 +84,321 @@ const MonetizationConfirmModal: React.FC<MonetizationConfirmModalProps> = ({
         });
     };
 
+    const font = 'Inter, sans-serif';
+
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-            <div className="bg-white rounded-[3px] w-full max-w-md shadow-2xl">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                            <DollarSign className="w-4 h-4 text-green-700" />
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            background: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(2px)',
+            animation: 'fadeIn 200ms ease-out'
+        }}>
+            <div style={{
+                background: '#fff',
+                borderRadius: '3px',
+                border: '1px solid #F3F4F6',
+                width: '100%',
+                maxWidth: '448px',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'zoomIn 200ms ease-out'
+            }}>
+                {/* ─── Header ─── */}
+                <div style={{
+                    padding: '16px 24px',
+                    borderBottom: '1px solid #F3F4F6',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: '#DCFCE7',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <DollarSign style={{ width: '16px', height: '16px', color: '#15803D' }} />
                         </div>
-                        <h3 className="text-base font-semibold text-gray-900">
+                        <span style={{
+                            color: '#374151',
+                            fontSize: '16px',
+                            fontFamily: font,
+                            fontWeight: 600,
+                            lineHeight: '24px',
+                            letterSpacing: '-0.4px'
+                        }}>
                             {isMonthly ? 'Monthly Fee Confirmation' : 'Stage Fee Confirmation'}
-                        </h3>
+                        </span>
                     </div>
-                    <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 transition-colors" title="Close">
-                        <X className="w-5 h-5" />
+                    <button
+                        onClick={onClose}
+                        title="Close"
+                        aria-label="Close"
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '3px',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 0
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                        <X style={{ width: '16px', height: '16px', color: '#9CA3AF' }} />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="px-6 py-5 space-y-5">
+                {/* ─── Body ─── */}
+                <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     {/* Deal Info */}
-                    <div className="bg-gray-50 rounded-[3px] p-4">
-                        <p className="text-sm text-gray-600">
-                            Moving <span className="font-semibold text-gray-900">{dealName}</span> to{' '}
-                            <span className="font-semibold text-[#064771]">{stageName}</span>
+                    <div style={{
+                        background: '#F9FAFB',
+                        borderRadius: '3px',
+                        padding: '14px 16px'
+                    }}>
+                        <p style={{ margin: 0, fontSize: '14px', fontFamily: font, color: '#4B5563' }}>
+                            Moving <span style={{ fontWeight: 600, color: '#111827' }}>{dealName}</span> to{' '}
+                            <span style={{ fontWeight: 600, color: '#064771' }}>{stageName}</span>
                         </p>
                     </div>
 
-                    {/* Monthly payment notice */}
+                    {/* Notice */}
                     {isMonthly ? (
-                        <div className="flex items-start gap-3 text-sm text-amber-700 bg-amber-50 px-4 py-3 rounded-[3px]">
-                            <Calendar className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '10px',
+                            background: '#FFFBEB',
+                            padding: '12px 14px',
+                            borderRadius: '3px'
+                        }}>
+                            <Calendar style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px', color: '#B45309' }} />
                             <div>
-                                <p className="font-medium">Monthly payment starts this month</p>
-                                <p className="text-xs text-amber-600/80 mt-1">
+                                <p style={{ margin: 0, fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#B45309' }}>
+                                    Monthly payment starts this month
+                                </p>
+                                <p style={{ margin: '4px 0 0', fontSize: '12px', fontFamily: font, color: '#D97706' }}>
                                     {formatCurrency(monetization.amount)}/month will be charged until the deal is successfully closed.
                                     {monetization.deduct_from_success_fee && ' This amount will be deducted from the final success fee.'}
                                 </p>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-[3px]">
-                            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                            <span>A one-time fee applies at this stage</span>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#FFFBEB',
+                            padding: '10px 14px',
+                            borderRadius: '3px'
+                        }}>
+                            <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0, color: '#B45309' }} />
+                            <span style={{ fontSize: '14px', fontFamily: font, color: '#B45309' }}>
+                                A one-time fee applies at this stage
+                            </span>
                         </div>
                     )}
 
                     {/* Fee Details */}
-                    <div className="space-y-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {monetization.payment_name && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Payment Name</span>
-                                <span className="font-medium text-gray-900">{monetization.payment_name}</span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '14px', fontFamily: font, color: '#6B7280' }}>Payment Name</span>
+                                <span style={{ fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#111827' }}>{monetization.payment_name}</span>
                             </div>
                         )}
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Fee Amount</span>
-                            <span className="font-medium text-gray-900">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px', fontFamily: font, color: '#6B7280' }}>Fee Amount</span>
+                            <span style={{ fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#111827' }}>
                                 {formatCurrency(monetization.amount)}{isMonthly ? ' / month' : ''}
                             </span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Transaction Size</span>
-                            <span className="font-medium text-gray-900">{formatCurrency(monetization.ticket_size_usd)}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px', fontFamily: font, color: '#6B7280' }}>Transaction Size</span>
+                            <span style={{ fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#111827' }}>{formatCurrency(monetization.ticket_size_usd)}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Payment Type</span>
-                            <span className="font-medium text-gray-900">{isMonthly ? 'Monthly' : 'One-time'}</span>
+                        {monetization.source_currency && monetization.source_currency !== 'USD' && monetization.original_ticket_size ? (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <span style={{ fontSize: '11px', fontFamily: font, color: '#9CA3AF', fontStyle: 'italic' }}>
+                                    Converted from {new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(monetization.original_ticket_size)} {monetization.source_currency}
+                                </span>
+                            </div>
+                        ) : null}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px', fontFamily: font, color: '#6B7280' }}>Payment Type</span>
+                            <span style={{ fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#111827' }}>{isMonthly ? 'Monthly' : 'One-time'}</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Fee Side</span>
-                            <span className="font-medium text-gray-900 capitalize">{monetization.fee_side}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '14px', fontFamily: font, color: '#6B7280' }}>Fee Side</span>
+                            <span style={{ fontSize: '14px', fontFamily: font, fontWeight: 500, color: '#111827', textTransform: 'capitalize' }}>{monetization.fee_side}</span>
                         </div>
                     </div>
 
                     {/* Divider */}
-                    <div className="border-t border-gray-100"></div>
+                    <div style={{ height: '1px', background: '#F3F4F6' }} />
 
                     {/* Editable Amount */}
                     <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                        <label style={{
+                            display: 'block',
+                            fontSize: '12px',
+                            fontFamily: font,
+                            fontWeight: 500,
+                            color: '#6B7280',
+                            marginBottom: '6px'
+                        }}>
                             {isMonthly ? 'Monthly Amount (editable)' : 'Final Amount (editable)'}
                         </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                        <div style={{ position: 'relative' }}>
+                            <span style={{
+                                position: 'absolute',
+                                left: '12px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                fontSize: '14px',
+                                fontFamily: font,
+                                color: '#9CA3AF'
+                            }}>$</span>
                             <input
-                                type="number"
-                                value={finalAmount}
-                                onChange={e => setFinalAmount(parseFloat(e.target.value) || 0)}
-                                min="0"
-                                step="0.01"
-                                className="w-full pl-8 pr-20 py-2.5 bg-white border border-gray-200 rounded-[3px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                type="text"
+                                inputMode="decimal"
+                                value={amountStr}
+                                onChange={handleAmountChange}
+                                onBlur={handleAmountBlur}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px 12px',
+                                    paddingLeft: '28px',
+                                    paddingRight: isMonthly ? '90px' : '12px',
+                                    background: '#fff',
+                                    border: '1px solid #E5E7EB',
+                                    borderRadius: '3px',
+                                    fontSize: '14px',
+                                    fontFamily: font,
+                                    fontWeight: 500,
+                                    color: '#111827',
+                                    textAlign: 'right',
+                                    outline: 'none',
+                                    boxSizing: 'border-box',
+                                    transition: 'border-color 150ms, box-shadow 150ms'
+                                }}
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = '#064771';
+                                    e.currentTarget.style.boxShadow = '0 0 0 2px rgba(6, 71, 113, 0.1)';
+                                }}
+                                onBlurCapture={(e) => {
+                                    e.currentTarget.style.borderColor = '#E5E7EB';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
                             />
                             {isMonthly && (
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">USD / month</span>
+                                <span style={{
+                                    position: 'absolute',
+                                    right: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    fontSize: '12px',
+                                    fontFamily: font,
+                                    color: '#9CA3AF'
+                                }}>USD / month</span>
                             )}
                         </div>
                         {isEdited && (
-                            <p className="mt-1 text-xs text-amber-600">
+                            <p style={{
+                                margin: '4px 0 0',
+                                fontSize: '12px',
+                                fontFamily: font,
+                                color: '#D97706'
+                            }}>
                                 Modified from configured {formatCurrency(monetization.amount)}
                             </p>
                         )}
                     </div>
 
                     {/* Deduct from success */}
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer'
+                    }}>
                         <input
                             type="checkbox"
                             checked={deductFromSuccess}
                             onChange={e => setDeductFromSuccess(e.target.checked)}
-                            className="w-4 h-4 rounded border-gray-300 text-[#064771] focus:ring-[#064771]/20"
+                            style={{ width: '16px', height: '16px', accentColor: '#064771' }}
                         />
-                        <span className="text-sm text-gray-700">Deduct from final success fee</span>
+                        <span style={{ fontSize: '14px', fontFamily: font, color: '#374151' }}>Deduct from final success fee</span>
                     </label>
                 </div>
 
-                {/* Footer */}
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+                {/* ─── Footer ─── */}
+                <div style={{
+                    padding: '16px 24px',
+                    borderTop: '1px solid #F3F4F6',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    gap: '12px'
+                }}>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                        style={{
+                            height: '36px',
+                            padding: '0 16px',
+                            borderRadius: '3px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#4B5563',
+                            fontSize: '14px',
+                            fontFamily: font,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            transition: 'background 150ms'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#F3F4F6')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleConfirm}
-                        className="flex items-center gap-2 px-5 py-2 bg-[#064771] hover:bg-[#053a5e] text-white rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
+                        style={{
+                            height: '36px',
+                            padding: '0 20px',
+                            borderRadius: '3px',
+                            border: 'none',
+                            background: '#064771',
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontFamily: font,
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'background 150ms'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#053a5e')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = '#064771')}
                     >
-                        <Check className="w-4 h-4" />
+                        <Check style={{ width: '14px', height: '14px' }} />
                         {isMonthly ? 'Start Monthly Payment' : 'Confirm & Move'}
                     </button>
                 </div>

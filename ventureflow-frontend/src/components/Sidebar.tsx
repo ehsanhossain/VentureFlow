@@ -107,7 +107,7 @@ export function Sidebar({
 
         {/* Navigation Menu */}
         <nav
-          className={`flex-1 flex flex-col py-4 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-200 ${!sidebarExpanded && 'overflow-y-visible'}`}
+          className={`flex-1 flex flex-col py-4 overflow-y-auto overflow-x-hidden scrollbar-premium ${!sidebarExpanded && 'overflow-y-visible'}`}
         >
           <div className="space-y-1 w-full px-2">
             {filteredMenuItems.map((item, index) => {

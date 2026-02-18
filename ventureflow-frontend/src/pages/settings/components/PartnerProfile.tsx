@@ -153,7 +153,7 @@ const PartnerProfile: React.FC = () => {
     }
 
     return (
-        <div className="h-full overflow-y-auto p-6 md:p-8">
+        <div className="h-full overflow-y-auto p-6 md:p-8 scrollbar-premium">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">

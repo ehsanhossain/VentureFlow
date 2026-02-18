@@ -42,6 +42,7 @@ export interface TargetRowData {
     website: string;
     teaserLink: string;
     ebitda: any;
+    ebitdaTimes?: string | number;
     financialAdvisor: string[];
     introducedProjects: string[];
     isPinned?: boolean;
@@ -191,7 +192,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
     const handleExportCSV = () => {
         const selectedRows = data.filter(r => selectedIds.has(r.id));
         if (!selectedRows.length) return;
-        const headers = ['Project Code', 'Company Name', 'Origin Country', 'Industry', 'Project Details', 'Pipeline Status', 'Status', 'Desired Investment', 'Reason for M&A', 'Rank', 'Internal PIC', 'Primary Contact', 'Primary Email', 'Primary Phone', 'Website', 'Teaser Link', 'EBITDA', 'Financial Advisor', 'Introduced Projects', 'Channel', 'Investment Condition'];
+        const headers = ['Project Code', 'Company Name', 'Origin Country', 'Industry', 'Project Details', 'Pipeline Status', 'Status', 'Desired Investment', 'Reason for M&A', 'Rank', 'Internal PIC', 'Primary Contact', 'Primary Email', 'Primary Phone', 'Website', 'Teaser Link', 'EBITDA', 'EBITDA Times', 'Financial Advisor', 'Introduced Projects', 'Channel', 'Investment Condition'];
         const rows = selectedRows.map(r => [
             r.projectCode || '',
             r.companyName || '',
@@ -210,6 +211,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             r.website || '',
             r.teaserLink || '',
             typeof r.ebitda === 'object' ? JSON.stringify(r.ebitda) : (r.ebitda || ''),
+            r.ebitdaTimes ? `${r.ebitdaTimes}x` : '',
             (r.financialAdvisor || []).join('; '),
             (r.introducedProjects || []).join('; '),
             r.channel || '',
@@ -398,6 +400,17 @@ export const TargetTable: React.FC<TargetTableProps> = ({
             },
             textAccessor: (row) => formatCompactBudget(row.ebitda, '$', 1),
             width: 140,
+            minWidth: 80,
+        },
+        {
+            id: 'ebitdaTimes',
+            header: 'EBITDA Times',
+            accessor: (row) => {
+                if (!row.ebitdaTimes && row.ebitdaTimes !== 0) return <span className="text-[13px] font-normal text-gray-400">N/A</span>;
+                return <span className="text-[13px] font-normal text-gray-700">{row.ebitdaTimes}x</span>;
+            },
+            textAccessor: (row) => row.ebitdaTimes ? `${row.ebitdaTimes}x` : '',
+            width: 120,
             minWidth: 80,
         },
         {

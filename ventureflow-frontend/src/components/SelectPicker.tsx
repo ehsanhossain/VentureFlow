@@ -112,7 +112,7 @@ const SelectPicker: React.FC<SelectPickerProps> = ({
 
       {isDropdownOpen && (
         <div
-          className="absolute top-full mt-1 w-full border border-gray-200 rounded-[3px] bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100"
+          className="absolute top-full mt-1 w-full border border-gray-200 rounded-[3px] bg-white z-50 shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100 scrollbar-premium"
           id="select-picker-listbox"
         >
           <div className="p-3.5">

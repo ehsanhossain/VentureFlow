@@ -185,7 +185,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                             </div>
 
 
-                            <div className="flex flex-col w-full max-h-48 overflow-y-auto">
+                            <div className="flex flex-col w-full max-h-48 overflow-y-auto scrollbar-premium">
                                 {filteredCountries.map((country) => (
                                     <button
                                         key={country.id?.toString() || (country as any).user_id?.toString() || Math.random().toString()}

@@ -65,7 +65,7 @@ const FinalSettlementModal: React.FC<FinalSettlementModalProps> = ({
     const payments = monetization.accumulated_payments;
     const [adjustedMonths, setAdjustedMonths] = useState<number>(payments.months_count);
     const [manualOverride, setManualOverride] = useState<boolean>(false);
-    const [manualFinalAmount, setManualFinalAmount] = useState<number>(monetization.net_payout);
+    const [manualAmountStr, setManualAmountStr] = useState<string>(String(monetization.net_payout));
 
     if (!isOpen) return null;
 
@@ -84,6 +84,7 @@ const FinalSettlementModal: React.FC<FinalSettlementModalProps> = ({
         : 0;
     const adjustedDeductions = adjustedMonths * avgMonthlyFee;
     const calculatedNetPayout = monetization.success_fee - adjustedDeductions;
+    const manualFinalAmount = manualAmountStr === '' ? 0 : parseFloat(manualAmountStr) || 0;
     const displayNetPayout = manualOverride ? manualFinalAmount : calculatedNetPayout;
 
     const tierLabel = monetization.fee_tier
@@ -112,7 +113,7 @@ const FinalSettlementModal: React.FC<FinalSettlementModalProps> = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-            <div className="bg-white rounded-[3px] w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-[3px] w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto scrollbar-premium">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
                     <div className="flex items-center gap-2">
@@ -192,7 +193,7 @@ const FinalSettlementModal: React.FC<FinalSettlementModalProps> = ({
                                 {payments.history.length > 0 && (
                                     <div className="mt-2 pt-2 border-t border-blue-100">
                                         <p className="text-xs text-blue-600 font-medium mb-2">Payment History</p>
-                                        <div className="space-y-1 max-h-28 overflow-y-auto">
+                                        <div className="space-y-1 max-h-28 overflow-y-auto scrollbar-premium">
                                             {payments.history.map((p, i) => (
                                                 <div key={i} className="flex justify-between text-xs text-blue-700/80">
                                                     <span>{p.month_label} (Stage {p.stage_code})</span>
@@ -265,22 +266,60 @@ const FinalSettlementModal: React.FC<FinalSettlementModalProps> = ({
                                 checked={manualOverride}
                                 onChange={e => {
                                     setManualOverride(e.target.checked);
-                                    if (e.target.checked) setManualFinalAmount(calculatedNetPayout);
+                                    if (e.target.checked) setManualAmountStr(String(calculatedNetPayout));
                                 }}
                                 className="w-4 h-4 rounded border-gray-300 text-[#064771] focus:ring-[#064771]/20"
                             />
                             <span className="text-sm text-gray-700">Override final amount manually</span>
                         </label>
                         {manualOverride && (
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+                            <div style={{ position: 'relative' }}>
+                                <span style={{
+                                    position: 'absolute',
+                                    left: '12px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    fontSize: '14px',
+                                    color: '#9CA3AF'
+                                }}>$</span>
                                 <input
-                                    type="number"
-                                    value={manualFinalAmount}
-                                    onChange={e => setManualFinalAmount(parseFloat(e.target.value) || 0)}
-                                    min="0"
-                                    step="0.01"
-                                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-200 rounded-[3px] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={manualAmountStr}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        if (val === '' || /^-?\d*\.?\d*$/.test(val)) {
+                                            setManualAmountStr(val);
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        if (manualAmountStr === '' || manualAmountStr === '.' || manualAmountStr === '-') {
+                                            setManualAmountStr('0');
+                                        }
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '10px 12px',
+                                        paddingLeft: '28px',
+                                        background: '#fff',
+                                        border: '1px solid #E5E7EB',
+                                        borderRadius: '3px',
+                                        fontSize: '14px',
+                                        fontWeight: 500,
+                                        color: '#111827',
+                                        textAlign: 'right',
+                                        outline: 'none',
+                                        boxSizing: 'border-box' as const,
+                                        transition: 'border-color 150ms, box-shadow 150ms'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.currentTarget.style.borderColor = '#064771';
+                                        e.currentTarget.style.boxShadow = '0 0 0 2px rgba(6, 71, 113, 0.1)';
+                                    }}
+                                    onBlurCapture={(e) => {
+                                        e.currentTarget.style.borderColor = '#E5E7EB';
+                                        e.currentTarget.style.boxShadow = 'none';
+                                    }}
                                 />
                             </div>
                         )}

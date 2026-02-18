@@ -125,7 +125,7 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
                         </div>
 
                         {/* Options */}
-                        <div className="overflow-y-auto max-h-[180px]">
+                        <div className="overflow-y-auto max-h-[180px] scrollbar-premium">
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((option) => {
                                     const isSelected = value.includes(option.value);

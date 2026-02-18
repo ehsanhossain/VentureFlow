@@ -334,6 +334,7 @@ const DraftsPage: React.FC = () => {
                     investmentCondition: parseMultiField(fin.investment_condition),
                     desiredInvestment: desiredInv,
                     ebitda: ebitdaDisplay,
+                    ebitdaTimes: fin.ebitda_times || null,
                     primaryContact: primaryContactName,
                     internalPIC: parseArray(ov.internal_pic, 'name'),
                     financialAdvisor: parseArray(ov.financial_advisor, 'name'),

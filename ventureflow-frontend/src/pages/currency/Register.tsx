@@ -193,7 +193,7 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto scrollbar-premium">
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <span className="animate-spin border-4 border-white border-t-transparent rounded-full w-5 h-5 mr-2"></span>

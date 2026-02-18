@@ -69,7 +69,7 @@ const InvestorList = () => {
             </h2>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto scrollbar-premium">
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-gray-50/50">
