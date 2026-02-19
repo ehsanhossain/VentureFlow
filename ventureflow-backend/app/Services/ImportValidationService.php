@@ -59,6 +59,62 @@ class ImportValidationService
     private ?array $currenciesCache = null;
 
     /**
+     * Common aliases / abbreviations for region names.
+     * Maps lowercase alias => official database name.
+     */
+    public const REGION_ALIASES = [
+        // APAC / Asia Pacific
+        'apac'           => 'East Asia',
+        'asia pacific'   => 'East Asia',
+        'asia-pacific'   => 'East Asia',
+        'asiapacific'    => 'East Asia',
+        'ap'             => 'East Asia',
+
+        // Southeast Asia
+        'sea'            => 'ASEAN',
+        'southeast asia' => 'ASEAN',
+        'south east asia'=> 'ASEAN',
+
+        // Europe
+        'eu'             => 'Europe',
+        'emea'           => 'Europe',
+
+        // Middle East + Africa
+        'mena'           => 'Middle East',
+        'me'             => 'Middle East',
+        'mideast'        => 'Middle East',
+        'mid east'       => 'Middle East',
+
+        // Americas
+        'americas'       => 'North America',
+        'us'             => 'North America',
+        'usa'            => 'North America',
+        'united states'  => 'North America',
+        'na'             => 'North America',
+        'latam'          => 'South America',
+        'latin america'  => 'South America',
+
+        // Gulf
+        'gulf'           => 'GCC',
+        'gulf states'    => 'GCC',
+
+        // Nordic
+        'nordics'        => 'Nordic Countries',
+        'nordic'         => 'Nordic Countries',
+        'scandinavia'    => 'Nordic Countries',
+
+        // Oceania
+        'anz'            => 'Oceania',
+        'australasia'    => 'Oceania',
+        'australia & nz' => 'Oceania',
+
+        // Broader
+        'worldwide'      => 'Global',
+        'international'  => 'Global',
+        'all'            => 'Global',
+    ];
+
+    /**
      * Load and cache reference data from the database.
      * Regions appear first, then actual countries alphabetically.
      */
@@ -210,6 +266,17 @@ class ImportValidationService
         foreach ($validOptions as $option) {
             if (strtolower($option) === strtolower($input)) {
                 return ['matched' => $option, 'suggestions' => []];
+            }
+        }
+
+        // Check region aliases (only when matching against countries)
+        $alias = self::REGION_ALIASES[strtolower($input)] ?? null;
+        if ($alias) {
+            // Verify the alias target exists in valid options
+            foreach ($validOptions as $option) {
+                if (strtolower($option) === strtolower($alias)) {
+                    return ['matched' => $option, 'suggestions' => []];
+                }
             }
         }
 
@@ -365,19 +432,85 @@ class ImportValidationService
             }
         }
 
-        // Duplicate project code check
+        // ═══ Project Code Validation ═══
         $projectCode = $validatedData['project_code'] ?? null;
         if ($projectCode) {
+            $projectCode = strtoupper(trim($projectCode));
+            $validatedData['project_code'] = $projectCode;
             $prefix = $type === 'investor' ? 'B' : 'S';
-            $pattern = '/^[A-Z]{2}-' . $prefix . '-\d{1,5}$/i';
+            $typeLabel = $type === 'investor' ? 'Investor (B = Buyer)' : 'Target (S = Seller)';
+
+            // 1. Basic format check: XX-B-NNN or XX-S-NNN
+            $pattern = '/^[A-Z]{2}-[BS]-\d{1,5}$/';
             if (!preg_match($pattern, $projectCode)) {
                 $errors[] = [
                     'field' => 'project_code',
                     'label' => 'Project Code',
                     'value' => $projectCode,
-                    'message' => "Invalid format. Expected: XX-{$prefix}-NNN",
+                    'message' => "Invalid format. Expected: XX-{$prefix}-NNN (e.g., JP-{$prefix}-001).",
                     'suggestions' => [],
                 ];
+            } else {
+                // Parse the parts: [ALPHA_2]-[TYPE]-[NUMBER]
+                $parts = explode('-', $projectCode);
+                $codeAlpha2 = $parts[0];    // e.g., "JP"
+                $codeType = $parts[1];       // e.g., "B" or "S"
+
+                // 2. Type letter must match the import type
+                if ($codeType !== $prefix) {
+                    $wrongType = $codeType === 'B' ? 'Investor (Buyer)' : 'Target (Seller)';
+                    $errors[] = [
+                        'field' => 'project_code',
+                        'label' => 'Project Code',
+                        'value' => $projectCode,
+                        'message' => "Type mismatch: '{$codeType}' is for {$wrongType}, but you are importing {$typeLabel}. The code must use '{$prefix}' (e.g., {$codeAlpha2}-{$prefix}-{$parts[2]}).",
+                        'suggestions' => ["{$codeAlpha2}-{$prefix}-{$parts[2]}"],
+                    ];
+                }
+
+                // 3. Alpha-2 code must match origin country
+                $originCountryName = $validatedData['origin_country'] ?? null;
+                if ($originCountryName) {
+                    // Resolve the origin country's alpha_2_code from DB
+                    $originCountry = Country::whereRaw('LOWER(name) = ?', [strtolower($originCountryName)])->first();
+
+                    if ($originCountry && $originCountry->alpha_2_code) {
+                        $expectedAlpha2 = strtoupper($originCountry->alpha_2_code);
+                        if ($codeAlpha2 !== $expectedAlpha2) {
+                            // Find which country the code's alpha-2 actually belongs to
+                            $codeCountry = Country::where('alpha_2_code', $codeAlpha2)->first();
+                            $codeCountryName = $codeCountry ? $codeCountry->name : 'unknown country';
+
+                            $errors[] = [
+                                'field' => 'project_code',
+                                'label' => 'Project Code',
+                                'value' => $projectCode,
+                                'message' => "Country code mismatch: '{$codeAlpha2}' refers to {$codeCountryName}, but Origin Country is '{$originCountryName}' ({$expectedAlpha2}). The code should start with '{$expectedAlpha2}' (e.g., {$expectedAlpha2}-{$prefix}-{$parts[2]}).",
+                                'suggestions' => ["{$expectedAlpha2}-{$prefix}-{$parts[2]}"],
+                            ];
+                        }
+                    } elseif ($originCountry && $originCountry->is_region) {
+                        // Regions don't have alpha_2_code — warn but don't error
+                        // Regions like "Global", "ASEAN" etc. can use any alpha code
+                    }
+                }
+
+                // 4. Check for duplicate project code in database
+                if ($type === 'investor') {
+                    $exists = \App\Models\Buyer::where('buyer_id', $projectCode)->exists();
+                } else {
+                    $exists = \App\Models\Seller::where('seller_id', $projectCode)->exists();
+                }
+
+                if ($exists) {
+                    $errors[] = [
+                        'field' => 'project_code',
+                        'label' => 'Project Code',
+                        'value' => $projectCode,
+                        'message' => "Duplicate: Project code '{$projectCode}' already exists in the system. Please use a different number.",
+                        'suggestions' => [],
+                    ];
+                }
             }
         }
 
@@ -410,6 +543,46 @@ class ImportValidationService
             $results[] = $result;
         }
 
+        // ── Intra-file duplicate project code check ──
+        $codeIndex = []; // project_code => [list of result indices]
+        foreach ($results as $idx => $result) {
+            $code = $result['data']['project_code'] ?? null;
+            if ($code) {
+                $codeIndex[strtoupper($code)][] = $idx;
+            }
+        }
+
+        foreach ($codeIndex as $code => $indices) {
+            if (count($indices) > 1) {
+                $rowNumbers = array_map(fn($i) => $results[$i]['rowIndex'], $indices);
+                foreach ($indices as $i) {
+                    // Only add the error if the row doesn't already have this error
+                    $alreadyHasDupError = false;
+                    foreach ($results[$i]['errors'] as $err) {
+                        if ($err['field'] === 'project_code' && str_contains($err['message'], 'Duplicate in file')) {
+                            $alreadyHasDupError = true;
+                            break;
+                        }
+                    }
+                    if (!$alreadyHasDupError) {
+                        $otherRows = array_filter($rowNumbers, fn($r) => $r !== $results[$i]['rowIndex']);
+                        $results[$i]['errors'][] = [
+                            'field' => 'project_code',
+                            'label' => 'Project Code',
+                            'value' => $code,
+                            'message' => "Duplicate in file: Project code '{$code}' also appears in row(s) " . implode(', ', $otherRows) . ". Each project code must be unique.",
+                            'suggestions' => [],
+                        ];
+                        if ($results[$i]['status'] === 'valid') {
+                            $results[$i]['status'] = 'error';
+                            $validCount--;
+                            $errorCount++;
+                        }
+                    }
+                }
+            }
+        }
+
         return [
             'summary' => [
                 'total' => count($rows),
@@ -427,11 +600,25 @@ class ImportValidationService
     public function resolveCountryId(string $name): ?int
     {
         $countries = $this->loadCountries();
+        $trimmedName = strtolower(trim($name));
+
+        // Direct name match
         foreach ($countries as $id => $countryName) {
-            if (strtolower($countryName) === strtolower(trim($name))) {
+            if (strtolower($countryName) === $trimmedName) {
                 return $id;
             }
         }
+
+        // Check aliases
+        $alias = self::REGION_ALIASES[$trimmedName] ?? null;
+        if ($alias) {
+            foreach ($countries as $id => $countryName) {
+                if (strtolower($countryName) === strtolower($alias)) {
+                    return $id;
+                }
+            }
+        }
+
         return null;
     }
 

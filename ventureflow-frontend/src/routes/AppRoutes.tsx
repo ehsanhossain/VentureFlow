@@ -28,6 +28,8 @@ import PipelineSettings from "../pages/settings/components/PipelineSettings";
 import FeeStructureSettings from "../pages/settings/components/FeeStructureSettings";
 import IndustrySettings from "../pages/settings/components/IndustrySettings";
 import ChangePassword from "../pages/auth/ChangePassword";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
 import PartnerProfile from '../pages/settings/components/PartnerProfile';
 import MatchIQ from '../pages/matching/MatchIQ';
@@ -37,6 +39,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/change-password" element={<ChangePassword />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Dashboard */}
       <Route

@@ -552,6 +552,7 @@ class ImportController extends Controller
 
     /**
      * Resolve comma-separated country names into an array of {id, name} objects.
+     * Supports region aliases (e.g., 'APAC' → 'East Asia').
      */
     private function resolveCountryNames(?string $raw): array
     {
@@ -561,8 +562,11 @@ class ImportController extends Controller
         foreach ($items as $name) {
             $id = $this->validationService->resolveCountryId($name);
             if ($id) {
-                $resolved[] = ['id' => $id, 'name' => $name];
+                // Look up the official name from the database
+                $country = Country::find($id);
+                $resolved[] = ['id' => $id, 'name' => $country ? $country->name : $name];
             } else {
+                // Store unresolved as name-only for flexibility
                 $resolved[] = ['name' => $name];
             }
         }

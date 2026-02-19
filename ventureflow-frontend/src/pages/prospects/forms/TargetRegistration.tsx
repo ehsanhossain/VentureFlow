@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Loader2, Link as LinkIcon, Plus, Trash2, AlertCircle } from 'lucide-react';
@@ -14,6 +14,7 @@ import SelectPicker from '../../../components/SelectPicker';
 import MultiSelectPicker from '../../../components/MultiSelectPicker';
 import { LogoUpload } from '../../../components/LogoUpload';
 import NumericInput from '../../../components/NumericInput';
+import UnsavedChangesModal from '../../../components/UnsavedChangesModal';
 
 interface ExtendedCountry extends Country {
     alpha?: string;
@@ -143,7 +144,7 @@ export const TargetRegistration: React.FC = () => {
 
 
 
-    const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting, isDirty } } = useForm<FormValues>({
         defaultValues: {
             projectCode: '',
             rank: '',
@@ -184,6 +185,80 @@ export const TargetRegistration: React.FC = () => {
 
     // "Project + Full Code" toggle
     const [projectNameMode, setProjectNameMode] = useState(false);
+
+    // ─── Unsaved Changes Protection ───
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
+    const hasInteractedRef = useRef(false);
+    const isSubmittingRef = useRef(false);
+
+    const markInteracted = useCallback(() => {
+        if (!hasInteractedRef.current) hasInteractedRef.current = true;
+    }, []);
+
+    const hasUnsavedChanges = isDirty || hasInteractedRef.current;
+
+    // Intercept browser back/forward button
+    useEffect(() => {
+        if (!hasUnsavedChanges || isSubmittingRef.current) return;
+
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+            setShowUnsavedModal(true);
+        };
+
+        window.history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [hasUnsavedChanges]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges && !isSubmittingRef.current) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && hasUnsavedChanges && !showUnsavedModal) {
+                e.preventDefault();
+                setShowUnsavedModal(true);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [hasUnsavedChanges, showUnsavedModal]);
+
+    const handleUnsavedStay = () => {
+        setShowUnsavedModal(false);
+    };
+
+    const handleUnsavedDiscard = () => {
+        setShowUnsavedModal(false);
+        hasInteractedRef.current = false;
+        isSubmittingRef.current = true;
+        navigate('/prospects?tab=targets');
+    };
+
+    const handleUnsavedSaveDraft = async () => {
+        setIsSavingDraft(true);
+        try {
+            const data = control._formValues as FormValues;
+            isSubmittingRef.current = true;
+            await onSubmit(data, true);
+        } catch {
+            setIsSavingDraft(false);
+            isSubmittingRef.current = false;
+        }
+    };
 
     const getProjectName = useCallback(() => {
         return projectCodeValue ? `Project ${projectCodeValue}` : 'Project';
@@ -601,7 +676,7 @@ export const TargetRegistration: React.FC = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 ">
+        <form onSubmit={handleSubmit(d => { isSubmittingRef.current = true; onSubmit(d, false); })} onChange={markInteracted} className="w-full pb-24 ">
 
 
             <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
@@ -1188,7 +1263,13 @@ export const TargetRegistration: React.FC = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 flex items-center justify-end gap-3 px-8 z-50">
                 <button
                     type="button"
-                    onClick={() => navigate('/prospects?tab=targets')}
+                    onClick={() => {
+                        if (hasUnsavedChanges) {
+                            setShowUnsavedModal(true);
+                        } else {
+                            navigate('/prospects?tab=targets');
+                        }
+                    }}
                     className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium  hover:bg-gray-50 transition-colors"
                 >
                     {t('prospects.registration.cancel')}
@@ -1196,6 +1277,7 @@ export const TargetRegistration: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => {
+                        isSubmittingRef.current = true;
                         const data = control._formValues as FormValues;
                         onSubmit(data, true);
                     }}
@@ -1212,6 +1294,15 @@ export const TargetRegistration: React.FC = () => {
                     {isSubmitting ? t('prospects.registration.saving') : id ? t('prospects.registration.updateTarget') : t('prospects.registration.saveTarget')}
                 </button>
             </div>
+
+            {/* Unsaved Changes Modal */}
+            <UnsavedChangesModal
+                isOpen={showUnsavedModal}
+                onStay={handleUnsavedStay}
+                onDiscard={handleUnsavedDiscard}
+                onSaveDraft={handleUnsavedSaveDraft}
+                isSaving={isSavingDraft}
+            />
         </form>
     );
 };

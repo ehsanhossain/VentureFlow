@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\Seller;
 use App\Models\SellersCompanyOverview;
 use App\Models\Country;
+use App\Services\ImportValidationService;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -97,16 +98,54 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
             return;
         }
 
-        // 2. Code Validation (Already validated by rules)
+        // 2. Code Validation (XX-S-NNN)
         $projectCode = isset($row['project_id']) ? strtoupper(trim($row['project_id'])) : null;
+        $countryName = $row['hq'] ?? null;
+        if ($projectCode) {
+            // Basic format check
+            if (!preg_match('/^[A-Z]{2}-[BS]-\d{1,5}$/', $projectCode)) {
+                Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-S-NNN.");
+                return;
+            }
+
+            // Type letter must be S for Seller/Target import
+            $parts = explode('-', $projectCode);
+            if ($parts[1] !== 'S') {
+                Log::error("Validation Error Row $rowIndex: Project Code '$projectCode' uses type '{$parts[1]}' but must use 'S' for Target import.");
+                return;
+            }
+
+            // Alpha-2 code must match origin country
+            if ($countryName) {
+                $lookupName = ImportValidationService::REGION_ALIASES[strtolower(trim($countryName))] ?? trim($countryName);
+                $originCountry = Country::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
+                if ($originCountry && $originCountry->alpha_2_code) {
+                    $expectedAlpha2 = strtoupper($originCountry->alpha_2_code);
+                    if ($parts[0] !== $expectedAlpha2) {
+                        Log::error("Validation Error Row $rowIndex: Project Code '$projectCode' starts with '{$parts[0]}' but Origin Country '$countryName' has code '$expectedAlpha2'.");
+                        return;
+                    }
+                }
+            }
+
+            // Check Duplicates
+            if (Seller::where('seller_id', $projectCode)->exists()) {
+                Log::error("Validation Error Row $rowIndex: Duplicate Project Code '$projectCode'.");
+                return;
+            }
+        }
 
         // 3. Rank (Already validated by rules)
         $rank = strtoupper(trim($row['rank']));
 
-        // 4. HQ Country (Already validated by rules)
-        $countryName = $row['hq'];
-        $country = Country::where('name', trim($countryName))->first();
-        $hqCountryId = $country->id;
+        // 4. HQ Country (with alias support)
+        if (!$countryName) $countryName = $row['hq'] ?? null;
+        $lookupName = ImportValidationService::REGION_ALIASES[strtolower(trim($countryName ?? ''))] ?? trim($countryName ?? '');
+        $country = Country::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
+        $hqCountryId = $country ? $country->id : null;
+        if (!$hqCountryId) {
+            Log::warning("Row $rowIndex: Country '$countryName' not found. Please fix in system.");
+        }
 
         // 5. Industry & Niche
         $industries = $commaSeparatedToArray($row['target_industries'] ?? $row['target-industries'] ?? $row['targetindustries'] ?? $row['industry_major_classification'] ?? '');

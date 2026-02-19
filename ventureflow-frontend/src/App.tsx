@@ -66,7 +66,8 @@ const Content: React.FC<ContentProps> = ({
   toggleMobileMenu,
 }) => {
   const location = useLocation();
-  const hideLayout = location.pathname === "/login" || location.pathname === "/change-password";
+  const authPaths = ["/login", "/change-password", "/forgot-password", "/reset-password"];
+  const hideLayout = authPaths.includes(location.pathname);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -81,7 +82,7 @@ const Content: React.FC<ContentProps> = ({
   }, [sidebarExpanded, setSidebarExpanded]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={hideLayout ? "h-screen w-full overflow-hidden" : "min-h-screen bg-white"}>
       {!hideLayout && mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
@@ -103,10 +104,10 @@ const Content: React.FC<ContentProps> = ({
         />
       )}
       <main
-        className={`transition-all duration-300 min-h-screen w-full overflow-x-hidden
+        className={`transition-all duration-300 w-full overflow-x-hidden
     ${hideLayout
-            ? "p-0 m-0 flex justify-center items-center h-screen"
-            : "bg-white"
+            ? "h-screen"
+            : "min-h-screen bg-white"
           }
     ${!hideLayout ? "pt-16" : ""}
     ${!hideLayout && sidebarExpanded ? "md:pl-64" : ""}

@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\Buyer;
 use App\Models\BuyersCompanyOverview;
 use App\Models\Country;
+use App\Services\ImportValidationService;
 use Maatwebsite\Excel\Concerns\OnEachRow;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
@@ -98,13 +99,37 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             return;
         }
 
-        // 2. Code Validation (XX-B-XXX)
+        // 2. Code Validation (XX-B-NNN)
         $projectCode = $row['project_code'] ?? $row['project-code'] ?? $row['projectcode'] ?? $row['code'] ?? null;
         if ($projectCode) {
-            if (!preg_match('/^[A-Z]{2}-B-\d{2,3}$/', strtoupper($projectCode))) {
-                Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-B-XXX.");
-                return; // Or throw ValidationException
+            $projectCode = strtoupper(trim($projectCode));
+
+            // Basic format check
+            if (!preg_match('/^[A-Z]{2}-[BS]-\d{1,5}$/', $projectCode)) {
+                Log::error("Validation Error Row $rowIndex: Invalid Project Code format '$projectCode'. Must be XX-B-NNN.");
+                return;
             }
+
+            // Type letter must be B for Buyer/Investor import
+            $parts = explode('-', $projectCode);
+            if ($parts[1] !== 'B') {
+                Log::error("Validation Error Row $rowIndex: Project Code '$projectCode' uses type '{$parts[1]}' but must use 'B' for Investor import.");
+                return;
+            }
+
+            // Alpha-2 code must match origin country
+            if ($countryName) {
+                $lookupName = ImportValidationService::REGION_ALIASES[strtolower(trim($countryName))] ?? trim($countryName);
+                $originCountry = Country::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
+                if ($originCountry && $originCountry->alpha_2_code) {
+                    $expectedAlpha2 = strtoupper($originCountry->alpha_2_code);
+                    if ($parts[0] !== $expectedAlpha2) {
+                        Log::error("Validation Error Row $rowIndex: Project Code '$projectCode' starts with '{$parts[0]}' but Origin Country '$countryName' has code '$expectedAlpha2'.");
+                        return;
+                    }
+                }
+            }
+
             // Check Duplicates
             if (Buyer::where('buyer_id', $projectCode)->exists()) {
                 Log::error("Validation Error Row $rowIndex: Duplicate Project Code '$projectCode'.");
@@ -118,11 +143,12 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
             $rank = 'B'; // Default
         }
 
-        // 4. Origin Country Lookup
+        // 4. Origin Country Lookup (with alias support)
         $countryName = $row['origin_country'] ?? $row['origin-country'] ?? $row['origincountry'] ?? $row['hq_country'] ?? null;
         $hqCountryId = null;
         if ($countryName) {
-            $country = Country::where('name', 'LIKE', trim($countryName))->first();
+            $lookupName = ImportValidationService::REGION_ALIASES[strtolower(trim($countryName))] ?? trim($countryName);
+            $country = Country::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
             if ($country) {
                 $hqCountryId = $country->id;
             } else {
@@ -131,7 +157,8 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
         }
 
         // 5. Target Countries & Industries
-        $targetCountries = $commaSeparatedToArray($row['target_countries'] ?? $row['target-countries'] ?? $row['targetcountries'] ?? '');
+        $targetCountriesRaw = $commaSeparatedToArray($row['target_countries'] ?? $row['target-countries'] ?? $row['targetcountries'] ?? '');
+        $targetCountries = $this->resolveCountryNames($targetCountriesRaw);
         $targetIndustries = $commaSeparatedToArray($row['target_industries'] ?? $row['target-industries'] ?? $row['targetindustries'] ?? '');
         $internalPic = $commaSeparatedToArray($row['internal_pic'] ?? $row['internal-pic'] ?? $row['internalpic'] ?? '');
         $financialAdvisor = $commaSeparatedToArray($row['financial_advisor'] ?? $row['financial-advisor'] ?? $row['financialadvisor'] ?? '');
@@ -280,5 +307,41 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
 
         Log::warning('HQ Address was not valid JSON. Storing as string in fallback structure.', ['value' => $value]);
         return ['full_address_string' => $trimmedValue];
+    }
+
+    /**
+     * Resolve an array of country/region name strings to country objects.
+     * Supports aliases like 'APAC', 'SEA', 'MENA', etc.
+     */
+    private function resolveCountryNames(array $names): array
+    {
+        $resolved = [];
+        $aliases = ImportValidationService::REGION_ALIASES;
+
+        foreach ($names as $name) {
+            $name = trim($name);
+            if (empty($name)) continue;
+
+            // Check alias first
+            $lookupName = $aliases[strtolower($name)] ?? $name;
+
+            $country = Country::whereRaw('LOWER(name) = ?', [strtolower($lookupName)])->first();
+
+            if ($country) {
+                $resolved[] = [
+                    'id' => $country->id,
+                    'name' => $country->name,
+                ];
+            } else {
+                // Store as-is with a warning
+                Log::warning("Country/region '{$name}' not found in database. Storing as text.");
+                $resolved[] = [
+                    'id' => null,
+                    'name' => $name,
+                ];
+            }
+        }
+
+        return $resolved;
     }
 }

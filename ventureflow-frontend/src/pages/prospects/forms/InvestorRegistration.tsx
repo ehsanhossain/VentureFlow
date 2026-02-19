@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Link as LinkIcon, Check, AlertCircle, Loader2 } from 'lucide-react';
@@ -14,6 +14,7 @@ import SelectPicker from '../../../components/SelectPicker';
 import MultiSelectPicker from '../../../components/MultiSelectPicker';
 import { LogoUpload } from '../../../components/LogoUpload';
 import NumericInput from '../../../components/NumericInput';
+import UnsavedChangesModal from '../../../components/UnsavedChangesModal';
 
 // Types
 interface FormValues {
@@ -123,7 +124,7 @@ export const InvestorRegistration: React.FC = () => {
 
 
 
-    const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
+    const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting, isDirty } } = useForm<FormValues>({
         defaultValues: {
             projectCode: '',
             rank: '',
@@ -153,6 +154,85 @@ export const InvestorRegistration: React.FC = () => {
 
     // "Project + Full Code" toggle
     const [projectNameMode, setProjectNameMode] = useState(false);
+
+    // ─── Unsaved Changes Protection ───
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
+    const hasInteractedRef = useRef(false);
+    const isSubmittingRef = useRef(false);
+
+    // Track any user interaction with form
+    const markInteracted = useCallback(() => {
+        if (!hasInteractedRef.current) hasInteractedRef.current = true;
+    }, []);
+
+    const hasUnsavedChanges = isDirty || hasInteractedRef.current;
+
+    // Intercept browser back/forward button
+    useEffect(() => {
+        if (!hasUnsavedChanges || isSubmittingRef.current) return;
+
+        const handlePopState = () => {
+            // Push state back to prevent leaving
+            window.history.pushState(null, '', window.location.href);
+            setShowUnsavedModal(true);
+        };
+
+        // Push an extra entry so back button triggers popstate instead of leaving
+        window.history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [hasUnsavedChanges]);
+
+    // Prevent browser tab close / refresh with unsaved changes
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges && !isSubmittingRef.current) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    // Escape key handler
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && hasUnsavedChanges && !showUnsavedModal) {
+                e.preventDefault();
+                setShowUnsavedModal(true);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [hasUnsavedChanges, showUnsavedModal]);
+
+    const handleUnsavedStay = () => {
+        setShowUnsavedModal(false);
+    };
+
+    const handleUnsavedDiscard = () => {
+        setShowUnsavedModal(false);
+        hasInteractedRef.current = false;
+        isSubmittingRef.current = true;
+        navigate('/prospects?tab=investors');
+    };
+
+    const handleUnsavedSaveDraft = async () => {
+        setIsSavingDraft(true);
+        try {
+            const data = control._formValues as FormValues;
+            isSubmittingRef.current = true;
+            await onSubmit(data, true);
+        } catch {
+            setIsSavingDraft(false);
+            isSubmittingRef.current = false;
+        }
+    };
 
     const getProjectName = useCallback(() => {
         return projectCodeValue ? `Project ${projectCodeValue}` : 'Project';
@@ -592,7 +672,7 @@ export const InvestorRegistration: React.FC = () => {
     }
 
     return (
-        <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="w-full pb-24 ">
+        <form onSubmit={handleSubmit((data) => { isSubmittingRef.current = true; onSubmit(data, false); })} onChange={markInteracted} className="w-full pb-24 ">
 
 
             <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
@@ -1160,7 +1240,13 @@ export const InvestorRegistration: React.FC = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 flex items-center justify-end gap-3 px-8 z-50">
                 <button
                     type="button"
-                    onClick={() => navigate('/prospects?tab=investors')}
+                    onClick={() => {
+                        if (hasUnsavedChanges) {
+                            setShowUnsavedModal(true);
+                        } else {
+                            navigate('/prospects?tab=investors');
+                        }
+                    }}
                     className="h-9 px-5 bg-white rounded-[3px] border border-gray-300 text-gray-700 text-sm font-medium  hover:bg-gray-50 transition-colors"
                 >
                     {t('prospects.registration.cancel')}
@@ -1168,6 +1254,7 @@ export const InvestorRegistration: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => {
+                        isSubmittingRef.current = true;
                         const data = control._formValues as FormValues;
                         onSubmit(data, true);
                     }}
@@ -1184,6 +1271,15 @@ export const InvestorRegistration: React.FC = () => {
                     {isSubmitting ? t('prospects.registration.saving') : id ? t('prospects.registration.updateInvestor') : t('prospects.registration.saveInvestor')}
                 </button>
             </div>
+
+            {/* Unsaved Changes Modal */}
+            <UnsavedChangesModal
+                isOpen={showUnsavedModal}
+                onStay={handleUnsavedStay}
+                onDiscard={handleUnsavedDiscard}
+                onSaveDraft={handleUnsavedSaveDraft}
+                isSaving={isSavingDraft}
+            />
         </form>
     );
 };
