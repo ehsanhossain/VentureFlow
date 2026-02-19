@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { RefreshCw, Plus, Globe, User, MoreVertical } from 'lucide-react';
+import { RefreshCw, Globe, User, MoreVertical } from 'lucide-react';
+import globalAddButtonIcon from '../../assets/icons/global-add-button.svg';
 import { useTranslation } from 'react-i18next';
 import api from '../../config/api';
 import { useNavigate } from 'react-router-dom';
@@ -281,7 +282,7 @@ const CurrencyTable = (): JSX.Element => {
               onClick={() => navigate('/settings/currency/add')}
               className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
             >
-              <Plus className="w-4 h-4" />
+              <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
               {t('settings.currency.add')}
             </button>
           </div>

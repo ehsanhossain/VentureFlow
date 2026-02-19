@@ -19,6 +19,7 @@ export interface CachedCountry {
     svg_icon_url?: string;
     flagSrc?: string;
     status?: string;
+    is_region?: boolean;
 }
 
 export interface CachedCurrency {
@@ -104,6 +105,19 @@ async function getCached<T>(key: string, fetcher: () => Promise<T>): Promise<T> 
 
 // ─── Public API ──────────────────────────────────────────────────────
 
+/**
+ * Map region names to their custom SVG icons in /flags/regions/.
+ * Regions that don't have a specific icon get the "Global and others" icon.
+ */
+function getRegionIcon(name: string): string {
+    const lower = name.toLowerCase();
+    if (lower.includes('europe')) return '/flags/regions/Europe.svg';
+    if (lower.includes('usa') || lower.includes('united states') || lower.includes('north america') || lower.includes('americas')) return '/flags/regions/USA.svg';
+    if (lower.includes('asia') || lower.includes('pacific')) return '/flags/regions/Asia.svg';
+    // Global, GCC, Middle East, Africa, and any others
+    return '/flags/regions/Global and others.svg';
+}
+
 export async function getCachedCountries(): Promise<CachedCountry[]> {
     return getCached('countries', async () => {
         const res = await api.get('/api/countries');
@@ -115,8 +129,9 @@ export async function getCachedCountries(): Promise<CachedCountry[]> {
             alpha_3_code: c.alpha_3_code,
             numeric_code: c.numeric_code,
             svg_icon_url: c.svg_icon_url,
-            flagSrc: c.svg_icon_url,
+            flagSrc: (c.is_region || false) ? getRegionIcon(c.name) : c.svg_icon_url,
             status: c.status || 'registered',
+            is_region: c.is_region || false,
         }));
     });
 }

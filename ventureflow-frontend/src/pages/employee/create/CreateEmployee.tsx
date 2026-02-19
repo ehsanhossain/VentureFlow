@@ -221,12 +221,14 @@ const CreateEmployee: React.FC = () => {
             name: string;
             svg_icon_url: string;
             alpha_2_code: string;
+            is_region?: boolean;
           }) => ({
             id: country.id,
             name: country.name,
             flagSrc: country.svg_icon_url,
             status: 'unregistered',
             alpha: country.alpha_2_code,
+            is_region: country.is_region || false,
           }));
 
         setCountries(formatted);
@@ -853,7 +855,7 @@ const CreateEmployee: React.FC = () => {
                           <div className="w-full">
                             <Dropdown
                               {...field}
-                              countries={countries}
+                              countries={countries.filter(c => !c.is_region)}
                               selected={field.value}
                               onSelect={field.onChange}
                             />

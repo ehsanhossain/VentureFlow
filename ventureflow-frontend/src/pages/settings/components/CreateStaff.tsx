@@ -91,6 +91,7 @@ const CreateStaff: React.FC = () => {
                     name: c.name,
                     flagSrc: c.svg_icon_url,
                     status: 'registered' as const,
+                    is_region: c.is_region || false,
                 })));
             } catch (error) {
                 console.error('Failed to fetch countries:', error);
@@ -411,7 +412,7 @@ const CreateStaff: React.FC = () => {
                                                 name="nationality"
                                                 render={({ field }) => (
                                                     <Dropdown
-                                                        countries={countries}
+                                                        countries={countries.filter(c => !c.is_region)}
                                                         selected={field.value}
                                                         onSelect={(val) => field.onChange(val)}
                                                         placeholder="Select nationality"

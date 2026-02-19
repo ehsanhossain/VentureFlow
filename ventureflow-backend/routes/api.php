@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DesignationController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\ImportTemplateController;
 use App\Http\Controllers\SellerController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Http\Request;
@@ -129,7 +130,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/buyer/{buyer}/pinned', [BuyerController::class, 'pinned']);
 
 
-    // Import Routes
+    // Import Routes (new 2-step flow)
+    Route::get('/import/template/{type}', [ImportTemplateController::class, 'download']);
+    Route::post('/import/validate/{type}', [ImportController::class, 'validate']);
+    Route::post('/import/confirm/{type}', [ImportController::class, 'confirm']);
+
+    // Legacy import routes (deprecated, kept for backward compatibility)
     Route::post('/import/buyers-company-overview', [ImportController::class, 'importBuyersCompanyOverview']);
     Route::post('/import/sellers-company-overview', [ImportController::class, 'importSellersCompanyOverview']);
     Route::delete('/sellers', [SellerController::class, 'destroy']);

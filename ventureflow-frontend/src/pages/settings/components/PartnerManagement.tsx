@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Edit2, Trash2, Eye, Share2, MoreVertical, Mail } from 'lucide-react';
+import { Users, Edit2, Trash2, Eye, Share2, MoreVertical, Mail } from 'lucide-react';
+import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import api from '../../../config/api';
 
 import { showAlert } from '../../../components/Alert';
@@ -285,7 +286,7 @@ const PartnerManagement: React.FC = () => {
                             onClick={() => navigate('/settings/partners/create')}
                             className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
                         >
-                            <Plus className="w-4 h-4" />
+                            <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
                             {t('settings.partners.addPartner')}
                         </button>
                     </div>

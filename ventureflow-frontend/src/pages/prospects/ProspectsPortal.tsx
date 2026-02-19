@@ -8,21 +8,21 @@ import api from '../../config/api';
 import { getCachedCountries, getCachedCurrencies, getCachedIndustries, getCachedPipelineStages } from '../../utils/referenceDataCache';
 import { InvestorTable, InvestorRowData } from './components/InvestorTable';
 import { TargetTable, TargetRowData } from './components/TargetTable';
+import ImportWizard from './components/ImportWizard';
 import {
-    Plus,
     ChevronDown,
     X,
     RotateCcw,
-    Download,
-    Upload,
-    AlertCircle,
-    FileSpreadsheet,
     Eye,
     EyeOff
 } from 'lucide-react';
 import draftDocumentIcon from '../../assets/icons/prospects/draft-document.svg';
 import filterIcon from '../../assets/icons/prospects/filter.svg';
 import toolsIcon from '../../assets/icons/prospects/tools.svg';
+import addInvestorIcon from '../../assets/icons/prospects/addinvestor.svg';
+import addTargetIcon from '../../assets/icons/prospects/addtarget.svg';
+import importProspectsIcon from '../../assets/icons/prospects/import-prospects.svg';
+import globalAddButtonIcon from '../../assets/icons/global-add-button.svg';
 import DataTableSearch from '../../components/table/DataTableSearch';
 import { Dropdown, Country as DropdownCountry } from './components/Dropdown';
 import { IndustryDropdown, Industry as DropdownIndustry } from './components/IndustryDropdown';
@@ -386,10 +386,8 @@ const ProspectsPortal: React.FC = () => {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
-    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [importType, setImportType] = useState<'investors' | 'targets'>('investors');
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isImportWizardOpen, setIsImportWizardOpen] = useState(false);
+    const [importWizardType, setImportWizardType] = useState<'investors' | 'targets'>('investors');
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
     // Auto-calculate vertical row limit
@@ -441,22 +439,7 @@ const ProspectsPortal: React.FC = () => {
         };
     }, []); // Stability: dependency-free to prevent logic loops
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-        }
-    };
 
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const file = e.dataTransfer.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-        }
-    };
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -769,37 +752,7 @@ const ProspectsPortal: React.FC = () => {
         }
     };
 
-    const startImport = async () => {
-        if (!selectedFile) {
-            showAlert({ type: 'error', message: 'Please select a file first' });
-            return;
-        }
 
-        const formData = new FormData();
-        formData.append('excel_file', selectedFile);
-
-        try {
-            const endpoint = importType === 'investors'
-                ? '/api/import/buyers-company-overview'
-                : '/api/import/sellers-company-overview';
-
-            const response = await api.post(endpoint, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            showAlert({ type: 'success', message: response.data.message });
-            setIsImportModalOpen(false);
-            setSelectedFile(null);
-            fetchData();
-        } catch (error: any) {
-            showAlert({
-                type: 'error',
-                message: error.response?.data?.message || 'Failed to import data'
-            });
-        }
-    };
 
     const createDropdownRef = useRef<HTMLDivElement>(null);
     const filterDrawerRef = useRef<HTMLDivElement>(null);
@@ -1053,86 +1006,7 @@ const ProspectsPortal: React.FC = () => {
         });
     };
 
-    const downloadCsvTemplate = (type: 'investor' | 'target') => {
-        let headers: string[] = [];
-        let rowExample: string[] = [];
 
-        if (type === 'investor') {
-            headers = [
-                "projectCode",
-                "rank",
-                "companyName",
-                "originCountry",
-                "websiteLinks",
-                "hqAddresses",
-                "targetIndustries",
-                "targetCountries",
-                "purposeMNA",
-                "budgetMin",
-                "budgetMax",
-                "budgetCurrency",
-                "investmentCondition",
-                "internal_pic",
-                "financialAdvisor",
-                "investorProfileLink",
-                "contacts"
-            ];
-            rowExample = [
-                "AB-B-001", "B", "Acme Invest Corp", "United States", "https://acme.com",
-                "New York, NY", "Tech, Finance", "Japan, Singapore", "Market Expansion",
-                "1000000", "5000000", "USD", "Minority Share", "John Doe", "Consultant A",
-                "https://profile.com/acme", "[{\"name\":\"Alice\",\"email\":\"alice@acme.com\"}]"
-            ];
-        } else {
-            headers = [
-                "projectCode",
-                "rank",
-                "companyName",
-                "originCountry",
-                "status",
-                "targetIndustries",
-                "projectDetails",
-                "reasonForMA",
-                "investmentCondition",
-                "desiredInvestmentMin",
-                "desiredInvestmentMax",
-                "desiredInvestmentCurrency",
-                "ebitdaMin",
-                "ebitdaMax",
-                "internal_pic",
-                "financialAdvisor",
-                "websiteLinks",
-                "teaserLink"
-            ];
-            rowExample = [
-                "XX-S-001", "A", "Global Tech Sellers", "Germany", "Active",
-                "SaaS, AI", "Selling core business unit", "Exit",
-                "100", "Minority Share", "500000", "2000000", "EUR", "100000", "200000",
-                "Jane Smith", "Advisor B", "https://techsellers.com", "https://doc.com/teaser"
-            ];
-        }
-
-        // CSV Escape Helper
-        const escapeCsv = (val: string) => {
-            if (!val) return "";
-            if (val.includes(",") || val.includes("\"") || val.includes("\n")) {
-                return `"${val.replace(/"/g, '""')}"`;
-            }
-            return val;
-        };
-
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + rowExample.map(escapeCsv).join(",");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `${type}_import_template.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
 
 
     const effectiveVisibleColumns = visibleColumns.filter(col =>
@@ -1141,109 +1015,12 @@ const ProspectsPortal: React.FC = () => {
 
     return (
         <>
-            {/* Import Modal */}
-            {isImportModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 max-w-lg w-full transform transition-all animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-xl font-medium text-gray-900">{t('prospects.portal.importData', 'Import Data')}</h3>
-                            <button onClick={() => setIsImportModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Close import modal" aria-label="Close import modal">
-                                <X className="w-5 h-5 text-gray-400" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex bg-gray-100 p-1 rounded-xl">
-                                <button
-                                    onClick={() => setImportType('investors')}
-                                    className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'investors' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    {t('prospects.portal.tabInvestors')}
-                                </button>
-                                <button
-                                    onClick={() => setImportType('targets')}
-                                    className={`flex-1 py-2 text-xs font-medium rounded-[3px] transition-all ${importType === 'targets' ? 'bg-white text-[#064771] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                                >
-                                    {t('prospects.portal.tabTargets')}
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div
-                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                    onDrop={handleDrop}
-                                    onClick={() => document.getElementById('csv-upload')?.click()}
-                                    className={`relative group cursor-pointer border-2 border-dashed rounded-[3px] p-8 transition-all duration-300 flex flex-col items-center gap-4 ${selectedFile ? 'border-green-400 bg-green-50/30' : 'border-gray-200 hover:border-[#064771] hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <input
-                                        id="csv-upload"
-                                        type="file"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept=".csv,.xlsx,.xls"
-                                        onChange={handleFileSelect}
-                                        title="Upload CSV or Excel file"
-                                        aria-label="Upload CSV or Excel file"
-                                    />
-                                    <div className={`w-16 h-16 rounded-full bg-white border border-gray-100 flex items-center justify-center transition-colors ${selectedFile ? 'text-[#064771]' : 'text-gray-400 group-hover:text-[#064771]'
-                                        }`}>
-                                        <FileSpreadsheet className="w-8 h-8" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-sm font-medium text-gray-900">
-                                            {selectedFile ? selectedFile.name : t('prospects.portal.clickToUpload', 'Click to upload or drag and drop')}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : t('prospects.portal.csvOnly', 'CSV, XLSX files only, max 10MB')}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="p-4 bg-amber-50 rounded-[3px] border border-amber-100">
-                                        <div className="flex gap-3">
-                                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-medium text-amber-900">Important Note</p>
-                                                <p className="text-xs text-amber-700 leading-relaxed">
-                                                    Please download and use our template to ensure your data is correctly formatted.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                downloadCsvTemplate(importType === 'investors' ? 'investor' : 'target');
-                                            }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-white border border-gray-200 rounded-[3px] text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                                        >
-                                            <Download className="w-4 h-4" />
-                                            {t('prospects.portal.downloadTemplate', 'Download Template')}
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                startImport();
-                                            }}
-                                            disabled={!selectedFile}
-                                            className="flex-1 py-3 px-4 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {t('prospects.portal.startImport', 'Start Import')}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mt-8 pt-4 border-t border-gray-100 flex gap-3">
-                            <button onClick={() => setIsImportModalOpen(false)} className="flex-1 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">{t('common.cancel')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Import Wizard */}
+            <ImportWizard
+                isOpen={isImportWizardOpen}
+                onClose={() => { setIsImportWizardOpen(false); fetchData(); }}
+                initialType={importWizardType}
+            />
 
             {/* Filter Side Drawer — matches Tools flyover design */}
             {isFilterOpen && (
@@ -1677,27 +1454,36 @@ const ProspectsPortal: React.FC = () => {
                                     onClick={() => setIsCreateOpen(!isCreateOpen)}
                                     className="flex items-center gap-2 bg-[#064771] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all hover:bg-[#053a5c] active:scale-95"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
                                     <span>{t('common.create', 'Create')}</span>
                                     <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isCreateOpen && (
-                                    <div className="absolute right-0 mt-2 w-60 bg-white rounded-[3px] border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-2xl border border-gray-100">
-                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-investor')}>
-                                            <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
-                                            {t('prospects.createInvestor')}
-                                        </button>
-                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors font-medium" onClick={() => navigate('/prospects/add-target')}>
-                                            <div className="w-2 h-2 rounded-full bg-orange-500 shadow-sm" />
-                                            {t('prospects.createTarget')}
-                                        </button>
-                                        <div className="h-px bg-gray-50 my-1.5 mx-3" />
-                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('investors'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                            <Upload className="w-4 h-4 text-gray-400" /> {t('prospects.portal.importInvestors', 'Import Investors')}
-                                        </button>
-                                        <button className="w-full text-left px-5 py-3 text-sm text-gray-600 font-medium hover:bg-gray-50 flex items-center gap-3 transition-colors" onClick={() => { setImportType('targets'); setIsImportModalOpen(true); setIsCreateOpen(false); }}>
-                                            <Upload className="w-4 h-4 text-gray-400" /> {t('prospects.portal.importTargets', 'Import Targets')}
-                                        </button>
+                                    <div className="absolute right-0 mt-2 bg-white rounded-[3px] border border-gray-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-sm" style={{ minWidth: '175px' }}>
+                                        <div className="flex flex-col gap-0.5">
+                                            <button
+                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                onClick={() => { navigate('/prospects/add-investor'); setIsCreateOpen(false); }}
+                                            >
+                                                <img src={addInvestorIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                                <span className="text-black text-xs font-normal leading-[18px] truncate">{t('prospects.createInvestor', 'Add Investor')}</span>
+                                            </button>
+                                            <button
+                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                onClick={() => { navigate('/prospects/add-target'); setIsCreateOpen(false); }}
+                                            >
+                                                <img src={addTargetIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                                <span className="text-black text-xs font-normal leading-[18px] truncate">{t('prospects.createTarget', 'Add Target')}</span>
+                                            </button>
+                                            <div className="w-full h-px bg-gray-100 my-1" />
+                                            <button
+                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                onClick={() => { setImportWizardType('investors'); setIsImportWizardOpen(true); setIsCreateOpen(false); }}
+                                            >
+                                                <img src={importProspectsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                                <span className="text-black text-xs font-normal leading-[18px] truncate">{t('prospects.portal.importProspects', 'Import Prospects')}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

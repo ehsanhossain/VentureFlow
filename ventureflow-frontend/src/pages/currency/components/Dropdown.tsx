@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { SearchIcon } from "lucide-react";
 
 export interface Country {
@@ -29,10 +29,13 @@ export const Dropdown = ({
 }: DropdownProps): JSX.Element => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const [selectedCountries, setSelectedCountries] = useState<Country[]>(
     Array.isArray(selected) ? selected : selected ? [selected] : []
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSelectedCountries(Array.isArray(selected) ? selected : selected ? [selected] : []);
@@ -41,6 +44,21 @@ export const Dropdown = ({
   const filteredCountries = countries.filter((country) =>
     country.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  // "All Countries" is index 0, then countries start at index 1
+  const totalItems = filteredCountries.length + 1; // +1 for "All Countries"
+
+  // Reset highlight when search changes or dropdown toggles
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [search, isOpen]);
+
+  // Auto-focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isOpen]);
 
   const handleSelect = (country: Country | 'all') => {
     if (country === 'all') {
@@ -71,6 +89,57 @@ export const Dropdown = ({
     }
   };
 
+  // Scroll highlighted item into view
+  const scrollToHighlighted = useCallback((index: number) => {
+    if (!listRef.current) return;
+    const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+    if (items[index]) {
+      items[index].scrollIntoView({ block: 'nearest' });
+    }
+  }, []);
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setIsOpen(true);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightIndex(prev => {
+          const next = prev < totalItems - 1 ? prev + 1 : 0;
+          scrollToHighlighted(next);
+          return next;
+        });
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightIndex(prev => {
+          const next = prev > 0 ? prev - 1 : totalItems - 1;
+          scrollToHighlighted(next);
+          return next;
+        });
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightIndex === 0) {
+          handleSelect('all');
+        } else if (highlightIndex > 0 && highlightIndex <= filteredCountries.length) {
+          handleSelect(filteredCountries[highlightIndex - 1]); // -1 because index 0 is "All Countries"
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+    }
+  }, [isOpen, highlightIndex, filteredCountries, totalItems, scrollToHighlighted]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -87,7 +156,7 @@ export const Dropdown = ({
   }, []);
 
   return (
-    <div className="relative w-full max-w-md mx-auto" ref={dropdownRef}>
+    <div className="relative w-full max-w-md mx-auto" ref={dropdownRef} onKeyDown={handleKeyDown}>
 
       <button
         type="button"
@@ -158,30 +227,39 @@ export const Dropdown = ({
             <div className="relative w-full">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
+                ref={searchInputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { e.stopPropagation(); handleKeyDown(e); }}
                 className="w-full h-9 pl-10 pr-3 py-2 rounded-[3px] border border-[#828282] text-sm placeholder:text-gray-500 focus:outline-none"
                 placeholder="Search Here"
               />
             </div>
 
 
-            <div className="w-full max-h-[60vh] overflow-y-auto pr-1.5 scrollbar-premium">
+            <div ref={listRef} className="w-full max-h-[60vh] overflow-y-auto pr-1.5 scrollbar-premium">
               <div className="flex flex-col w-full items-start gap-1">
                 <button
-                  className="flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-[3px] transition text-left text-sm font-medium text-[#064771]"
+                  data-dropdown-item
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded-[3px] transition text-left text-sm font-medium text-[#064771] ${highlightIndex === 0 ? 'bg-blue-50' : 'hover:bg-gray-100'
+                    }`}
                   onClick={() => handleSelect('all')}
+                  onMouseEnter={() => setHighlightIndex(0)}
                 >
                   All Countries
                 </button>
                 <div className="w-full h-px bg-gray-100 my-1" />
-                {filteredCountries.map((country) => {
+                {filteredCountries.map((country, index) => {
+                  const itemIndex = index + 1; // +1 because "All Countries" is at index 0
                   const isSelected = selectedCountries.some(c => c.id === country.id);
                   return (
                     <button
                       key={country.id.toString()}
-                      className={`flex items-center justify-between w-full hover:bg-gray-100 px-3 py-2 rounded-[3px] transition text-left ${isSelected ? 'bg-blue-50' : ''}`}
+                      data-dropdown-item
+                      className={`flex items-center justify-between w-full px-3 py-2 rounded-[3px] transition text-left ${highlightIndex === itemIndex ? 'bg-blue-50' : isSelected ? 'bg-blue-50' : 'hover:bg-gray-100'
+                        }`}
                       onClick={() => handleSelect(country)}
+                      onMouseEnter={() => setHighlightIndex(itemIndex)}
                     >
                       <div className="flex items-center gap-2.5">
                         <img

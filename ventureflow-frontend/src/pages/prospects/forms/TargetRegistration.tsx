@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller, useWatch, useFieldArray } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Loader2, Link as LinkIcon, Plus, Trash2, AlertCircle } from 'lucide-react';
@@ -141,45 +141,7 @@ export const TargetRegistration: React.FC = () => {
     const [isCheckingId, setIsCheckingId] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(!!id); // true if in edit mode
 
-    // Section navigation
-    const [activeSection, setActiveSection] = useState(0);
-    const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
-    const setSectionRef = useCallback((index: number) => (el: HTMLDivElement | null) => {
-        sectionRefs.current[index] = el;
-    }, []);
 
-    const sections = [
-        { key: 'identity', label: t('prospects.registration.identity') },
-        { key: 'companyProfile', label: t('prospects.registration.companyProfile') },
-        { key: 'dealContext', label: t('prospects.registration.dealContext') },
-        { key: 'contacts', label: t('prospects.registration.contacts') },
-        { key: 'documents', label: t('prospects.registration.documentsRelationships') },
-    ];
-
-    // Track active section on scroll
-    useEffect(() => {
-        const observers: IntersectionObserver[] = [];
-        sectionRefs.current.forEach((ref, idx) => {
-            if (!ref) return;
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    if (entry.isIntersecting) setActiveSection(idx);
-                },
-                { rootMargin: '-120px 0px -60% 0px', threshold: 0 }
-            );
-            observer.observe(ref);
-            observers.push(observer);
-        });
-        return () => observers.forEach(o => o.disconnect());
-    }, [isLoadingData]);
-
-    const scrollToSection = (index: number) => {
-        const el = sectionRefs.current[index];
-        if (el) {
-            const y = el.getBoundingClientRect().top + window.scrollY - 110;
-            window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-    };
 
     const { control, handleSubmit, setValue, register, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {
@@ -270,6 +232,7 @@ export const TargetRegistration: React.FC = () => {
                     alpha: c.alpha_2_code,
                     flagSrc: c.svg_icon_url || c.flagSrc,
                     status: 'registered' as const,
+                    is_region: c.is_region || false,
                 })));
 
                 setIndustries(indData as any);
@@ -639,31 +602,14 @@ export const TargetRegistration: React.FC = () => {
 
     return (
         <form onSubmit={handleSubmit(d => onSubmit(d, false))} className="w-full pb-24 ">
-            {/* ═══ Sticky Section Tabs ═══ */}
-            <div className="sticky top-0 z-40 bg-white border-b border-gray-200 mb-8">
-                <div className="max-w-[1197px] mx-auto flex">
-                    {sections.map((s, idx) => (
-                        <button
-                            key={s.key}
-                            type="button"
-                            onClick={() => scrollToSection(idx)}
-                            className={`flex-1 py-3 text-sm font-medium text-center transition-colors border-b-2 ${activeSection === idx
-                                ? 'text-[#064771] border-[#064771]'
-                                : 'text-gray-400 border-transparent hover:text-gray-600 hover:border-gray-300'
-                                }`}
-                        >
-                            {s.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
+
 
             <div className="max-w-[1197px] mx-auto flex flex-col gap-12">
 
                 {/* ═══════════════════════════════════════════════
                     SECTION 1: IDENTITY
                 ═══════════════════════════════════════════════ */}
-                <div ref={setSectionRef(0)} className="flex flex-col gap-10">
+                <div className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.identity')} />
 
                     <div className="flex items-start gap-12">
@@ -687,7 +633,7 @@ export const TargetRegistration: React.FC = () => {
                                         rules={{ required: true }}
                                         render={({ field }) => (
                                             <Dropdown
-                                                countries={countries}
+                                                countries={countries.filter(c => !c.is_region)}
                                                 selected={field.value}
                                                 onSelect={field.onChange}
                                                 placeholder={t('prospects.registration.selectOption')}
@@ -759,7 +705,7 @@ export const TargetRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 2: COMPANY PROFILE
                 ═══════════════════════════════════════════════ */}
-                <div ref={setSectionRef(1)} className="flex flex-col gap-10">
+                <div className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.companyProfile')} />
 
                     <div className="flex flex-col gap-8">
@@ -902,7 +848,7 @@ export const TargetRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 3: DEAL CONTEXT
                 ═══════════════════════════════════════════════ */}
-                <div ref={setSectionRef(2)} className="flex flex-col gap-10">
+                <div className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.dealContext')} />
 
                     <div className="flex flex-col gap-8">
@@ -1051,7 +997,7 @@ export const TargetRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 4: CONTACTS
                 ═══════════════════════════════════════════════ */}
-                <div ref={setSectionRef(3)} className="flex flex-col items-center gap-10">
+                <div className="flex flex-col items-center gap-10">
                     <div className="self-stretch">
                         <SectionHeader title={t('prospects.registration.contacts')} />
                     </div>
@@ -1158,7 +1104,7 @@ export const TargetRegistration: React.FC = () => {
                 {/* ═══════════════════════════════════════════════
                     SECTION 5: DOCUMENTS & RELATIONSHIPS
                 ═══════════════════════════════════════════════ */}
-                <div ref={setSectionRef(4)} className="flex flex-col gap-10">
+                <div className="flex flex-col gap-10">
                     <SectionHeader title={t('prospects.registration.documentsRelationships')} />
 
                     <div className="flex flex-col gap-8">

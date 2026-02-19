@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { SearchIcon, CheckIcon, XIcon } from 'lucide-react';
 
 export interface Industry {
@@ -27,6 +27,7 @@ export const IndustryDropdown = ({
 }: DropdownProps): JSX.Element => {
     const [search, setSearch] = useState('');
     const [isOpen, setIsOpen] = useState(false);
+    const [highlightIndex, setHighlightIndex] = useState(-1);
     const [selectedIndustries, setSelectedIndustries] = useState<Industry[]>(() => {
         if (Array.isArray(selected)) {
             return selected.filter((item): item is Industry => item !== null && item !== undefined);
@@ -34,6 +35,7 @@ export const IndustryDropdown = ({
         return selected ? [selected] : [];
     });
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (selected) {
@@ -56,6 +58,11 @@ export const IndustryDropdown = ({
         )
         .filter((industry) => industry.name.toLowerCase().includes(search.toLowerCase()));
 
+    // Reset highlight when search changes or dropdown toggles
+    useEffect(() => {
+        setHighlightIndex(-1);
+    }, [search, isOpen]);
+
     const handleSelect = (industry: Industry) => {
         if (multiSelect) {
             const exists = selectedIndustries.some((i) => i.id === industry.id);
@@ -70,6 +77,69 @@ export const IndustryDropdown = ({
             onSelect(industry);
         }
     };
+
+    // Scroll highlighted item into view
+    const scrollToHighlighted = useCallback((index: number) => {
+        if (!listRef.current) return;
+        const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+        if (items[index]) {
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+    }, []);
+
+    // Keyboard navigation handler
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (!isOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsOpen(true);
+            }
+            return;
+        }
+
+        // Check if we have a "add new" option visible (no exact match + search has text)
+        const hasAddNewOption = search.trim() && !filteredIndustries.some(i => i.name.toLowerCase() === search.toLowerCase().trim());
+        const totalItems = filteredIndustries.length + (hasAddNewOption ? 1 : 0);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setHighlightIndex(prev => {
+                    const next = prev < totalItems - 1 ? prev + 1 : 0;
+                    scrollToHighlighted(next);
+                    return next;
+                });
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setHighlightIndex(prev => {
+                    const next = prev > 0 ? prev - 1 : totalItems - 1;
+                    scrollToHighlighted(next);
+                    return next;
+                });
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (highlightIndex >= 0 && highlightIndex < filteredIndustries.length) {
+                    handleSelect(filteredIndustries[highlightIndex]);
+                } else if (highlightIndex === filteredIndustries.length && hasAddNewOption) {
+                    // Select the "add new" option
+                    const newInd = { id: Date.now(), name: search.trim(), status: 'new' };
+                    handleSelect(newInd);
+                    setSearch('');
+                } else if (search.trim() && hasAddNewOption) {
+                    // Enter on search with no highlight — add new
+                    const newInd = { id: Date.now(), name: search.trim(), status: 'new' };
+                    handleSelect(newInd);
+                    setSearch('');
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                setIsOpen(false);
+                break;
+        }
+    }, [isOpen, highlightIndex, filteredIndustries, search, scrollToHighlighted]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -86,7 +156,7 @@ export const IndustryDropdown = ({
     const isSelected = (industry: Industry) => selectedIndustries.some((i) => i.id === industry.id);
 
     return (
-        <div className="relative w-full" ref={dropdownRef}>
+        <div className="relative w-full" ref={dropdownRef} onKeyDown={handleKeyDown}>
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
@@ -141,28 +211,24 @@ export const IndustryDropdown = ({
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && search.trim() && !filteredIndustries.some(i => i.name.toLowerCase() === search.toLowerCase().trim())) {
-                                        e.preventDefault();
-                                        const newInd = { id: Date.now(), name: search.trim(), status: 'new' };
-                                        handleSelect(newInd);
-                                        setSearch('');
-                                    }
-                                }}
+                                onKeyDown={(e) => { e.stopPropagation(); handleKeyDown(e); }}
                                 className="w-full h-10 pl-10 pr-3 py-2 rounded-[3px] border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
                                 placeholder="Search or type to add industry..."
                                 autoFocus
                             />
                         </div>
 
-                        <div className="flex flex-col w-full max-h-60 overflow-y-auto overflow-x-hidden scrollbar-premium">
+                        <div ref={listRef} className="flex flex-col w-full max-h-60 overflow-y-auto overflow-x-hidden scrollbar-premium">
                             {filteredIndustries.length > 0 ? (
-                                filteredIndustries.map((industry) => (
+                                filteredIndustries.map((industry, index) => (
                                     <button
                                         key={industry.id.toString()}
                                         type="button"
+                                        data-dropdown-item
                                         onClick={() => handleSelect(industry)}
-                                        className="flex items-center w-full justify-start gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group min-w-0"
+                                        onMouseEnter={() => setHighlightIndex(index)}
+                                        className={`flex items-center w-full justify-start gap-3 py-2.5 px-3 rounded-lg transition-colors group min-w-0 ${highlightIndex === index ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                            }`}
                                     >
                                         {multiSelect && (
                                             <div
@@ -182,12 +248,15 @@ export const IndustryDropdown = ({
                             ) : search.trim() ? (
                                 <button
                                     type="button"
+                                    data-dropdown-item
                                     onClick={() => {
                                         const newInd = { id: Date.now(), name: search.trim(), status: 'new' };
                                         handleSelect(newInd);
                                         setSearch('');
                                     }}
-                                    className="flex items-center w-full justify-start gap-3 py-3 px-3 hover:bg-[#F1FBFF] rounded-lg border border-dashed border-[#064771]/30 text-[#064771] transition-all"
+                                    onMouseEnter={() => setHighlightIndex(filteredIndustries.length)}
+                                    className={`flex items-center w-full justify-start gap-3 py-3 px-3 rounded-lg border border-dashed border-[#064771]/30 text-[#064771] transition-all ${highlightIndex === filteredIndustries.length ? 'bg-[#F1FBFF]' : 'hover:bg-[#F1FBFF]'
+                                        }`}
                                 >
                                     <PlusIcon className="w-4 h-4" />
                                     <span className="text-sm font-medium">Add &quot;{search}&quot; as new industry</span>

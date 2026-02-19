@@ -8,19 +8,23 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CountryController extends Controller
 {
-    // Get all countries
+    // Get all countries (regions appear first, then actual countries alphabetically)
     public function index()
     {
-        $countries = Country::all()->map(function ($country) {
-            return [
-                'id' => $country->id,
-                'name' => $country->name,
-                'alpha_2_code' => $country->alpha_2_code,
-                'alpha_3_code' => $country->alpha_3_code,
-                'numeric_code' => $country->numeric_code,
-                'svg_icon_url' => "https://flagcdn.com/" . strtolower($country->alpha_2_code) . ".svg",
-            ];
-        });
+        $countries = Country::orderByDesc('is_region')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($country) {
+                return [
+                    'id' => $country->id,
+                    'name' => $country->name,
+                    'alpha_2_code' => $country->alpha_2_code,
+                    'alpha_3_code' => $country->alpha_3_code,
+                    'numeric_code' => $country->numeric_code,
+                    'is_region' => (bool) $country->is_region,
+                    'svg_icon_url' => $country->svg_icon_url, // uses model accessor — safe for regions
+                ];
+            });
 
         return response()->json($countries, Response::HTTP_OK);
     }

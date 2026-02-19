@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Check, ChevronDown, Search } from "lucide-react";
 
 interface Option {
@@ -21,8 +21,10 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [highlightIndex, setHighlightIndex] = useState(-1);
     const containerRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -40,6 +42,11 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
             searchRef.current.focus();
         }
     }, [isOpen]);
+
+    // Reset highlight when search changes or dropdown toggles
+    useEffect(() => {
+        setHighlightIndex(-1);
+    }, [searchTerm, isOpen]);
 
     const filteredOptions = options.filter(
         (option) =>
@@ -60,15 +67,67 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
         onChange(value.filter((v) => v !== optionValue));
     };
 
+    // Scroll highlighted item into view
+    const scrollToHighlighted = useCallback((index: number) => {
+        if (!listRef.current) return;
+        const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+        if (items[index]) {
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+    }, []);
+
+    // Keyboard navigation handler
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (!isOpen) {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsOpen(true);
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setHighlightIndex(prev => {
+                    const next = prev < filteredOptions.length - 1 ? prev + 1 : 0;
+                    scrollToHighlighted(next);
+                    return next;
+                });
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setHighlightIndex(prev => {
+                    const next = prev > 0 ? prev - 1 : filteredOptions.length - 1;
+                    scrollToHighlighted(next);
+                    return next;
+                });
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (highlightIndex >= 0 && highlightIndex < filteredOptions.length) {
+                    toggleOption(filteredOptions[highlightIndex].value);
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                setIsOpen(false);
+                break;
+        }
+    }, [isOpen, highlightIndex, filteredOptions, scrollToHighlighted]);
+
     const selectedLabels = value
         .map((v) => options.find((o) => o.value === v))
         .filter(Boolean) as Option[];
 
     return (
-        <div className="relative w-full" ref={containerRef}>
+        <div className="relative w-full" ref={containerRef} onKeyDown={handleKeyDown}>
             {/* Trigger */}
             <div
                 onClick={() => setIsOpen((prev) => !prev)}
+                tabIndex={0}
+                role="combobox"
+                aria-expanded={isOpen}
                 className="min-h-[44px] relative cursor-pointer border border-gray-300 rounded-[3px] bg-white hover:bg-gray-50 focus-within:ring-2 focus-within:ring-[#D2EDFF] transition-colors px-3 py-2 flex items-center gap-2 flex-wrap"
             >
                 {selectedLabels.length > 0 ? (
@@ -121,25 +180,30 @@ const MultiSelectPicker: React.FC<MultiSelectPickerProps> = ({
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => { e.stopPropagation(); handleKeyDown(e); }}
                             />
                         </div>
 
                         {/* Options */}
-                        <div className="overflow-y-auto max-h-[180px] scrollbar-premium">
+                        <div ref={listRef} className="overflow-y-auto max-h-[180px] scrollbar-premium">
                             {filteredOptions.length > 0 ? (
-                                filteredOptions.map((option) => {
+                                filteredOptions.map((option, index) => {
                                     const isSelected = value.includes(option.value);
                                     return (
                                         <div
                                             key={option.value}
-                                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer rounded transition-colors ${isSelected
-                                                ? "bg-[#D2EDFF] text-[#064771]"
-                                                : "hover:bg-gray-50 text-gray-700"
+                                            data-dropdown-item
+                                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer rounded transition-colors ${highlightIndex === index
+                                                ? "bg-blue-50"
+                                                : isSelected
+                                                    ? "bg-[#D2EDFF] text-[#064771]"
+                                                    : "hover:bg-gray-50 text-gray-700"
                                                 }`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 toggleOption(option.value);
                                             }}
+                                            onMouseEnter={() => setHighlightIndex(index)}
                                         >
                                             <div
                                                 className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected

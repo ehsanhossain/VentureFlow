@@ -5,8 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Users, Target, Briefcase, Activity, ArrowUpRight, AlertTriangle,
-  Plus, Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap
+  Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap
 } from 'lucide-react';
+import globalAddButtonIcon from '../assets/icons/global-add-button.svg';
 import { BrandSpinner } from '../components/BrandSpinner';
 import api from '../config/api';
 import {
@@ -202,7 +203,7 @@ const Dashboard: React.FC = () => {
               onClick={() => navigate('/prospects?tab=investors&action=new')}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
               {t('dashboard.newProspect')}
             </button>
           </div>

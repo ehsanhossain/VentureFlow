@@ -87,7 +87,8 @@ const CreatePartner: React.FC = () => {
                 name: c.name,
                 flagSrc: c.svg_icon_url,
                 status: 'registered' as const,
-                alpha_2_code: c.alpha_2_code
+                alpha_2_code: c.alpha_2_code,
+                is_region: c.is_region || false,
             }));
             setCountries(formatted);
         } catch (error) {
@@ -331,7 +332,7 @@ const CreatePartner: React.FC = () => {
                                     <div>
                                         <FieldLabel text="Origin Country" required />
                                         <Dropdown
-                                            countries={countries}
+                                            countries={countries.filter(c => !c.is_region)}
                                             selected={selectedCountry}
                                             onSelect={((val: Country | Country[]) => handleCountrySelect(val)) as any}
                                             placeholder="Select Country"

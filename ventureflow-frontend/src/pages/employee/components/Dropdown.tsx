@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState, useCallback } from "react";
 import { SearchIcon, CheckIcon, XIcon, GlobeIcon } from "lucide-react";
 
 export interface Country {
@@ -7,6 +7,7 @@ export interface Country {
   flagSrc: string;
   status: "registered" | "unregistered";
   alpha: string;
+  is_region?: boolean;
 }
 
 type DropdownProps = {
@@ -23,10 +24,13 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
 ): JSX.Element => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const [selectedCountries, setSelectedCountries] = useState<Country[]>(
     Array.isArray(selected) ? selected : selected ? [selected] : []
   );
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const setRefs = (node: HTMLDivElement | null) => {
     dropdownRef.current = node;
@@ -50,6 +54,18 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
     country.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Reset highlight when search changes or dropdown toggles
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [search, isOpen]);
+
+  // Auto-focus search input when dropdown opens
+  useEffect(() => {
+    if (isOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isOpen]);
+
   const handleSelect = (country: Country) => {
     if (multiSelect) {
       const exists = selectedCountries.some((c) => c.id === country.id);
@@ -64,6 +80,55 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
       onSelect(country);
     }
   };
+
+  // Scroll highlighted item into view
+  const scrollToHighlighted = useCallback((index: number) => {
+    if (!listRef.current) return;
+    const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+    if (items[index]) {
+      items[index].scrollIntoView({ block: 'nearest' });
+    }
+  }, []);
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setIsOpen(true);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightIndex(prev => {
+          const next = prev < filteredCountries.length - 1 ? prev + 1 : 0;
+          scrollToHighlighted(next);
+          return next;
+        });
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightIndex(prev => {
+          const next = prev > 0 ? prev - 1 : filteredCountries.length - 1;
+          scrollToHighlighted(next);
+          return next;
+        });
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightIndex >= 0 && highlightIndex < filteredCountries.length) {
+          handleSelect(filteredCountries[highlightIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+    }
+  }, [isOpen, highlightIndex, filteredCountries, scrollToHighlighted]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -84,7 +149,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
     selectedCountries.some((c) => c.id === country.id);
 
   return (
-    <div className="relative w-full" ref={setRefs}>
+    <div className="relative w-full" ref={setRefs} onKeyDown={handleKeyDown}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -157,20 +222,25 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>((
             <div className="relative w-full">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
+                ref={searchInputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { e.stopPropagation(); handleKeyDown(e); }}
                 className="w-full h-9 pl-10 pr-3 py-2 rounded-full border border-[#828282] text-sm placeholder:text-gray-500 focus:outline-none"
                 placeholder="Search country..."
               />
             </div>
 
-            <div className="flex flex-col w-full max-h-60 overflow-y-auto scrollbar-premium">
-              {filteredCountries.map((country) => (
+            <div ref={listRef} className="flex flex-col w-full max-h-60 overflow-y-auto scrollbar-premium">
+              {filteredCountries.map((country, index) => (
                 <button
                   key={country.id.toString()}
                   type="button"
+                  data-dropdown-item
                   onClick={() => handleSelect(country)}
-                  className="flex items-center w-full justify-between gap-3 py-2 px-2 hover:bg-gray-100 rounded-md transition"
+                  onMouseEnter={() => setHighlightIndex(index)}
+                  className={`flex items-center w-full justify-between gap-3 py-2 px-2 rounded-md transition ${highlightIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'
+                    }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <img

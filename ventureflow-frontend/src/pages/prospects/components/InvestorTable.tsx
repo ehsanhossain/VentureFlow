@@ -9,9 +9,9 @@ import {
     MoreVertical,
     Trash2,
     Copy,
-    Plus,
     Download
 } from 'lucide-react';
+import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import { ProfileViewIcon, WebsiteIcon, PinnedIcon, UnpinnedIcon } from '../../../components/table/TableIcons';
 import pinActiveIcon from '../../../assets/icons/prospects/pin-active.svg';
 import pinInactiveIcon from '../../../assets/icons/prospects/pin-inactive.svg';
@@ -667,7 +667,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                         onClick={() => navigate('/prospects/add-investor')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95 shadow-sm shadow-[#064771]/10"
                     >
-                        <Plus className="w-4 h-4" />
+                        <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
                         {t('prospects.table.addNewInvestor')}
                     </button>
                 )}

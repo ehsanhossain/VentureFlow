@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useRef, useEffect, forwardRef } from "react";
+import { useState, useRef, useEffect, forwardRef, useCallback } from "react";
 import type { ForwardedRef, HTMLAttributes } from "react";
 import { SearchIcon, CheckIcon, XIcon } from "lucide-react";
 
@@ -9,6 +9,7 @@ export interface Country {
     name: string;
     flagSrc: string;
     status: "registered" | "unregistered";
+    is_region?: boolean;
 }
 
 type DropdownCoreProps = {
@@ -38,10 +39,13 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
 
         const [search, setSearch] = useState("");
         const [isOpen, setIsOpen] = useState(false);
+        const [highlightIndex, setHighlightIndex] = useState(-1);
         const [selectedCountries, setSelectedCountries] = useState<Country[]>(
             getValidCountries(selected)
         );
         const dropdownRef = useRef<HTMLDivElement | null>(null);
+        const listRef = useRef<HTMLDivElement>(null);
+        const searchInputRef = useRef<HTMLInputElement>(null);
 
         const setRefs = (node: HTMLDivElement | null) => {
             dropdownRef.current = node;
@@ -61,6 +65,18 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
             country && (country.name || "").toLowerCase().includes(search.toLowerCase())
         );
 
+        // Reset highlight when search changes or dropdown toggles
+        useEffect(() => {
+            setHighlightIndex(-1);
+        }, [search, isOpen]);
+
+        // Auto-focus search input when dropdown opens
+        useEffect(() => {
+            if (isOpen && searchInputRef.current) {
+                searchInputRef.current.focus();
+            }
+        }, [isOpen]);
+
         const handleSelect = (country: Country) => {
             if (multiSelect) {
                 const exists = selectedCountries.some((c) => c.id === country.id);
@@ -75,6 +91,55 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                 onSelect(country);
             }
         };
+
+        // Scroll highlighted item into view
+        const scrollToHighlighted = useCallback((index: number) => {
+            if (!listRef.current) return;
+            const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+            if (items[index]) {
+                items[index].scrollIntoView({ block: 'nearest' });
+            }
+        }, []);
+
+        // Keyboard navigation handler
+        const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+            if (!isOpen) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsOpen(true);
+                }
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    setHighlightIndex(prev => {
+                        const next = prev < filteredCountries.length - 1 ? prev + 1 : 0;
+                        scrollToHighlighted(next);
+                        return next;
+                    });
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    setHighlightIndex(prev => {
+                        const next = prev > 0 ? prev - 1 : filteredCountries.length - 1;
+                        scrollToHighlighted(next);
+                        return next;
+                    });
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (highlightIndex >= 0 && highlightIndex < filteredCountries.length) {
+                        handleSelect(filteredCountries[highlightIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    setIsOpen(false);
+                    break;
+            }
+        }, [isOpen, highlightIndex, filteredCountries, scrollToHighlighted]);
 
         useEffect(() => {
             const handleClickOutside = (event: MouseEvent) => {
@@ -98,6 +163,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
             <div
                 className={["relative w-full", className].filter(Boolean).join(" ")}
                 ref={setRefs}
+                onKeyDown={handleKeyDown}
                 {...rest}
             >
 
@@ -177,21 +243,26 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                             <div className="relative w-full px-1">
                                 <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
+                                    ref={searchInputRef}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) => { e.stopPropagation(); handleKeyDown(e); }}
                                     className="w-full h-9 pl-9 pr-3 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-sm focus:bg-white focus:border-blue-500 focus:outline-none transition-all"
                                     placeholder={searchPlaceholder}
                                 />
                             </div>
 
 
-                            <div className="flex flex-col w-full max-h-48 overflow-y-auto scrollbar-premium">
-                                {filteredCountries.map((country) => (
+                            <div ref={listRef} className="flex flex-col w-full max-h-48 overflow-y-auto scrollbar-premium">
+                                {filteredCountries.map((country, index) => (
                                     <button
                                         key={country.id?.toString() || (country as any).user_id?.toString() || Math.random().toString()}
                                         type="button"
+                                        data-dropdown-item
                                         onClick={() => handleSelect(country)}
-                                        className="flex items-center w-full justify-between gap-3 py-2 px-2 hover:bg-gray-100 rounded-md transition"
+                                        onMouseEnter={() => setHighlightIndex(index)}
+                                        className={`flex items-center w-full justify-between gap-3 py-2 px-2 rounded-md transition ${highlightIndex === index ? 'bg-blue-50' : 'hover:bg-gray-100'
+                                            }`}
                                     >
                                         <div className="flex items-center gap-3 min-w-0 flex-1">
                                             {country.flagSrc && (
