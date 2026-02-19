@@ -26,6 +26,7 @@ use App\Http\Controllers\SearchController;
 
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserTablePreferenceController;
+use App\Http\Controllers\MatchController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -141,6 +142,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('files', FileController::class);
 
     //Industry Routes
+    Route::get('industries/stats', [IndustryController::class, 'stats']);
+    Route::get('industries/adhoc', [IndustryController::class, 'adhoc']);
+    Route::post('industries/promote', [IndustryController::class, 'promote']);
+    Route::post('industries/merge', [IndustryController::class, 'merge']);
+    Route::post('industries/rename-adhoc', [IndustryController::class, 'renameAdhoc']);
     Route::apiResource('industries', IndustryController::class);
 
     // Dashboard Routes
@@ -209,5 +215,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'show']);
     Route::put('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'update']);
     Route::delete('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'destroy']);
+
+    // MatchIQ — Smart Matching Engine
+    Route::prefix('matchiq')->group(function () {
+        Route::get('/', [MatchController::class, 'index']);
+        Route::get('/stats', [MatchController::class, 'stats']);
+        Route::get('/investor/{id}', [MatchController::class, 'forInvestor']);
+        Route::get('/target/{id}', [MatchController::class, 'forTarget']);
+        Route::post('/rescan', [MatchController::class, 'rescan']);
+        Route::post('/{id}/dismiss', [MatchController::class, 'dismiss']);
+        Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
+    });
 });
 

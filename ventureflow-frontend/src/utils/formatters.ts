@@ -47,6 +47,14 @@ export const getCurrencySymbol = (code: string): string => {
         'KHR': '៛',
         'LAK': '₭',
         'MMK': 'K',
+        'BDT': '৳',
+        'TRY': '₺',
+        'TWD': 'NT$',
+        'AED': 'د.إ',
+        'SAR': '﷼',
+        'CAD': 'C$',
+        'NZD': 'NZ$',
+        'CHF': 'CHF',
     };
     return symbols[cleanCode] || code || '$';
 };

@@ -110,8 +110,8 @@ class DealController extends Controller
     {
         $activeDeals = Deal::where('status', 'active');
         
-        // Expected Transaction (sum of EV for active deals)
-        $expectedTransaction = (clone $activeDeals)->sum('estimated_ev_value');
+        // Expected Transaction (sum of ticket_size or EV for active deals)
+        $expectedTransaction = (clone $activeDeals)->selectRaw('COALESCE(SUM(COALESCE(ticket_size, estimated_ev_value, 0)), 0) as total')->value('total');
         
         // Active Deals count
         $activeDealCount = (clone $activeDeals)->count();

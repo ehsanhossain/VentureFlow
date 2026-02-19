@@ -207,7 +207,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                         </div>
                                         {multiSelect && (
                                             <div
-                                                className={`w-5 h-5 flex items-center justify-center border rounded ${isSelected(country)
+                                                className={`w-5 h-5 shrink-0 flex items-center justify-center border rounded ${isSelected(country)
                                                     ? "bg-[#064771] border-[#064771] text-white"
                                                     : "border-gray-400"
                                                     }`}

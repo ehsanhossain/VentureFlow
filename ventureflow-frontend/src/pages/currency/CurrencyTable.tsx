@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo, useEffect } from 'react';
-import { RefreshCw, Plus, Globe, User, Edit2, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { RefreshCw, Plus, Globe, User, MoreVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../../config/api';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '../../components/Alert';
 import DataTable, { DataTableColumn } from "../../components/table/DataTable";
 import DataTableSearch from "../../components/table/DataTableSearch";
+import editIcon from '../../assets/icons/prospects/edit.svg';
+import deleteIcon from '../../assets/icons/prospects/delete.svg';
 
 type Currency = {
   id: string | number;
@@ -46,6 +48,8 @@ const CurrencyTable = (): JSX.Element => {
     direction: 'asc'
   });
   const [countries, setCountries] = useState<{ id: number; name: string; svg_icon_url: string }[]>([]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rowId: string | number } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCountries();
@@ -117,7 +121,7 @@ const CurrencyTable = (): JSX.Element => {
       showAlert({ type: "success", message: "Currency deleted successfully" });
       setSelectedIds(new Set());
       fetchCurrencyData();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       showAlert({ type: "error", message: t('settings.currency.deleteError') });
     }
@@ -227,34 +231,21 @@ const CurrencyTable = (): JSX.Element => {
     }
   ];
 
-  const actionsColumn = (row: Currency) => (
-    <div className="flex items-center justify-end gap-1">
+  const ActionsColumn = (row: Currency) => (
+    <div className="flex items-center justify-end px-2">
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          navigate(`/settings/currency/edit/${row.id}`);
-        }}
-        className="p-1.5 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-700 transition-colors"
-        title={t('common.edit')}
+        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 transition-all"
+        onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id }); }}
+        aria-label="More actions"
       >
-        <Edit2 className="w-4 h-4" />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleDelete([row.id]);
-        }}
-        className="p-1.5 hover:bg-red-50 rounded text-gray-400 hover:text-red-600 transition-colors"
-        title={t('common.delete')}
-      >
-        <Trash2 className="w-4 h-4" />
+        <MoreVertical className="w-4 h-4" />
       </button>
     </div>
   );
 
   return (
-    <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
-      <div className="px-8 py-6">
+    <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden">
+      <div className="px-8 py-6 shrink-0">
         {/* Header & Search */}
         <div className="flex items-center justify-between gap-6">
           <div className="flex items-center gap-8 flex-1">
@@ -298,7 +289,7 @@ const CurrencyTable = (): JSX.Element => {
       </div>
 
       {/* Table Area */}
-      <div className="flex-1 px-8 pb-8 overflow-hidden">
+      <div className="flex-1 px-8 pb-8 overflow-hidden min-h-0">
         <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
           <DataTable
             data={filteredCurrency}
@@ -311,14 +302,57 @@ const CurrencyTable = (): JSX.Element => {
             onSelectionChange={setSelectedIds}
             sortConfig={sortConfig}
             onSortChange={(key, direction) => setSortConfig({ key, direction })}
-            actionsColumn={actionsColumn}
-            actionsColumnWidth={120}
+            actionsColumn={ActionsColumn}
+            actionsColumnWidth={60}
+            onRowContextMenu={(e, row) => {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id });
+            }}
           />
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <>
+          <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} />
+          <div
+            ref={contextMenuRef}
+            className="fixed z-[100] w-36 p-2 bg-white rounded-[3px] border border-[#E5E7EB] overflow-hidden backdrop-blur-[2px] flex flex-col items-start gap-0 animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              top: Math.min(contextMenu.y, window.innerHeight - 160),
+              left: Math.min(contextMenu.x, window.innerWidth - 160),
+              boxShadow: '0px 1px 4px rgba(0,0,0,0.06), 0px 2px 8px rgba(0,0,0,0.04)'
+            }}
+          >
+            <div className="w-full flex flex-col gap-1">
+              {/* Edit */}
+              <button
+                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                onClick={() => { navigate(`/settings/currency/edit/${contextMenu.rowId}`); setContextMenu(null); }}
+              >
+                <img src={editIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('common.edit')}</span>
+              </button>
+              {/* Separator */}
+              <div className="w-full h-0 border-t border-[#E5E7EB]" />
+              {/* Delete */}
+              <button
+                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-red-50 rounded transition-colors"
+                onClick={() => {
+                  handleDelete([contextMenu.rowId]);
+                  setContextMenu(null);
+                }}
+              >
+                <img src={deleteIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('common.delete')}</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 export default CurrencyTable;
-

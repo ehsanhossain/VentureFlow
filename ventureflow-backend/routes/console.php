@@ -47,5 +47,8 @@ Artisan::command('currencies:refresh', function () {
     }
 })->purpose('Refresh currency exchange rates from external API');
 
-// Schedule the command to run daily at midnight
-Schedule::command('currencies:refresh')->daily();
+// Schedule the currency refresh to run daily at midnight UTC
+Schedule::command('currencies:refresh')->daily()->withoutOverlapping()->appendOutputTo(storage_path('logs/currency-refresh.log'));
+
+// Schedule deal deadline checks daily at 8 AM
+Schedule::command('deals:check-deadlines')->dailyAt('08:00')->withoutOverlapping();

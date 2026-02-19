@@ -33,7 +33,7 @@ class DashboardController extends Controller
         $pipelineValue = Deal::where(function($q) {
             $q->whereNotIn('status', ['lost', 'closed', 'Lost', 'Closed'])
               ->orWhereNull('status');
-        })->sum('estimated_ev_value');
+        })->selectRaw('COALESCE(SUM(COALESCE(ticket_size, estimated_ev_value, 0)), 0) as total')->value('total');
 
         $dealsThisMonth = Deal::where('created_at', '>=', $startOfMonth)->count();
         $totalInvestors = Buyer::where('status', 1)->count();
@@ -138,10 +138,10 @@ class DashboardController extends Controller
                     'progress' => $deal->progress_percent,
                     'priority' => $deal->priority,
                     'urgency' => $urgency,
-                    'days_since_update' => $daysSinceUpdate,
+                    'days_since_update' => (int)$daysSinceUpdate,
                     'target_close_date' => $deal->target_close_date?->format('Y-m-d'),
                     'pic_name' => $deal->pic?->name ?? 'Unassigned',
-                    'estimated_value' => $deal->estimated_ev_value,
+                    'estimated_value' => $deal->ticket_size ?? $deal->estimated_ev_value,
                     'currency' => $deal->estimated_ev_currency ?? 'USD',
                 ];
             });
@@ -158,7 +158,7 @@ class DashboardController extends Controller
             ->orderBy('order_index')
             ->get(['code', 'name', 'order_index', 'progress']);
 
-        $dealCounts = Deal::select('stage_code', DB::raw('COUNT(*) as count'), DB::raw('SUM(estimated_ev_value) as total_value'))
+        $dealCounts = Deal::select('stage_code', DB::raw('COUNT(*) as count'), DB::raw('SUM(COALESCE(ticket_size, estimated_ev_value, 0)) as total_value'))
             ->when($type === 'buyer', fn($q) => $q->whereNotNull('buyer_id'))
             ->when($type === 'seller', fn($q) => $q->whereNotNull('seller_id'))
             ->where(function($q) {

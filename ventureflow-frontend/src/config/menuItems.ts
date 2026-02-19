@@ -7,6 +7,7 @@ import {
   GeneralSettingsSubIcon,
   PartnerIconCustom,
   StaffAccountsIcon,
+  MatchIcon,
 } from "../assets/icons";
 import React from 'react';
 
@@ -34,6 +35,7 @@ export const menuItems: MenuItem[] = [
     label: "Prospects",
     path: "/prospects",
   },
+  { icon: MatchIcon, label: "MatchIQ", path: "/matchiq" },
   { icon: CatalystIcon, label: "Deal Pipeline", path: "/deal-pipeline" },
   {
     icon: SettingsMainIcon,

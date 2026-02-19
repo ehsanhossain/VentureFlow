@@ -155,18 +155,18 @@ export const IndustryDropdown = ({
                             />
                         </div>
 
-                        <div className="flex flex-col w-full max-h-60 overflow-y-auto scrollbar-premium">
+                        <div className="flex flex-col w-full max-h-60 overflow-y-auto overflow-x-hidden scrollbar-premium">
                             {filteredIndustries.length > 0 ? (
                                 filteredIndustries.map((industry) => (
                                     <button
                                         key={industry.id.toString()}
                                         type="button"
                                         onClick={() => handleSelect(industry)}
-                                        className="flex items-center w-full justify-start gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group"
+                                        className="flex items-center w-full justify-start gap-3 py-2.5 px-3 hover:bg-gray-50 rounded-lg transition-colors group min-w-0"
                                     >
                                         {multiSelect && (
                                             <div
-                                                className={`w-5 h-5 flex items-center justify-center border rounded-md transition-all ${isSelected(industry)
+                                                className={`w-5 h-5 shrink-0 flex items-center justify-center border rounded-md transition-all ${isSelected(industry)
                                                     ? 'bg-[#064771] border-[#064771] text-white'
                                                     : 'border-gray-300 group-hover:border-[#064771]'
                                                     }`}
@@ -174,7 +174,7 @@ export const IndustryDropdown = ({
                                                 {isSelected(industry) && <CheckIcon className="w-3.5 h-3.5" />}
                                             </div>
                                         )}
-                                        <span className={`text-sm ${isSelected(industry) ? 'text-[#064771] font-medium' : 'text-gray-600'}`}>
+                                        <span className={`text-sm truncate min-w-0 ${isSelected(industry) ? 'text-[#064771] font-medium' : 'text-gray-600'}`}>
                                             {industry.name}
                                         </span>
                                     </button>

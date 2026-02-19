@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CurrencyIcon, SettingsIcon } from '../../assets/icons';
-import { Users, ChevronLeft, ChevronRight, GitFork, UserCog, History, User, DollarSign } from 'lucide-react';
+import { Users, ChevronLeft, ChevronRight, GitFork, UserCog, History, User, DollarSign, Factory } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../../routes/AuthContext';
@@ -59,6 +59,11 @@ const Settings: React.FC = () => {
         label: t('navigation.pipelineWorkflow', 'Pipeline Workflow'),
         path: '/settings/pipeline',
         icon: GitFork,
+      },
+      {
+        label: t('navigation.industries', 'Industries'),
+        path: '/settings/industries',
+        icon: Factory,
       },
       {
         label: t('navigation.feeStructure', 'Fee Structure'),

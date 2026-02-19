@@ -26,9 +26,11 @@ import AuditLog from "../pages/settings/components/AuditLog";
 import GeneralSettings from "../pages/settings/components/GeneralSettings";
 import PipelineSettings from "../pages/settings/components/PipelineSettings";
 import FeeStructureSettings from "../pages/settings/components/FeeStructureSettings";
+import IndustrySettings from "../pages/settings/components/IndustrySettings";
 import ChangePassword from "../pages/auth/ChangePassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
 import PartnerProfile from '../pages/settings/components/PartnerProfile';
+import MatchIQ from '../pages/matching/MatchIQ';
 
 const AppRoutes = () => {
   return (
@@ -68,6 +70,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <DealPipeline />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/matchiq"
+        element={
+          <ProtectedRoute>
+            <MatchIQ />
           </ProtectedRoute>
         }
       />
@@ -143,6 +153,7 @@ const AppRoutes = () => {
         <Route path="partners/create" element={<CreatePartner />} />
         <Route path="partners/edit/:id" element={<CreatePartner />} />
         <Route path="pipeline" element={<PipelineSettings />} />
+        <Route path="industries" element={<IndustrySettings />} />
         <Route path="fee-structure" element={<FeeStructureSettings />} />
         <Route path="audit-log" element={<AuditLog />} />
         <Route path="profile" element={<PartnerProfile />} />

@@ -23,6 +23,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewRegistrationNotification;
 use App\Models\Deal;
+use App\Jobs\ComputeMatchesJob;
 
 
 class BuyerController extends Controller
@@ -613,6 +614,9 @@ class BuyerController extends Controller
                     'type' => 'system',
                     'content' => "Investor profile updated: " . ($overview->reg_name ?? ''),
                 ]);
+
+                // MatchIQ: Recompute matches after investor profile update
+                ComputeMatchesJob::dispatch('buyer', $buyer->id)->delay(5);
             } else {
                 // Create new Buyer if it doesn't exist
                 // Validate buyer_id is provided for new records (database requires it)
@@ -642,6 +646,13 @@ class BuyerController extends Controller
                     Notification::send($admins, new NewRegistrationNotification('Buyer', $overview->reg_name ?? 'New Buyer', $buyer->id));
                 } catch (\Exception $e) {
                     Log::error('Notification failed: ' . $e->getMessage());
+                }
+
+                // MatchIQ: Compute matches for new investor in background
+                try {
+                    ComputeMatchesJob::dispatch('buyer', $buyer->id)->delay(5);
+                } catch (\Exception $e) {
+                    Log::error('MatchIQ dispatch failed: ' . $e->getMessage());
                 }
             }
 

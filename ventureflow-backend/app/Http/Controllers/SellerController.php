@@ -20,6 +20,7 @@ use App\Models\User; // Notification recipient
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewRegistrationNotification;
 use App\Models\Deal;
+use App\Jobs\ComputeMatchesJob;
 
 class SellerController extends Controller
 {
@@ -550,6 +551,13 @@ class SellerController extends Controller
                 'type' => 'system',
                 'content' => ($request->seller_id ? "Target profile updated: " : "New Target profile registered: ") . ($overview->reg_name ?? ''),
             ]);
+
+            // MatchIQ: Compute matches in background
+            try {
+                ComputeMatchesJob::dispatch('seller', $seller->id)->delay(5);
+            } catch (\Exception $e) {
+                Log::error('MatchIQ dispatch failed: ' . $e->getMessage());
+            }
 
             // Notify System Admins if it's a new seller
             if (!$request->seller_id) {
