@@ -167,6 +167,9 @@ const ProspectsPortal: React.FC = () => {
     // Ref to track itemsPerPage for API calls without causing refetch loops
     const itemsPerPageRef = useRef(pagination.itemsPerPage);
 
+    // AbortController to cancel stale fetch requests and prevent pagination flickering
+    const fetchAbortRef = useRef<AbortController | null>(null);
+
     const [countries, setCountries] = useState<Country[]>([]);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [counts, setCounts] = useState({ investors: 0, targets: 0 });
@@ -441,7 +444,7 @@ const ProspectsPortal: React.FC = () => {
 
 
 
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         setIsLoading(true);
         try {
             // Use debouncedSearch for the actual API call to avoid hammering on every keystroke
@@ -466,14 +469,16 @@ const ProspectsPortal: React.FC = () => {
                         ...commonParams,
                         page: pagination.currentPage,
                         per_page: itemsPerPageRef.current
-                    }
+                    },
+                    signal
                 }),
                 // Lightweight count-only request for the inactive tab — no filters from active tab
                 api.get(inactiveApiEndpoint, {
                     params: {
                         search: searchTerm,
                         per_page: 1
-                    }
+                    },
+                    signal
                 })
             ]);
 
@@ -491,15 +496,15 @@ const ProspectsPortal: React.FC = () => {
             const activeMeta = activeRes.data?.meta;
             if (activeMeta) {
                 setPagination(prev => {
-                    if (prev.currentPage === activeMeta.current_page &&
-                        prev.totalPages === activeMeta.last_page &&
+                    if (prev.totalPages === activeMeta.last_page &&
                         prev.totalItems === activeMeta.total &&
                         prev.itemsPerPage === activeMeta.per_page) {
                         return prev;
                     }
+                    // Only update metadata — do NOT overwrite currentPage from server
+                    // to prevent stale responses from reverting the page number
                     return {
                         ...prev,
-                        currentPage: activeMeta.current_page,
                         totalPages: activeMeta.last_page,
                         totalItems: activeMeta.total,
                         itemsPerPage: activeMeta.per_page
@@ -739,7 +744,9 @@ const ProspectsPortal: React.FC = () => {
                 });
                 setTargets(mappedTargets);
             }
-        } catch (error) {
+        } catch (error: any) {
+            // Silently ignore aborted requests (new fetch superseded this one)
+            if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
             console.error("Failed to fetch data", error);
         } finally {
             setIsLoading(false);
@@ -1025,7 +1032,12 @@ const ProspectsPortal: React.FC = () => {
 
     // Fetch Investors/Targets
     useEffect(() => {
-        if (countries.length > 0) fetchData();
+        // Cancel any in-flight request before starting a new one
+        if (fetchAbortRef.current) fetchAbortRef.current.abort();
+        const controller = new AbortController();
+        fetchAbortRef.current = controller;
+        if (countries.length > 0) fetchData(controller.signal);
+        return () => { controller.abort(); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, debouncedSearch, countries, filters, pagination.currentPage]);
 
