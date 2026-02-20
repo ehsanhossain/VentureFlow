@@ -94,8 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/seller/{seller}/pinned', [SellerController::class, 'pinned']);
 
 
-    //Partners Routes
-    //Partners Routes
+    //Partner Routes
     Route::get('/partner/get-last-sequence', [PartnerController::class, 'getLastSequence']);
     Route::get('/partner/check-id', [PartnerController::class, 'checkId']);
     Route::delete('/partners', [PartnerController::class, 'destroy']);
@@ -137,10 +136,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/import/validate/{type}', [ImportController::class, 'validate']);
     Route::post('/import/confirm/{type}', [ImportController::class, 'confirm']);
 
-    // Legacy import routes (deprecated, kept for backward compatibility)
-    Route::post('/import/buyers-company-overview', [ImportController::class, 'importBuyersCompanyOverview']);
-    Route::post('/import/sellers-company-overview', [ImportController::class, 'importSellersCompanyOverview']);
-    Route::delete('/sellers', [SellerController::class, 'destroy']);
 
     // Folder Routes
     Route::apiResource('folders', FolderController::class);
@@ -156,10 +151,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('industries/merge', [IndustryController::class, 'merge']);
     Route::post('industries/rename-adhoc', [IndustryController::class, 'renameAdhoc']);
     Route::apiResource('industries', IndustryController::class);
-
-    // Dashboard Routes
-    Route::get('/dashboard/data', [DashboardController::class, 'getSellerBuyerData']);
-    Route::get('/dashboard/counts', [DashboardController::class, 'getCounts']);
 
     // Deal Pipeline Routes
     Route::get('/deals/dashboard', [\App\Http\Controllers\DealController::class, 'dashboard']);
@@ -210,13 +201,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Dashboard Routes
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
+    Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::prefix('dashboard')->group(function () {
-        Route::get('/stats', [\App\Http\Controllers\DashboardController::class, 'stats']);
-        Route::get('/pipeline', [\App\Http\Controllers\DashboardController::class, 'pipeline']);
-        Route::get('/monthly-report', [\App\Http\Controllers\DashboardController::class, 'monthlyReport']);
-        Route::get('/activity', [\App\Http\Controllers\DashboardController::class, 'activity']);
-        Route::get('/recent', [\App\Http\Controllers\DashboardController::class, 'recent']);
+        Route::get('/stats', [DashboardController::class, 'stats']);
+        Route::get('/pipeline', [DashboardController::class, 'pipeline']);
+        Route::get('/monthly-report', [DashboardController::class, 'monthlyReport']);
+        Route::get('/activity', [DashboardController::class, 'activity']);
+        Route::get('/recent', [DashboardController::class, 'recent']);
+        // Legacy aliases kept for backward compatibility
+        Route::get('/data', [DashboardController::class, 'getSellerBuyerData']);
+        Route::get('/counts', [DashboardController::class, 'getCounts']);
     });
 
     // User Table Preferences (column visibility & order)

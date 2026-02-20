@@ -8,8 +8,8 @@ import Register from "../pages/currency/Register";
 
 import EmployeeDetails from "../pages/employee/details/EmployeeDetails";
 
-import AddSeller from "../pages/prospects/forms/AddSeller";
-import AddBuyer from "../pages/prospects/forms/AddBuyer";
+import InvestorRegistrationPage from "../pages/prospects/forms/InvestorRegistrationPage";
+import TargetRegistrationPage from "../pages/prospects/forms/TargetRegistrationPage";
 import InvestorDetails from "../pages/prospects/components/InvestorDetails";
 import Dashboard from "../pages/Dashboard";
 import TargetDetails from "../pages/prospects/components/TargetDetails";
@@ -89,7 +89,7 @@ const AppRoutes = () => {
         path="/prospects/add-target"
         element={
           <ProtectedRoute>
-            <AddSeller />
+            <TargetRegistrationPage />
           </ProtectedRoute>
         }
       />
@@ -97,7 +97,7 @@ const AppRoutes = () => {
         path="/prospects/edit-target/:id"
         element={
           <ProtectedRoute>
-            <AddSeller />
+            <TargetRegistrationPage />
           </ProtectedRoute>
         }
       />
@@ -114,7 +114,7 @@ const AppRoutes = () => {
         path="/prospects/add-investor"
         element={
           <ProtectedRoute>
-            <AddBuyer />
+            <InvestorRegistrationPage />
           </ProtectedRoute>
         }
       />
@@ -122,7 +122,7 @@ const AppRoutes = () => {
         path="/prospects/edit-investor/:id"
         element={
           <ProtectedRoute>
-            <AddBuyer />
+            <InvestorRegistrationPage />
           </ProtectedRoute>
         }
       />
