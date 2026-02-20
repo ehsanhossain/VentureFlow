@@ -33,7 +33,11 @@ class DealDeadlineNotification extends Notification
             'entity_type' => 'deadline',
             'entity_id' => $this->deal->id,
             'days_left' => $this->daysLeft,
-            'link' => "/deal-pipeline"
+            'link' => "/deal-pipeline",
+            'entities' => [$this->deal->name],
+            // Deadline notifications are system-generated, no actor
+            'actor_name' => 'System',
+            'actor_avatar' => null,
         ];
     }
 }

@@ -13,6 +13,7 @@ class NewRegistrationNotification extends Notification
     protected $type;
     protected $name;
     public $entityId; // Renamed from $id to avoid conflict with Notification public $id
+    protected $actor;
 
     /**
      * Create a new notification instance.
@@ -20,12 +21,14 @@ class NewRegistrationNotification extends Notification
      * @param string $type The type of registration (e.g., 'Seller', 'Buyer', 'Partner')
      * @param string $name The name of the registered entity
      * @param mixed $entityId The ID of the entity
+     * @param mixed $actor The user who performed the registration (optional)
      */
-    public function __construct($type, $name, $entityId)
+    public function __construct($type, $name, $entityId, $actor = null)
     {
         $this->type = $type;
         $this->name = $name;
         $this->entityId = $entityId;
+        $this->actor = $actor;
     }
 
     /**
@@ -59,13 +62,22 @@ class NewRegistrationNotification extends Notification
             $link = "/management/partners";
         }
         
-        return [
+        $data = [
             'title' => "New {$this->type} Registered",
             'message' => "A new {$this->type} named '{$this->name}' has been registered.",
             'type' => 'registration',
             'entity_type' => $entityTypeLower,
             'entity_id' => $this->entityId,
-            'link' => $link
+            'link' => $link,
+            'entities' => [$this->name],
         ];
+
+        // Attach actor info if available
+        if ($this->actor) {
+            $data['actor_name'] = trim(($this->actor->employee->first_name ?? '') . ' ' . ($this->actor->employee->last_name ?? '')) ?: ($this->actor->name ?? 'System');
+            $data['actor_avatar'] = $this->actor->employee->profile_picture ?? null;
+        }
+
+        return $data;
     }
 }

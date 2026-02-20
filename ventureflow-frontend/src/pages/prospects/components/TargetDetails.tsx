@@ -174,6 +174,16 @@ const TargetDetails: React.FC = () => {
         return '';
     })();
 
+    // Currency conversion helper: convert a value from the source currency to USD
+    const sourceExchangeRate = (() => {
+        const currId = financial.default_currency;
+        if (!currId) return 1;
+        const found = currencies.find((c: any) => String(c.id) === String(currId) || c.currency_code === currId);
+        return found ? parseFloat(found.exchange_rate || '1') : 1;
+    })();
+    const isSourceUSD = defaultCurrencyCode === 'USD' || !defaultCurrencyCode || sourceExchangeRate === 1;
+    const convertToUsd = (val: number) => isSourceUSD ? null : (val / sourceExchangeRate);
+
     // EBITDA
     const getEbitdaDisplay = () => {
         const ebitda = financial.ebitda_value || financial.ttm_profit;
@@ -478,6 +488,20 @@ const TargetDetails: React.FC = () => {
                                         {getDesiredInvestmentDisplay()}
                                         {defaultCurrencyCode && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
                                     </span>
+                                    {/* USD equivalent */}
+                                    {!isSourceUSD && getDesiredInvestmentDisplay() !== 'Flexible' && (() => {
+                                        const amount = financial.expected_investment_amount;
+                                        if (!amount || typeof amount !== 'object') return null;
+                                        const minUsd = amount.min ? convertToUsd(Number(amount.min)) : null;
+                                        const maxUsd = amount.max ? convertToUsd(Number(amount.max)) : null;
+                                        if (!minUsd && !maxUsd) return null;
+                                        const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                                        return (
+                                            <span className="text-xs text-gray-400 mt-0.5">
+                                                ≈ ${minUsd && maxUsd ? `${fmt(minUsd)} - ${fmt(maxUsd)}` : fmt((minUsd || maxUsd)!)} USD
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             </RestrictedField>
 
@@ -493,6 +517,20 @@ const TargetDetails: React.FC = () => {
                                         </span>
                                     )}
                                 </span>
+                                {/* USD equivalent */}
+                                {!isSourceUSD && getEbitdaDisplay() !== 'N/A' && (() => {
+                                    const ebitda = financial.ebitda_value || financial.ttm_profit;
+                                    if (!ebitda || typeof ebitda !== 'object') return null;
+                                    const minUsd = ebitda.min ? convertToUsd(Number(ebitda.min)) : null;
+                                    const maxUsd = ebitda.max ? convertToUsd(Number(ebitda.max)) : null;
+                                    if (!minUsd && !maxUsd) return null;
+                                    const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                                    return (
+                                        <span className="text-xs text-gray-400 mt-0.5">
+                                            ≈ ${minUsd && maxUsd ? `${fmt(minUsd)} - ${fmt(maxUsd)}` : fmt((minUsd || maxUsd)!)} USD
+                                        </span>
+                                    );
+                                })()}
                             </div>
 
                         </div>

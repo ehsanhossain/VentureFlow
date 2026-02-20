@@ -74,6 +74,7 @@
         "currency": "Currency",
         "partnerManagement": "Partner Management",
         "staffAndAccounts": "Staff & Accounts",
+        "pipelineWorkflow": "Pipeline Workflow",
         "notifications": "Notifications",
         "profile": "Profile"
     },

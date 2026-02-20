@@ -55,6 +55,10 @@ class MatchIQNotification extends Notification
                 'seller_id' => $this->sellerId,
                 'score'     => $this->score,
             ],
+            'entities' => [$this->buyerName, $this->sellerName],
+            // MatchIQ notifications are system-generated, no actor
+            'actor_name'   => 'MatchIQ Engine',
+            'actor_avatar' => null,
         ];
     }
 }

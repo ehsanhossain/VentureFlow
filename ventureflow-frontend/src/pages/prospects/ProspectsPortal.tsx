@@ -449,23 +449,13 @@ const ProspectsPortal: React.FC = () => {
             // Use currencies already loaded during initial fetch
             const currentCurrencies = currencies;
 
-            // Build clean filter params (only non-empty values)
-            const filterParams: Record<string, any> = {};
-            if (filters.country) filterParams.country = filters.country;
-            if (filters.broader_industries?.length > 0) filterParams.broader_industries = filters.broader_industries;
-            if (filters.priority_industries?.length > 0) filterParams.priority_industries = filters.priority_industries;
-            if (filters.registered_after) filterParams.registered_after = filters.registered_after;
-            if (filters.registered_before) filterParams.registered_before = filters.registered_before;
-            if (filters.pipeline_stage) filterParams.pipeline_stage = filters.pipeline_stage;
-            if (filters.target_countries?.length > 0) filterParams.target_countries = filters.target_countries;
-            if (filters.expected_investment_amount?.min || filters.expected_investment_amount?.max) {
-                filterParams.expected_investment_amount = {};
-                if (filters.expected_investment_amount.min) filterParams.expected_investment_amount.min = filters.expected_investment_amount.min;
-                if (filters.expected_investment_amount.max) filterParams.expected_investment_amount.max = filters.expected_investment_amount.max;
-            }
-
-            // Only fetch FULL data for the active tab; get just the count for the other tab (per_page=1)
-            const commonParams = { search: searchTerm, ...filterParams };
+            // The `filters` memo object already contains only non-empty values,
+            // so we can spread it directly into params. No need to cherry-pick fields.
+            const commonParams = {
+                search: searchTerm,
+                ...filters,
+                ...(selectedCurrency?.code ? { display_currency: selectedCurrency.code } : {}),
+            };
 
             const activeApiEndpoint = activeTab === 'investors' ? '/api/buyer' : '/api/seller';
             const inactiveApiEndpoint = activeTab === 'investors' ? '/api/seller' : '/api/buyer';
@@ -478,10 +468,10 @@ const ProspectsPortal: React.FC = () => {
                         per_page: itemsPerPageRef.current
                     }
                 }),
-                // Lightweight count-only request for the inactive tab
+                // Lightweight count-only request for the inactive tab — no filters from active tab
                 api.get(inactiveApiEndpoint, {
                     params: {
-                        ...commonParams,
+                        search: searchTerm,
                         per_page: 1
                     }
                 })
@@ -759,56 +749,115 @@ const ProspectsPortal: React.FC = () => {
     const toolsDropdownRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
-    // Advanced Filters State
-    const [filterOriginCountry, setFilterOriginCountry] = useState<DropdownCountry | null>(null);
-    const [filterIndustry, setFilterIndustry] = useState<DropdownIndustry[]>([]);
-    const [filterTargetIndustry, setFilterTargetIndustry] = useState<DropdownIndustry[]>([]);
-    const [filterTargetCountries, setFilterTargetCountries] = useState<DropdownCountry[]>([]);
-    const [pipelineStageFilter, setPipelineStageFilter] = useState('');
-    const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null);
-    const [filterDateTo, setFilterDateTo] = useState<Date | null>(null);
+    // ─── Per-Tab Independent Filter State ───
+    // Each tab keeps its own filters that persist when switching between tabs.
+
+    interface TabFilters {
+        originCountries: DropdownCountry[];          // multi-select
+        industry: DropdownIndustry[];
+        targetIndustry: DropdownIndustry[];          // investors only
+        targetCountries: DropdownCountry[];           // investors only
+        pipelineStage: string;
+        dateFrom: Date | null;
+        dateTo: Date | null;
+        budgetMin: string;                            // investors: investment budget; targets: desired investment
+        budgetMax: string;
+        rank: string;
+        purposeMA: string;                            // both tabs
+        investmentCondition: string;                  // both tabs
+        ebitdaMin: string;                            // targets only
+        ebitdaMax: string;                            // targets only
+        ebitdaTimes: string;                          // targets only
+    }
+
+    const emptyFilters: TabFilters = {
+        originCountries: [],
+        industry: [],
+        targetIndustry: [],
+        targetCountries: [],
+        pipelineStage: '',
+        dateFrom: null,
+        dateTo: null,
+        budgetMin: '',
+        budgetMax: '',
+        rank: '',
+        purposeMA: '',
+        investmentCondition: '',
+        ebitdaMin: '',
+        ebitdaMax: '',
+        ebitdaTimes: '',
+    };
+
+    const [investorFilters, setInvestorFilters] = useState<TabFilters>({ ...emptyFilters });
+    const [targetFilters, setTargetFilters] = useState<TabFilters>({ ...emptyFilters });
+
+    // Convenience: get/set for the currently active tab's filters
+    const currentFilters = activeTab === 'investors' ? investorFilters : targetFilters;
+    const setCurrentFilters = activeTab === 'investors' ? setInvestorFilters : setTargetFilters;
+    const updateFilter = <K extends keyof TabFilters>(key: K, value: TabFilters[K]) => {
+        setCurrentFilters(prev => ({ ...prev, [key]: value }));
+    };
+
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-    const [filterBudgetMin, setFilterBudgetMin] = useState('');
-    const [filterBudgetMax, setFilterBudgetMax] = useState('');
     const [budgetRange, setBudgetRange] = useState({ min: 0, max: 100000000 });
+    const [sellerInvestmentRange, setSellerInvestmentRange] = useState({ min: 0, max: 100000000 });
+    const [sellerEbitdaRange, setSellerEbitdaRange] = useState({ min: 0, max: 100000000 });
 
     // Reference data for filters
     const [filterIndustries, setFilterIndustries] = useState<DropdownIndustry[]>([]);
     const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
     const [draftCounts, setDraftCounts] = useState({ investors: 0, targets: 0 });
 
-    // Build a unified filters object for the API (keeps backward compat with fetchData spread)
+    // Build a unified filters object for the API (uses current tab's filters)
     const filters = React.useMemo(() => {
         const f: Record<string, any> = {};
-        if (filterOriginCountry) f.country = filterOriginCountry.id;
-        if (filterIndustry.length > 0) f.broader_industries = filterIndustry.map(i => i.id);
-        if (filterTargetIndustry.length > 0) f.priority_industries = filterTargetIndustry.map(i => i.id);
-        if (filterDateFrom) {
-            const d = filterDateFrom;
+        const cf = currentFilters;
+        if (cf.originCountries.length > 0) f.country = cf.originCountries.map(c => c.id);
+        if (cf.industry.length > 0) f.broader_industries = cf.industry.map(i => i.id);
+        if (cf.targetIndustry.length > 0) f.priority_industries = cf.targetIndustry.map(i => i.id);
+        if (cf.dateFrom) {
+            const d = cf.dateFrom;
             f.registered_after = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
-        if (filterDateTo) {
-            const d = filterDateTo;
+        if (cf.dateTo) {
+            const d = cf.dateTo;
             f.registered_before = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
-        if (pipelineStageFilter) f.pipeline_stage = pipelineStageFilter;
-        if (filterTargetCountries.length > 0) f.target_countries = filterTargetCountries.map(c => c.id);
-        if (filterBudgetMin || filterBudgetMax) {
+        if (cf.pipelineStage) f.pipeline_stage = cf.pipelineStage;
+        if (cf.targetCountries.length > 0) f.target_countries = cf.targetCountries.map(c => c.id);
+        if (cf.budgetMin || cf.budgetMax) {
             f.expected_investment_amount = {};
-            if (filterBudgetMin) f.expected_investment_amount.min = filterBudgetMin;
-            if (filterBudgetMax) f.expected_investment_amount.max = filterBudgetMax;
+            if (cf.budgetMin) f.expected_investment_amount.min = cf.budgetMin;
+            if (cf.budgetMax) f.expected_investment_amount.max = cf.budgetMax;
+        }
+        if (cf.rank) f.rank = cf.rank;
+        if (cf.purposeMA) f.reason_ma = cf.purposeMA;
+        if (cf.investmentCondition) f.investment_condition = cf.investmentCondition;
+        // Target-only filters
+        if (activeTab === 'targets') {
+            if (cf.ebitdaMin || cf.ebitdaMax) {
+                f.ebitda = {};
+                if (cf.ebitdaMin) f.ebitda.min = cf.ebitdaMin;
+                if (cf.ebitdaMax) f.ebitda.max = cf.ebitdaMax;
+            }
+            if (cf.ebitdaTimes) f.ebitda_times = cf.ebitdaTimes;
         }
         return f;
-    }, [filterOriginCountry, filterIndustry, filterTargetIndustry, filterDateFrom, filterDateTo, pipelineStageFilter, filterTargetCountries, filterBudgetMin, filterBudgetMax]);
+    }, [currentFilters, activeTab]);
 
     const activeFilterCount = [
-        filterOriginCountry,
-        filterIndustry.length > 0,
-        filterTargetIndustry.length > 0,
-        filterTargetCountries.length > 0,
-        pipelineStageFilter,
-        filterDateFrom || filterDateTo,
-        filterBudgetMin || filterBudgetMax,
+        currentFilters.originCountries.length > 0,
+        currentFilters.industry.length > 0,
+        currentFilters.targetIndustry.length > 0,
+        currentFilters.targetCountries.length > 0,
+        currentFilters.pipelineStage,
+        currentFilters.dateFrom || currentFilters.dateTo,
+        currentFilters.budgetMin || currentFilters.budgetMax,
+        currentFilters.rank,
+        currentFilters.purposeMA,
+        currentFilters.investmentCondition,
+        currentFilters.ebitdaMin || currentFilters.ebitdaMax,
+        currentFilters.ebitdaTimes,
     ].filter(Boolean).length;
 
 
@@ -911,11 +960,27 @@ const ProspectsPortal: React.FC = () => {
 
             // Budget range for slider — fetched separately so failures don't block page
             try {
-                const budgetRangeRes = await api.get('/api/buyer/budget-range');
+                const [budgetRangeRes, investmentRangeRes, ebitdaRangeRes] = await Promise.all([
+                    api.get('/api/buyer/budget-range'),
+                    api.get('/api/seller/investment-range'),
+                    api.get('/api/seller/ebitda-range'),
+                ]);
                 if (budgetRangeRes.data) {
                     setBudgetRange({
                         min: budgetRangeRes.data.min ?? 0,
                         max: budgetRangeRes.data.max ?? 100000000,
+                    });
+                }
+                if (investmentRangeRes.data) {
+                    setSellerInvestmentRange({
+                        min: investmentRangeRes.data.min ?? 0,
+                        max: investmentRangeRes.data.max ?? 100000000,
+                    });
+                }
+                if (ebitdaRangeRes.data) {
+                    setSellerEbitdaRange({
+                        min: ebitdaRangeRes.data.min ?? 0,
+                        max: ebitdaRangeRes.data.max ?? 100000000,
                     });
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -957,7 +1022,6 @@ const ProspectsPortal: React.FC = () => {
     // Fetch Investors/Targets
     useEffect(() => {
         if (countries.length > 0) fetchData();
-        // Note: pagination.itemsPerPage intentionally excluded to prevent resize-triggered refetch loops
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, debouncedSearch, countries, filters, pagination.currentPage]);
 
@@ -1041,34 +1105,54 @@ const ProspectsPortal: React.FC = () => {
 
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-premium">
-                            {/* Origin Country */}
-                            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    {t('prospects.table.originCountry')}
-                                </label>
+                            {/* Origin Country (multi-select) */}
+                            <div className={`px-6 pt-5 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.originCountries.length > 0 ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.table.originCountry')}
+                                    </label>
+                                    {currentFilters.originCountries.length > 0 && (
+                                        <button type="button" onClick={() => updateFilter('originCountries', [])} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear country filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                                 <Dropdown
                                     countries={countries as DropdownCountry[]}
-                                    selected={filterOriginCountry as DropdownCountry | null}
+                                    selected={currentFilters.originCountries as DropdownCountry[]}
                                     onSelect={((c: DropdownCountry | DropdownCountry[]) => {
                                         if (Array.isArray(c)) {
-                                            setFilterOriginCountry(c[0] || null);
+                                            updateFilter('originCountries', c as Country[]);
                                         } else {
-                                            setFilterOriginCountry(filterOriginCountry?.id === c.id ? null : c);
+                                            const exists = currentFilters.originCountries.some(oc => oc.id === c.id);
+                                            updateFilter('originCountries',
+                                                exists
+                                                    ? currentFilters.originCountries.filter(oc => oc.id !== c.id)
+                                                    : [...currentFilters.originCountries, c as Country]
+                                            );
                                         }
                                     }) as any}
+                                    multiSelect
                                     placeholder={t('prospects.portal.filterByCountry')}
                                 />
                             </div>
 
-                            {/* Industry (investor's own industry) */}
-                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    {t('prospects.table.industry')}
-                                </label>
+                            {/* Industry */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.industry.length > 0 ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.table.industry')}
+                                    </label>
+                                    {currentFilters.industry.length > 0 && (
+                                        <button type="button" onClick={() => updateFilter('industry', [])} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear industry filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                                 <IndustryDropdown
                                     industries={filterIndustries}
-                                    selected={filterIndustry}
-                                    onSelect={(val) => setFilterIndustry(Array.isArray(val) ? val : [val])}
+                                    selected={currentFilters.industry}
+                                    onSelect={(val) => updateFilter('industry', Array.isArray(val) ? val : [val])}
                                     multiSelect={true}
                                     placeholder={t('prospects.portal.filterByIndustry')}
                                 />
@@ -1076,14 +1160,21 @@ const ProspectsPortal: React.FC = () => {
 
                             {/* Target Business & Industry (Investors only) */}
                             {activeTab === 'investors' && (
-                                <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        {t('prospects.table.targetIndustries')}
-                                    </label>
+                                <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.targetIndustry.length > 0 ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-[13px] font-medium text-gray-700">
+                                            {t('prospects.table.targetIndustries')}
+                                        </label>
+                                        {currentFilters.targetIndustry.length > 0 && (
+                                            <button type="button" onClick={() => updateFilter('targetIndustry', [])} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear target industry filter">
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
                                     <IndustryDropdown
                                         industries={filterIndustries}
-                                        selected={filterTargetIndustry}
-                                        onSelect={(val) => setFilterTargetIndustry(Array.isArray(val) ? val : [val])}
+                                        selected={currentFilters.targetIndustry}
+                                        onSelect={(val) => updateFilter('targetIndustry', Array.isArray(val) ? val : [val])}
                                         multiSelect={true}
                                         placeholder={t('prospects.portal.filterByIndustry')}
                                     />
@@ -1092,22 +1183,29 @@ const ProspectsPortal: React.FC = () => {
 
                             {/* Interested Country (Investors only) */}
                             {activeTab === 'investors' && (
-                                <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        {t('prospects.table.targetCountries')}
-                                    </label>
+                                <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.targetCountries.length > 0 ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-[13px] font-medium text-gray-700">
+                                            {t('prospects.table.targetCountries')}
+                                        </label>
+                                        {currentFilters.targetCountries.length > 0 && (
+                                            <button type="button" onClick={() => updateFilter('targetCountries', [])} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear target countries filter">
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
                                     <Dropdown
                                         countries={countries as DropdownCountry[]}
-                                        selected={filterTargetCountries as DropdownCountry[]}
+                                        selected={currentFilters.targetCountries as DropdownCountry[]}
                                         onSelect={((c: DropdownCountry | DropdownCountry[]) => {
                                             if (Array.isArray(c)) {
-                                                setFilterTargetCountries(c as Country[]);
+                                                updateFilter('targetCountries', c as Country[]);
                                             } else {
-                                                const exists = filterTargetCountries.some(tc => tc.id === c.id);
-                                                setFilterTargetCountries(
+                                                const exists = currentFilters.targetCountries.some(tc => tc.id === c.id);
+                                                updateFilter('targetCountries',
                                                     exists
-                                                        ? filterTargetCountries.filter(tc => tc.id !== c.id)
-                                                        : [...filterTargetCountries, c as Country]
+                                                        ? currentFilters.targetCountries.filter(tc => tc.id !== c.id)
+                                                        : [...currentFilters.targetCountries, c as Country]
                                                 );
                                             }
                                         }) as any}
@@ -1117,18 +1215,139 @@ const ProspectsPortal: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* Pipeline Stage */}
-                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label htmlFor="pipeline-stage-filter" className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    {t('prospects.details.dealPipelineStage')}
-                                </label>
+                            {/* Rank (both tabs) */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.rank ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label htmlFor="rank-filter" className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.table.rank')}
+                                    </label>
+                                    {currentFilters.rank && (
+                                        <button type="button" onClick={() => updateFilter('rank', '')} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear rank filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        id="rank-filter"
+                                        aria-label="Rank"
+                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.rank ? 'border-[#064771]/40' : 'border-gray-300'}`}
+                                        value={currentFilters.rank}
+                                        onChange={(e) => updateFilter('rank', e.target.value)}
+                                    >
+                                        <option value="">All Ranks</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="C">C</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            {/* Purpose of M&A (both tabs — different options per type) */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.purposeMA ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label htmlFor="purpose-ma-filter" className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.table.purposeMA')}
+                                    </label>
+                                    {currentFilters.purposeMA && (
+                                        <button type="button" onClick={() => updateFilter('purposeMA', '')} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear purpose filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        id="purpose-ma-filter"
+                                        aria-label="Purpose of M&A"
+                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.purposeMA ? 'border-[#064771]/40' : 'border-gray-300'}`}
+                                        value={currentFilters.purposeMA}
+                                        onChange={(e) => updateFilter('purposeMA', e.target.value)}
+                                    >
+                                        <option value="">All</option>
+                                        {activeTab === 'investors' ? (
+                                            <>
+                                                <option value="Strategic Expansion">Strategic Expansion</option>
+                                                <option value="Market Entry">Market Entry</option>
+                                                <option value="Talent Acquisition">Talent Acquisition</option>
+                                                <option value="Diversification">Diversification</option>
+                                                <option value="Technology Acquisition">Technology Acquisition</option>
+                                                <option value="Financial Investment">Financial Investment</option>
+                                                <option value="Other">Other</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="Owner's Retirement">Owner's Retirement</option>
+                                                <option value="Business Succession">Business Succession</option>
+                                                <option value="Full Exit">Full Exit</option>
+                                                <option value="Partial Exit">Partial Exit</option>
+                                                <option value="Capital Raising">Capital Raising</option>
+                                                <option value="Strategic Partnership">Strategic Partnership</option>
+                                                <option value="Growth Acceleration">Growth Acceleration</option>
+                                                <option value="Debt Restructuring">Debt Restructuring</option>
+                                                <option value="Risk Mitigation">Risk Mitigation</option>
+                                                <option value="Non-Core Divestment">Non-Core Divestment</option>
+                                                <option value="Market Expansion">Market Expansion</option>
+                                                <option value="Technology Integration">Technology Integration</option>
+                                                <option value="Cross-Border Expansion">Cross-Border Expansion</option>
+                                            </>
+                                        )}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            {/* Condition (both tabs) */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.investmentCondition ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label htmlFor="condition-filter" className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.table.condition')}
+                                    </label>
+                                    {currentFilters.investmentCondition && (
+                                        <button type="button" onClick={() => updateFilter('investmentCondition', '')} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear condition filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        id="condition-filter"
+                                        aria-label="Investment Condition"
+                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.investmentCondition ? 'border-[#064771]/40' : 'border-gray-300'}`}
+                                        value={currentFilters.investmentCondition}
+                                        onChange={(e) => updateFilter('investmentCondition', e.target.value)}
+                                    >
+                                        <option value="">All</option>
+                                        <option value="Minority (<50%)">Minority (&lt;50%)</option>
+                                        <option value="Significant minority (25–49%)">Significant minority (25–49%)</option>
+                                        <option value="Joint control (51/49)">Joint control (51/49)</option>
+                                        <option value="Majority (51–99%)">Majority (51–99%)</option>
+                                        <option value="Full acquisition (100%)">Full acquisition (100%)</option>
+                                        <option value="Flexible">Flexible</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            {/* Pipeline Stage (both tabs) */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.pipelineStage ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label htmlFor="pipeline-stage-filter" className="text-[13px] font-medium text-gray-700">
+                                        {t('prospects.details.dealPipelineStage')}
+                                    </label>
+                                    {currentFilters.pipelineStage && (
+                                        <button type="button" onClick={() => updateFilter('pipelineStage', '')} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear pipeline stage filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="relative">
                                     <select
                                         id="pipeline-stage-filter"
                                         aria-label="Pipeline Stage"
-                                        className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                                        value={pipelineStageFilter}
-                                        onChange={(e) => setPipelineStageFilter(e.target.value)}
+                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.pipelineStage ? 'border-[#064771]/40' : 'border-gray-300'}`}
+                                        value={currentFilters.pipelineStage}
+                                        onChange={(e) => updateFilter('pipelineStage', e.target.value)}
                                     >
                                         <option value="">All Stages</option>
                                         {pipelineStages
@@ -1140,20 +1359,27 @@ const ProspectsPortal: React.FC = () => {
                             </div>
 
                             {/* Registration Date (Range) */}
-                            <div className="px-6 pt-4 pb-4 border-b border-gray-100">
-                                <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                    Registered between
-                                </label>
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${(currentFilters.dateFrom || currentFilters.dateTo) ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-[13px] font-medium text-gray-700">
+                                        Registered between
+                                    </label>
+                                    {(currentFilters.dateFrom || currentFilters.dateTo) && (
+                                        <button type="button" onClick={() => { updateFilter('dateFrom', null); updateFilter('dateTo', null); setIsDatePickerOpen(false); }} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear date filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                                     className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors cursor-pointer"
                                 >
-                                    <span className={filterDateFrom || filterDateTo ? 'text-gray-900' : 'text-gray-400'}>
-                                        {filterDateFrom && filterDateTo
-                                            ? `${filterDateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${filterDateTo.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                                            : filterDateFrom
-                                                ? `From ${filterDateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                    <span className={currentFilters.dateFrom || currentFilters.dateTo ? 'text-gray-900' : 'text-gray-400'}>
+                                        {currentFilters.dateFrom && currentFilters.dateTo
+                                            ? `${currentFilters.dateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${currentFilters.dateTo.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                                            : currentFilters.dateFrom
+                                                ? `From ${currentFilters.dateFrom.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
                                                 : 'Select date range'}
                                     </span>
                                     <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
@@ -1162,13 +1388,13 @@ const ProspectsPortal: React.FC = () => {
                                     <div className="mt-2 ventureflow-date-range">
                                         <DateRange
                                             ranges={[{
-                                                startDate: filterDateFrom || new Date(),
-                                                endDate: filterDateTo || new Date(),
+                                                startDate: currentFilters.dateFrom || new Date(),
+                                                endDate: currentFilters.dateTo || new Date(),
                                                 key: 'selection'
                                             }]}
                                             onChange={(item: any) => {
-                                                setFilterDateFrom(item.selection.startDate);
-                                                setFilterDateTo(item.selection.endDate);
+                                                updateFilter('dateFrom', item.selection.startDate);
+                                                updateFilter('dateTo', item.selection.endDate);
                                             }}
                                             moveRangeOnFirstSelection={false}
                                             months={1}
@@ -1181,37 +1407,120 @@ const ProspectsPortal: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Investment Budget (Investors only) */}
-                            {activeTab === 'investors' && (
-                                <div className="px-6 pt-4 pb-4 overflow-hidden">
-                                    <label className="block mb-1.5 text-[13px] font-medium text-gray-700 ">
-                                        {t('prospects.table.investmentBudget')}
+                            {/* Investment Budget / Desired Investment (both tabs) */}
+                            <div className={`px-6 pt-4 pb-4 border-b border-gray-100 overflow-hidden transition-all duration-200 ${(currentFilters.budgetMin || currentFilters.budgetMax) ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-[13px] font-medium text-gray-700">
+                                        {activeTab === 'investors' ? t('prospects.table.investmentBudget') : t('prospects.table.desiredInvestment', 'Desired Investment')}
+                                        {selectedCurrency?.code && <span className="text-gray-400 font-normal ml-1">({selectedCurrency.code})</span>}
                                     </label>
+                                    {(currentFilters.budgetMin || currentFilters.budgetMax) && (
+                                        <button type="button" onClick={() => { updateFilter('budgetMin', ''); updateFilter('budgetMax', ''); }} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear budget filter">
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 w-full">
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                        value={currentFilters.budgetMin}
+                                        onChange={(e) => updateFilter('budgetMin', e.target.value)}
+                                    />
+                                    <span className="text-gray-400 text-sm font-normal flex-shrink-0">–</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                        value={currentFilters.budgetMax}
+                                        onChange={(e) => updateFilter('budgetMax', e.target.value)}
+                                    />
+                                </div>
+                                {activeTab === 'investors' && (
+                                    <div className="mt-4">
+                                        <BudgetRangeSlider
+                                            globalMin={budgetRange.min}
+                                            globalMax={budgetRange.max}
+                                            currentMin={currentFilters.budgetMin}
+                                            currentMax={currentFilters.budgetMax}
+                                            onMinChange={(v) => updateFilter('budgetMin', v)}
+                                            onMaxChange={(v) => updateFilter('budgetMax', v)}
+                                        />
+                                    </div>
+                                )}
+                                {/* Range helper text */}
+                                {(() => {
+                                    const range = activeTab === 'investors' ? budgetRange : sellerInvestmentRange;
+                                    const fmt = (v: number) => v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(0)}K` : String(v);
+                                    return (
+                                        <p className="mt-1.5 text-[11px] text-gray-400">
+                                            Range: {fmt(range.min)} – {fmt(range.max)}
+                                        </p>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* EBITDA Value (Targets only) */}
+                            {activeTab === 'targets' && (
+                                <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${(currentFilters.ebitdaMin || currentFilters.ebitdaMax) ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="text-[13px] font-medium text-gray-700">
+                                            {t('prospects.table.ebitda', 'EBITDA Value')}
+                                            {selectedCurrency?.code && <span className="text-gray-400 font-normal ml-1">({selectedCurrency.code})</span>}
+                                        </label>
+                                        {(currentFilters.ebitdaMin || currentFilters.ebitdaMax) && (
+                                            <button type="button" onClick={() => { updateFilter('ebitdaMin', ''); updateFilter('ebitdaMax', ''); }} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear EBITDA filter">
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2 w-full">
                                         <input
                                             type="number"
                                             placeholder="Min"
                                             className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
-                                            value={filterBudgetMin}
-                                            onChange={(e) => setFilterBudgetMin(e.target.value)}
+                                            value={currentFilters.ebitdaMin}
+                                            onChange={(e) => updateFilter('ebitdaMin', e.target.value)}
                                         />
                                         <span className="text-gray-400 text-sm font-normal flex-shrink-0">–</span>
                                         <input
                                             type="number"
                                             placeholder="Max"
                                             className="flex-1 min-w-0 h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
-                                            value={filterBudgetMax}
-                                            onChange={(e) => setFilterBudgetMax(e.target.value)}
+                                            value={currentFilters.ebitdaMax}
+                                            onChange={(e) => updateFilter('ebitdaMax', e.target.value)}
                                         />
                                     </div>
-                                    <div className="mt-4">
-                                        <BudgetRangeSlider
-                                            globalMin={budgetRange.min}
-                                            globalMax={budgetRange.max}
-                                            currentMin={filterBudgetMin}
-                                            currentMax={filterBudgetMax}
-                                            onMinChange={setFilterBudgetMin}
-                                            onMaxChange={setFilterBudgetMax}
+                                    {/* Range helper text */}
+                                    <p className="mt-1.5 text-[11px] text-gray-400">
+                                        Range: {sellerEbitdaRange.min >= 1e6 ? `${(sellerEbitdaRange.min / 1e6).toFixed(1)}M` : sellerEbitdaRange.min >= 1e3 ? `${(sellerEbitdaRange.min / 1e3).toFixed(0)}K` : sellerEbitdaRange.min} – {sellerEbitdaRange.max >= 1e6 ? `${(sellerEbitdaRange.max / 1e6).toFixed(1)}M` : sellerEbitdaRange.max >= 1e3 ? `${(sellerEbitdaRange.max / 1e3).toFixed(0)}K` : sellerEbitdaRange.max}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* EBITDA Times (Targets only) */}
+                            {activeTab === 'targets' && (
+                                <div className={`px-6 pt-4 pb-4 border-b border-gray-100 transition-all duration-200 ${currentFilters.ebitdaTimes ? 'border-l-2 border-l-[#064771] bg-sky-50/30' : ''}`}>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label htmlFor="ebitda-times-filter" className="text-[13px] font-medium text-gray-700">
+                                            EBITDA Times
+                                        </label>
+                                        {currentFilters.ebitdaTimes && (
+                                            <button type="button" onClick={() => updateFilter('ebitdaTimes', '')} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors" title="Clear EBITDA times filter">
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            id="ebitda-times-filter"
+                                            type="number"
+                                            step="0.1"
+                                            placeholder="e.g. 5"
+                                            className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal  text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 transition-colors"
+                                            value={currentFilters.ebitdaTimes}
+                                            onChange={(e) => updateFilter('ebitdaTimes', e.target.value)}
                                         />
                                     </div>
                                 </div>
@@ -1222,16 +1531,8 @@ const ProspectsPortal: React.FC = () => {
                         <div className="p-4 border-t border-gray-100">
                             <button
                                 onClick={() => {
-                                    setFilterOriginCountry(null);
-                                    setFilterIndustry([]);
-                                    setFilterTargetIndustry([]);
-                                    setFilterTargetCountries([]);
-                                    setPipelineStageFilter('');
-                                    setFilterDateFrom(null);
-                                    setFilterDateTo(null);
+                                    setCurrentFilters({ ...emptyFilters });
                                     setIsDatePickerOpen(false);
-                                    setFilterBudgetMin('');
-                                    setFilterBudgetMax('');
                                 }}
                                 className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
                             >

@@ -373,29 +373,17 @@ class IndustryController extends Controller
     {
         $count = 0;
 
-        // sellers_company_overviews.industry_ops
-        $count += SellersCompanyOverview::whereRaw(
-            'JSON_CONTAINS(JSON_EXTRACT(industry_ops, "$[*].id"), CAST(? AS JSON))',
-            [$industryId]
-        )->count();
+        // sellers_company_overviews.industry_ops (SQLite-compatible)
+        $count += SellersCompanyOverview::where('industry_ops', 'LIKE', '%"id":' . $industryId . '%')->count();
 
         // buyers_company_overviews.main_industry_operations
-        $count += BuyersCompanyOverview::whereRaw(
-            'JSON_CONTAINS(JSON_EXTRACT(main_industry_operations, "$[*].id"), CAST(? AS JSON))',
-            [$industryId]
-        )->count();
+        $count += BuyersCompanyOverview::where('main_industry_operations', 'LIKE', '%"id":' . $industryId . '%')->count();
 
         // buyers_company_overviews.company_industry
-        $count += BuyersCompanyOverview::whereRaw(
-            'JSON_CONTAINS(JSON_EXTRACT(company_industry, "$[*].id"), CAST(? AS JSON))',
-            [$industryId]
-        )->count();
+        $count += BuyersCompanyOverview::where('company_industry', 'LIKE', '%"id":' . $industryId . '%')->count();
 
         // buyers_target_preferences.b_ind_prefs
-        $count += BuyersTargetPreferences::whereRaw(
-            'JSON_CONTAINS(JSON_EXTRACT(b_ind_prefs, "$[*].id"), CAST(? AS JSON))',
-            [$industryId]
-        )->count();
+        $count += BuyersTargetPreferences::where('b_ind_prefs', 'LIKE', '%"id":' . $industryId . '%')->count();
 
         return $count;
     }

@@ -10,7 +10,10 @@ export interface NotificationItem {
         message: string;
         link?: string;
         entity_id?: string;
+        entity_type?: string;
         type?: string;
+        actor_name?: string;
+        triggered_by?: string;
     };
     read_at: string | null;
     created_at: string;

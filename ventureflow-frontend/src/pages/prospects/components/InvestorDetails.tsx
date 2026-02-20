@@ -147,6 +147,20 @@ const InvestorDetails: React.FC = () => {
   const internalPICs: InternalPIC[] = parseJSON(overview.internal_pic);
   const financialAdvisors: FinancialAdvisor[] = parseJSON(overview.financial_advisor);
 
+  // Currency conversion helper: convert a value from the investor's source currency to USD
+  const investmentCurrencyCode = (() => {
+    if (!investmentBudget?.currency) return '';
+    const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency));
+    return found?.currency_code || '';
+  })();
+  const sourceExchangeRate = (() => {
+    if (!investmentBudget?.currency) return 1;
+    const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency));
+    return found ? parseFloat(found.exchange_rate || '1') : 1;
+  })();
+  const isSourceUSD = investmentCurrencyCode === 'USD' || !investmentCurrencyCode || sourceExchangeRate === 1;
+  const convertToUsd = (val: number) => isSourceUSD ? null : (val / sourceExchangeRate);
+
   // Get introduced projects from deals AND from overview, merged
   const introducedProjects: IntroducedProject[] = (() => {
     const fromDeals: IntroducedProject[] = (buyer?.formatted_introduced_projects || []).map((p: any) => ({
@@ -509,6 +523,18 @@ const InvestorDetails: React.FC = () => {
                       <>{formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)} <span className="text-sm font-medium text-gray-400 ml-1">{(() => { const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency)); return found?.currency_code || investmentBudget.currency || ''; })()}</span></>
                     ) : 'Flexible'}
                   </span>
+                  {/* USD equivalent */}
+                  {!isSourceUSD && investmentBudget && (() => {
+                    const minUsd = investmentBudget.min ? convertToUsd(Number(investmentBudget.min)) : null;
+                    const maxUsd = investmentBudget.max ? convertToUsd(Number(investmentBudget.max)) : null;
+                    if (!minUsd && !maxUsd) return null;
+                    const fmt = (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    return (
+                      <span className="text-xs text-gray-400 mt-0.5">
+                        ≈ ${minUsd && maxUsd ? `${fmt(minUsd)} - ${fmt(maxUsd)}` : fmt((minUsd || maxUsd)!)} USD
+                      </span>
+                    );
+                  })()}
                 </div>
               </RestrictedField>
 

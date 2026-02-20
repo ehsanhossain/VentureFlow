@@ -82,6 +82,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/seller/drafts', [SellerController::class, 'drafts']);
     Route::get('/seller/partnerships', [SellerController::class, 'partnerships']);
     Route::get('/seller/delete-analyze', [SellerController::class, 'getDeleteImpact']);
+    Route::get('/seller/investment-range', [SellerController::class, 'investmentRange']);
+    Route::get('/seller/ebitda-range', [SellerController::class, 'ebitdaRange']);
     Route::delete('/sellers', [SellerController::class, 'destroy']);
     Route::apiResource('seller', SellerController::class);
     Route::post('/seller/company-overviews', [SellerController::class, 'sellerCompanyOverviewstore']);

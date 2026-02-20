@@ -109,11 +109,24 @@ class BuyerController extends Controller
         $priorityIndustries = $request->input('priority_industries', []);
         $showOnlyPinned = $request->input('show_only_pinned');
         $sort = $request->input('sort');
+        $rank = $request->input('rank');
+        $reasonMa = $request->input('reason_ma');
+        $investmentCondition = $request->input('investment_condition');
 
         // --- Retrieve range-based parameters ---
         $acquisitionPreference = $request->input('acquisition_preference', []);
         $ebitdaRequirements = $request->input('ebitda_requirements', []);
         $expectedInvestmentAmount = $request->input('expected_investment_amount', []);
+
+        // --- Currency-aware filtering ---
+        $displayCurrencyCode = $request->input('display_currency');
+        $displayRate = 1; // Default to USD (rate = 1)
+        if ($displayCurrencyCode) {
+            $displayCurrency = \App\Models\Currency::where('currency_code', $displayCurrencyCode)->first();
+            if ($displayCurrency) {
+                $displayRate = (float) $displayCurrency->exchange_rate ?: 1;
+            }
+        }
 
         // --- Check User Role ---
         $user = $request->user();
@@ -227,10 +240,14 @@ class BuyerController extends Controller
                         });
                 });
             })
-            // --- Filter by country ---
+            // --- Filter by country (supports single ID or array of IDs) ---
             ->when($country, function ($query) use ($country) {
                 $query->whereHas('companyOverview', function ($q) use ($country) {
-                    $q->where('hq_country', $country);
+                    if (is_array($country)) {
+                        $q->whereIn('hq_country', $country);
+                    } else {
+                        $q->where('hq_country', $country);
+                    }
                 });
             })
             // --- Filter by registration date range ---
@@ -265,7 +282,8 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($targetCountries) {
                     $q->where(function ($q2) use ($targetCountries) {
                         foreach ($targetCountries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_countries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            // SQLite-compatible: match "id":N in JSON array
+                            $q2->orWhere('target_countries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -292,7 +310,8 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            // SQLite-compatible: match "id":N in JSON array
+                            $q2->orWhere('b_ind_prefs', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -302,34 +321,63 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            // SQLite-compatible: match "id":N in JSON array
+                            $q2->orWhere('n_ind_prefs', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
             })
 
-            // --- Filter by EBITDA requirements range ---
-            ->when(!empty($ebitdaRequirements), function ($query) use ($ebitdaRequirements) {
-                $query->whereHas('financialDetails', function ($q) use ($ebitdaRequirements) {
+            // --- Filter by EBITDA requirements range (currency-aware) ---
+            ->when(!empty($ebitdaRequirements), function ($query) use ($ebitdaRequirements, $displayRate) {
+                $query->whereHas('financialDetails', function ($q) use ($ebitdaRequirements, $displayRate) {
                     if (isset($ebitdaRequirements['min']) && is_numeric($ebitdaRequirements['min'])) {
-                        $q->where('expected_ebitda->max', '>=', $ebitdaRequirements['min']);
+                        $q->whereRaw(
+                            'CAST(json_extract(expected_ebitda, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency), 1) / ?',
+                            [$ebitdaRequirements['min'], $displayRate]
+                        );
                     }
-
                     if (isset($ebitdaRequirements['max']) && is_numeric($ebitdaRequirements['max'])) {
-                        $q->where('expected_ebitda->min', '<=', $ebitdaRequirements['max']);
+                        $q->whereRaw(
+                            'CAST(json_extract(expected_ebitda, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency), 1) / ?',
+                            [$ebitdaRequirements['max'], $displayRate]
+                        );
                     }
                 });
             })
-            // --- Filter by expected investment amount range ---
-            ->when(!empty($expectedInvestmentAmount), function ($query) use ($expectedInvestmentAmount) {
-                $query->whereHas('financialDetails', function ($q) use ($expectedInvestmentAmount) {
+            // --- Filter by expected investment amount range (currency-aware) ---
+            ->when(!empty($expectedInvestmentAmount), function ($query) use ($expectedInvestmentAmount, $displayRate) {
+                $query->whereHas('financialDetails', function ($q) use ($expectedInvestmentAmount, $displayRate) {
                     if (isset($expectedInvestmentAmount['min']) && is_numeric($expectedInvestmentAmount['min'])) {
-                        $q->where('investment_budget->max', '>=', $expectedInvestmentAmount['min']);
+                        $q->whereRaw(
+                            'CAST(json_extract(investment_budget, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency), 1) / ?',
+                            [$expectedInvestmentAmount['min'], $displayRate]
+                        );
                     }
-
                     if (isset($expectedInvestmentAmount['max']) && is_numeric($expectedInvestmentAmount['max'])) {
-                        $q->where('investment_budget->min', '<=', $expectedInvestmentAmount['max']);
+                        $q->whereRaw(
+                            'CAST(json_extract(investment_budget, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency), 1) / ?',
+                            [$expectedInvestmentAmount['max'], $displayRate]
+                        );
                     }
+                });
+            })
+            // --- Filter by rank ---
+            ->when($rank, function ($query) use ($rank) {
+                $query->whereHas('companyOverview', function ($q) use ($rank) {
+                    $q->where('rank', $rank);
+                });
+            })
+            // --- Filter by reason for M&A (purpose) ---
+            ->when($reasonMa, function ($query) use ($reasonMa) {
+                $query->whereHas('companyOverview', function ($q) use ($reasonMa) {
+                    $q->where('reason_ma', 'LIKE', '%' . $reasonMa . '%');
+                });
+            })
+            // --- Filter by investment condition ---
+            ->when($investmentCondition, function ($query) use ($investmentCondition) {
+                $query->whereHas('companyOverview', function ($q) use ($investmentCondition) {
+                    $q->where('investment_condition', 'LIKE', '%' . $investmentCondition . '%');
                 });
             })
             // --- Filter by pinned status ---
@@ -643,7 +691,7 @@ class BuyerController extends Controller
                  // Notify System Admins
                  try {
                     $admins = User::role('System Admin')->get();
-                    Notification::send($admins, new NewRegistrationNotification('Buyer', $overview->reg_name ?? 'New Buyer', $buyer->id));
+                    Notification::send($admins, new NewRegistrationNotification('Buyer', $overview->reg_name ?? 'New Buyer', $buyer->id, Auth::user()));
                 } catch (\Exception $e) {
                     Log::error('Notification failed: ' . $e->getMessage());
                 }
@@ -1316,7 +1364,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1326,7 +1374,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_niche_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1442,7 +1490,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1452,7 +1500,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_niche_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1569,7 +1617,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1579,7 +1627,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_niche_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1693,7 +1741,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1703,7 +1751,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_niche_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1820,7 +1868,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($broaderIndustries) {
                     $q->where(function ($q2) use ($broaderIndustries) {
                         foreach ($broaderIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });
@@ -1830,7 +1878,7 @@ class BuyerController extends Controller
                 $query->whereHas('targetPreference', function ($q) use ($priorityIndustries) {
                     $q->where(function ($q2) use ($priorityIndustries) {
                         foreach ($priorityIndustries as $id) {
-                            $q2->orWhereRaw('JSON_CONTAINS(JSON_EXTRACT(target_niche_industries, "$[*].id"), CAST(? AS JSON))', [$id]);
+                            $q2->orWhere('target_niche_industries', 'LIKE', '%"id":' . intval($id) . '%');
                         }
                     });
                 });

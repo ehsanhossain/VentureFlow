@@ -217,7 +217,7 @@ class DealController extends Controller
                 $recipients = $recipients->push(User::find($deal->pic_user_id));
             }
             $recipients = $recipients->unique('id');
-            Notification::send($recipients, new DealStatusNotification($deal, 'created'));
+            Notification::send($recipients, new DealStatusNotification($deal, 'created', [], Auth::user()));
         } catch (\Exception $e) { /* Ignore */ }
 
         return response()->json([
@@ -596,7 +596,7 @@ class DealController extends Controller
                     'to_stage_name'   => $toStageName,
                     'investor_name'   => $investorName,
                     'seller_name'     => $sellerName,
-                ]));
+                ], Auth::user()));
             } catch (\Exception $e) { /* Ignore */ }
         }
 
