@@ -264,7 +264,12 @@ const ImportWizard: React.FC<ImportWizardProps> = ({
     const applySuggestion = useCallback((rowIndex: number, field: string, suggestion: string) => {
         setRows(prev => prev.map(row => {
             if (row.rowIndex === rowIndex) {
-                const newData = { ...row.data, [field]: suggestion };
+                // Merge: keep existing valid items + append the accepted suggestion
+                // The backend already stores matched items in row.data[field] and only
+                // the unrecognized items appear in the error. So we merge them together.
+                const existing = row.data[field];
+                const merged = existing ? `${existing}, ${suggestion}` : suggestion;
+                const newData = { ...row.data, [field]: merged };
                 const newErrors = row.errors.filter(e => e.field !== field);
                 return {
                     ...row,

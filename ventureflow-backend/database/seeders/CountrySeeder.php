@@ -1559,7 +1559,7 @@ class CountrySeeder extends Seeder
                 'updated_at' => '2025-04-24 06:44:57'
             ],
             [
-                'name' => 'Philippines (the)',
+                'name' => 'Philippines',
                 'alpha_2_code' => 'PH',
                 'alpha_3_code' => 'PHL',
                 'numeric_code' => 608,
@@ -2135,7 +2135,7 @@ class CountrySeeder extends Seeder
                 'updated_at' => '2025-04-24 06:45:06'
             ],
             [
-                'name' => 'Viet Nam',
+                'name' => 'Vietnam',
                 'alpha_2_code' => 'VN',
                 'alpha_3_code' => 'VNM',
                 'numeric_code' => 704,

@@ -262,9 +262,13 @@ class ImportValidationService
     {
         $input = trim($input);
 
-        // Exact match (case-insensitive)
+        // Normalize dashes: en-dash (–), em-dash (—) → regular hyphen (-)
+        $normInput = str_replace(['–', '—'], '-', $input);
+
+        // Exact match (case-insensitive, dash-normalized)
         foreach ($validOptions as $option) {
-            if (strtolower($option) === strtolower($input)) {
+            $normOption = str_replace(['–', '—'], '-', $option);
+            if (strtolower($normOption) === strtolower($normInput)) {
                 return ['matched' => $option, 'suggestions' => []];
             }
         }
@@ -274,7 +278,8 @@ class ImportValidationService
         if ($alias) {
             // Verify the alias target exists in valid options
             foreach ($validOptions as $option) {
-                if (strtolower($option) === strtolower($alias)) {
+                $normOption = str_replace(['–', '—'], '-', $option);
+                if (strtolower($normOption) === strtolower(str_replace(['–', '—'], '-', $alias))) {
                     return ['matched' => $option, 'suggestions' => []];
                 }
             }
@@ -286,13 +291,14 @@ class ImportValidationService
         $suggestions = [];
 
         foreach ($validOptions as $option) {
-            // Contains match
-            if (str_contains(strtolower($option), strtolower($input)) ||
-                str_contains(strtolower($input), strtolower($option))) {
+            $normOption = str_replace(['–', '—'], '-', $option);
+            // Contains match (dash-normalized)
+            if (str_contains(strtolower($normOption), strtolower($normInput)) ||
+                str_contains(strtolower($normInput), strtolower($normOption))) {
                 return ['matched' => $option, 'suggestions' => []];
             }
 
-            $dist = levenshtein(strtolower($input), strtolower($option));
+            $dist = levenshtein(strtolower($normInput), strtolower($normOption));
             if ($dist < $bestDistance) {
                 $bestDistance = $dist;
                 $bestMatch = $option;
@@ -300,7 +306,7 @@ class ImportValidationService
         }
 
         // If very close (threshold: 3 chars distance), suggest
-        $threshold = max(3, (int)(strlen($input) * 0.4));
+        $threshold = max(3, (int)(strlen($normInput) * 0.4));
         if ($bestDistance <= $threshold) {
             $suggestions = [$bestMatch];
         }
@@ -308,9 +314,10 @@ class ImportValidationService
         // Build top-3 suggestions
         $scored = [];
         foreach ($validOptions as $option) {
+            $normOption = str_replace(['–', '—'], '-', $option);
             $scored[] = [
                 'option' => $option,
-                'distance' => levenshtein(strtolower($input), strtolower($option)),
+                'distance' => levenshtein(strtolower($normInput), strtolower($normOption)),
             ];
         }
         usort($scored, fn($a, $b) => $a['distance'] <=> $b['distance']);
@@ -372,6 +379,9 @@ class ImportValidationService
                 case 'comma_sep':
                     $items = $this->parseCommaSeparated($rawValue);
                     $matchAgainst = $col['match_against'] ?? null;
+                    // Industry fields are flexible: unrecognized names pass through
+                    // and will be auto-created as ad-hoc industries during import
+                    $isFlexible = in_array($key, ['company_industry', 'target_industries']);
 
                     if ($matchAgainst) {
                         $validOptions = $refData[$matchAgainst] ?? [];
@@ -383,10 +393,15 @@ class ImportValidationService
                             if ($result['matched']) {
                                 $validItems[] = $result['matched'];
                             } else {
-                                $invalidItems[] = [
-                                    'value' => $item,
-                                    'suggestions' => $result['suggestions'],
-                                ];
+                                if ($isFlexible) {
+                                    // For industries: keep unrecognized names as-is (ad-hoc)
+                                    $validItems[] = trim($item);
+                                } else {
+                                    $invalidItems[] = [
+                                        'value' => $item,
+                                        'suggestions' => $result['suggestions'],
+                                    ];
+                                }
                             }
                         }
 

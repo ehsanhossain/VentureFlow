@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Buyer;
 use App\Models\BuyersCompanyOverview;
+use App\Models\Industry;
 use App\Models\Seller;
 use App\Models\SellersCompanyOverview;
 use App\Models\SellersFinancialDetail;
@@ -543,8 +544,13 @@ class ImportController extends Controller
             if ($id) {
                 $resolved[] = ['id' => $id, 'name' => $name];
             } else {
-                // Store unresolved as name-only for flexibility
-                $resolved[] = ['name' => $name];
+                // Auto-create as ad-hoc industry (status = 'Ad-hoc')
+                // Can be promoted to primary or merged later in Industry Settings
+                $industry = Industry::firstOrCreate(
+                    ['name' => trim($name)],
+                    ['status' => 'Ad-hoc']
+                );
+                $resolved[] = ['id' => $industry->id, 'name' => $industry->name];
             }
         }
         return $resolved;
