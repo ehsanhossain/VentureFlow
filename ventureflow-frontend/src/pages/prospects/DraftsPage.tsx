@@ -275,7 +275,7 @@ const DraftsPage: React.FC = () => {
                 } catch { /* ignored */ }
 
                 const defaultCurrencyId = fin.default_currency;
-                const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
+                const sourceCurrencyVal = currentCurrencies.find(c => c.code === defaultCurrencyId || String(c.id) === String(defaultCurrencyId));
                 const currCode = sourceCurrencyVal?.code || '';
 
                 let desiredInv = 'Flexible';

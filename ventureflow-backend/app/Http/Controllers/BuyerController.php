@@ -62,10 +62,18 @@ class BuyerController extends Controller
         $range = Cache::remember('buyer_budget_range', 1800, function () {
             // Database-agnostic: fetch raw JSON and parse in PHP
             // (SQLite doesn't support JSON_UNQUOTE / JSON_VALID)
+            // Query both tables since imported investors store budget on company_overviews,
+            // while registered investors store it on financial_details
             $rows = \DB::table('buyers_financial_details')
                 ->whereNotNull('investment_budget')
                 ->where('investment_budget', '!=', '')
-                ->pluck('investment_budget');
+                ->pluck('investment_budget')
+                ->merge(
+                    \DB::table('buyers_company_overviews')
+                        ->whereNotNull('investment_budget')
+                        ->where('investment_budget', '!=', '')
+                        ->pluck('investment_budget')
+                );
 
             $minVal = null;
             $maxVal = null;
@@ -333,13 +341,13 @@ class BuyerController extends Controller
                 $query->whereHas('financialDetails', function ($q) use ($ebitdaRequirements, $displayRate) {
                     if (isset($ebitdaRequirements['min']) && is_numeric($ebitdaRequirements['min'])) {
                         $q->whereRaw(
-                            'CAST(json_extract(expected_ebitda, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), 1) / ?',
+                            'CAST(json_extract(expected_ebitda, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), (SELECT exchange_rate FROM currencies WHERE currency_code = json_extract(investment_budget, \'$.currency\') LIMIT 1), 1) / ?',
                             [$ebitdaRequirements['min'], $displayRate]
                         );
                     }
                     if (isset($ebitdaRequirements['max']) && is_numeric($ebitdaRequirements['max'])) {
                         $q->whereRaw(
-                            'CAST(json_extract(expected_ebitda, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), 1) / ?',
+                            'CAST(json_extract(expected_ebitda, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), (SELECT exchange_rate FROM currencies WHERE currency_code = json_extract(investment_budget, \'$.currency\') LIMIT 1), 1) / ?',
                             [$ebitdaRequirements['max'], $displayRate]
                         );
                     }
@@ -350,13 +358,13 @@ class BuyerController extends Controller
                 $query->whereHas('financialDetails', function ($q) use ($expectedInvestmentAmount, $displayRate) {
                     if (isset($expectedInvestmentAmount['min']) && is_numeric($expectedInvestmentAmount['min'])) {
                         $q->whereRaw(
-                            'CAST(json_extract(investment_budget, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), 1) / ?',
+                            'CAST(json_extract(investment_budget, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), (SELECT exchange_rate FROM currencies WHERE currency_code = json_extract(investment_budget, \'$.currency\') LIMIT 1), 1) / ?',
                             [$expectedInvestmentAmount['min'], $displayRate]
                         );
                     }
                     if (isset($expectedInvestmentAmount['max']) && is_numeric($expectedInvestmentAmount['max'])) {
                         $q->whereRaw(
-                            'CAST(json_extract(investment_budget, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), 1) / ?',
+                            'CAST(json_extract(investment_budget, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = buyers_financial_details.default_currency OR currency_code = buyers_financial_details.default_currency LIMIT 1), (SELECT exchange_rate FROM currencies WHERE currency_code = json_extract(investment_budget, \'$.currency\') LIMIT 1), 1) / ?',
                             [$expectedInvestmentAmount['max'], $displayRate]
                         );
                     }

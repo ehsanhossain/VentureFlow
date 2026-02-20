@@ -520,7 +520,7 @@ const InvestorDetails: React.FC = () => {
                   <span className="text-[11px] font-medium text-gray-400 uppercase">Investment Budget</span>
                   <span className="text-sm font-medium text-gray-900">
                     {investmentBudget ? (
-                      <>{formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)} <span className="text-sm font-medium text-gray-400 ml-1">{(() => { const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency)); return found?.currency_code || investmentBudget.currency || ''; })()}</span></>
+                      <>{formatCurrency(investmentBudget.min)} - {formatCurrency(investmentBudget.max)} <span className="text-sm font-medium text-gray-400 ml-1">{(() => { const found = currencies.find((c: any) => c.currency_code === investmentBudget.currency || String(c.id) === String(investmentBudget.currency)); return found?.currency_code || investmentBudget.currency || ''; })()}</span></>
                     ) : 'Flexible'}
                   </span>
                   {/* USD equivalent */}

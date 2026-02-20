@@ -564,7 +564,11 @@ const ProspectsPortal: React.FC = () => {
                     const primaryContactName = primaryContactObj?.name || overview.seller_contact_name || "N/A";
 
                     // Determine Source Currency Rate
-                    const defaultCurrencyId = b.financial_details?.default_currency;
+                    // Investors store currency inside investment_budget JSON, NOT in financial_details.default_currency
+                    const budgetObj = typeof overview.investment_budget === 'string'
+                        ? (() => { try { return JSON.parse(overview.investment_budget); } catch { return null; } })()
+                        : overview.investment_budget;
+                    const defaultCurrencyId = budgetObj?.currency || b.financial_details?.default_currency;
                     const sourceCurrencyVal = currentCurrencies.find(c => c.code === defaultCurrencyId || String(c.id) === String(defaultCurrencyId));
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
