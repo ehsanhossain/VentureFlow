@@ -972,9 +972,9 @@ const ProspectsPortal: React.FC = () => {
             // Budget range for slider — fetched separately so failures don't block page
             try {
                 const [budgetRangeRes, investmentRangeRes, ebitdaRangeRes] = await Promise.all([
-                    api.get('/api/buyer/budget-range'),
-                    api.get('/api/seller/investment-range'),
-                    api.get('/api/seller/ebitda-range'),
+                    api.get('/api/investor/budget-range'),
+                    api.get('/api/target/investment-range'),
+                    api.get('/api/target/ebitda-range'),
                 ]);
                 if (budgetRangeRes.data) {
                     setBudgetRange({
