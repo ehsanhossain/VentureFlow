@@ -150,12 +150,12 @@ const InvestorDetails: React.FC = () => {
   // Currency conversion helper: convert a value from the investor's source currency to USD
   const investmentCurrencyCode = (() => {
     if (!investmentBudget?.currency) return '';
-    const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency));
+    const found = currencies.find((c: any) => c.currency_code === investmentBudget.currency || String(c.id) === String(investmentBudget.currency));
     return found?.currency_code || '';
   })();
   const sourceExchangeRate = (() => {
     if (!investmentBudget?.currency) return 1;
-    const found = currencies.find((c: any) => String(c.id) === String(investmentBudget.currency));
+    const found = currencies.find((c: any) => c.currency_code === investmentBudget.currency || String(c.id) === String(investmentBudget.currency));
     return found ? parseFloat(found.exchange_rate || '1') : 1;
   })();
   const isSourceUSD = investmentCurrencyCode === 'USD' || !investmentCurrencyCode || sourceExchangeRate === 1;

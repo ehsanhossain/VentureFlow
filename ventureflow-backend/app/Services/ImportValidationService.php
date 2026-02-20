@@ -207,28 +207,23 @@ class ImportValidationService
             ['key' => 'rank',                     'label' => 'Rank',                    'required' => true,  'type' => 'dropdown', 'options' => 'ranks'],
             ['key' => 'company_name',             'label' => 'Company Name',            'required' => true,  'type' => 'text'],
             ['key' => 'origin_country',           'label' => 'Origin Country',          'required' => true,  'type' => 'dropdown', 'options' => 'countries'],
-            ['key' => 'status',                   'label' => 'Status',                  'required' => false, 'type' => 'dropdown', 'options' => 'statuses'],
-            ['key' => 'target_industries',        'label' => 'Target Industries',       'required' => false, 'type' => 'comma_sep', 'match_against' => 'industries'],
-            ['key' => 'niche_tags',               'label' => 'Niche Tags',              'required' => false, 'type' => 'text'],
-            ['key' => 'project_details',          'label' => 'Project Details',         'required' => false, 'type' => 'text'],
-            ['key' => 'reason_for_ma',            'label' => 'Reason for M&A',          'required' => false, 'type' => 'comma_sep', 'match_against' => 'target_reasons_ma'],
+            ['key' => 'industry',                 'label' => 'Industry',                'required' => false, 'type' => 'comma_sep', 'match_against' => 'industries'],
+            ['key' => 'website',                  'label' => 'Website',                 'required' => false, 'type' => 'text'],
+            ['key' => 'reason_for_ma',            'label' => 'Purpose of M&A',          'required' => false, 'type' => 'comma_sep', 'match_against' => 'target_reasons_ma'],
             ['key' => 'desired_investment_min',   'label' => 'Desired Investment Min',  'required' => false, 'type' => 'number'],
             ['key' => 'desired_investment_max',   'label' => 'Desired Investment Max',  'required' => false, 'type' => 'number'],
-            ['key' => 'investment_currency',      'label' => 'Investment Currency',     'required' => false, 'type' => 'dropdown', 'options' => 'currencies'],
+            ['key' => 'investment_currency',      'label' => 'Default Currency',        'required' => false, 'type' => 'dropdown', 'options' => 'currencies'],
             ['key' => 'investment_condition',     'label' => 'Investment Condition',    'required' => false, 'type' => 'comma_sep', 'match_against' => 'investment_conditions'],
-            ['key' => 'ebitda_min',               'label' => 'EBITDA Min',              'required' => false, 'type' => 'number'],
-            ['key' => 'ebitda_max',               'label' => 'EBITDA Max',              'required' => false, 'type' => 'number'],
-            ['key' => 'ebitda_times',             'label' => 'EBITDA Times',            'required' => false, 'type' => 'text'],
+            ['key' => 'ebitda',                   'label' => 'EBITDA',                  'required' => false, 'type' => 'number'],
             ['key' => 'ebitda_details',           'label' => 'EBITDA Details',          'required' => false, 'type' => 'text'],
+            ['key' => 'project_details',          'label' => 'Project Details',         'required' => false, 'type' => 'text'],
             ['key' => 'channel',                  'label' => 'Channel',                 'required' => false, 'type' => 'dropdown', 'options' => 'channels'],
-            ['key' => 'website',                  'label' => 'Website',                 'required' => false, 'type' => 'text'],
-            ['key' => 'teaser_link',              'label' => 'Teaser Link',             'required' => false, 'type' => 'text'],
-            ['key' => 'internal_pic',             'label' => 'Internal PIC',            'required' => false, 'type' => 'comma_sep'],
-            ['key' => 'financial_advisor',        'label' => 'Financial Advisor',       'required' => false, 'type' => 'comma_sep'],
+            ['key' => 'teaser_link',              'label' => 'Teaser Profile',          'required' => false, 'type' => 'text'],
             ['key' => 'contact_name',             'label' => 'Contact Name',            'required' => false, 'type' => 'text'],
-            ['key' => 'contact_email',            'label' => 'Contact Email',           'required' => false, 'type' => 'text'],
-            ['key' => 'contact_phone',            'label' => 'Contact Phone',           'required' => false, 'type' => 'text'],
             ['key' => 'contact_designation',      'label' => 'Contact Designation',     'required' => false, 'type' => 'text'],
+            ['key' => 'contact_department',       'label' => 'Contact Department',      'required' => false, 'type' => 'text'],
+            ['key' => 'contact_phone',            'label' => 'Contact Phone',           'required' => false, 'type' => 'text'],
+            ['key' => 'contact_email',            'label' => 'Contact Email',           'required' => false, 'type' => 'text'],
         ];
     }
 
@@ -381,7 +376,7 @@ class ImportValidationService
                     $matchAgainst = $col['match_against'] ?? null;
                     // Industry fields are flexible: unrecognized names pass through
                     // and will be auto-created as ad-hoc industries during import
-                    $isFlexible = in_array($key, ['company_industry', 'target_industries']);
+                    $isFlexible = in_array($key, ['company_industry', 'target_industries', 'industry']);
 
                     if ($matchAgainst) {
                         $validOptions = $refData[$matchAgainst] ?? [];

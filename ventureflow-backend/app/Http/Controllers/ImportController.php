@@ -329,7 +329,13 @@ class ImportController extends Controller
     private function saveInvestorRow(array $data): void
     {
         $companyName = $data['company_name'] ?? null;
-        if (empty($companyName)) {
+        $projectCode = $data['project_code'] ?? null;
+
+        // "Use as Project" logic: if company_name contains the word "Project",
+        // set the name to "Project {ProjectCode}" (mirrors the registration toggle)
+        if ($companyName && stripos($companyName, 'project') !== false && $projectCode) {
+            $companyName = "Project {$projectCode}";
+        } elseif (empty($companyName)) {
             throw new \Exception("Company Name is required.");
         }
 
@@ -425,7 +431,13 @@ class ImportController extends Controller
     private function saveTargetRow(array $data): void
     {
         $companyName = $data['company_name'] ?? null;
-        if (empty($companyName)) {
+        $projectCode = $data['project_code'] ?? null;
+
+        // "Use as Project" logic: if company_name contains the word "Project",
+        // set the name to "Project {ProjectCode}" (mirrors the registration toggle)
+        if ($companyName && stripos($companyName, 'project') !== false && $projectCode) {
+            $companyName = "Project {$projectCode}";
+        } elseif (empty($companyName)) {
             throw new \Exception("Company Name is required.");
         }
 
@@ -436,21 +448,19 @@ class ImportController extends Controller
         }
 
         // Parse multi-value fields
-        $targetIndustries = $this->resolveIndustryNames($data['target_industries'] ?? null);
+        $industries = $this->resolveIndustryNames($data['industry'] ?? null);
         $reasonMA = $this->validationService->parseCommaSeparated($data['reason_for_ma'] ?? null);
         $investmentCondition = $this->validationService->parseCommaSeparated($data['investment_condition'] ?? null);
-        $internalPic = $this->validationService->parseCommaSeparated($data['internal_pic'] ?? null);
-        $financialAdvisor = $this->validationService->parseCommaSeparated($data['financial_advisor'] ?? null);
-        $nicheTags = $data['niche_tags'] ?? null;
 
-        // Build contacts array
+        // Build contacts array (with department)
         $contacts = [];
         if (!empty($data['contact_name'])) {
             $contacts[] = [
                 'name' => $data['contact_name'],
+                'designation' => $data['contact_designation'] ?? '',
+                'department' => $data['contact_department'] ?? '',
                 'email' => $data['contact_email'] ?? '',
                 'phone' => $data['contact_phone'] ?? '',
-                'designation' => $data['contact_designation'] ?? '',
                 'isPrimary' => true,
             ];
         }
@@ -461,44 +471,29 @@ class ImportController extends Controller
             $websiteLinks = [['url' => $data['website']]];
         }
 
-        // HQ address
-        $hqAddress = [];
-        if (!empty($data['hq_address'] ?? null)) {
-            $hqAddress = [['label' => 'HQ', 'address' => $data['hq_address']]];
-        }
-
         // Rank
         $rank = strtoupper(trim($data['rank'] ?? 'B'));
         if (!in_array($rank, ['A', 'B', 'C'])) $rank = 'B';
-
-        // Status
-        $status = $data['status'] ?? 'Active';
-        if (!in_array($status, ['Active', 'Draft'])) $status = 'Active';
 
         // Financials
         $investmentMin = $this->cleanNumber($data['desired_investment_min'] ?? null);
         $investmentMax = $this->cleanNumber($data['desired_investment_max'] ?? null);
         $investmentCurrency = strtoupper(trim($data['investment_currency'] ?? 'USD'));
-        $ebitdaMin = $this->cleanNumber($data['ebitda_min'] ?? null);
-        $ebitdaMax = $this->cleanNumber($data['ebitda_max'] ?? null);
+        $ebitda = $this->cleanNumber($data['ebitda'] ?? null);
 
         // Create company overview
         $overview = SellersCompanyOverview::create([
             'reg_name'           => $companyName,
             'hq_country'         => $hqCountryId,
             'company_type'       => 'Corporate',
-            'industry_ops'       => $targetIndustries,
-            'niche_industry'     => $nicheTags ? [$nicheTags] : [],
+            'industry_ops'       => $industries,
             'company_rank'       => $rank,
             'reason_ma'          => $reasonMA,
-            'status'             => $status,
+            'status'             => 'Active',
             'details'            => $data['project_details'] ?? null,
             'website_links'      => $websiteLinks,
-            'hq_address'         => $hqAddress,
             'contacts'           => $contacts,
             'teaser_link'        => $data['teaser_link'] ?? null,
-            'internal_pic'       => $internalPic,
-            'financial_advisor'  => $financialAdvisor,
             'channel'            => $data['channel'] ?? null,
             'seller_contact_name'=> $data['contact_name'] ?? null,
             'seller_designation' => $data['contact_designation'] ?? null,
@@ -512,22 +507,17 @@ class ImportController extends Controller
                 'max' => $investmentMax,
             ],
             'default_currency' => $investmentCurrency,
-            'ebitda_value' => [
-                'min' => $ebitdaMin,
-                'max' => $ebitdaMax,
-            ],
-            'ebitda_times' => $data['ebitda_times'] ?? null,
+            'ebitda_value' => $ebitda,
             'ebitda_details' => $data['ebitda_details'] ?? null,
             'investment_condition' => json_encode($investmentCondition),
         ]);
 
         // Create parent seller record
-        $projectCode = $data['project_code'] ?? null;
         Seller::create([
             'seller_id' => $projectCode,
             'company_overview_id' => $overview->id,
             'financial_detail_id' => $financial->id,
-            'status' => $status,
+            'status' => 'Active',
         ]);
     }
 

@@ -565,7 +565,7 @@ const ProspectsPortal: React.FC = () => {
 
                     // Determine Source Currency Rate
                     const defaultCurrencyId = b.financial_details?.default_currency;
-                    const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
+                    const sourceCurrencyVal = currentCurrencies.find(c => c.code === defaultCurrencyId || String(c.id) === String(defaultCurrencyId));
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
 
@@ -646,7 +646,7 @@ const ProspectsPortal: React.FC = () => {
                     } catch (e) { /* ignored */ }
 
                     const defaultCurrencyId = fin.default_currency;
-                    const sourceCurrencyVal = currentCurrencies.find(c => String(c.id) === String(defaultCurrencyId));
+                    const sourceCurrencyVal = currentCurrencies.find(c => c.code === defaultCurrencyId || String(c.id) === String(defaultCurrencyId));
                     const sourceRate = sourceCurrencyVal ? parseFloat(sourceCurrencyVal.exchange_rate) : 1;
 
                     // Internal Owner (PIC)

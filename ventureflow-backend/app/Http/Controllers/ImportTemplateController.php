@@ -222,7 +222,7 @@ class ImportTemplateController extends Controller
             };
 
             // Wider for certain fields
-            if (in_array($col['key'], ['project_details', 'hq_address', 'ebitda_details'])) {
+            if (in_array($col['key'], ['project_details', 'ebitda_details'])) {
                 $width = 40;
             }
 

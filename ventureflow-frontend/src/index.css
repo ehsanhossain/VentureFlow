@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
@@ -59,7 +59,7 @@
 
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
 }
 
 
@@ -309,7 +309,7 @@ body {
 }
 
 .ventureflow-date-range .rdrCalendarWrapper {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
   font-size: 13px;
   background: #fff;
   width: 100%;
@@ -320,7 +320,7 @@ body {
 }
 
 .ventureflow-date-range .rdrMonthAndYearPickers select {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
   font-size: 13px;
   font-weight: 500;
   color: #374151;
@@ -355,7 +355,7 @@ body {
 }
 
 .ventureflow-date-range .rdrWeekDay {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
   font-size: 11px;
   font-weight: 500;
   color: #9ca3af;
@@ -369,7 +369,7 @@ body {
 }
 
 .ventureflow-date-range .rdrDayNumber span {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
   font-size: 13px;
   font-weight: 400;
   color: #374151;

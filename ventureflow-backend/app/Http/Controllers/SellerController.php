@@ -336,13 +336,13 @@ class SellerController extends Controller
                 $query->whereHas('financialDetails', function ($q) use ($expectedInvestmentAmount, $displayRate) {
                     if (isset($expectedInvestmentAmount['min']) && is_numeric($expectedInvestmentAmount['min'])) {
                         $q->whereRaw(
-                            'json_extract(expected_investment_amount, \'$.max\') IS NOT NULL AND json_extract(expected_investment_amount, \'$.max\') != \'\' AND CAST(json_extract(expected_investment_amount, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency), 1) / ?',
+                            'json_extract(expected_investment_amount, \'$.max\') IS NOT NULL AND json_extract(expected_investment_amount, \'$.max\') != \'\' AND CAST(json_extract(expected_investment_amount, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency OR currency_code = sellers_financial_details.default_currency LIMIT 1), 1) / ?',
                             [$expectedInvestmentAmount['min'], $displayRate]
                         );
                     }
                     if (isset($expectedInvestmentAmount['max']) && is_numeric($expectedInvestmentAmount['max'])) {
                         $q->whereRaw(
-                            'json_extract(expected_investment_amount, \'$.min\') IS NOT NULL AND json_extract(expected_investment_amount, \'$.min\') != \'\' AND CAST(json_extract(expected_investment_amount, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency), 1) / ?',
+                            'json_extract(expected_investment_amount, \'$.min\') IS NOT NULL AND json_extract(expected_investment_amount, \'$.min\') != \'\' AND CAST(json_extract(expected_investment_amount, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency OR currency_code = sellers_financial_details.default_currency LIMIT 1), 1) / ?',
                             [$expectedInvestmentAmount['max'], $displayRate]
                         );
                     }
@@ -374,13 +374,13 @@ class SellerController extends Controller
                 $query->whereHas('financialDetails', function ($q) use ($ebitdaRange, $displayRate) {
                     if (isset($ebitdaRange['min']) && is_numeric($ebitdaRange['min'])) {
                         $q->whereRaw(
-                            'json_extract(ebitda_value, \'$.max\') IS NOT NULL AND json_extract(ebitda_value, \'$.max\') != \'\' AND CAST(json_extract(ebitda_value, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency), 1) / ?',
+                            'json_extract(ebitda_value, \'$.max\') IS NOT NULL AND json_extract(ebitda_value, \'$.max\') != \'\' AND CAST(json_extract(ebitda_value, \'$.max\') AS REAL) >= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency OR currency_code = sellers_financial_details.default_currency LIMIT 1), 1) / ?',
                             [$ebitdaRange['min'], $displayRate]
                         );
                     }
                     if (isset($ebitdaRange['max']) && is_numeric($ebitdaRange['max'])) {
                         $q->whereRaw(
-                            'json_extract(ebitda_value, \'$.min\') IS NOT NULL AND json_extract(ebitda_value, \'$.min\') != \'\' AND CAST(json_extract(ebitda_value, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency), 1) / ?',
+                            'json_extract(ebitda_value, \'$.min\') IS NOT NULL AND json_extract(ebitda_value, \'$.min\') != \'\' AND CAST(json_extract(ebitda_value, \'$.min\') AS REAL) <= ? * COALESCE((SELECT exchange_rate FROM currencies WHERE id = sellers_financial_details.default_currency OR currency_code = sellers_financial_details.default_currency LIMIT 1), 1) / ?',
                             [$ebitdaRange['max'], $displayRate]
                         );
                     }
