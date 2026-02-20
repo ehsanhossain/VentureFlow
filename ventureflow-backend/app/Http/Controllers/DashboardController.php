@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buyer;
-use App\Models\Seller;
+use App\Models\Investor;
+use App\Models\Target;
 use App\Models\Deal;
 use App\Models\Partner;
 use App\Models\ActivityLog;
@@ -36,18 +36,18 @@ class DashboardController extends Controller
         })->selectRaw('COALESCE(SUM(COALESCE(ticket_size, estimated_ev_value, 0)), 0) as total')->value('total');
 
         $dealsThisMonth = Deal::where('created_at', '>=', $startOfMonth)->count();
-        $totalInvestors = Buyer::where('status', 1)->count();
-        $totalTargets = Seller::where('status', 1)->count();
-        $investorsThisMonth = Buyer::where('created_at', '>=', $startOfMonth)->count();
-        $targetsThisMonth = Seller::where('created_at', '>=', $startOfMonth)->count();
+        $totalInvestors = Investor::where('status', 1)->count();
+        $totalTargets = Target::where('status', 1)->count();
+        $investorsThisMonth = Investor::where('created_at', '>=', $startOfMonth)->count();
+        $targetsThisMonth = Target::where('created_at', '>=', $startOfMonth)->count();
 
         // Unmatched investors (no deal linked)
-        $unmatchedInvestors = Buyer::where('status', 1)
+        $unmatchedInvestors = Investor::where('status', 1)
             ->whereDoesntHave('deals')
             ->count();
 
         // Unmatched targets (no deal linked)
-        $unmatchedTargets = Seller::where('status', 1)
+        $unmatchedTargets = Target::where('status', 1)
             ->whereDoesntHave('deals')
             ->count();
 
@@ -335,7 +335,7 @@ class DashboardController extends Controller
     private function getRecentRegistrations($type, $limit = 5)
     {
         if ($type === 'investor') {
-            return Buyer::with(['companyOverview.hqCountry'])
+            return Investor::with(['companyOverview.hqCountry'])
                 ->where('status', 1)
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
@@ -350,7 +350,7 @@ class DashboardController extends Controller
                 ]);
         }
 
-        return Seller::with(['companyOverview.hqCountry'])
+        return Target::with(['companyOverview.hqCountry'])
             ->where('status', 1)
             ->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -415,7 +415,7 @@ class DashboardController extends Controller
             $showBuyerName = $bSet && is_array($bSet->setting_value) && ($bSet->setting_value['company_overview.reg_name'] ?? false);
         }
 
-        $sellers = Seller::with('companyOverview')->latest()->take(20)->get()
+        $sellers = Target::with('companyOverview')->latest()->take(20)->get()
             ->map(fn($seller) => [
                 'id' => $seller->id,
                 'image' => $seller->image ?? null,
@@ -425,7 +425,7 @@ class DashboardController extends Controller
                 'created_at' => $seller->created_at,
             ]);
 
-        $buyers = Buyer::with('companyOverview')->latest()->take(20)->get()
+        $buyers = Investor::with('companyOverview')->latest()->take(20)->get()
             ->map(fn($buyer) => [
                 'id' => $buyer->id,
                 'image' => $buyer->image ?? null,
@@ -451,14 +451,14 @@ class DashboardController extends Controller
         $now = Carbon::now();
 
         $total = [
-            'sellers' => Seller::where('status', 1)->count(),
-            'buyers' => Buyer::where('status', 1)->count(),
+            'sellers' => Target::where('status', 1)->count(),
+            'buyers' => Investor::where('status', 1)->count(),
             'partners' => Partner::where('status', 1)->count(),
         ];
 
         $monthly = [
-            'sellers' => Seller::where('status', 1)->whereYear('created_at', $now->year)->whereMonth('created_at', $now->month)->count(),
-            'buyers' => Buyer::where('status', 1)->whereYear('created_at', $now->year)->whereMonth('created_at', $now->month)->count(),
+            'sellers' => Target::where('status', 1)->whereYear('created_at', $now->year)->whereMonth('created_at', $now->month)->count(),
+            'buyers' => Investor::where('status', 1)->whereYear('created_at', $now->year)->whereMonth('created_at', $now->month)->count(),
             'partners' => Partner::where('status', 1)->whereYear('created_at', $now->year)->whereMonth('created_at', $now->month)->count(),
         ];
 

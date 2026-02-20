@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Seller;
+use App\Models\Target;
 
 
 class ApiController extends Controller

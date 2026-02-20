@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TargetsPartnershipDetail extends Model
+{
+    use HasFactory;
+
+    protected $table = 'sellers_partnership_details';
+
+    protected $fillable = [
+        'partnership_affiliation',
+        'partner',
+        'referral_bonus_criteria',
+        'referral_bonus_amount',
+        'mou_status',
+        'specific_remarks',
+    ];
+
+    // If a target has a foreign key pointing to this table
+    public function target()
+    {
+        return $this->hasOne(Target::class, 'partnership_detail_id');
+    }
+
+    public function partner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Partner::class, 'partner');
+    }
+}

@@ -1,38 +1,4 @@
 <?php
-
+/** @deprecated Use App\Models\TargetsFinancialDetail */
 namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class SellersFinancialDetail extends Model
-{
-    use HasFactory;
-
-    protected $table = 'sellers_financial_details';
-
-    protected $fillable = [
-        'default_currency',
-        'valuation_method',
-        'monthly_revenue',
-        'annual_revenue',
-        'operating_profit',
-        'expected_investment_amount',
-        'maximum_investor_shareholding_percentage',
-        'ebitda_value',
-        'ebitda_times',
-        'ebitda_details',
-        'investment_condition',
-    ];
-
-    protected $casts = [
-        'expected_investment_amount' => 'array',
-        'ebitda_value' => 'array',
-    ];
-
-    // Relationship to Seller (One-to-One)
-    public function seller()
-    {
-        return $this->hasOne(Seller::class, 'financial_detail_id');
-    }
-}
+class_alias(TargetsFinancialDetail::class, 'App\Models\SellersFinancialDetail');

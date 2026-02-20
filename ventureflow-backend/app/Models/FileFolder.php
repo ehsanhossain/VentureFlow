@@ -33,12 +33,12 @@ class FileFolder extends Model
 
     public function seller(): BelongsTo
     {
-        return $this->belongsTo(Seller::class);
+        return $this->belongsTo(Target::class);
     }
 
     public function buyer(): BelongsTo
     {
-        return $this->belongsTo(Buyer::class);
+        return $this->belongsTo(Investor::class);
     }
 
     public function partner(): BelongsTo

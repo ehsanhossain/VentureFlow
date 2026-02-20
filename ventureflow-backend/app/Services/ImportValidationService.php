@@ -507,9 +507,9 @@ class ImportValidationService
 
                 // 4. Check for duplicate project code in database
                 if ($type === 'investor') {
-                    $exists = \App\Models\Buyer::where('buyer_id', $projectCode)->exists();
+                    $exists = \App\Models\Investor::where('buyer_id', $projectCode)->exists();
                 } else {
-                    $exists = \App\Models\Seller::where('seller_id', $projectCode)->exists();
+                    $exists = \App\Models\Target::where('seller_id', $projectCode)->exists();
                 }
 
                 if ($exists) {

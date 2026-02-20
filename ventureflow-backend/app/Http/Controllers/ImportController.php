@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buyer;
-use App\Models\BuyersCompanyOverview;
+use App\Models\Investor;
+use App\Models\InvestorsCompanyOverview;
 use App\Models\Industry;
-use App\Models\Seller;
-use App\Models\SellersCompanyOverview;
-use App\Models\SellersFinancialDetail;
+use App\Models\Target;
+use App\Models\TargetsCompanyOverview;
+use App\Models\TargetsFinancialDetail;
 use App\Models\Country;
 use App\Services\ImportValidationService;
 use Illuminate\Http\Request;
@@ -308,9 +308,9 @@ class ImportController extends Controller
         if (empty($codes)) return;
 
         if ($type === 'investor') {
-            $existing = Buyer::whereIn('buyer_id', $codes)->pluck('buyer_id')->toArray();
+            $existing = Investor::whereIn('buyer_id', $codes)->pluck('buyer_id')->toArray();
         } else {
-            $existing = Seller::whereIn('seller_id', $codes)->pluck('seller_id')->toArray();
+            $existing = Target::whereIn('seller_id', $codes)->pluck('seller_id')->toArray();
         }
 
         $existingUpper = array_map('strtoupper', $existing);
@@ -388,7 +388,7 @@ class ImportController extends Controller
         $budgetCurrency = strtoupper(trim($data['budget_currency'] ?? 'USD'));
 
         // Create the company overview
-        $overview = BuyersCompanyOverview::create([
+        $overview = InvestorsCompanyOverview::create([
             'reg_name'              => $companyName,
             'hq_country'            => $hqCountryId,
             'company_type'          => 'Corporate',
@@ -418,7 +418,7 @@ class ImportController extends Controller
 
         // Create the parent buyer record
         $projectCode = $data['project_code'] ?? null;
-        Buyer::create([
+        Investor::create([
             'buyer_id' => $projectCode,
             'company_overview_id' => $overview->id,
             'status' => 'Active',
@@ -482,7 +482,7 @@ class ImportController extends Controller
         $ebitda = $this->cleanNumber($data['ebitda'] ?? null);
 
         // Create company overview
-        $overview = SellersCompanyOverview::create([
+        $overview = TargetsCompanyOverview::create([
             'reg_name'           => $companyName,
             'hq_country'         => $hqCountryId,
             'company_type'       => 'Corporate',
@@ -501,7 +501,7 @@ class ImportController extends Controller
         ]);
 
         // Create financial details
-        $financial = SellersFinancialDetail::create([
+        $financial = TargetsFinancialDetail::create([
             'expected_investment_amount' => [
                 'min' => $investmentMin,
                 'max' => $investmentMax,
@@ -513,7 +513,7 @@ class ImportController extends Controller
         ]);
 
         // Create parent seller record
-        Seller::create([
+        Target::create([
             'seller_id' => $projectCode,
             'company_overview_id' => $overview->id,
             'financial_detail_id' => $financial->id,

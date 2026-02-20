@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Buyer;
-use App\Models\Seller;
+use App\Models\Investor;
+use App\Models\Target;
 use App\Models\Match as MatchModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -55,7 +55,7 @@ class MatchEngineService
     {
         $buyer->load(['companyOverview', 'targetPreference', 'financialDetails']);
 
-        $sellers = Seller::where('status', 1)
+        $sellers = Target::where('status', 1)
             ->with(['companyOverview', 'financialDetails'])
             ->get();
 
@@ -98,7 +98,7 @@ class MatchEngineService
     {
         $seller->load(['companyOverview', 'financialDetails']);
 
-        $buyers = Buyer::where('status', 1)
+        $buyers = Investor::where('status', 1)
             ->with(['companyOverview', 'targetPreference', 'financialDetails'])
             ->get();
 
@@ -135,11 +135,11 @@ class MatchEngineService
      */
     public function fullRescan(): int
     {
-        $buyers = Buyer::where('status', 1)
+        $buyers = Investor::where('status', 1)
             ->with(['companyOverview', 'targetPreference', 'financialDetails'])
             ->get();
 
-        $sellers = Seller::where('status', 1)
+        $sellers = Target::where('status', 1)
             ->with(['companyOverview', 'financialDetails'])
             ->get();
 

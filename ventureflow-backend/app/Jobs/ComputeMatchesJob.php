@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Models\Buyer;
-use App\Models\Seller;
+use App\Models\Investor;
+use App\Models\Target;
 use App\Models\User;
 use App\Notifications\MatchIQNotification;
 use App\Services\MatchEngineService;
@@ -39,14 +39,14 @@ class ComputeMatchesJob implements ShouldQueue
 
         try {
             if ($this->prospectType === 'buyer') {
-                $buyer = Buyer::find($this->prospectId);
+                $buyer = Investor::find($this->prospectId);
                 if (!$buyer) {
                     Log::warning("MatchIQ: Buyer#{$this->prospectId} not found, skipping.");
                     return;
                 }
                 $matches = $engine->computeMatchesForBuyer($buyer);
             } else {
-                $seller = Seller::find($this->prospectId);
+                $seller = Target::find($this->prospectId);
                 if (!$seller) {
                     Log::warning("MatchIQ: Seller#{$this->prospectId} not found, skipping.");
                     return;

@@ -20,8 +20,8 @@ class ActivityLogController extends Controller
         ]);
 
         $typeMap = [
-            'buyer' => \App\Models\Buyer::class,
-            'seller' => \App\Models\Seller::class,
+            'buyer' => \App\Models\Investor::class,
+            'seller' => \App\Models\Target::class,
             'deal' => \App\Models\Deal::class,
         ];
 
@@ -63,8 +63,8 @@ class ActivityLogController extends Controller
         ]);
 
         $typeMap = [
-            'buyer' => \App\Models\Buyer::class,
-            'seller' => \App\Models\Seller::class,
+            'buyer' => \App\Models\Investor::class,
+            'seller' => \App\Models\Target::class,
             'deal' => \App\Models\Deal::class,
         ];
 

@@ -65,12 +65,12 @@ class Deal extends Model
 
     public function buyer(): BelongsTo
     {
-        return $this->belongsTo(Buyer::class, 'buyer_id');
+        return $this->belongsTo(Investor::class, 'buyer_id');
     }
 
     public function seller(): BelongsTo
     {
-        return $this->belongsTo(Seller::class, 'seller_id');
+        return $this->belongsTo(Target::class, 'seller_id');
     }
 
     public function pic(): BelongsTo

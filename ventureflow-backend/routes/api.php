@@ -7,7 +7,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DesignationController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ImportTemplateController;
-use App\Http\Controllers\SellerController;
+use App\Http\Controllers\TargetController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -18,7 +18,7 @@ use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\FileController;
-use App\Http\Controllers\BuyerController;
+use App\Http\Controllers\InvestorController;
 use App\Http\Controllers\IndustryController;
 use App\Http\Controllers\RoleController;
 use App\Models\Employee;
@@ -73,25 +73,25 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/general-settings', [\App\Http\Controllers\GeneralSettingsController::class, 'update']);
 
     //Seller Routes
-    Route::get('/seller/fetch', [SellerController::class, 'fetchAll']);
-    Route::get('/seller/get-last-sequence', [SellerController::class, 'getLastSequence']);
-    Route::get('/seller/check-id', [SellerController::class, 'checkId']);
-    Route::get('/seller/pinned', [SellerController::class, 'pinnedData']);
-    Route::get('/seller/unpinned', [SellerController::class, 'unpinnedData']);
-    Route::get('/seller/closed', [SellerController::class, 'closedDeals']);
-    Route::get('/seller/drafts', [SellerController::class, 'drafts']);
-    Route::get('/seller/partnerships', [SellerController::class, 'partnerships']);
-    Route::get('/seller/delete-analyze', [SellerController::class, 'getDeleteImpact']);
-    Route::get('/seller/investment-range', [SellerController::class, 'investmentRange']);
-    Route::get('/seller/ebitda-range', [SellerController::class, 'ebitdaRange']);
-    Route::delete('/sellers', [SellerController::class, 'destroy']);
-    Route::apiResource('seller', SellerController::class);
-    Route::post('/seller/company-overviews', [SellerController::class, 'sellerCompanyOverviewstore']);
-    Route::post('/seller/financial-details', [SellerController::class, 'sellerFinancialDetailsstore']);
-    Route::post('/seller/teaser-center', [SellerController::class, 'sellerTeaserCenterstore']);
-    Route::post('/seller/partnership-details', [SellerController::class, 'sellerPartnershipDetailsstore']);
-    Route::get('/seller/{sellerId}/folders', [FolderController::class, 'sellerFolders']);
-    Route::post('/seller/{seller}/pinned', [SellerController::class, 'pinned']);
+    Route::get('/target/fetch', [TargetController::class, 'fetchAll']);
+    Route::get('/target/get-last-sequence', [TargetController::class, 'getLastSequence']);
+    Route::get('/target/check-id', [TargetController::class, 'checkId']);
+    Route::get('/target/pinned', [TargetController::class, 'pinnedData']);
+    Route::get('/target/unpinned', [TargetController::class, 'unpinnedData']);
+    Route::get('/target/closed', [TargetController::class, 'closedDeals']);
+    Route::get('/target/drafts', [TargetController::class, 'drafts']);
+    Route::get('/target/partnerships', [TargetController::class, 'partnerships']);
+    Route::get('/target/delete-analyze', [TargetController::class, 'getDeleteImpact']);
+    Route::get('/target/investment-range', [TargetController::class, 'investmentRange']);
+    Route::get('/target/ebitda-range', [TargetController::class, 'ebitdaRange']);
+    Route::delete('/targets', [TargetController::class, 'destroy']);
+    Route::apiResource('seller', TargetController::class);
+    Route::post('/target/company-overviews', [TargetController::class, 'sellerCompanyOverviewstore']);
+    Route::post('/target/financial-details', [TargetController::class, 'sellerFinancialDetailsstore']);
+    Route::post('/target/teaser-center', [TargetController::class, 'sellerTeaserCenterstore']);
+    Route::post('/target/partnership-details', [TargetController::class, 'sellerPartnershipDetailsstore']);
+    Route::get('/target/{sellerId}/folders', [FolderController::class, 'sellerFolders']);
+    Route::post('/target/{seller}/pinned', [TargetController::class, 'pinned']);
 
 
     //Partner Routes
@@ -110,25 +110,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // Buyers Routes
-    Route::get('/buyer/fetch', [BuyerController::class, 'fetchAll']);
-    Route::get('/buyer/get-last-sequence', [BuyerController::class, 'getLastSequence']);
-    Route::get('/buyer/check-id', [BuyerController::class, 'checkId']);
-    Route::get('/buyer/pinned', [BuyerController::class, 'pinnedData']);
-    Route::get('/buyer/unpinned', [BuyerController::class, 'unpinnedData']);
-    Route::get('/buyer/closed-deals', [BuyerController::class, 'closedDeals']);
-    Route::get('/buyer/drafts', [BuyerController::class, 'drafts']);
-    Route::get('/buyer/from-partners', [BuyerController::class, 'fromPartners']);
-    Route::get('/buyer/delete-analyze', [BuyerController::class, 'getDeleteImpact']);
-    Route::get('/buyer/budget-range', [BuyerController::class, 'budgetRange']);
-    Route::delete('/buyers', [BuyerController::class, 'destroy']);
-    Route::apiResource('buyer', BuyerController::class);
-    Route::post('/buyer/company-overviews', [BuyerController::class, 'companyOverviewStore']);
-    Route::post('/buyer/financial-details', [BuyerController::class, 'financialDetailsStore']);
-    Route::post('/buyer/target-preferences', [BuyerController::class, 'targetPreferencesStore']);
-    Route::post('/buyer/partnership-details', [BuyerController::class, 'partnershipDetailsStore']);
-    Route::post('/buyer/teaser-center', [BuyerController::class, 'teaserCenterStore']);
+    Route::get('/investor/fetch', [InvestorController::class, 'fetchAll']);
+    Route::get('/investor/get-last-sequence', [InvestorController::class, 'getLastSequence']);
+    Route::get('/investor/check-id', [InvestorController::class, 'checkId']);
+    Route::get('/investor/pinned', [InvestorController::class, 'pinnedData']);
+    Route::get('/investor/unpinned', [InvestorController::class, 'unpinnedData']);
+    Route::get('/investor/closed-deals', [InvestorController::class, 'closedDeals']);
+    Route::get('/investor/drafts', [InvestorController::class, 'drafts']);
+    Route::get('/investor/from-partners', [InvestorController::class, 'fromPartners']);
+    Route::get('/investor/delete-analyze', [InvestorController::class, 'getDeleteImpact']);
+    Route::get('/investor/budget-range', [InvestorController::class, 'budgetRange']);
+    Route::delete('/investors', [InvestorController::class, 'destroy']);
+    Route::apiResource('buyer', InvestorController::class);
+    Route::post('/investor/company-overviews', [InvestorController::class, 'companyOverviewStore']);
+    Route::post('/investor/financial-details', [InvestorController::class, 'financialDetailsStore']);
+    Route::post('/investor/target-preferences', [InvestorController::class, 'targetPreferencesStore']);
+    Route::post('/investor/partnership-details', [InvestorController::class, 'partnershipDetailsStore']);
+    Route::post('/investor/teaser-center', [InvestorController::class, 'teaserCenterStore']);
     Route::get('/buyers/{buyerId}/folders', [FolderController::class, 'buyerFolders']);
-    Route::post('/buyer/{buyer}/pinned', [BuyerController::class, 'pinned']);
+    Route::post('/investor/{buyer}/pinned', [InvestorController::class, 'pinned']);
 
 
     // Import Routes (new 2-step flow)
@@ -189,8 +189,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Partner Portal Data (For Partners)
     Route::prefix('partner-portal')->group(function () {
         Route::get('/stats', [\App\Http\Controllers\PartnerDataController::class, 'getDashboardStats']);
-        Route::get('/buyers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedBuyers']);
-        Route::get('/sellers', [\App\Http\Controllers\PartnerDataController::class, 'getSharedSellers']);
+        Route::get('/investors', [\App\Http\Controllers\PartnerDataController::class, 'getSharedBuyers']);
+        Route::get('/targets', [\App\Http\Controllers\PartnerDataController::class, 'getSharedSellers']);
     });
 
     // Audit Log Routes (Admin only)
