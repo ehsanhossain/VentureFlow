@@ -505,7 +505,7 @@ function DataTable<T>({
                     className
                 )}>
                     <thead className={cn(
-                        stickyHeader && 'sticky top-0 z-20',
+                        stickyHeader && 'sticky top-0 z-30',
                         'bg-[#f1f5f9] shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
                     )}>
                         <tr className="table-header-row h-12">
@@ -642,7 +642,7 @@ function DataTable<T>({
                                     >
                                         {selectable && (
                                             <td className={cn(
-                                                "px-4 py-3 text-center sticky left-0 z-20 border-b border-[#f1f5f9] transition-all duration-150",
+                                                "px-4 py-3 text-center sticky left-0 z-10 border-b border-[#f1f5f9] transition-all duration-150",
                                                 isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
                                                 scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
                                             )}>
