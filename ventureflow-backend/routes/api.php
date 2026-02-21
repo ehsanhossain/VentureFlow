@@ -231,6 +231,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/investor/{id}', [MatchController::class, 'forInvestor']);
         Route::get('/target/{id}', [MatchController::class, 'forTarget']);
         Route::post('/rescan', [MatchController::class, 'rescan']);
+        Route::post('/custom-score', [MatchController::class, 'customScore']);
         Route::post('/{id}/dismiss', [MatchController::class, 'dismiss']);
         Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
     });

@@ -183,6 +183,64 @@ class MatchController extends Controller
     }
 
     /**
+     * POST /api/matchiq/custom-score
+     * Score targets in real-time using investor criteria overrides.
+     * Results are NOT stored in the database — live preview only.
+     *
+     * Body: {
+     *   investor_id: number,
+     *   criteria: {
+     *     industry_ids?: number[],
+     *     target_countries?: number[],
+     *     ebitda_min?: number,
+     *     budget_min?: number,
+     *     budget_max?: number,
+     *     ownership_condition?: string
+     *   }
+     * }
+     */
+    public function customScore(Request $request, MatchEngineService $engine): JsonResponse
+    {
+        $investorId = $request->input('investor_id');
+        $criteria   = $request->input('criteria', []);
+
+        if (!$investorId) {
+            return response()->json(['message' => 'investor_id is required.'], 422);
+        }
+
+        $investor = \App\Models\Investor::with(['companyOverview', 'financialDetails'])->find($investorId);
+
+        if (!$investor) {
+            return response()->json(['message' => 'Investor not found.'], 404);
+        }
+
+        $results = $engine->scoreWithCriteria($investor, $criteria);
+
+        // Load target relationships for the response
+        $formatted = array_map(function ($result) {
+            $target = $result['target'];
+            $target->load(['companyOverview', 'financialDetails']);
+
+            return [
+                'target_id'       => $result['target_id'],
+                'total_score'     => $result['total_score'],
+                'industry_score'  => $result['industry_score'],
+                'geography_score' => $result['geography_score'],
+                'financial_score' => $result['financial_score'],
+                'ownership_score' => $result['ownership_score'],
+                'explanations'    => $result['explanations'],
+                'seller'          => $target,
+            ];
+        }, $results);
+
+        return response()->json([
+            'data'  => $formatted,
+            'total' => count($formatted),
+            'note'  => 'Custom-scored results — not stored in database.',
+        ]);
+    }
+
+    /**
      * POST /api/matchiq/{id}/dismiss
      * Dismiss a match (won't show up again).
      */

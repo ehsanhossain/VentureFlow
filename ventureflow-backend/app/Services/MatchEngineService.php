@@ -17,27 +17,30 @@ use Illuminate\Support\Facades\Log;
 /**
  * MatchIQ — Smart Matching Engine
  *
- * Scores every Investor ↔ Target pair across 6 weighted dimensions:
- *   1. Industry    (25%) — industry preference overlap
- *   2. Geography   (20%) — target country alignment
- *   3. Financial   (20%) — budget / revenue / EBITDA fit
- *   4. Profile     (15%) — employee count, years in business, company type
- *   5. Timeline    (10%) — transaction timeline alignment
- *   6. Ownership   (10%) — shareholding / ownership preference compatibility
+ * Scores every Investor ↔ Target pair across 4 weighted dimensions,
+ * based on fields that actually exist in the registration forms:
+ *
+ *   1. Industry  (35%) — preferred industry vs target's actual industry
+ *   2. Geography (30%) — investor's target countries vs target's HQ country
+ *   3. Financial (25%) — investment budget vs desired investment + EBITDA
+ *   4. Ownership (10%) — investment condition / stake compatibility
  *
  * Each dimension scorer returns 0.0–1.0.
  * Weighted combination produces a final score 0–100.
+ *
+ * Industries are matched by ID first (exact), then by name (fuzzy).
+ * Since industries are dynamic (admin-managed in Settings), ID-based
+ * matching ensures renamed or consolidated industries propagate
+ * automatically across all matches on the next rescan.
  */
 class MatchEngineService
 {
     // ─── Configurable Weights (must sum to 1.0) ─────────────────────────
 
     private const WEIGHTS = [
-        'industry'  => 0.25,
-        'geography' => 0.20,
-        'financial' => 0.20,
-        'profile'   => 0.15,
-        'timeline'  => 0.10,
+        'industry'  => 0.35,
+        'geography' => 0.30,
+        'financial' => 0.25,
         'ownership' => 0.10,
     ];
 
@@ -54,33 +57,32 @@ class MatchEngineService
     // ─── Public API ─────────────────────────────────────────────────────
 
     /**
-     * Compute matches for a specific buyer against all active sellers.
+     * Compute matches for a specific investor against all active targets.
      * Returns the collection of upserted Match models.
      */
-    public function computeMatchesForBuyer(Buyer $buyer): Collection
+    public function computeMatchesForBuyer(Investor $investor): Collection
     {
-        $buyer->load(['companyOverview', 'targetPreference', 'financialDetails']);
+        $investor->load(['companyOverview', 'financialDetails']);
 
-        $sellers = Target::where('status', 1)
+        $targets = Target::where('status', 1)
             ->with(['companyOverview', 'financialDetails'])
             ->get();
 
         $results = collect();
 
-        foreach ($sellers as $seller) {
+        foreach ($targets as $target) {
             try {
-                $scores = $this->scoreMatch($buyer, $seller);
+                $scores = $this->scoreMatch($investor, $target);
 
                 if ($scores['total_score'] >= self::MIN_SCORE) {
                     $match = MatchModel::updateOrCreate(
-                        ['buyer_id' => $buyer->id, 'seller_id' => $seller->id],
-                        array_merge($scores, [
-                            'computed_at' => now(),
-                            // Don't overwrite status if already reviewed/dismissed
-                        ])
+                        ['buyer_id' => $investor->id, 'seller_id' => $target->id],
+                        array_merge(
+                            array_diff_key($scores, ['explanations' => null]),
+                            ['computed_at' => now()]
+                        )
                     );
 
-                    // Only reset status if it was previously a low-score record
                     if ($match->wasRecentlyCreated) {
                         $match->update(['status' => 'pending']);
                     }
@@ -88,7 +90,7 @@ class MatchEngineService
                     $results->push($match);
                 }
             } catch (\Throwable $e) {
-                Log::warning("MatchIQ: Failed scoring Buyer#{$buyer->id} vs Seller#{$seller->id}", [
+                Log::warning("MatchIQ: Failed scoring Investor#{$investor->id} vs Target#{$target->id}", [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -98,26 +100,29 @@ class MatchEngineService
     }
 
     /**
-     * Compute matches for a specific seller against all active buyers.
+     * Compute matches for a specific target against all active investors.
      */
-    public function computeMatchesForSeller(Seller $seller): Collection
+    public function computeMatchesForSeller(Target $target): Collection
     {
-        $seller->load(['companyOverview', 'financialDetails']);
+        $target->load(['companyOverview', 'financialDetails']);
 
-        $buyers = Investor::where('status', 1)
-            ->with(['companyOverview', 'targetPreference', 'financialDetails'])
+        $investors = Investor::where('status', 1)
+            ->with(['companyOverview', 'financialDetails'])
             ->get();
 
         $results = collect();
 
-        foreach ($buyers as $buyer) {
+        foreach ($investors as $investor) {
             try {
-                $scores = $this->scoreMatch($buyer, $seller);
+                $scores = $this->scoreMatch($investor, $target);
 
                 if ($scores['total_score'] >= self::MIN_SCORE) {
                     $match = MatchModel::updateOrCreate(
-                        ['buyer_id' => $buyer->id, 'seller_id' => $seller->id],
-                        array_merge($scores, ['computed_at' => now()])
+                        ['buyer_id' => $investor->id, 'seller_id' => $target->id],
+                        array_merge(
+                            array_diff_key($scores, ['explanations' => null]),
+                            ['computed_at' => now()]
+                        )
                     );
 
                     if ($match->wasRecentlyCreated) {
@@ -127,7 +132,7 @@ class MatchEngineService
                     $results->push($match);
                 }
             } catch (\Throwable $e) {
-                Log::warning("MatchIQ: Failed scoring Buyer#{$buyer->id} vs Seller#{$seller->id}", [
+                Log::warning("MatchIQ: Failed scoring Investor#{$investor->id} vs Target#{$target->id}", [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -137,34 +142,37 @@ class MatchEngineService
     }
 
     /**
-     * Full rescan: score every buyer × seller pair.
+     * Full rescan: score every investor × target pair.
      */
     public function fullRescan(): int
     {
-        $buyers = Investor::where('status', 1)
-            ->with(['companyOverview', 'targetPreference', 'financialDetails'])
+        $investors = Investor::where('status', 1)
+            ->with(['companyOverview', 'financialDetails'])
             ->get();
 
-        $sellers = Target::where('status', 1)
+        $targets = Target::where('status', 1)
             ->with(['companyOverview', 'financialDetails'])
             ->get();
 
         $count = 0;
 
-        foreach ($buyers as $buyer) {
-            foreach ($sellers as $seller) {
+        foreach ($investors as $investor) {
+            foreach ($targets as $target) {
                 try {
-                    $scores = $this->scoreMatch($buyer, $seller);
+                    $scores = $this->scoreMatch($investor, $target);
 
                     if ($scores['total_score'] >= self::MIN_SCORE) {
                         MatchModel::updateOrCreate(
-                            ['buyer_id' => $buyer->id, 'seller_id' => $seller->id],
-                            array_merge($scores, ['computed_at' => now()])
+                            ['buyer_id' => $investor->id, 'seller_id' => $target->id],
+                            array_merge(
+                                array_diff_key($scores, ['explanations' => null]),
+                                ['computed_at' => now()]
+                            )
                         );
                         $count++;
                     }
                 } catch (\Throwable $e) {
-                    Log::warning("MatchIQ Rescan: Failed Buyer#{$buyer->id} vs Seller#{$seller->id}", [
+                    Log::warning("MatchIQ Rescan: Failed Investor#{$investor->id} vs Target#{$target->id}", [
                         'error' => $e->getMessage(),
                     ]);
                 }
@@ -175,23 +183,20 @@ class MatchEngineService
     }
 
     /**
-     * Score a single buyer-seller pair. Returns all dimension scores + total.
+     * Score a single investor-target pair.
+     * Returns all dimension scores + total + human-readable explanations.
      */
-    public function scoreMatch(Buyer $buyer, Seller $seller): array
+    public function scoreMatch(Investor $investor, Target $target): array
     {
-        $industry  = $this->scoreIndustry($buyer, $seller);
-        $geography = $this->scoreGeography($buyer, $seller);
-        $financial = $this->scoreFinancial($buyer, $seller);
-        $profile   = $this->scoreProfile($buyer, $seller);
-        $timeline  = $this->scoreTimeline($buyer, $seller);
-        $ownership = $this->scoreOwnership($buyer, $seller);
+        [$industry,  $indExp]  = $this->scoreIndustry($investor, $target);
+        [$geography, $geoExp]  = $this->scoreGeography($investor, $target);
+        [$financial, $finExp]  = $this->scoreFinancial($investor, $target);
+        [$ownership, $ownExp]  = $this->scoreOwnership($investor, $target);
 
         $totalScore = (int) round(
-            ($industry  * self::WEIGHTS['industry'] +
+            ($industry  * self::WEIGHTS['industry']  +
              $geography * self::WEIGHTS['geography'] +
              $financial * self::WEIGHTS['financial'] +
-             $profile   * self::WEIGHTS['profile'] +
-             $timeline  * self::WEIGHTS['timeline'] +
              $ownership * self::WEIGHTS['ownership']) * 100
         );
 
@@ -200,10 +205,76 @@ class MatchEngineService
             'industry_score'   => round($industry, 4),
             'geography_score'  => round($geography, 4),
             'financial_score'  => round($financial, 4),
-            'profile_score'    => round($profile, 4),
-            'timeline_score'   => round($timeline, 4),
             'ownership_score'  => round($ownership, 4),
+            'explanations'     => [
+                'industry'  => $indExp,
+                'geography' => $geoExp,
+                'financial' => $finExp,
+                'ownership' => $ownExp,
+            ],
         ];
+    }
+
+    /**
+     * Score with custom criteria override (for the Investor Criteria filter panel).
+     * Criteria fields override the investor's stored preferences at query time.
+     * Results are NOT stored to the database.
+     *
+     * @param Investor $investor
+     * @param array    $criteria  Keys: industry_ids[], target_countries[], ebitda_min, budget_min, budget_max, ownership_condition
+     * @return array   Scored target list with scores and explanations
+     */
+    public function scoreWithCriteria(Investor $investor, array $criteria): array
+    {
+        $targets = Target::where('status', 1)
+            ->with(['companyOverview', 'financialDetails'])
+            ->get();
+
+        $results = [];
+
+        foreach ($targets as $target) {
+            try {
+                [$industry,  $indExp]  = $this->scoreIndustryWithCriteria($criteria, $target);
+                [$geography, $geoExp]  = $this->scoreGeographyWithCriteria($criteria, $target);
+                [$financial, $finExp]  = $this->scoreFinancialWithCriteria($criteria, $investor, $target);
+                [$ownership, $ownExp]  = $this->scoreOwnershipWithCriteria($criteria, $target);
+
+                $totalScore = (int) round(
+                    ($industry  * self::WEIGHTS['industry']  +
+                     $geography * self::WEIGHTS['geography'] +
+                     $financial * self::WEIGHTS['financial'] +
+                     $ownership * self::WEIGHTS['ownership']) * 100
+                );
+
+                $totalScore = min(100, max(0, $totalScore));
+
+                if ($totalScore >= self::MIN_SCORE) {
+                    $results[] = [
+                        'target_id'       => $target->id,
+                        'total_score'     => $totalScore,
+                        'industry_score'  => round($industry, 4),
+                        'geography_score' => round($geography, 4),
+                        'financial_score' => round($financial, 4),
+                        'ownership_score' => round($ownership, 4),
+                        'explanations'    => [
+                            'industry'  => $indExp,
+                            'geography' => $geoExp,
+                            'financial' => $finExp,
+                            'ownership' => $ownExp,
+                        ],
+                        'target'          => $target,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                Log::warning("MatchIQ Custom Score: Failed Investor#{$investor->id} vs Target#{$target->id}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        usort($results, fn($a, $b) => $b['total_score'] <=> $a['total_score']);
+
+        return $results;
     }
 
     // ─── Dimension Scorers ──────────────────────────────────────────────
@@ -211,456 +282,508 @@ class MatchEngineService
     /**
      * DIMENSION 1: Industry Match (0.0–1.0)
      *
-     * Compares buyer's preferred industries against seller's actual industries.
-     * Uses IndustrySimilarityService for fuzzy matching of ad-hoc industry names.
+     * Compares investor's preferred industries against target's actual industries.
+     * Primary match: by industry ID (exact, propagates admin renames automatically).
+     * Fallback: by industry name (fuzzy Levenshtein).
+     *
+     * Uses two investor fields: main_industry_operations + company_industry.
+     * Uses one target field: industry_ops.
      */
-    private function scoreIndustry(Buyer $buyer, Seller $seller): float
+    private function scoreIndustry(Investor $investor, Target $target): array
     {
-        // Buyer's preferred industries (from TargetPreferences + CompanyOverview)
-        $buyerIndustries = $this->extractBuyerIndustries($buyer);
-        if (empty($buyerIndustries)) return 0.5; // No preference = neutral
+        $investorIndustries = $this->extractInvestorIndustries($investor);
+        $targetIndustries   = $this->extractTargetIndustries($target);
 
-        // Seller's actual industries (from CompanyOverview)
-        $sellerIndustries = $this->extractSellerIndustries($seller);
-        if (empty($sellerIndustries)) return 0.3; // No data = low
-
-        // Normalize all for comparison
-        $buyerNorm  = array_map(fn($s) => mb_strtolower(trim($s)), $buyerIndustries);
-        $sellerNorm = array_map(fn($s) => mb_strtolower(trim($s)), $sellerIndustries);
-
-        // 1. Exact overlap (Jaccard)
-        $intersection = count(array_intersect($buyerNorm, $sellerNorm));
-        $union = count(array_unique(array_merge($buyerNorm, $sellerNorm)));
-        $exactScore = $union > 0 ? $intersection / $union : 0.0;
-
-        if ($exactScore > 0) {
-            return min(1.0, $exactScore + 0.2); // Boost exact matches
+        if (empty($investorIndustries)) {
+            return [0.5, 'Industry: Investor has no industry preference set (neutral)'];
+        }
+        if (empty($targetIndustries)) {
+            return [0.3, 'Industry: Target has no industry listed'];
         }
 
-        // 2. Fuzzy matching via IndustrySimilarityService
-        $bestFuzzyScore = 0.0;
-        foreach ($sellerNorm as $sellerInd) {
-            foreach ($buyerNorm as $buyerInd) {
-                $suggestions = $this->industrySimilarity->suggest($sellerInd);
-                foreach ($suggestions as $sug) {
-                    if (mb_strtolower($sug['name']) === $buyerInd) {
-                        $bestFuzzyScore = max($bestFuzzyScore, $sug['score'] / 100);
-                    }
-                }
+        // --- ID-based exact match (preferred — survives industry renames) ---
+        $investorIds = array_filter(array_column($investorIndustries, 'id'));
+        $targetIds   = array_filter(array_column($targetIndustries, 'id'));
 
-                // Also try direct text similarity
-                $textSim = $this->textSimilarity($buyerInd, $sellerInd);
-                $bestFuzzyScore = max($bestFuzzyScore, $textSim);
+        if (!empty($investorIds) && !empty($targetIds)) {
+            $intersection = count(array_intersect($investorIds, $targetIds));
+            $union        = count(array_unique(array_merge($investorIds, $targetIds)));
+            $idScore      = $union > 0 ? $intersection / $union : 0.0;
+
+            if ($idScore > 0) {
+                $matched = array_intersect($investorIds, $targetIds);
+                $names   = array_map(fn($item) => $item['name'] ?? 'Unknown',
+                    array_filter($targetIndustries, fn($i) => in_array($i['id'], $matched)));
+                $nameStr = implode(', ', $names) ?: 'Matched industries';
+                return [
+                    min(1.0, $idScore + 0.2),
+                    "Industry: {$nameStr} — exact match by industry ID"
+                ];
             }
         }
 
-        return $bestFuzzyScore;
+        // --- Name-based fuzzy fallback ---
+        $investorNames = array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $investorIndustries);
+        $targetNames   = array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $targetIndustries);
+        $investorNames = array_filter($investorNames);
+        $targetNames   = array_filter($targetNames);
+
+        // Jaccard on names
+        $intersection = count(array_intersect($investorNames, $targetNames));
+        $union = count(array_unique(array_merge($investorNames, $targetNames)));
+        $exactScore = $union > 0 ? $intersection / $union : 0.0;
+
+        if ($exactScore > 0) {
+            return [
+                min(1.0, $exactScore + 0.1),
+                'Industry: Name overlap — "' . implode(', ', array_intersect($investorNames, $targetNames)) . '"'
+            ];
+        }
+
+        // Levenshtein similarity
+        $best = 0.0;
+        $bestPair = ['', ''];
+        foreach ($targetNames as $tName) {
+            foreach ($investorNames as $iName) {
+                $sim = $this->textSimilarity($iName, $tName);
+                if ($sim > $best) {
+                    $best = $sim;
+                    $bestPair = [$iName, $tName];
+                }
+            }
+        }
+
+        if ($best > 0.5) {
+            return [$best, "Industry: Similar — \"{$bestPair[1]}\" ≈ \"{$bestPair[0]}\""];
+        }
+
+        return [0.1, 'Industry: No industry overlap found'];
     }
 
     /**
      * DIMENSION 2: Geography Match (0.0–1.0)
      *
-     * Checks if seller's HQ country or operating countries overlap
-     * with buyer's target countries.
+     * Checks if target's HQ country is in investor's list of target countries.
      */
-    private function scoreGeography(Buyer $buyer, Seller $seller): float
+    private function scoreGeography(Investor $investor, Target $target): array
     {
-        // Buyer's target countries
-        $buyerCountries = $this->extractBuyerCountries($buyer);
-        if (empty($buyerCountries)) return 0.5; // No preference = neutral
+        $investorCountries = $this->extractInvestorCountries($investor);
 
-        // Seller's countries
-        $sellerHq = $seller->companyOverview?->hq_country;
-        $sellerOpCountries = $this->toArray($seller->companyOverview?->op_countries);
-
-        $sellerCountries = array_filter(array_unique(
-            array_merge([$sellerHq], $sellerOpCountries)
-        ));
-
-        if (empty($sellerCountries)) return 0.3; // No data = low
-
-        // Normalize to strings for comparison
-        $buyerNorm  = array_map('strval', $buyerCountries);
-        $sellerNorm = array_map('strval', $sellerCountries);
-
-        // Direct country ID/name overlap
-        $intersection = count(array_intersect($buyerNorm, $sellerNorm));
-
-        if ($intersection > 0) {
-            // HQ match is worth more than operating country match
-            $hqMatch = in_array(strval($sellerHq), $buyerNorm);
-            return $hqMatch ? 1.0 : 0.8;
+        if (empty($investorCountries)) {
+            return [0.5, 'Geography: Investor has no target country preference (neutral)'];
         }
 
-        return 0.0;
+        $targetHq = $target->companyOverview?->hq_country;
+        if (empty($targetHq)) {
+            return [0.3, 'Geography: Target has no HQ country on record'];
+        }
+
+        $targetHqStr = strval($targetHq);
+
+        if (in_array($targetHqStr, $investorCountries, true)) {
+            return [1.0, "Geography: Target HQ country matches investor's target countries"];
+        }
+
+        return [0.0, 'Geography: Target HQ country not in investor\'s target countries'];
     }
 
     /**
      * DIMENSION 3: Financial Fit (0.0–1.0)
      *
-     * Checks budget alignment between buyer's investment capacity
-     * and seller's expected investment amount.
+     * Checks overlap between:
+     *   - Investor's investment budget (min/max) from investment_budget
+     *   - Target's desired investment amount (min/max) from expected_investment_amount
+     *   - Target's EBITDA from ebitda_value (used as quality filter)
      */
-    private function scoreFinancial(Buyer $buyer, Seller $seller): float
+    private function scoreFinancial(Investor $investor, Target $target): array
     {
         $scores = [];
+        $explanations = [];
 
-        // Sub-check A: Investment Budget vs Expected Investment Amount
-        $budgetScore = $this->scoreBudgetFit($buyer, $seller);
-        if ($budgetScore !== null) $scores[] = $budgetScore;
+        // Sub-check A: Budget vs Expected Amount
+        [$budgetScore, $budgetExp] = $this->scoreBudgetFit($investor, $target);
+        if ($budgetScore !== null) {
+            $scores[] = $budgetScore;
+            $explanations[] = $budgetExp;
+        }
 
-        // Sub-check B: EBITDA alignment
-        $ebitdaScore = $this->scoreEbitdaFit($buyer, $seller);
-        if ($ebitdaScore !== null) $scores[] = $ebitdaScore;
+        // Sub-check B: EBITDA presence/quality
+        [$ebitdaScore, $ebitdaExp] = $this->scoreEbitdaPresence($target);
+        if ($ebitdaScore !== null) {
+            $scores[] = $ebitdaScore;
+            $explanations[] = $ebitdaExp;
+        }
 
-        // Sub-check C: Revenue check
-        $revenueScore = $this->scoreRevenueFit($buyer, $seller);
-        if ($revenueScore !== null) $scores[] = $revenueScore;
+        if (empty($scores)) {
+            return [0.5, 'Financial: No financial data available (neutral)'];
+        }
 
-        if (empty($scores)) return 0.5; // No financial data = neutral
-
-        return array_sum($scores) / count($scores);
+        $avg = array_sum($scores) / count($scores);
+        return [$avg, 'Financial: ' . implode('; ', $explanations)];
     }
 
     /**
-     * DIMENSION 4: Company Profile (0.0–1.0)
+     * DIMENSION 4: Ownership Structure Compatibility (0.0–1.0)
      *
-     * Matches employee count range, years in business, and company type.
+     * Compares investment_condition from both sides.
+     * Both use the same dropdown values from registration forms:
+     *   Minority (<50%), Significant minority (25–49%), Joint control (51/49),
+     *   Majority (51–99%), Full acquisition (100%), Flexible
      */
-    private function scoreProfile(Buyer $buyer, Seller $seller): float
+    private function scoreOwnership(Investor $investor, Target $target): array
+    {
+        $investorConditions = $this->parseMultiValue(
+            $investor->companyOverview?->investment_condition
+        );
+        $targetConditions = $this->parseMultiValue(
+            $target->financialDetails?->investment_condition
+        );
+
+        if (empty($investorConditions) && empty($targetConditions)) {
+            return [0.5, 'Ownership: No ownership preference set (neutral)'];
+        }
+
+        // Flexible on either side = high compatibility
+        $investorFlexible = $this->hasFlexible($investorConditions);
+        $targetFlexible   = $this->hasFlexible($targetConditions);
+
+        if ($investorFlexible || $targetFlexible) {
+            $who = $investorFlexible ? 'Investor' : 'Target';
+            return [0.9, "Ownership: {$who} is flexible on ownership structure"];
+        }
+
+        if (empty($investorConditions) || empty($targetConditions)) {
+            return [0.5, 'Ownership: One side has no condition specified (neutral)'];
+        }
+
+        // Normalize for comparison
+        $invNorm = array_map(fn($s) => mb_strtolower(trim($s)), $investorConditions);
+        $tgtNorm = array_map(fn($s) => mb_strtolower(trim($s)), $targetConditions);
+
+        // Exact overlap
+        $overlap = array_intersect($invNorm, $tgtNorm);
+        if (!empty($overlap)) {
+            $matched = implode(', ', $overlap);
+            return [1.0, "Ownership: Both agree on — {$matched}"];
+        }
+
+        // Partial compatibility (minority ↔ majority incompatible; joint ↔ either = partial)
+        $invMajority = $this->hasMajority($invNorm);
+        $tgtMajority = $this->hasMajority($tgtNorm);
+        $invMinority = $this->hasMinority($invNorm);
+        $tgtMinority = $this->hasMinority($tgtNorm);
+
+        if ($invMajority && $tgtMajority) return [0.9, 'Ownership: Both open to majority acquisition'];
+        if ($invMinority && $tgtMinority) return [0.9, 'Ownership: Both open to minority stake'];
+        if ($invMajority && $tgtMinority) return [0.2, 'Ownership: Investor wants majority; target prefers minority'];
+        if ($invMinority && $tgtMajority) return [0.2, 'Ownership: Investor wants minority; target requires majority'];
+
+        // Text similarity fallback
+        $best = 0.0;
+        foreach ($invNorm as $iCond) {
+            foreach ($tgtNorm as $tCond) {
+                $best = max($best, $this->textSimilarity($iCond, $tCond));
+            }
+        }
+        return [$best * 0.7, 'Ownership: Partial compatibility — different conditions'];
+    }
+
+    // ─── Criteria-Override Scorers (for custom scoring endpoint) ────────
+
+    private function scoreIndustryWithCriteria(array $criteria, Target $target): array
+    {
+        $criteriaIds = $criteria['industry_ids'] ?? [];
+        if (empty($criteriaIds)) return [0.5, 'Industry: No industry criteria specified (neutral)'];
+
+        $targetIndustries = $this->extractTargetIndustries($target);
+        $targetIds = array_filter(array_column($targetIndustries, 'id'));
+
+        if (empty($targetIds)) return [0.3, 'Industry: Target has no industry listed'];
+
+        $intersection = count(array_intersect($criteriaIds, $targetIds));
+        $union = count(array_unique(array_merge($criteriaIds, $targetIds)));
+        $score = $union > 0 ? $intersection / $union : 0.0;
+
+        if ($score > 0) {
+            return [min(1.0, $score + 0.2), "Industry: {$intersection} industry match(es) found"];
+        }
+
+        return [0.1, 'Industry: No industry overlap with criteria'];
+    }
+
+    private function scoreGeographyWithCriteria(array $criteria, Target $target): array
+    {
+        $criteriaCountries = array_map('strval', $criteria['target_countries'] ?? []);
+        if (empty($criteriaCountries)) return [0.5, 'Geography: No country criteria specified (neutral)'];
+
+        $targetHq = strval($target->companyOverview?->hq_country ?? '');
+        if (empty($targetHq)) return [0.3, 'Geography: Target has no HQ country on record'];
+
+        if (in_array($targetHq, $criteriaCountries, true)) {
+            return [1.0, 'Geography: Target HQ matches criteria countries'];
+        }
+
+        return [0.0, 'Geography: Target HQ not in criteria countries'];
+    }
+
+    private function scoreFinancialWithCriteria(array $criteria, Investor $investor, Target $target): array
     {
         $scores = [];
+        $explanations = [];
 
-        // Sub-check A: Employee count
-        $empScore = $this->scoreEmployeeCount($buyer, $seller);
-        if ($empScore !== null) $scores[] = $empScore;
+        // Budget override from criteria (or fall back to investor's stored values)
+        $budgetMin = isset($criteria['budget_min']) ? (float) $criteria['budget_min']
+            : $this->extractBudgetMin($investor);
+        $budgetMax = isset($criteria['budget_max']) ? (float) $criteria['budget_max']
+            : $this->extractBudgetMax($investor);
 
-        // Sub-check B: Years in business
-        $yearsScore = $this->scoreYearsInBusiness($buyer, $seller);
-        if ($yearsScore !== null) $scores[] = $yearsScore;
+        $sellerAmount = $this->toArray($target->financialDetails?->expected_investment_amount);
+        if (!empty($sellerAmount) && ($budgetMin > 0 || $budgetMax > 0)) {
+            $sellerMin = (float) ($sellerAmount['min'] ?? $sellerAmount[0] ?? 0);
+            $sellerMax = (float) ($sellerAmount['max'] ?? $sellerAmount[1] ?? $sellerMin);
 
-        // Sub-check C: Company type
-        $typeScore = $this->scoreCompanyType($buyer, $seller);
-        if ($typeScore !== null) $scores[] = $typeScore;
+            if ($sellerMin >= $budgetMin && $sellerMax <= $budgetMax) {
+                $scores[] = 1.0;
+                $explanations[] = "Deal size fits criteria budget";
+            } elseif ($sellerMin <= $budgetMax && $sellerMax >= $budgetMin) {
+                $scores[] = 0.7;
+                $explanations[] = "Partial budget overlap";
+            } else {
+                $scores[] = 0.1;
+                $explanations[] = "Deal size outside criteria budget";
+            }
+        }
 
-        if (empty($scores)) return 0.5; // No profile data = neutral
+        // EBITDA minimum filter from criteria
+        if (isset($criteria['ebitda_min']) && $criteria['ebitda_min'] > 0) {
+            $ebitdaMin = (float) $criteria['ebitda_min'];
+            $targetEbitda = $this->toArray($target->financialDetails?->ebitda_value);
+            $targetEbitdaVal = (float) ($targetEbitda['min'] ?? $targetEbitda[0] ?? 0);
 
-        return array_sum($scores) / count($scores);
+            if ($targetEbitdaVal >= $ebitdaMin) {
+                $scores[] = 1.0;
+                $explanations[] = "EBITDA meets minimum";
+            } else {
+                $scores[] = max(0, $targetEbitdaVal / $ebitdaMin);
+                $explanations[] = "EBITDA below minimum";
+            }
+        }
+
+        if (empty($scores)) return [0.5, 'Financial: No financial criteria specified (neutral)'];
+
+        $avg = array_sum($scores) / count($scores);
+        return [$avg, 'Financial: ' . implode('; ', $explanations)];
     }
 
-    /**
-     * DIMENSION 5: Timeline Alignment (0.0–1.0)
-     *
-     * Compares transaction timeline preferences.
-     */
-    private function scoreTimeline(Buyer $buyer, Seller $seller): float
+    private function scoreOwnershipWithCriteria(array $criteria, Target $target): array
     {
-        $buyerTimeline = $buyer->targetPreference?->timeline
-            ?? $buyer->companyOverview?->txn_timeline;
-        $sellerTimeline = $seller->companyOverview?->txn_timeline;
+        $criteriaCondition = $criteria['ownership_condition'] ?? '';
+        if (empty($criteriaCondition)) return [0.5, 'Ownership: No ownership criteria specified (neutral)'];
 
-        if (empty($buyerTimeline) || empty($sellerTimeline)) return 0.5; // No data = neutral
+        $targetConditions = $this->parseMultiValue($target->financialDetails?->investment_condition);
+        if (empty($targetConditions)) return [0.5, 'Ownership: Target has no condition specified (neutral)'];
 
-        $buyerNorm = mb_strtolower(trim($buyerTimeline));
-        $sellerNorm = mb_strtolower(trim($sellerTimeline));
+        $critNorm = mb_strtolower(trim($criteriaCondition));
 
-        // Exact match
-        if ($buyerNorm === $sellerNorm) return 1.0;
-
-        // Map to numeric levels for proximity comparison
-        $levels = [
-            'immediate' => 1, 'asap' => 1, '0-3 months' => 1, 'urgent' => 1,
-            'short' => 2, 'short-term' => 2, '3-6 months' => 2, 'short term' => 2,
-            'medium' => 3, 'medium-term' => 3, '6-12 months' => 3, 'medium term' => 3,
-            'long' => 4, 'long-term' => 4, '12+ months' => 4, 'long term' => 4, '1-2 years' => 4,
-            'flexible' => 0, 'negotiable' => 0, 'open' => 0,
-        ];
-
-        $buyerLevel = $levels[$buyerNorm] ?? null;
-        $sellerLevel = $levels[$sellerNorm] ?? null;
-
-        // Flexible buyer or seller = good compatibility
-        if ($buyerLevel === 0 || $sellerLevel === 0) return 0.8;
-
-        if ($buyerLevel !== null && $sellerLevel !== null) {
-            $diff = abs($buyerLevel - $sellerLevel);
-            return match ($diff) {
-                0 => 1.0,
-                1 => 0.7,
-                2 => 0.4,
-                default => 0.2,
-            };
+        if ($this->isFlexible($criteriaCondition) || $this->hasFlexible($targetConditions)) {
+            return [0.9, 'Ownership: Flexible on ownership structure'];
         }
 
-        // Fallback: text similarity
-        return $this->textSimilarity($buyerNorm, $sellerNorm);
-    }
+        $tgtNorm = array_map(fn($s) => mb_strtolower(trim($s)), $targetConditions);
 
-    /**
-     * DIMENSION 6: Ownership Structure Compatibility (0.0–1.0)
-     *
-     * Checks if buyer's ownership preference (minority/majority)
-     * is compatible with seller's maximum shareholding percentage.
-     */
-    private function scoreOwnership(Buyer $buyer, Seller $seller): float
-    {
-        $fd = $buyer->financialDetails;
-        $sfd = $seller->financialDetails;
-
-        if (!$fd && !$sfd) return 0.5; // No data = neutral
-
-        // Buyer preferences
-        $wantsMinority = $fd?->is_minority ?? false;
-        $wantsMajority = $fd?->is_majority ?? false;
-        $isNegotiable  = $fd?->is_negotiable ?? false;
-        $ownershipType = mb_strtolower(trim($fd?->ownership_type ?? ''));
-        $acquirePct    = $this->toArray($fd?->acquire_pct);
-
-        // Seller constraints
-        $maxShareholding = $sfd?->maximum_investor_shareholding_percentage;
-        $investCondition = mb_strtolower(trim($sfd?->investment_condition ?? ''));
-
-        // If buyer is negotiable, high compatibility
-        if ($isNegotiable) return 0.85;
-
-        // If no seller data, can't score
-        if ($maxShareholding === null && empty($investCondition)) return 0.5;
-
-        $maxPct = (float) ($maxShareholding ?? 100);
-
-        // Majority buyer + seller allows >50%
-        if ($wantsMajority && $maxPct >= 50) return 1.0;
-        if ($wantsMajority && $maxPct < 50) return 0.3;
-
-        // Minority buyer + seller allows some %
-        if ($wantsMinority && $maxPct > 0) return 1.0;
-        if ($wantsMinority && $maxPct === 0.0) return 0.1;
-
-        // Check acquire_pct range compatibility
-        if (!empty($acquirePct)) {
-            $minAcquire = (float) ($acquirePct['min'] ?? $acquirePct[0] ?? 0);
-            $maxAcquire = (float) ($acquirePct['max'] ?? $acquirePct[1] ?? 100);
-            if ($maxPct >= $minAcquire && $maxPct <= $maxAcquire) return 1.0;
-            if ($maxPct >= $minAcquire) return 0.7;
-            return 0.3;
+        if (in_array($critNorm, $tgtNorm, true)) {
+            return [1.0, "Ownership: Exact match — {$criteriaCondition}"];
         }
 
-        // Ownership type text matching
-        if (!empty($ownershipType) && !empty($investCondition)) {
-            return $this->textSimilarity($ownershipType, $investCondition);
+        $best = 0.0;
+        foreach ($tgtNorm as $t) {
+            $best = max($best, $this->textSimilarity($critNorm, $t));
         }
-
-        return 0.5;
+        return [$best * 0.7, 'Ownership: Partial ownership compatibility'];
     }
 
     // ─── Sub-Scorers (Financial) ────────────────────────────────────────
 
-    private function scoreBudgetFit(Buyer $buyer, Seller $seller): ?float
+    private function scoreBudgetFit(Investor $investor, Target $target): array
     {
-        // Buyer's investment budget (from FinancialDetails or CompanyOverview)
-        $buyerBudget = $this->toArray($buyer->financialDetails?->investment_budget)
-            ?? $this->toArray($buyer->companyOverview?->investment_budget);
-        $sellerAmount = $this->toArray($seller->financialDetails?->expected_investment_amount);
+        $buyerBudget  = $this->toArray($investor->companyOverview?->investment_budget);
+        $sellerAmount = $this->toArray($target->financialDetails?->expected_investment_amount);
 
-        if (empty($buyerBudget) && empty($sellerAmount)) return null;
-        if (empty($buyerBudget) || empty($sellerAmount)) return 0.4;
+        if (empty($buyerBudget) && empty($sellerAmount)) return [null, ''];
+        if (empty($buyerBudget))  return [0.4, 'Budget: Investor has no budget set'];
+        if (empty($sellerAmount)) return [0.4, 'Budget: Target has no investment amount set'];
 
-        // Extract min/max from budget arrays
         $budgetMin = (float) ($buyerBudget['min'] ?? $buyerBudget[0] ?? 0);
         $budgetMax = (float) ($buyerBudget['max'] ?? $buyerBudget[1] ?? PHP_FLOAT_MAX);
         $sellerMin = (float) ($sellerAmount['min'] ?? $sellerAmount[0] ?? 0);
         $sellerMax = (float) ($sellerAmount['max'] ?? $sellerAmount[1] ?? $sellerMin);
 
-        // Check overlap
-        if ($sellerMin >= $budgetMin && $sellerMax <= $budgetMax) return 1.0; // Perfect fit
-        if ($sellerMin <= $budgetMax && $sellerMax >= $budgetMin) return 0.7; // Partial overlap
-        
-        // Proximity score for near-misses
+        if ($sellerMin >= $budgetMin && $sellerMax <= $budgetMax) {
+            return [1.0, 'Budget: Deal size fits investor budget perfectly'];
+        }
+        if ($sellerMin <= $budgetMax && $sellerMax >= $budgetMin) {
+            return [0.7, 'Budget: Partial budget overlap'];
+        }
+
         $gap = min(abs($sellerMin - $budgetMax), abs($sellerMax - $budgetMin));
         $range = max($budgetMax - $budgetMin, 1);
         $proximity = max(0, 1 - ($gap / $range));
-        return $proximity * 0.5;
+        return [$proximity * 0.5, 'Budget: Deal size near but outside investor budget'];
     }
 
-    private function scoreEbitdaFit(Buyer $buyer, Seller $seller): ?float
+    private function scoreEbitdaPresence(Target $target): array
     {
-        $buyerEbitda = $this->toArray($buyer->financialDetails?->expected_ebitda);
-        $sellerEbitda = $this->toArray($seller->financialDetails?->ebitda_value);
+        $ebitda = $this->toArray($target->financialDetails?->ebitda_value);
+        $ebitdaVal = (float) ($ebitda['min'] ?? $ebitda[0] ?? 0);
 
-        if (empty($buyerEbitda) && empty($sellerEbitda)) return null;
-        if (empty($buyerEbitda) || empty($sellerEbitda)) return 0.4;
+        if ($ebitdaVal <= 0) return [null, ''];
 
-        $expectedMin = (float) ($buyerEbitda['min'] ?? $buyerEbitda[0] ?? 0);
-        $expectedMax = (float) ($buyerEbitda['max'] ?? $buyerEbitda[1] ?? PHP_FLOAT_MAX);
-        $actualMin = (float) ($sellerEbitda['min'] ?? $sellerEbitda[0] ?? 0);
-        $actualMax = (float) ($sellerEbitda['max'] ?? $sellerEbitda[1] ?? $actualMin);
-
-        if ($actualMin >= $expectedMin && $actualMax <= $expectedMax) return 1.0;
-        if ($actualMin <= $expectedMax && $actualMax >= $expectedMin) return 0.7;
-        return 0.2;
-    }
-
-    private function scoreRevenueFit(Buyer $buyer, Seller $seller): ?float
-    {
-        $buyerRevenue = $this->toArray($buyer->financialDetails?->ttm_revenue);
-        $sellerRevenue = $seller->financialDetails?->annual_revenue;
-
-        if (empty($buyerRevenue) && !$sellerRevenue) return null;
-        if (empty($buyerRevenue) || !$sellerRevenue) return 0.4;
-
-        $expectedMin = (float) ($buyerRevenue['min'] ?? $buyerRevenue[0] ?? 0);
-        $expectedMax = (float) ($buyerRevenue['max'] ?? $buyerRevenue[1] ?? PHP_FLOAT_MAX);
-        $actual = (float) $sellerRevenue;
-
-        if ($actual >= $expectedMin && $actual <= $expectedMax) return 1.0;
-        if ($actual >= $expectedMin * 0.7 && $actual <= $expectedMax * 1.3) return 0.7; // ±30% tolerance
-        return 0.3;
-    }
-
-    // ─── Sub-Scorers (Profile) ──────────────────────────────────────────
-
-    private function scoreEmployeeCount(Buyer $buyer, Seller $seller): ?float
-    {
-        $buyerRange = $buyer->targetPreference?->emp_count_range;
-        $sellerCount = $seller->companyOverview?->emp_total;
-
-        if (empty($buyerRange) && empty($sellerCount)) return null;
-        if (empty($buyerRange) || empty($sellerCount)) return 0.4;
-
-        // Try to parse range like "50-200" or "100+"
-        $range = $this->parseRange($buyerRange);
-        $count = (int) $sellerCount;
-
-        if ($range) {
-            if ($count >= $range['min'] && $count <= $range['max']) return 1.0;
-            if ($count >= $range['min'] * 0.5 && $count <= $range['max'] * 2) return 0.6;
-            return 0.2;
-        }
-
-        return 0.5;
-    }
-
-    private function scoreYearsInBusiness(Buyer $buyer, Seller $seller): ?float
-    {
-        $buyerPref = $buyer->targetPreference?->years_in_biz;
-        $yearFounded = $seller->companyOverview?->year_founded;
-
-        if (empty($buyerPref) && empty($yearFounded)) return null;
-        if (empty($buyerPref) || empty($yearFounded)) return 0.4;
-
-        $sellerAge = (int) date('Y') - (int) $yearFounded;
-
-        // Parse preference range like "5-10" or "10+"
-        $range = $this->parseRange($buyerPref);
-        if ($range) {
-            if ($sellerAge >= $range['min'] && $sellerAge <= $range['max']) return 1.0;
-            if ($sellerAge >= $range['min'] * 0.5) return 0.6;
-            return 0.3;
-        }
-
-        return 0.5;
-    }
-
-    private function scoreCompanyType(Buyer $buyer, Seller $seller): ?float
-    {
-        $buyerType = mb_strtolower(trim($buyer->targetPreference?->company_type ?? ''));
-        $sellerType = mb_strtolower(trim($seller->companyOverview?->company_type ?? ''));
-
-        if (empty($buyerType) && empty($sellerType)) return null;
-        if (empty($buyerType) || empty($sellerType)) return 0.4;
-
-        if ($buyerType === $sellerType) return 1.0;
-
-        // Partial matching for similar types
-        return $this->textSimilarity($buyerType, $sellerType);
+        // If EBITDA is present and positive, it's a quality signal
+        return [0.8, "EBITDA: Target has EBITDA of {$ebitdaVal} on record"];
     }
 
     // ─── Data Extraction Helpers ────────────────────────────────────────
 
-    private function extractBuyerIndustries(Buyer $buyer): array
+    /**
+     * Extract investor's target industries.
+     * Sources: main_industry_operations (primary) + company_industry (secondary)
+     * Returns array of ['id' => int|null, 'name' => string]
+     */
+    private function extractInvestorIndustries(Investor $investor): array
     {
         $industries = [];
 
-        // From TargetPreferences
-        $bIndPrefs = $this->toArray($buyer->targetPreference?->b_ind_prefs);
-        if (!empty($bIndPrefs)) {
-            foreach ($bIndPrefs as $item) {
-                if (is_array($item) && isset($item['name'])) {
-                    $industries[] = $item['name'];
-                } elseif (is_string($item)) {
-                    $industries[] = $item;
-                }
+        // Primary: investor's target industry preferences
+        $mainOps = $this->toArray($investor->companyOverview?->main_industry_operations);
+        foreach ($mainOps as $item) {
+            if (is_array($item)) {
+                $industries[] = ['id' => $item['id'] ?? null, 'name' => $item['name'] ?? ''];
+            } elseif (is_string($item)) {
+                $industries[] = ['id' => null, 'name' => $item];
             }
         }
 
-        // From CompanyOverview company_industry
-        $compInd = $this->toArray($buyer->companyOverview?->company_industry);
-        if (!empty($compInd)) {
-            foreach ($compInd as $item) {
-                if (is_array($item) && isset($item['name'])) {
-                    $industries[] = $item['name'];
-                } elseif (is_string($item)) {
-                    $industries[] = $item;
-                }
+        // Secondary: investor's own company industry
+        $compInd = $this->toArray($investor->companyOverview?->company_industry);
+        foreach ($compInd as $item) {
+            if (is_array($item)) {
+                $industries[] = ['id' => $item['id'] ?? null, 'name' => $item['name'] ?? ''];
+            } elseif (is_string($item)) {
+                $industries[] = ['id' => null, 'name' => $item];
             }
         }
 
-        return array_values(array_unique(array_filter($industries)));
+        return array_values(array_filter($industries, fn($i) => !empty($i['name'])));
     }
 
-    private function extractSellerIndustries(Seller $seller): array
+    /**
+     * Extract target's industries.
+     * Source: industry_ops (from Target registration's "Broader Industries" field)
+     * Returns array of ['id' => int|null, 'name' => string]
+     */
+    private function extractTargetIndustries(Target $target): array
     {
         $industries = [];
 
-        $ops = $this->toArray($seller->companyOverview?->industry_ops);
-        if (!empty($ops)) {
-            foreach ($ops as $item) {
-                if (is_array($item) && isset($item['name'])) {
-                    $industries[] = $item['name'];
-                } elseif (is_string($item)) {
-                    $industries[] = $item;
-                }
+        $ops = $this->toArray($target->companyOverview?->industry_ops);
+        foreach ($ops as $item) {
+            if (is_array($item)) {
+                $industries[] = ['id' => $item['id'] ?? null, 'name' => $item['name'] ?? ''];
+            } elseif (is_string($item)) {
+                $industries[] = ['id' => null, 'name' => $item];
             }
         }
 
-        $niche = $this->toArray($seller->companyOverview?->niche_industry);
-        if (!empty($niche)) {
-            foreach ($niche as $item) {
-                if (is_array($item) && isset($item['name'])) {
-                    $industries[] = $item['name'];
-                } elseif (is_string($item)) {
-                    $industries[] = $item;
-                }
-            }
-        }
-
-        return array_values(array_unique(array_filter($industries)));
+        return array_values(array_filter($industries, fn($i) => !empty($i['name'])));
     }
 
-    private function extractBuyerCountries(Buyer $buyer): array
+    /**
+     * Extract investor's target countries as string IDs.
+     * Source: target_countries from CompanyOverview
+     */
+    private function extractInvestorCountries(Investor $investor): array
     {
         $countries = [];
+        $coCountries = $this->toArray($investor->companyOverview?->target_countries);
 
-        $tpCountries = $this->toArray($buyer->targetPreference?->target_countries);
-        $coCountries = $this->toArray($buyer->companyOverview?->target_countries);
-
-        foreach ([$tpCountries, $coCountries] as $list) {
-            if (!empty($list)) {
-                foreach ($list as $item) {
-                    if (is_array($item) && isset($item['id'])) {
-                        $countries[] = strval($item['id']);
-                    } elseif (is_array($item) && isset($item['country_id'])) {
-                        $countries[] = strval($item['country_id']);
-                    } elseif (is_numeric($item)) {
-                        $countries[] = strval($item);
-                    } elseif (is_string($item)) {
-                        $countries[] = $item;
-                    }
-                }
+        foreach ($coCountries as $item) {
+            if (is_array($item) && isset($item['id'])) {
+                $countries[] = strval($item['id']);
+            } elseif (is_array($item) && isset($item['country_id'])) {
+                $countries[] = strval($item['country_id']);
+            } elseif (is_numeric($item)) {
+                $countries[] = strval($item);
+            } elseif (is_string($item)) {
+                $countries[] = $item;
             }
         }
 
         return array_values(array_unique(array_filter($countries)));
+    }
+
+    private function extractBudgetMin(Investor $investor): float
+    {
+        $budget = $this->toArray($investor->companyOverview?->investment_budget);
+        return (float) ($budget['min'] ?? $budget[0] ?? 0);
+    }
+
+    private function extractBudgetMax(Investor $investor): float
+    {
+        $budget = $this->toArray($investor->companyOverview?->investment_budget);
+        return (float) ($budget['max'] ?? $budget[1] ?? PHP_FLOAT_MAX);
+    }
+
+    // ─── Ownership Helpers ──────────────────────────────────────────────
+
+    private function hasFlexible(array $conditions): bool
+    {
+        foreach ($conditions as $c) {
+            if ($this->isFlexible($c)) return true;
+        }
+        return false;
+    }
+
+    private function isFlexible(string $condition): bool
+    {
+        $norm = mb_strtolower(trim($condition));
+        return str_contains($norm, 'flexible') || str_contains($norm, 'negotiable') || str_contains($norm, 'open');
+    }
+
+    private function hasMajority(array $conditions): bool
+    {
+        foreach ($conditions as $c) {
+            if (str_contains($c, 'majority') || str_contains($c, 'full acquisition') || str_contains($c, '51')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function hasMinority(array $conditions): bool
+    {
+        foreach ($conditions as $c) {
+            if (str_contains($c, 'minority') || str_contains($c, '<50')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ─── Value Parsers ───────────────────────────────────────────────────
+
+    /**
+     * Parse a multi-value field (stored as JSON array of strings, or a single string).
+     */
+    private function parseMultiValue(mixed $value): array
+    {
+        if (empty($value)) return [];
+        if (is_array($value)) return array_values(array_filter($value));
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) return array_values(array_filter($decoded));
+            return [$value];
+        }
+        return [];
     }
 
     // ─── Utility Helpers ────────────────────────────────────────────────
@@ -678,51 +801,6 @@ class MatchEngineService
         }
         if ($value === null) return [];
         return [$value];
-    }
-
-    /**
-     * Parse a range string like "50-200", "100+", "5+" into min/max.
-     */
-    private function parseRange(mixed $value): ?array
-    {
-        if (is_array($value)) {
-            return [
-                'min' => (int) ($value['min'] ?? $value[0] ?? 0),
-                'max' => (int) ($value['max'] ?? $value[1] ?? PHP_INT_MAX),
-            ];
-        }
-
-        if (!is_string($value)) return null;
-
-        $value = trim($value);
-
-        // "100+" pattern
-        if (preg_match('/^(\d+)\+$/', $value, $m)) {
-            return ['min' => (int) $m[1], 'max' => PHP_INT_MAX];
-        }
-
-        // "50-200" pattern
-        if (preg_match('/^(\d+)\s*[-–—to]\s*(\d+)$/', $value, $m)) {
-            return ['min' => (int) $m[1], 'max' => (int) $m[2]];
-        }
-
-        // "<100" pattern
-        if (preg_match('/^[<≤]\s*(\d+)$/', $value, $m)) {
-            return ['min' => 0, 'max' => (int) $m[1]];
-        }
-
-        // ">100" pattern
-        if (preg_match('/^[>≥]\s*(\d+)$/', $value, $m)) {
-            return ['min' => (int) $m[1], 'max' => PHP_INT_MAX];
-        }
-
-        // Single number
-        if (is_numeric($value)) {
-            $num = (int) $value;
-            return ['min' => (int) ($num * 0.5), 'max' => (int) ($num * 1.5)];
-        }
-
-        return null;
     }
 
     /**

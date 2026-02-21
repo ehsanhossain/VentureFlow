@@ -7,8 +7,8 @@
 import React, { useState } from 'react';
 import { MatchData } from '../MatchIQ';
 import {
-    Factory, Globe, DollarSign, Building2, Clock, Users,
-    ChevronDown, ChevronUp, X, Briefcase
+    Factory, Globe, DollarSign, Users,
+    ChevronDown, ChevronUp, X, Briefcase, Info
 } from 'lucide-react';
 
 // ─── Tier helpers ──────────────────────────────────────────────────────
@@ -20,31 +20,46 @@ function getTier(score: number) {
 }
 
 // ─── Score bar ─────────────────────────────────────────────────────────
-const ScoreBar: React.FC<{ label: string; score: number; icon: any; weight: string }> = (
-    { label, score, icon: Icon, weight }
-) => {
+const ScoreBar: React.FC<{
+    label: string;
+    score: number;
+    icon: any;
+    weight: string;
+    explanation?: string;
+}> = ({ label, score, icon: Icon, weight, explanation }) => {
     const pct = Math.round(score * 100);
     const hue = pct >= 70 ? 142 : pct >= 50 ? 45 : 0;
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Icon size={13} style={{ color: '#9ca3af', flexShrink: 0 }} />
-            <span style={{ fontSize: '12px', color: '#6b7280', width: '72px', flexShrink: 0 }}>
-                {label} <span style={{ color: '#c4c9d0', fontSize: '10px' }}>({weight})</span>
-            </span>
-            <div style={{
-                flex: 1, height: '6px', background: '#f3f4f6',
-                borderRadius: '3px', overflow: 'hidden'
-            }}>
+        <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                <Icon size={13} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                <span style={{ fontSize: '12px', color: '#6b7280', width: '76px', flexShrink: 0 }}>
+                    {label} <span style={{ color: '#c4c9d0', fontSize: '10px' }}>({weight})</span>
+                </span>
                 <div style={{
-                    width: `${pct}%`, height: '100%',
-                    background: `hsl(${hue}, 60%, 50%)`,
-                    borderRadius: '3px',
-                    transition: 'width 0.3s ease',
-                }} />
+                    flex: 1, height: '6px', background: '#f3f4f6',
+                    borderRadius: '3px', overflow: 'hidden'
+                }}>
+                    <div style={{
+                        width: `${pct}%`, height: '100%',
+                        background: `hsl(${hue}, 60%, 50%)`,
+                        borderRadius: '3px',
+                        transition: 'width 0.3s ease',
+                    }} />
+                </div>
+                <span style={{ fontSize: '11px', color: '#374151', width: '32px', textAlign: 'right', fontWeight: 600 }}>
+                    {pct}%
+                </span>
             </div>
-            <span style={{ fontSize: '11px', color: '#374151', width: '32px', textAlign: 'right', fontWeight: 600 }}>
-                {pct}%
-            </span>
+            {explanation && (
+                <div style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '4px',
+                    paddingLeft: '21px', fontSize: '11px', color: '#9ca3af', lineHeight: '1.4',
+                }}>
+                    <Info size={10} style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <span>{explanation}</span>
+                </div>
+            )}
         </div>
     );
 };
@@ -52,14 +67,16 @@ const ScoreBar: React.FC<{ label: string; score: number; icon: any; weight: stri
 // ─── MatchCard ─────────────────────────────────────────────────────────
 interface MatchCardProps {
     match: MatchData;
-    onDismiss: (id: number) => void;
-    onCreateDeal: (id: number) => void;
+    onDismiss?: (id: number) => void;
+    onCreateDeal?: (id: number) => void;
     onViewInvestor: (buyerId: number) => void;
     onViewTarget: (sellerId: number) => void;
+    /** If true, card is from a custom-score result (not stored in DB) */
+    isCustom?: boolean;
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({
-    match, onDismiss, onCreateDeal, onViewInvestor, onViewTarget
+    match, onDismiss, onCreateDeal, onViewInvestor, onViewTarget, isCustom
 }) => {
     const [expanded, setExpanded] = useState(false);
     const tier = getTier(match.total_score);
@@ -67,12 +84,16 @@ const MatchCard: React.FC<MatchCardProps> = ({
     const buyerName = match.buyer?.company_overview?.reg_name || `Investor #${match.buyer_id}`;
     const sellerName = match.seller?.company_overview?.reg_name || `Target #${match.seller_id}`;
 
+    // Explanations come from custom scoring; standard stored matches may not have them
+    const explanations = (match as any).explanations;
+
     return (
         <div style={{
             background: '#fff', border: '1px solid #e5e7eb', borderRadius: '3px',
             padding: '16px 20px',
             transition: 'box-shadow 0.15s, border-color 0.15s',
             cursor: 'default',
+            ...(isCustom ? { borderLeft: '3px solid #6366f1' } : {}),
         }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)';
@@ -80,7 +101,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.borderColor = isCustom ? '#6366f1' : '#e5e7eb';
             }}
         >
             {/* Top Row */}
@@ -136,6 +157,14 @@ const MatchCard: React.FC<MatchCardProps> = ({
                             }}>
                                 {tier.label}
                             </span>
+                            {isCustom && (
+                                <span style={{
+                                    fontSize: '10px', fontWeight: 500, color: '#6366f1',
+                                    background: '#eef2ff', padding: '1px 6px', borderRadius: '3px',
+                                }}>
+                                    Custom scored
+                                </span>
+                            )}
                             {match.buyer?.company_overview?.hq_country && (
                                 <span style={{ fontSize: '11px', color: '#9ca3af' }}>
                                     <Globe size={10} style={{ display: 'inline', marginRight: '3px' }} />
@@ -158,53 +187,81 @@ const MatchCard: React.FC<MatchCardProps> = ({
                     >
                         {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
-                    <button
-                        onClick={() => onCreateDeal(match.id)}
-                        title="Create deal from this match"
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '4px',
-                            padding: '5px 10px', borderRadius: '3px',
-                            border: '1px solid #064771', background: '#064771',
-                            color: '#fff', fontSize: '12px', fontWeight: 500,
-                            cursor: 'pointer', transition: 'opacity 0.15s',
-                        }}
-                    >
-                        <Briefcase size={12} />
-                        Deal
-                    </button>
-                    <button
-                        onClick={() => onDismiss(match.id)}
-                        title="Dismiss this match"
-                        style={{
-                            padding: '5px', borderRadius: '3px', border: '1px solid #fecaca',
-                            background: '#fef2f2', cursor: 'pointer', display: 'flex',
-                        }}
-                    >
-                        <X size={14} style={{ color: '#ef4444' }} />
-                    </button>
+                    {onCreateDeal && !isCustom && (
+                        <button
+                            onClick={() => onCreateDeal(match.id)}
+                            title="Create deal from this match"
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '4px',
+                                padding: '5px 10px', borderRadius: '3px',
+                                border: '1px solid #064771', background: '#064771',
+                                color: '#fff', fontSize: '12px', fontWeight: 500,
+                                cursor: 'pointer', transition: 'opacity 0.15s',
+                            }}
+                        >
+                            <Briefcase size={12} />
+                            Deal
+                        </button>
+                    )}
+                    {onDismiss && !isCustom && (
+                        <button
+                            onClick={() => onDismiss(match.id)}
+                            title="Dismiss this match"
+                            style={{
+                                padding: '5px', borderRadius: '3px', border: '1px solid #fecaca',
+                                background: '#fef2f2', cursor: 'pointer', display: 'flex',
+                            }}
+                        >
+                            <X size={14} style={{ color: '#ef4444' }} />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Expanded: Score breakdown */}
+            {/* Expanded: Score breakdown + explanations */}
             {expanded && (
                 <div style={{
                     marginTop: '16px', paddingTop: '16px',
                     borderTop: '1px solid #f3f4f6',
                 }}>
-                    <div style={{ maxWidth: '480px' }}>
-                        <ScoreBar label="Industry" score={match.industry_score} icon={Factory} weight="25%" />
-                        <ScoreBar label="Geography" score={match.geography_score} icon={Globe} weight="20%" />
-                        <ScoreBar label="Financial" score={match.financial_score} icon={DollarSign} weight="20%" />
-                        <ScoreBar label="Profile" score={match.profile_score} icon={Building2} weight="15%" />
-                        <ScoreBar label="Timeline" score={match.timeline_score} icon={Clock} weight="10%" />
-                        <ScoreBar label="Ownership" score={match.ownership_score} icon={Users} weight="10%" />
+                    <div style={{ maxWidth: '500px' }}>
+                        <ScoreBar
+                            label="Industry"
+                            score={match.industry_score}
+                            icon={Factory}
+                            weight="35%"
+                            explanation={explanations?.industry}
+                        />
+                        <ScoreBar
+                            label="Geography"
+                            score={match.geography_score}
+                            icon={Globe}
+                            weight="30%"
+                            explanation={explanations?.geography}
+                        />
+                        <ScoreBar
+                            label="Financial"
+                            score={match.financial_score}
+                            icon={DollarSign}
+                            weight="25%"
+                            explanation={explanations?.financial}
+                        />
+                        <ScoreBar
+                            label="Ownership"
+                            score={match.ownership_score}
+                            icon={Users}
+                            weight="10%"
+                            explanation={explanations?.ownership}
+                        />
                     </div>
-                    <div style={{
-                        marginTop: '10px', display: 'flex', gap: '12px', fontSize: '11px', color: '#9ca3af'
-                    }}>
-                        <span>Computed: {new Date(match.computed_at).toLocaleDateString()}</span>
-                        <span>ID: #{match.id}</span>
-                    </div>
+                    {match.computed_at && (
+                        <div style={{
+                            marginTop: '10px', display: 'flex', gap: '12px', fontSize: '11px', color: '#9ca3af'
+                        }}>
+                            <span>Computed: {new Date(match.computed_at).toLocaleDateString()}</span>
+                            {match.id && <span>ID: #{match.id}</span>}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
