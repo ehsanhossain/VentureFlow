@@ -10,9 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return [
-        'app' => env('APP_NAME', 'Ventureflow'),
+        'app' => env('APP_NAME', 'VentureFlow'),
         'version' => env('APP_VERSION', '1.0.0'),
-        'developer' => env('APP_DEVELOPER', 'Legacy Script'),
         'laravel' => app()->version(),
     ];
 });
