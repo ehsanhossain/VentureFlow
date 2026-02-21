@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
+
 namespace App\Services;
 
 use App\Models\Investor;

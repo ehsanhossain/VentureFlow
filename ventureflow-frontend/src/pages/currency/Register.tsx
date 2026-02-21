@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import Breadcrumb from '../../assets/breadcrumb';

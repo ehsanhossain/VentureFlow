@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\NewPasswordController;

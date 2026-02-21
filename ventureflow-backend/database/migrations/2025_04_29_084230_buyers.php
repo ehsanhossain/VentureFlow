@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
+
 use Illuminate\Database\Console\Migrations\StatusCommand;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

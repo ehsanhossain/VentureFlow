@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { Users, Edit2, Trash2, Eye, Share2, MoreVertical, Mail } from 'lucide-react';

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";

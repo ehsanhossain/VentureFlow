@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '../../utils/cn';

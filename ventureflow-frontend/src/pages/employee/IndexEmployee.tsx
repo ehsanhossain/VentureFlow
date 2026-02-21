@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
 import ArrowIcon from '../../assets/svg/ArrowIcon';

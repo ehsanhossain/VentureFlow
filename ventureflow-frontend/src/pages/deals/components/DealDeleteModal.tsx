@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Trash2, X, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../../config/api';

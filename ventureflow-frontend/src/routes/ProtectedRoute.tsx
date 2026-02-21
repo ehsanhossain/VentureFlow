@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { useContext, ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import { Navigate, useLocation } from "react-router-dom";

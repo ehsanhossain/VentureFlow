@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { useDroppable } from '@dnd-kit/core';
 import { Deal } from '../DealPipeline';
 import DealCard from './DealCard';

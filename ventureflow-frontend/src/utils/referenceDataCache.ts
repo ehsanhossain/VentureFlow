@@ -1,4 +1,9 @@
 /**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
+/**
  * Reference Data Cache — In-memory cache with request deduplication.
  *
  * This module caches static/semi-static reference data (countries, currencies,

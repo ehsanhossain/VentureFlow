@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";

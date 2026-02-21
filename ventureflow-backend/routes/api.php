@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;

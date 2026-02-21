@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { AuthContext } from "../../routes/AuthContext";

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { X, Building2, User, Calendar, DollarSign, Activity, FileText, MessageSquare, Clock, MapPin, Tag, Briefcase, TrendingUp } from 'lucide-react';
 import api from '../../../config/api';

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { useRef, useState, useEffect } from "react";
 import { Menu, X, Check, Search, Command, Loader2, FileText, Home, Plus, ChevronDown } from "lucide-react";
 import { useContext } from "react";

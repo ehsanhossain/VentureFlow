@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import * as React from "react";
 import { Controller, Control } from "react-hook-form";
 import { PencilIcon, CornerDownLeftIcon, Check, AlertCircle, Loader2 } from "lucide-react";

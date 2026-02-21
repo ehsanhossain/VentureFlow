@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useEffect, useState } from 'react';
 import Breadcrumb from '../../../assets/breadcrumb';
 import Frame from './svg/Frame_1000000921.svg';

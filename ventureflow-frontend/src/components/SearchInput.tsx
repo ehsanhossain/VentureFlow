@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 // SearchInput.tsx
 import { CommandIcon, SearchIcon } from "lucide-react";
 import React, { useEffect, useRef } from "react";

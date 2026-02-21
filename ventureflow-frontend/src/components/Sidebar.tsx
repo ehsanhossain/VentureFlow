@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";

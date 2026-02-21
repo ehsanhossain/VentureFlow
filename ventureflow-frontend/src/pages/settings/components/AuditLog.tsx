@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { History, Filter, Calendar, User, Search, ChevronDown, LogIn, LogOut, Key, UserPlus, Trash2, RefreshCw, X } from 'lucide-react';

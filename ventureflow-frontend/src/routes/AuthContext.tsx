@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import { createContext, useState, useEffect, ReactNode } from "react";
 import api from "../config/api";
 import { showAlert } from "../components/Alert";

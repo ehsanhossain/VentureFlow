@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
 import React from 'react';
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom';
 import { CurrencyIcon, SettingsIcon } from '../../assets/icons';
