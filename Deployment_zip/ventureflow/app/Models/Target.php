@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * Copyright (c) 2026 VentureFlow. All rights reserved.
+ * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
+ */
+
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Target extends Model
+{
+    use HasFactory;
+
+    /**
+     * The table associated with the model.
+     * Keeping 'sellers' for backward DB compatibility.
+     *
+     * @var string
+     */
+    protected $table = 'sellers';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'seller_id',
+        'company_overview_id',
+        'financial_detail_id',
+        'partnership_detail_id',
+        'teaser_center_id',
+        'image',
+        'status',
+    ];
+
+    /**
+     * Get the company overview associated with the target.
+     */
+    public function companyOverview(): BelongsTo
+    {
+        return $this->belongsTo(TargetsCompanyOverview::class, 'company_overview_id');
+    }
+
+    /**
+     * Get the financial details associated with the target.
+     */
+    public function financialDetails(): BelongsTo
+    {
+        return $this->belongsTo(TargetsFinancialDetail::class, 'financial_detail_id');
+    }
+
+    /**
+     * Get the partnership details associated with the target.
+     */
+    public function partnershipDetails(): BelongsTo
+    {
+        return $this->belongsTo(TargetsPartnershipDetail::class, 'partnership_detail_id');
+    }
+
+    /**
+     * Get the teaser center associated with the target.
+     */
+    public function teaserCenter(): BelongsTo
+    {
+        return $this->belongsTo(TargetsTeaserCenter::class, 'teaser_center_id');
+    }
+
+    public function files(): BelongsToMany
+    {
+        return $this->belongsToMany(File::class, 'file_folders', 'seller_id', 'file_id')
+            ->withTimestamps();
+    }
+
+    public function folders(): BelongsToMany
+    {
+        return $this->belongsToMany(Folder::class, 'file_folders', 'seller_id', 'folder_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the deals associated with the target.
+     */
+    public function deals(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Deal::class, 'seller_id');
+    }
+
+    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'loggable');
+    }
+}
