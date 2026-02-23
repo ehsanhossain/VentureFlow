@@ -10,9 +10,10 @@ interface LogoUploadProps {
     initialImage?: string; // URL or path
     onImageSelect: (file: File | null) => void;
     className?: string;
+    label?: string;
 }
 
-export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSelect, className = '' }) => {
+export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSelect, className = '', label = 'Profile Picture' }) => {
     const [preview, setPreview] = useState<string | null>(initialImage || null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,10 +91,10 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ initialImage, onImageSel
                 accept="image/png, image/jpeg, image/jpg, image/webp"
                 className="hidden"
                 onChange={handleFileChange}
-                aria-label="Upload company logo"
+                aria-label="Upload profile picture"
             />
             {/* Label */}
-            <span className="mt-2 text-xs text-gray-500 font-medium">Company Avatar</span>
+            <span className="mt-2 text-xs text-gray-500 font-medium">{label}</span>
         </div>
     );
 };

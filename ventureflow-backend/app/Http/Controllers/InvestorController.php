@@ -17,6 +17,7 @@ use App\Models\InvestorsFinancialDetails;
 use App\Models\InvestorsPartnershipDetails;
 use App\Models\InvestorsTeaserCenter;
 use App\Models\TargetsCompanyOverview;
+use App\Models\SellersCompanyOverview;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;

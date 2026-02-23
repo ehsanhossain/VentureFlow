@@ -67,6 +67,7 @@ const parseMultiField = (val: any): string[] => {
 interface InvestorTableProps {
     data: InvestorRowData[];
     isLoading: boolean;
+    hasLoadedOnce?: boolean;
     onTogglePin: (id: number) => void;
     visibleColumns: string[];
     columnOrder?: string[];
@@ -86,6 +87,7 @@ interface InvestorTableProps {
 export const InvestorTable: React.FC<InvestorTableProps> = ({
     data,
     isLoading,
+    hasLoadedOnce = true,
     onTogglePin,
     visibleColumns,
     columnOrder,
@@ -191,7 +193,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
 
     const handleConfirmDelete = async () => {
         try {
-            const response = await api.delete('/api/buyers', {
+            const response = await api.delete('/api/buyer', {
                 data: { ids: Array.from(selectedIds) }
             });
             showAlert({ type: 'success', message: response.data.message });
@@ -616,6 +618,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 data={sortedData}
                 columns={filteredColumns}
                 isLoading={isLoading}
+                hasLoadedOnce={hasLoadedOnce}
                 columnOrder={columnOrder}
                 onColumnOrderChange={onColumnOrderChange}
                 onRowClick={(row) => navigate(`/prospects/investor/${row.id}`)}
@@ -642,14 +645,14 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                 <div className="fixed inset-0 z-[90]" onClick={() => setBulkMenuOpen(false)} />
                                 <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-[3px] border border-gray-200 py-1.5 z-[100] shadow-lg animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                                     <div className="px-3 py-1.5 border-b border-gray-100 mb-1">
-                                        <p className="text-[11px] font-medium text-gray-400">{selectedIds.size} selected</p>
+                                        <p className="text-[11px] font-medium text-gray-400">{selectedIds.size} {t('prospects.table.selected')}</p>
                                     </div>
                                     <button
                                         onClick={() => { setIsDeleteModalOpen(true); setBulkMenuOpen(false); }}
                                         className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        {t('bulkDelete')}
+                                        {selectedIds.size > 1 ? t('prospects.table.bulkDelete') : t('common.delete')}
                                     </button>
                                     <button
                                         onClick={handleExportCSV}
@@ -735,7 +738,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                                     }}
                                 >
                                     <img src={deleteIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('bulkDelete')}</span>
+                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('common.delete')}</span>
                                 </button>
                             )}
                         </div>

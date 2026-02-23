@@ -703,6 +703,7 @@ export const TargetRegistration: React.FC = () => {
                             <LogoUpload
                                 initialImage={initialProfileImage}
                                 onImageSelect={(file) => setProfileImage(file)}
+                                label="Company Avatar"
                             />
                         </div>
 

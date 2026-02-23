@@ -70,6 +70,7 @@ const parseMultiField = (val: any): string[] => {
 interface TargetTableProps {
     data: TargetRowData[];
     isLoading?: boolean;
+    hasLoadedOnce?: boolean;
     onTogglePin: (id: number) => void;
     visibleColumns: string[];
     columnOrder?: string[];
@@ -89,6 +90,7 @@ interface TargetTableProps {
 export const TargetTable: React.FC<TargetTableProps> = ({
     data,
     isLoading,
+    hasLoadedOnce = true,
     onTogglePin,
     visibleColumns,
     columnOrder,
@@ -182,7 +184,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
 
     const handleConfirmDelete = async () => {
         try {
-            const response = await api.delete('/api/sellers', {
+            const response = await api.delete('/api/seller', {
                 data: { ids: Array.from(selectedIds) }
             });
             showAlert({ type: 'success', message: response.data.message });
@@ -586,6 +588,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                 data={sortedData}
                 columns={filteredColumns}
                 isLoading={isLoading}
+                hasLoadedOnce={hasLoadedOnce}
                 columnOrder={columnOrder}
                 onColumnOrderChange={onColumnOrderChange}
                 onRowClick={(row) => navigate(`/prospects/target/${row.id}`)}
@@ -619,7 +622,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        {t('bulkDelete')}
+                                        {selectedIds.size > 1 ? t('prospects.table.bulkDelete') : t('common.delete')}
                                     </button>
                                     <button
                                         onClick={handleExportCSV}
@@ -705,7 +708,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                     }}
                                 >
                                     <img src={deleteIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('bulkDelete')}</span>
+                                    <span className="flex-1 text-left text-xs font-normal text-[#940F24] leading-[18px] tracking-[-0.24px] truncate">{t('common.delete')}</span>
                                 </button>
                             )}
                         </div>

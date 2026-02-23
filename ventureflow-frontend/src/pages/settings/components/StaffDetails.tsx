@@ -11,6 +11,7 @@ import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { AuthContext } from '../../../routes/AuthContext';
+import ImageCropperModal from '../../../components/ImageCropperModal';
 
 interface StaffMember {
     id: number;
@@ -61,14 +62,24 @@ const StaffDetails: React.FC = () => {
     // Avatar upload
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const [avatarUploading, setAvatarUploading] = useState(false);
+    const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !id) return;
-        const fd = new FormData();
-        fd.append('image', file);
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => setCropSrc(reader.result as string);
+        reader.readAsDataURL(file);
+        if (avatarInputRef.current) avatarInputRef.current.value = '';
+    };
+
+    const handleCropComplete = async (blob: Blob) => {
+        if (!id) return;
+        setCropSrc(null);
         setAvatarUploading(true);
         try {
+            const fd = new FormData();
+            fd.append('image', blob, 'avatar.jpg');
             const res = await api.post(`/api/employees/${id}/avatar`, fd, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
@@ -78,7 +89,6 @@ const StaffDetails: React.FC = () => {
             showAlert({ type: 'error', message: 'Failed to upload avatar.' });
         } finally {
             setAvatarUploading(false);
-            if (avatarInputRef.current) avatarInputRef.current.value = '';
         }
     };
 
@@ -204,347 +214,361 @@ const StaffDetails: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col w-full min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {/* Header Bar */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-5 py-2.5">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {/* Back Button */}
+        <>
+            <div className="flex flex-col w-full min-h-screen bg-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+                {/* Header Bar */}
+                <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-5 py-2.5">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            {/* Back Button */}
+                            <button
+                                onClick={() => navigate('/settings/staff')}
+                                className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M5.08346 8.1666L3.29102 6.36276L5.08346 4.57031" stroke="white" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                Back
+                            </button>
+
+                            {/* Page Title */}
+                            <h1 className="text-2xl font-medium text-gray-900">Staff Profile</h1>
+                        </div>
+
+                        {/* Edit Button - Secondary Style */}
                         <button
-                            onClick={() => navigate('/settings/staff')}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-semibold hover:bg-[#053a5c] transition-colors"
+                            onClick={() => navigate(`/settings/staff/edit/${id}`)}
+                            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                         >
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M5.08346 8.1666L3.29102 6.36276L5.08346 4.57031" stroke="white" strokeLinecap="round" strokeLinejoin="round" />
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
-                            Back
+                            Edit Staff
                         </button>
-
-                        {/* Page Title */}
-                        <h1 className="text-2xl font-medium text-gray-900">Staff Profile</h1>
                     </div>
-
-                    {/* Edit Button - Secondary Style */}
-                    <button
-                        onClick={() => navigate(`/settings/staff/edit/${id}`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit Staff
-                    </button>
                 </div>
-            </div>
 
-            {/* Main Content */}
-            <div className="flex gap-16 px-9 py-6">
-                {/* Left Column - Main Content */}
-                <div className="flex-1 max-w-[844px] space-y-10">
+                {/* Main Content */}
+                <div className="flex gap-16 px-9 py-6">
+                    {/* Left Column - Main Content */}
+                    <div className="flex-1 max-w-[844px] space-y-10">
 
-                    {/* Overview Section */}
-                    <section className="space-y-6">
-                        <h2 className="text-base font-medium text-gray-500 capitalize">Overview</h2>
-                        <div className="h-px bg-[#E5E7EB]" />
+                        {/* Overview Section */}
+                        <section className="space-y-6">
+                            <h2 className="text-base font-medium text-gray-500 capitalize">Overview</h2>
+                            <div className="h-px bg-[#E5E7EB]" />
 
-                        <div className="space-y-7">
-                            {/* Staff Header */}
-                            <div className="flex items-center gap-3">
-                                {/* Staff Avatar — click to upload */}
-                                <div
-                                    className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
-                                    onClick={() => avatarInputRef.current?.click()}
-                                    title="Click to change photo"
-                                >
-                                    <input
-                                        ref={avatarInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleAvatarChange}
-                                    />
-                                    {getAvatarUrl() ? (
-                                        <img
-                                            src={getAvatarUrl()}
-                                            alt={fullName}
-                                            className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                            }}
+                            <div className="space-y-7">
+                                {/* Staff Header */}
+                                <div className="flex items-center gap-3">
+                                    {/* Staff Avatar — click to upload */}
+                                    <div
+                                        className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
+                                        onClick={() => avatarInputRef.current?.click()}
+                                        title="Click to change photo"
+                                    >
+                                        <input
+                                            ref={avatarInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleAvatarChange}
                                         />
-                                    ) : null}
-                                    <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
-                                        {getInitials(fullName)}
+                                        {getAvatarUrl() ? (
+                                            <img
+                                                src={getAvatarUrl()}
+                                                alt={fullName}
+                                                className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                                            {getInitials(fullName)}
+                                        </div>
+                                        {/* Upload overlay */}
+                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            {avatarUploading
+                                                ? <Loader className="w-4 h-4 text-white animate-spin" />
+                                                : <Camera className="w-4 h-4 text-white" />
+                                            }
+                                        </div>
                                     </div>
-                                    {/* Upload overlay */}
-                                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        {avatarUploading
-                                            ? <Loader className="w-4 h-4 text-white animate-spin" />
-                                            : <Camera className="w-4 h-4 text-white" />
-                                        }
-                                    </div>
-                                </div>
 
-                                <div className="flex flex-col justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl font-medium text-black capitalize">{fullName}</span>
-                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
-                                            {staff.employee_id}
-                                        </span>
-                                    </div>
-                                    <span className="text-[13px] font-medium text-gray-500">last Updated {lastUpdated}</span>
-                                </div>
-                            </div>
-
-                            {/* Overview Stats Row */}
-                            <div className="flex items-start gap-20">
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Nationality</span>
-                                    <div className="flex items-center gap-2">
-                                        {staff.country?.svg_icon_url && (
-                                            <img src={staff.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                        )}
-                                        <span className="text-sm font-medium text-gray-900">{staff.country?.name || 'N/A'}</span>
+                                    <div className="flex flex-col justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl font-medium text-black capitalize">{fullName}</span>
+                                            <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
+                                                {staff.employee_id}
+                                            </span>
+                                        </div>
+                                        <span className="text-[13px] font-medium text-gray-500">last Updated {lastUpdated}</span>
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Gender</span>
-                                    <span className="text-sm font-normal text-black">{staff.gender || 'N/A'}</span>
-                                </div>
-
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Department</span>
-                                    <span className="text-sm font-normal text-black">{staff.department_data?.name || 'N/A'}</span>
-                                </div>
-
-                                {staff.designation_data?.title && (
+                                {/* Overview Stats Row */}
+                                <div className="flex items-start gap-20">
                                     <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Designation</span>
-                                        <span className="text-sm font-normal text-black">{staff.designation_data.title}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Contact Information Section */}
-                    <section className="space-y-7">
-                        <h2 className="text-base font-medium text-gray-500 capitalize">Contact Information</h2>
-                        <div className="h-px bg-[#E5E7EB]" />
-
-                        <div className="flex gap-4">
-                            {/* Work Email Card */}
-                            <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                            <Mail className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-gray-400">Work Email</span>
-                                            <span className="text-base font-medium text-gray-900">{staff.work_email || 'Not set'}</span>
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Nationality</span>
+                                        <div className="flex items-center gap-2">
+                                            {staff.country?.svg_icon_url && (
+                                                <img src={staff.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                            )}
+                                            <span className="text-sm font-medium text-gray-900">{staff.country?.name || 'N/A'}</span>
                                         </div>
                                     </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Gender</span>
+                                        <span className="text-sm font-normal text-black">{staff.gender || 'N/A'}</span>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Department</span>
+                                        <span className="text-sm font-normal text-black">{staff.department_data?.name || 'N/A'}</span>
+                                    </div>
+
+                                    {staff.designation_data?.title && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Designation</span>
+                                            <span className="text-sm font-normal text-black">{staff.designation_data.title}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+                        </section>
 
-                            {/* Contact Number Card */}
-                            <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                            <Phone className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-gray-400">Contact Number</span>
-                                            <span className="text-base font-medium text-gray-900">{staff.contact_number || 'Not set'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* System Access Section */}
-                    <section className="space-y-7">
-                        <h2 className="text-base font-medium text-gray-500 capitalize">System Access</h2>
-                        <div className="h-px bg-[#E5E7EB]" />
-
-                        <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-gray-400 uppercase">Login Email</span>
-                                <span className="text-sm font-medium text-gray-900">{staff.user?.email || 'Not set'}</span>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-gray-400 uppercase">Account Created</span>
-                                <span className="text-sm font-normal text-black">{formatDate(staff.user?.created_at)}</span>
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <span className="text-[11px] font-medium text-gray-400 uppercase">Account Status</span>
-                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium w-fit ${staff.employee_status === 'active'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                    : 'bg-gray-100 text-gray-600 border border-gray-200'
-                                    }`}>
-                                    {(staff.employee_status || 'Active').toUpperCase()}
-                                </span>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Organization Section */}
-                    {(staff.company_data?.name || staff.branch_data?.name || staff.team_data?.name) && (
+                        {/* Contact Information Section */}
                         <section className="space-y-7">
-                            <h2 className="text-base font-medium text-gray-500 capitalize">Organization</h2>
+                            <h2 className="text-base font-medium text-gray-500 capitalize">Contact Information</h2>
+                            <div className="h-px bg-[#E5E7EB]" />
+
+                            <div className="flex gap-4">
+                                {/* Work Email Card */}
+                                <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+                                                <Mail className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-medium text-gray-400">Work Email</span>
+                                                <span className="text-base font-medium text-gray-900">{staff.work_email || 'Not set'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Contact Number Card */}
+                                <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                    <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+                                                <Phone className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-medium text-gray-400">Contact Number</span>
+                                                <span className="text-base font-medium text-gray-900">{staff.contact_number || 'Not set'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* System Access Section */}
+                        <section className="space-y-7">
+                            <h2 className="text-base font-medium text-gray-500 capitalize">System Access</h2>
                             <div className="h-px bg-[#E5E7EB]" />
 
                             <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
-                                {staff.company_data?.name && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Company</span>
-                                        <span className="text-sm font-normal text-black">{staff.company_data.name}</span>
-                                    </div>
-                                )}
-                                {staff.branch_data?.name && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Branch</span>
-                                        <span className="text-sm font-normal text-black">{staff.branch_data.name}</span>
-                                    </div>
-                                )}
-                                {staff.team_data?.name && (
-                                    <div className="flex flex-col gap-1.5">
-                                        <span className="text-[11px] font-medium text-gray-400 uppercase">Team</span>
-                                        <span className="text-sm font-normal text-black">{staff.team_data.name}</span>
-                                    </div>
-                                )}
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Login Email</span>
+                                    <span className="text-sm font-medium text-gray-900">{staff.user?.email || 'Not set'}</span>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Account Created</span>
+                                    <span className="text-sm font-normal text-black">{formatDate(staff.user?.created_at)}</span>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Account Status</span>
+                                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium w-fit ${staff.employee_status === 'active'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : 'bg-gray-100 text-gray-600 border border-gray-200'
+                                        }`}>
+                                        {(staff.employee_status || 'Active').toUpperCase()}
+                                    </span>
+                                </div>
                             </div>
                         </section>
-                    )}
-                </div>
 
-                {/* Right Column - Sidebar */}
-                <div className="w-[287px] shrink-0 space-y-10">
-                    {/* Permission Level */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Permission Level</h3>
-                        <div className="flex items-center gap-3.5">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isAdmin ? 'bg-amber-100' : 'bg-[#064771]'}`}>
-                                {isAdmin
-                                    ? <ShieldCheck className="w-4 h-4 text-amber-700" />
-                                    : <Shield className="w-4 h-4 text-white" />
-                                }
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-base font-normal text-black">{role}</span>
-                                <span className="text-xs text-gray-400">
-                                    {isAdmin ? 'Full system access' : 'Standard access'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                        {/* Organization Section */}
+                        {(staff.company_data?.name || staff.branch_data?.name || staff.team_data?.name) && (
+                            <section className="space-y-7">
+                                <h2 className="text-base font-medium text-gray-500 capitalize">Organization</h2>
+                                <div className="h-px bg-[#E5E7EB]" />
 
-                    {/* Employee ID */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Employee ID</h3>
-                        <span className="inline-flex px-3 py-1.5 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771] font-mono">
-                            {staff.employee_id}
-                        </span>
-                    </div>
-
-                    {/* Status */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Account Status</h3>
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${staff.employee_status === 'active'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                            : staff.employee_status === 'inactive'
-                                ? 'bg-red-50 text-red-600 border border-red-100'
-                                : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                            }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${staff.employee_status === 'inactive' ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                            {(staff.employee_status || 'Active').charAt(0).toUpperCase() + (staff.employee_status || 'active').slice(1)}
-                        </span>
-                    </div>
-
-                    {/* Joined Date */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Member Since</h3>
-                        <span className="text-base font-normal text-black">
-                            {formatDate(staff.joining_date || staff.user?.created_at)}
-                        </span>
-                    </div>
-                    {/* Admin Actions — only visible to System Admin viewing a non-admin staff */}
-                    {currentRole === 'System Admin' && role !== 'System Admin' && staff.user?.id && (
-                        <div className="space-y-3 pt-2 border-t border-gray-100">
-                            <h3 className="text-base font-medium text-gray-500 capitalize">Admin Actions</h3>
-
-                            {/* Reset Password */}
-                            {!showPwForm ? (
-                                <button
-                                    onClick={() => setShowPwForm(true)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 rounded border border-gray-200 text-sm text-gray-700 hover:border-[#064771] hover:text-[#064771] transition-colors"
-                                >
-                                    <KeyRound className="w-4 h-4" />
-                                    Reset Password
-                                </button>
-                            ) : (
-                                <div className="flex flex-col gap-2">
-                                    <input
-                                        type="password"
-                                        placeholder="New password (min 8)"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        className="h-9 px-3 border border-gray-200 rounded text-sm outline-none focus:border-[#064771] focus:ring-1 focus:ring-[#064771]/20"
-                                    />
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleResetPassword}
-                                            disabled={pwSaving}
-                                            className="flex-1 h-8 text-xs font-medium text-white rounded flex items-center justify-center gap-1.5 transition-colors"
-                                            style={{ backgroundColor: pwSaving ? '#9ab3c7' : '#064771' }}
-                                        >
-                                            {pwSaving && <Loader className="w-3 h-3 animate-spin" />}
-                                            {pwSaving ? 'Saving…' : 'Set Password'}
-                                        </button>
-                                        <button
-                                            onClick={() => { setShowPwForm(false); setNewPassword(''); }}
-                                            className="h-8 px-3 text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
+                                <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
+                                    {staff.company_data?.name && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Company</span>
+                                            <span className="text-sm font-normal text-black">{staff.company_data.name}</span>
+                                        </div>
+                                    )}
+                                    {staff.branch_data?.name && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Branch</span>
+                                            <span className="text-sm font-normal text-black">{staff.branch_data.name}</span>
+                                        </div>
+                                    )}
+                                    {staff.team_data?.name && (
+                                        <div className="flex flex-col gap-1.5">
+                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Team</span>
+                                            <span className="text-sm font-normal text-black">{staff.team_data.name}</span>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </section>
+                        )}
+                    </div>
 
-                            {/* Activate / Deactivate */}
-                            {(() => {
-                                const isActive = staff.user!.is_active !== false;
-                                return (
-                                    <button
-                                        onClick={handleToggleActive}
-                                        disabled={statusSaving}
-                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded border text-sm font-medium transition-colors ${isActive
-                                            ? 'border-red-200 text-red-600 hover:bg-red-50'
-                                            : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                                            }`}
-                                    >
-                                        {statusSaving
-                                            ? <Loader className="w-4 h-4 animate-spin" />
-                                            : isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />
-                                        }
-                                        {isActive ? 'Deactivate Account' : 'Activate Account'}
-                                    </button>
-                                );
-                            })()}
+                    {/* Right Column - Sidebar */}
+                    <div className="w-[287px] shrink-0 space-y-10">
+                        {/* Permission Level */}
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Permission Level</h3>
+                            <div className="flex items-center gap-3.5">
+                                <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isAdmin ? 'bg-amber-100' : 'bg-[#064771]'}`}>
+                                    {isAdmin
+                                        ? <ShieldCheck className="w-4 h-4 text-amber-700" />
+                                        : <Shield className="w-4 h-4 text-white" />
+                                    }
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-base font-normal text-black">{role}</span>
+                                    <span className="text-xs text-gray-400">
+                                        {isAdmin ? 'Full system access' : 'Standard access'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    )}
+
+                        {/* Employee ID */}
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Employee ID</h3>
+                            <span className="inline-flex px-3 py-1.5 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771] font-mono">
+                                {staff.employee_id}
+                            </span>
+                        </div>
+
+                        {/* Status */}
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Account Status</h3>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${staff.employee_status === 'active'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : staff.employee_status === 'inactive'
+                                    ? 'bg-red-50 text-red-600 border border-red-100'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${staff.employee_status === 'inactive' ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                                {(staff.employee_status || 'Active').charAt(0).toUpperCase() + (staff.employee_status || 'active').slice(1)}
+                            </span>
+                        </div>
+
+                        {/* Joined Date */}
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Member Since</h3>
+                            <span className="text-base font-normal text-black">
+                                {formatDate(staff.joining_date || staff.user?.created_at)}
+                            </span>
+                        </div>
+                        {/* Admin Actions — only visible to System Admin viewing a non-admin staff */}
+                        {currentRole === 'System Admin' && role !== 'System Admin' && staff.user?.id && (
+                            <div className="space-y-3 pt-2 border-t border-gray-100">
+                                <h3 className="text-base font-medium text-gray-500 capitalize">Admin Actions</h3>
+
+                                {/* Reset Password */}
+                                {!showPwForm ? (
+                                    <button
+                                        onClick={() => setShowPwForm(true)}
+                                        className="w-full flex items-center gap-2 px-3 py-2 rounded border border-gray-200 text-sm text-gray-700 hover:border-[#064771] hover:text-[#064771] transition-colors"
+                                    >
+                                        <KeyRound className="w-4 h-4" />
+                                        Reset Password
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="password"
+                                            placeholder="New password (min 8)"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="h-9 px-3 border border-gray-200 rounded text-sm outline-none focus:border-[#064771] focus:ring-1 focus:ring-[#064771]/20"
+                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleResetPassword}
+                                                disabled={pwSaving}
+                                                className="flex-1 h-8 text-xs font-medium text-white rounded flex items-center justify-center gap-1.5 transition-colors"
+                                                style={{ backgroundColor: pwSaving ? '#9ab3c7' : '#064771' }}
+                                            >
+                                                {pwSaving && <Loader className="w-3 h-3 animate-spin" />}
+                                                {pwSaving ? 'Saving…' : 'Set Password'}
+                                            </button>
+                                            <button
+                                                onClick={() => { setShowPwForm(false); setNewPassword(''); }}
+                                                className="h-8 px-3 text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Activate / Deactivate */}
+                                {(() => {
+                                    const isActive = staff.user!.is_active !== false;
+                                    return (
+                                        <button
+                                            onClick={handleToggleActive}
+                                            disabled={statusSaving}
+                                            className={`w-full flex items-center gap-2 px-3 py-2 rounded border text-sm font-medium transition-colors ${isActive
+                                                ? 'border-red-200 text-red-600 hover:bg-red-50'
+                                                : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                                }`}
+                                        >
+                                            {statusSaving
+                                                ? <Loader className="w-4 h-4 animate-spin" />
+                                                : isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />
+                                            }
+                                            {isActive ? 'Deactivate Account' : 'Activate Account'}
+                                        </button>
+                                    );
+                                })()}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
+
+            {/* Image Cropper Modal */}
+            {
+                cropSrc && (
+                    <ImageCropperModal
+                        imageSrc={cropSrc}
+                        onCropComplete={handleCropComplete}
+                        onClose={() => setCropSrc(null)}
+                        aspect={1}
+                    />
+                )
+            }
+        </>
     );
 };
 

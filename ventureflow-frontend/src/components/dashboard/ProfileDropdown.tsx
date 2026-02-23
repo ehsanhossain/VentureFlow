@@ -8,7 +8,6 @@ import { ChevronDown, User, LogOut, Settings } from "lucide-react";
 import { AuthContext } from "../../routes/AuthContext";
 import api from "../../config/api";
 import { useNavigate } from "react-router-dom";
-import { showAlert } from "../Alert";
 import { useTranslation } from "react-i18next";
 
 interface UserData {
@@ -116,17 +115,13 @@ const ProfileDropdown: React.FC = () => {
           <div className="p-2">
             <button
               onClick={() => {
-                if (employee?.id || partner?.id) {
-                  // Partners go to their partner profile, staff/admin go to regular profile
-                  if (partner?.id) {
-                    navigate('/settings/profile');
-                  } else {
-                    navigate('/profile');
-                  }
-                  setIsOpen(false);
+                // Partners go to their partner profile, staff/admin go to regular profile
+                if (partner?.id) {
+                  navigate('/settings/profile');
                 } else {
-                  showAlert({ type: "error", message: t('profile.profileNotFound') });
+                  navigate('/profile');
                 }
+                setIsOpen(false);
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 hover:text-[#064771] hover:bg-blue-50/50 rounded transition-all group"
             >

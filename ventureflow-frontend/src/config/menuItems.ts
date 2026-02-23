@@ -14,6 +14,7 @@ import {
   StaffAccountsIcon,
   MatchIcon,
 } from "../assets/icons";
+import { Factory, DollarSign, History } from "lucide-react";
 import React from 'react';
 
 export interface SubMenuItem {
@@ -53,6 +54,9 @@ export const menuItems: MenuItem[] = [
       { label: "Currency", path: "/settings/currency", icon: CurrencyIcon },
       { label: "Partner Management", path: "/settings/partners", icon: PartnerIconCustom },
       { label: "Pipeline Workflow", path: "/settings/pipeline", icon: CatalystIcon },
+      { label: "Industries", path: "/settings/industries", icon: Factory },
+      { label: "Fee Structure", path: "/settings/fee-structure", icon: DollarSign },
+      { label: "Audit Log", path: "/settings/audit-log", icon: History, roles: ["System Admin"] },
     ],
   },
 ];

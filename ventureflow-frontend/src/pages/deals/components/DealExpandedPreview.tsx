@@ -55,6 +55,23 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     // Acquiring info
     const acquiringRatio = deal.shareholding_ratio || deal.share_ratio || 'Majority ~70%';
 
+    // Dynamic relationship label
+    const getRelationLabel = (): string => {
+        const type = (deal as any).relationship_type || 'acquiring';
+        const labels: Record<string, string> = {
+            acquiring: 'Acquiring',
+            joint_venture: 'Joint Venturing',
+            strategic_investment: 'Strategic Investment',
+            merger: 'Merging',
+            minority_stake: 'Minority Stake',
+            majority_stake: 'Majority Stake',
+            buyout: 'Buyout',
+            partnership: 'Partnership',
+        };
+        return labels[type] || 'Acquiring';
+    };
+    const relationLabel = getRelationLabel();
+
     // Comment count
     const commentCount = deal.comment_count || 0;
 
@@ -104,7 +121,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
 
                         {/* Acquiring Info */}
                         <div className="flex flex-col items-center gap-0.5 flex-shrink-0 px-4">
-                            <span className="text-[13px] text-gray-400 leading-5">Acquiring</span>
+                            <span className="text-[13px] text-gray-400 leading-5">{relationLabel}</span>
                             <span className="text-[13px] font-medium text-gray-600 leading-5">{acquiringRatio}</span>
                         </div>
 

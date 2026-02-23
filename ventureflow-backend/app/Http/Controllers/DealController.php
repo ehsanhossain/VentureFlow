@@ -164,6 +164,7 @@ class DealController extends Controller
             'internal_pic' => 'nullable|array',
             'target_close_date' => 'nullable|date',
             'pipeline_type' => 'nullable|in:buyer,seller',
+            'relationship_type' => 'nullable|string|max:50',
         ]);
 
         // At least one party (buyer or seller) must be selected

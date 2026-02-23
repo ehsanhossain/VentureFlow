@@ -45,7 +45,11 @@ export function Sidebar({
       "Currency": "navigation.currency",
       "Partner Management": "navigation.partnerManagement",
       "Staff & Accounts": "navigation.staffAndAccounts",
-      "Pipeline Workflow": "navigation.pipelineWorkflow"
+      "Pipeline Workflow": "navigation.pipelineWorkflow",
+      "MatchIQ": "navigation.matchIQ",
+      "Industries": "navigation.industries",
+      "Fee Structure": "navigation.feeStructure",
+      "Audit Log": "navigation.auditLog"
     };
     return mapping[label] || label;
   };

@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mail, MoreVertical, Shield, ShieldCheck, Eye, Edit2, Trash2 } from 'lucide-react';
+import { Mail, MoreVertical, Eye, Edit2, Trash2 } from 'lucide-react';
 import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -87,14 +87,9 @@ const StaffManagement: React.FC = () => {
 
     const getRoleBadge = (staffMember: StaffMember) => {
         const role = staffMember.user?.roles?.[0]?.name || 'Staff';
-        const isAdmin = role === 'System Admin';
 
         return (
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium ${isAdmin
-                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                : 'bg-blue-50 text-blue-700 border border-blue-200'
-                }`}>
-                {isAdmin ? <ShieldCheck className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+            <span className="inline-flex items-center px-3 py-1 rounded-[3px] text-[11px] font-medium text-[#334155] bg-[#f1f5f9] border border-[#e2e8f0]">
                 {role}
             </span>
         );
@@ -175,7 +170,7 @@ const StaffManagement: React.FC = () => {
             id: 'employee_id',
             header: 'Employee ID',
             accessor: (row) => (
-                <span className="font-mono text-[11px] font-medium text-[#064771] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                <span className="font-mono text-[11px] font-medium text-[#064771] bg-blue-50 px-2 py-0.5 rounded-[3px] border border-blue-100">
                     {row.employee_id}
                 </span>
             ),

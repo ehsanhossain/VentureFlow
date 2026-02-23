@@ -60,6 +60,7 @@ export interface Deal {
     target_close_date: string | null;
     status: 'active' | 'on_hold' | 'lost' | 'won';
     ticket_size?: number | string;
+    relationship_type?: string;
     possibility?: string;
     shareholding_ratio?: string;
     share_ratio?: string;

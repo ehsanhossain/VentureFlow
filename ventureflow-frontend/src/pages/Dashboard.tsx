@@ -262,7 +262,7 @@ const Dashboard: React.FC = () => {
 
             {data.deal_flow_trend.length > 0 ? (
               <div className="h-[220px]" style={{ minWidth: 0, minHeight: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <LineChart data={data.deal_flow_trend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
@@ -299,7 +299,7 @@ const Dashboard: React.FC = () => {
 
             {geoBarData.length > 0 ? (
               <div className="h-[200px]" style={{ minWidth: 0, minHeight: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <BarChart data={geoBarData} barGap={0} barSize={10}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                     <XAxis dataKey="country_name" axisLine={false} tickLine={false}

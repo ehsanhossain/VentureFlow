@@ -158,6 +158,7 @@ const ProspectsPortal: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [investors, setInvestors] = useState<InvestorRowData[]>([]);
     const [targets, setTargets] = useState<TargetRowData[]>([]);
 
@@ -751,10 +752,18 @@ const ProspectsPortal: React.FC = () => {
             }
         } catch (error: any) {
             // Silently ignore aborted requests (new fetch superseded this one)
+            // CRITICAL: Do NOT modify loading state for aborted requests — the replacement
+            // fetch is still running, so setting isLoading=false here would cause a
+            // "No Data Found" flash before the new data arrives.
             if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
             console.error("Failed to fetch data", error);
         } finally {
-            setIsLoading(false);
+            // Only update loading state if the request was NOT aborted.
+            // Check if the signal was aborted — if so, a newer fetch is in progress.
+            if (!signal?.aborted) {
+                setIsLoading(false);
+                setHasLoadedOnce(true);
+            }
         }
     };
 
@@ -1049,8 +1058,8 @@ const ProspectsPortal: React.FC = () => {
     const handleTogglePin = async (id: number) => {
         try {
             const isInvestor = activeTab === 'investors';
-            const tab = isInvestor ? 'buyer' : 'seller';
-            await api.post(`/api/${tab}/${id}/pinned`);
+            const endpoint = isInvestor ? 'investor' : 'seller';
+            await api.post(`/api/${endpoint}/${id}/pinned`);
 
             // Immediately flip isPinned on the local data so UI reacts instantly
             if (isInvestor) {
@@ -1781,25 +1790,25 @@ const ProspectsPortal: React.FC = () => {
                                     <ChevronDown className={`w-4 h-4 opacity-50 transition-transform duration-200 ${isCreateOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 {isCreateOpen && (
-                                    <div className="absolute right-0 mt-2 bg-white rounded-[3px] border border-gray-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-sm" style={{ minWidth: '175px' }}>
-                                        <div className="flex flex-col gap-0.5">
+                                    <div className="absolute right-0 mt-2 bg-white rounded-[3px] border border-gray-200 p-2.5 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden shadow-sm" style={{ minWidth: '195px' }}>
+                                        <div className="flex flex-col gap-1.5">
                                             <button
-                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                className="w-full text-left px-2.5 py-2.5 flex items-center gap-3 rounded hover:bg-gray-50 transition-colors"
                                                 onClick={() => { navigate('/prospects/add-investor'); setIsCreateOpen(false); }}
                                             >
                                                 <img src={addInvestorIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                                 <span className="text-black text-xs font-normal leading-[18px] truncate">{t('prospects.createInvestor', 'Add Investor')}</span>
                                             </button>
                                             <button
-                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                className="w-full text-left px-2.5 py-2.5 flex items-center gap-3 rounded hover:bg-gray-50 transition-colors"
                                                 onClick={() => { navigate('/prospects/add-target'); setIsCreateOpen(false); }}
                                             >
                                                 <img src={addTargetIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                                 <span className="text-black text-xs font-normal leading-[18px] truncate">{t('prospects.createTarget', 'Add Target')}</span>
                                             </button>
-                                            <div className="w-full h-px bg-gray-100 my-1" />
+                                            <div className="w-full h-px bg-gray-100 my-0.5" />
                                             <button
-                                                className="w-full text-left px-2 py-1.5 flex items-center gap-2.5 rounded hover:bg-gray-50 transition-colors"
+                                                className="w-full text-left px-2.5 py-2.5 flex items-center gap-3 rounded hover:bg-gray-50 transition-colors"
                                                 onClick={() => { setImportWizardType('investors'); setIsImportWizardOpen(true); setIsCreateOpen(false); }}
                                             >
                                                 <img src={importProspectsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
@@ -1823,6 +1832,7 @@ const ProspectsPortal: React.FC = () => {
                             <InvestorTable
                                 data={investors}
                                 isLoading={isLoading}
+                                hasLoadedOnce={hasLoadedOnce}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
                                 columnOrder={columnOrder}
@@ -1842,6 +1852,7 @@ const ProspectsPortal: React.FC = () => {
                             <TargetTable
                                 data={targets}
                                 isLoading={isLoading}
+                                hasLoadedOnce={hasLoadedOnce}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
                                 columnOrder={columnOrder}

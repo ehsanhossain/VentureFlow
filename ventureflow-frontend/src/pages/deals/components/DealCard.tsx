@@ -84,7 +84,24 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const secondaryEntity = pipelineView === 'buyer' ? sellerName : buyerName;
     const primaryImage = pipelineView === 'buyer' ? buyerImage : sellerImage;
     const secondaryImage = pipelineView === 'buyer' ? sellerImage : buyerImage;
-    const relationLabel = pipelineView === 'buyer' ? 'Acquiring' : 'Being acquired by';
+
+    // Dynamic relationship label from deal data
+    const getRelationLabel = (): string => {
+        const type = (deal as any).relationship_type || 'acquiring';
+        const labels: Record<string, { buyer: string; seller: string }> = {
+            acquiring: { buyer: 'Acquiring', seller: 'Being acquired by' },
+            joint_venture: { buyer: 'Joint Venturing with', seller: 'Joint Venturing with' },
+            strategic_investment: { buyer: 'Strategically Investing in', seller: 'Receiving strategic investment from' },
+            merger: { buyer: 'Merging with', seller: 'Merging with' },
+            minority_stake: { buyer: 'Acquiring minority stake in', seller: 'Selling minority stake to' },
+            majority_stake: { buyer: 'Acquiring majority stake in', seller: 'Selling majority stake to' },
+            buyout: { buyer: 'Buying out', seller: 'Being bought out by' },
+            partnership: { buyer: 'Partnering with', seller: 'Partnering with' },
+        };
+        const pair = labels[type] || labels.acquiring;
+        return pipelineView === 'buyer' ? pair.buyer : pair.seller;
+    };
+    const relationLabel = getRelationLabel();
 
     const priorityInfo = getPriorityInfo();
     const shareholdingRatio = getShareholdingRatio();

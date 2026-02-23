@@ -30,6 +30,8 @@ export interface DataTableProps<T> {
     data: T[];
     columns: DataTableColumn<T>[];
     isLoading?: boolean;
+    /** When true, empty data will show skeleton instead of empty state (prevents flash on initial load) */
+    hasLoadedOnce?: boolean;
     emptyMessage?: string;
     emptyIcon?: React.ReactNode;
     emptyAction?: React.ReactNode;
@@ -165,6 +167,7 @@ function DataTable<T>({
     data,
     columns,
     isLoading = false,
+    hasLoadedOnce = true,
     emptyMessage,
     emptyIcon,
     emptyAction,
@@ -605,7 +608,7 @@ function DataTable<T>({
                     </thead>
 
                     <tbody>
-                        {isLoading ? (
+                        {isLoading || (!hasLoadedOnce && data.length === 0) ? (
                             <LoadingSkeleton
                                 columns={totalColumns}
                                 rows={pagination?.itemsPerPage || 10}

@@ -44,6 +44,36 @@ interface User {
     status: 'registered' | 'unregistered';
 }
 
+// Relationship types between buyer and seller
+const RELATIONSHIP_TYPES = [
+    { value: 'acquiring', buyerLabel: 'Acquiring', sellerLabel: 'Being acquired by' },
+    { value: 'joint_venture', buyerLabel: 'Joint Venturing with', sellerLabel: 'Joint Venturing with' },
+    { value: 'strategic_investment', buyerLabel: 'Strategically Investing in', sellerLabel: 'Receiving strategic investment from' },
+    { value: 'merger', buyerLabel: 'Merging with', sellerLabel: 'Merging with' },
+    { value: 'minority_stake', buyerLabel: 'Acquiring minority stake in', sellerLabel: 'Selling minority stake to' },
+    { value: 'majority_stake', buyerLabel: 'Acquiring majority stake in', sellerLabel: 'Selling majority stake to' },
+    { value: 'buyout', buyerLabel: 'Buying out', sellerLabel: 'Being bought out by' },
+    { value: 'partnership', buyerLabel: 'Partnering with', sellerLabel: 'Partnering with' },
+];
+
+/** Format a number string with commas (e.g. 4972520 → 4,972,520) */
+const formatWithCommas = (value: string): string => {
+    // Remove existing commas
+    const cleaned = value.replace(/,/g, '');
+    if (!cleaned) return '';
+    // Split by decimal point
+    const parts = cleaned.split('.');
+    // Add commas to integer part
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+};
+
+/** Remove commas from formatted string for API submission */
+const removeCommas = (value: string): string => value.replace(/,/g, '');
+
+// Generic admin/system account names to exclude from PIC selections
+const EXCLUDED_PIC_NAMES = ['admin user', 'staff user', 'admin', 'system'];
+
 const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDealModalProps) => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -62,6 +92,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         estimated_ev_currency: 'USD',
         priority: 'medium',
         possibility: 'Medium',
+        relationship_type: 'acquiring',
         internal_pic: [] as User[],
         target_close_date: '',
         stage_code: '',
@@ -135,7 +166,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     const fetchBuyers = async () => {
         try {
-            const response = await api.get('/api/buyer');
+            const response = await api.get('/api/buyer', { params: { per_page: 9999 } });
             setBuyers(response.data.data || []);
         } catch {
             console.error('Failed to fetch buyers');
@@ -144,7 +175,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     const fetchSellers = async () => {
         try {
-            const response = await api.get('/api/seller');
+            const response = await api.get('/api/seller', { params: { per_page: 9999 } });
             setSellers(response.data.data || []);
         } catch {
             console.error('Failed to fetch sellers');
@@ -155,12 +186,16 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         try {
             const response = await api.get('/api/employees/fetch');
             const employees = response.data || [];
-            setUsers(employees.map((e: { id: number; first_name?: string; last_name?: string; name?: string; full_name?: string }) => ({
-                id: e.id,
-                name: e.first_name && e.last_name ? `${e.first_name} ${e.last_name}` : (e.first_name || e.last_name || e.name || e.full_name || 'Unknown'),
-                flagSrc: '',
-                status: 'registered'
-            })));
+            setUsers(employees
+                .map((e: { id: number; first_name?: string; last_name?: string; name?: string; full_name?: string }) => ({
+                    id: e.id,
+                    name: e.first_name && e.last_name ? `${e.first_name} ${e.last_name}` : (e.first_name || e.last_name || e.name || e.full_name || 'Unknown'),
+                    flagSrc: '',
+                    status: 'registered'
+                }))
+                // Filter out generic/admin accounts
+                .filter((u: User) => !EXCLUDED_PIC_NAMES.includes(u.name.toLowerCase().trim()))
+            );
         } catch {
             console.error('Failed to fetch users');
         }
@@ -221,7 +256,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         if (!ticketSizeManuallyEdited) {
             const maxVal = getSellerInvestmentMax(seller);
             if (maxVal) {
-                setFormData((prev) => ({ ...prev, ticket_size: maxVal }));
+                setFormData((prev) => ({ ...prev, ticket_size: formatWithCommas(maxVal) }));
             }
             // Also grab currency if available
             if (seller.financial_details?.default_currency) {
@@ -296,6 +331,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 ...formData,
                 buyer_id: formData.buyer_id || null,
                 seller_id: formData.seller_id || null,
+                ticket_size: removeCommas(formData.ticket_size),
                 pipeline_type: defaultView,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
@@ -577,21 +613,57 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     placeholder="e.g., Buyer Corp – Seller Inc"
                                 />
                             </div>
+
+                            {/* Relationship Type */}
+                            <div>
+                                <label htmlFor="deal-relationship" className="block text-sm font-medium text-gray-700 mb-1">Relationship Type</label>
+                                <select
+                                    id="deal-relationship"
+                                    value={formData.relationship_type}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, relationship_type: e.target.value }))}
+                                    className={selectClass}
+                                >
+                                    {RELATIONSHIP_TYPES.map((rel) => (
+                                        <option key={rel.value} value={rel.value}>
+                                            {rel.buyerLabel}
+                                        </option>
+                                    ))}
+                                </select>
+                                {/* Preview of how it will display */}
+                                {(selectedBuyer || selectedSeller) && (
+                                    <p className="mt-1.5 text-xs text-gray-500">
+                                        Preview: <span className="font-medium text-gray-700">
+                                            {(() => {
+                                                const rel = RELATIONSHIP_TYPES.find(r => r.value === formData.relationship_type);
+                                                const bName = selectedBuyer?.company_overview?.reg_name || 'Investor';
+                                                const sName = selectedSeller?.company_overview?.reg_name || 'Target';
+                                                if (defaultView === 'buyer') {
+                                                    return `${bName} ${rel?.buyerLabel.toLowerCase()} ${sName}`;
+                                                }
+                                                return `${sName} ${rel?.sellerLabel.toLowerCase()} ${bName}`;
+                                            })()}
+                                        </span>
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Transaction Size
                                         {selectedSeller && !ticketSizeManuallyEdited && formData.ticket_size && (
-                                            <span className="ml-1 text-xs text-green-600 font-normal">(auto-filled from target)</span>
+                                            <span className="ml-1 text-xs font-normal" style={{ color: '#064771' }}>(auto-filled from target)</span>
                                         )}
                                     </label>
                                     <div className="flex gap-2">
                                         <input
-                                            type="number"
+                                            type="text"
                                             value={formData.ticket_size}
                                             onChange={(e) => {
                                                 setTicketSizeManuallyEdited(true);
-                                                setFormData((prev) => ({ ...prev, ticket_size: e.target.value }));
+                                                // Only allow digits, commas, and decimal point
+                                                const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                                                setFormData((prev) => ({ ...prev, ticket_size: formatWithCommas(removeCommas(raw)) }));
                                             }}
                                             className={`flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
                                             placeholder="Amount"
@@ -651,7 +723,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Internal PIC (Assigned Staff)
                                     {!picManuallyEdited && formData.internal_pic.length > 0 && (
-                                        <span className="ml-1 text-xs text-green-600 font-normal">(auto-filled from profiles)</span>
+                                        <span className="ml-1 text-xs font-normal" style={{ color: '#064771' }}>(auto-filled from profiles)</span>
                                     )}
                                 </label>
                                 <Dropdown
@@ -727,4 +799,3 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 };
 
 export default CreateDealModal;
-

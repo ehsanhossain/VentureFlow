@@ -623,7 +623,7 @@ export const InvestorRegistration: React.FC = () => {
                 payload.append('profile_picture', profileImage);
             }
 
-            const response = await api.post('/api/buyer/company-overviews', payload);
+            const response = await api.post('/api/investor/company-overviews', payload);
             const savedId = response.data?.data || id;
 
             showAlert({ type: 'success', message: `Investor ${isDraft ? 'draft ' : ''}saved successfully` });
@@ -706,6 +706,7 @@ export const InvestorRegistration: React.FC = () => {
                             <LogoUpload
                                 initialImage={initialProfileImage}
                                 onImageSelect={(file) => setProfileImage(file)}
+                                label="Company Avatar"
                             />
                         </div>
 

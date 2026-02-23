@@ -56,6 +56,7 @@ const CreateStaff: React.FC = () => {
     const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
     const [isLoadingData, setIsLoadingData] = useState(!!id);
     const [showPassword, setShowPassword] = useState(false);
+    const [emailError, setEmailError] = useState<string | null>(null);
 
     const baseURL = import.meta.env.VITE_API_BASE_URL;
 
@@ -237,7 +238,17 @@ const CreateStaff: React.FC = () => {
             console.error('Failed to save staff:', error);
             const msg = error.response?.data?.message || error.response?.data?.error || 'Failed to save staff member';
             const validationErrors = error.response?.data?.errors;
-            if (validationErrors) {
+
+            // Check if this is a duplicate email error
+            const emailErrors = validationErrors?.login_email || validationErrors?.work_email || validationErrors?.email;
+            if (emailErrors) {
+                const emailMsg = Array.isArray(emailErrors) ? emailErrors[0] : String(emailErrors);
+                setEmailError(emailMsg);
+                showAlert({ type: 'error', message: emailMsg });
+            } else if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('already')) {
+                setEmailError(msg);
+                showAlert({ type: 'error', message: msg });
+            } else if (validationErrors) {
                 const firstError = Object.values(validationErrors).flat()[0];
                 showAlert({ type: 'error', message: String(firstError) });
             } else {
@@ -442,10 +453,15 @@ const CreateStaff: React.FC = () => {
                                             <input
                                                 {...register('workEmail', { required: true })}
                                                 type="email"
-                                                className={inputClass}
+                                                className={`${inputClass} ${emailError ? 'border-red-500 bg-red-50' : ''}`}
                                                 placeholder="name@company.com"
+                                                onChange={(e) => {
+                                                    register('workEmail').onChange(e);
+                                                    if (emailError) setEmailError(null);
+                                                }}
                                             />
-                                            {errors.workEmail && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                            {errors.workEmail && !emailError && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                            {emailError && <span className="text-red-500 text-xs mt-1">{emailError}</span>}
                                         </div>
                                         <div className="flex-1" /> {/* Empty spacer for alignment */}
                                     </div>
@@ -467,10 +483,15 @@ const CreateStaff: React.FC = () => {
                                         <input
                                             {...register('loginEmail', { required: true })}
                                             type="email"
-                                            className={inputClass}
+                                            className={`${inputClass} ${emailError ? 'border-red-500 bg-red-50' : ''}`}
                                             placeholder="employee's email to login"
+                                            onChange={(e) => {
+                                                register('loginEmail').onChange(e);
+                                                if (emailError) setEmailError(null);
+                                            }}
                                         />
-                                        {errors.loginEmail && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                        {errors.loginEmail && !emailError && <span className="text-red-500 text-xs mt-1">Required</span>}
+                                        {emailError && <span className="text-red-500 text-xs mt-1">{emailError}</span>}
                                     </div>
                                     <div className="flex-1">
                                         <FieldLabel text="Password" required={!id} />
