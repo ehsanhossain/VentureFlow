@@ -178,13 +178,45 @@ class ImportController extends Controller
         };
 
         $reader = IOFactory::createReader($readerType);
+
+        // For XLSX/XLS, we need to find the correct sheet. For CSV, there's usually only one.
         if ($readerType === 'Xlsx' || $readerType === 'Xls') {
-            // Only read the first sheet (data sheet), skip hidden reference sheets
-            $reader->setLoadSheetsOnly([$type === 'investor' ? 'Investors' : 'Targets']);
+            // Load the spreadsheet without specifying sheets first, to inspect all sheets
+            $spreadsheet = $reader->load($file->getRealPath());
+
+            $expectedSheetName = ($type === 'investor' ? 'Investors' : 'Targets');
+            // Also check singular form so "Target Upload" matches when looking for "Targets"
+            $keyword = $type === 'investor' ? 'investor' : 'target';
+            $sheetNames = $spreadsheet->getSheetNames();
+            $foundSheetName = null;
+
+            // Try to find a sheet with a matching name:
+            // 1. Sheet name contains the full expected name ("Targets", "Investors")
+            // 2. Sheet name contains the singular keyword ("target", "investor")
+            foreach ($sheetNames as $sheetName) {
+                $lowerSheet = strtolower($sheetName);
+                if (str_contains($lowerSheet, strtolower($expectedSheetName)) || str_contains($lowerSheet, $keyword)) {
+                    $foundSheetName = $sheetName;
+                    break;
+                }
+            }
+
+            if ($foundSheetName) {
+                $worksheet = $spreadsheet->getSheetByName($foundSheetName);
+            } else {
+                // Fallback to the first sheet if no specific sheet is found
+                $worksheet = $spreadsheet->getActiveSheet();
+                Log::warning("Could not find sheet '{$expectedSheetName}' in {$file->getClientOriginalName()}. Using the first available sheet: '{$worksheet->getTitle()}'.");
+            }
+        } else { // CSV
+            // For CSV, load directly, getActiveSheet will pick the only one
+            $spreadsheet = $reader->load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
         }
 
-        $spreadsheet = $reader->load($file->getRealPath());
-        $worksheet = $spreadsheet->getActiveSheet();
+        if (!$worksheet) {
+            throw new \Exception("Could not load any worksheet from the file.");
+        }
 
         $rows = [];
         $headers = [];
@@ -494,7 +526,7 @@ class ImportController extends Controller
             'company_type'       => 'Corporate',
             'industry_ops'       => $industries,
             'company_rank'       => $rank,
-            'reason_ma'          => $reasonMA,
+            'reason_ma'          => $reasonMA ? implode(', ', $reasonMA) : null, // reason_ma is VARCHAR — not JSON
             'status'             => 'Active',
             'details'            => $data['project_details'] ?? null,
             'website_links'      => $websiteLinks,
@@ -507,23 +539,27 @@ class ImportController extends Controller
         ]);
 
         // Create financial details
+        // IMPORTANT: ebitda_value uses {min, max} schema (consistent with registration form + filter queries)
+        // The DB filters use json_extract(ebitda_value, '$.max') / '$.min'
         $financial = TargetsFinancialDetail::create([
             'expected_investment_amount' => [
                 'min' => $investmentMin,
                 'max' => $investmentMax,
             ],
             'default_currency' => $investmentCurrency,
-            'ebitda_value' => $ebitda,
-            'ebitda_details' => $data['ebitda_details'] ?? null,
-            'investment_condition' => json_encode($investmentCondition),
+            'ebitda_value'     => $ebitda ? ['min' => $ebitda, 'max' => $ebitda] : null,
+            'ebitda_details'   => $data['ebitda_details'] ?? null,
+            'investment_condition' => !empty($investmentCondition) ? json_encode($investmentCondition) : null, // stored as raw JSON string (no model cast)
         ]);
 
         // Create parent seller record
+        // IMPORTANT: targets.status uses numeric '1' (Active), '2' (Draft) — NOT the string 'Active'
+        // The prospects query filters by status = '1', so we must use the numeric convention
         Target::create([
             'seller_id' => $projectCode,
             'company_overview_id' => $overview->id,
             'financial_detail_id' => $financial->id,
-            'status' => 'Active',
+            'status' => '1', // '1' = Active (numeric convention for targets table)
         ]);
     }
 

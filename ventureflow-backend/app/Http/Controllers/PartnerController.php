@@ -11,7 +11,6 @@ use App\Models\Buyer;
 use Carbon\Carbon;
 use App\Models\Seller;
 use App\Models\Partner;
-use App\Models\FileFolder;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -366,7 +365,13 @@ class PartnerController extends Controller
 
     public function show(Partner $partner)
     {
-        $partner->load(['partnerOverview', 'partnershipStructure']);
+        $partner->load(['partnerOverview', 'partnershipStructure', 'user']);
+
+        // Expose is_active on the user object for the admin panel
+        if ($partner->user) {
+            $partner->user->makeVisible('is_active');
+        }
+
         return response()->json([
             'success' => true,
             'data' => $partner,
@@ -445,12 +450,8 @@ class PartnerController extends Controller
                 $partners = Partner::whereIn('id', $idsToDelete)->get();
                 $userIds = $partners->pluck('user_id')->filter()->toArray();
 
-                FileFolder::whereIn('partner_id', $idsToDelete)->delete();
-                
-                // Also delete related overviews and structures if possible, 
-                // but usually they might be linked to other things or have cascading delete.
-                // For now, let's delete Partner and User.
-                
+                // FileFolder was removed in Phase 2 — no cleanup needed here
+
                 $deletedCount = Partner::whereIn('id', $idsToDelete)->delete();
                 User::whereIn('id', $userIds)->delete();
             });
@@ -598,6 +599,27 @@ class PartnerController extends Controller
         return response()->json([
             'data' => $buyers,
             'count' => $buyers->count(),
+        ]);
+    }
+    /**
+     * Upload or replace the avatar (partner_image) for a specific partner.
+     * Route: POST /api/partners/{id}/avatar
+     */
+    public function uploadAvatar(Request $request, string $id)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
+
+        $partner = Partner::findOrFail($id);
+        $file     = $request->file('image');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $path     = $file->storeAs('partners', $filename, 'public');
+        $partner->update(['partner_image' => '/storage/' . $path]);
+
+        return response()->json([
+            'message'   => 'Avatar updated successfully.',
+            'image_url' => asset('storage/' . $path),
         ]);
     }
 }

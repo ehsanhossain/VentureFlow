@@ -8,7 +8,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Match as MatchModel;
+use App\Models\DealMatch as MatchModel;
 use App\Models\Deal;
 use App\Services\MatchEngineService;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +33,7 @@ class MatchController extends Controller
         if ($request->filled('min_score')) {
             $query->minScore((int) $request->min_score);
         } else {
-            $query->minScore(60); // Default: show Fair and above
+            $query->minScore(30); // Default: show any match above MIN_SCORE threshold
         }
 
         // Filter: industry_ids (array of industry IDs from dropdowns)
@@ -293,13 +293,13 @@ class MatchController extends Controller
      */
     public function stats(): JsonResponse
     {
-        $total     = MatchModel::active()->minScore(60)->count();
+        $total     = MatchModel::active()->minScore(30)->count();
         $excellent = MatchModel::active()->where('total_score', '>=', 90)->count();
         $strong    = MatchModel::active()->whereBetween('total_score', [80, 89])->count();
         $good      = MatchModel::active()->whereBetween('total_score', [70, 79])->count();
-        $fair      = MatchModel::active()->whereBetween('total_score', [60, 69])->count();
+        $fair      = MatchModel::active()->whereBetween('total_score', [30, 69])->count();
 
-        $avgScore = MatchModel::active()->minScore(60)->avg('total_score');
+        $avgScore = MatchModel::active()->minScore(30)->avg('total_score');
 
         return response()->json([
             'total'     => $total,

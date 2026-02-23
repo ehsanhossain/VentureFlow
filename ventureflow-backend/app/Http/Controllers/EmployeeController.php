@@ -366,6 +366,11 @@ class EmployeeController extends Controller
 
             $employee->role = ($employee->user && $employee->user->roles) ? $employee->user->roles->pluck('name')->first() : null;
 
+            // Expose is_active on the user object for the admin panel
+            if ($employee->user) {
+                $employee->user->makeVisible('is_active');
+            }
+
             return response()->json($employee);
         } catch (\Exception $e) {
             return response()->json([
@@ -466,6 +471,27 @@ class EmployeeController extends Controller
                 'last_page' => $buyers->lastPage(),
                 'per_page' => $buyers->perPage(),
             ]
+        ]);
+    }
+
+    /**
+     * Upload or replace the avatar for a specific employee.
+     * Route: POST /api/employees/{id}/avatar
+     */
+    public function uploadAvatar(Request $request, string $id)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
+
+        $employee = Employee::findOrFail($id);
+        $imagePath = $request->file('image')->store('employees', 'public');
+        $employee->update(['image' => $imagePath]);
+
+        return response()->json([
+            'message'    => 'Avatar updated successfully.',
+            'image_path' => $imagePath,
+            'image_url'  => asset('storage/' . $imagePath),
         ]);
     }
 }

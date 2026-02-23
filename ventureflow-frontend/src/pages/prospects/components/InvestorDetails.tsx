@@ -4,12 +4,12 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink, Copy, Check } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, Copy, Check, Camera, Loader } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { formatCurrency } from '../../../utils/formatters';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
@@ -81,6 +81,40 @@ const InvestorDetails: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
 
+  // Avatar upload
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    const fd = new FormData();
+    fd.append('image', file);
+    setAvatarUploading(true);
+    try {
+      const res = await api.post(`/api/buyer/${id}/avatar`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setBuyer((prev: any) => prev ? { ...prev, image: res.data.image_path } : prev);
+      showAlert({ type: 'success', message: 'Avatar updated.' });
+    } catch {
+      showAlert({ type: 'error', message: 'Failed to upload avatar.' });
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const getAvatarUrl = () => {
+    if (buyer?.image) {
+      return buyer.image.startsWith('http')
+        ? buyer.image
+        : `${baseURL}/storage/${buyer.image}`;
+    }
+    return '';
+  };
+
   // Auto-scroll is handled internally by NotesSection
 
   const fetchBuyer = async () => {
@@ -100,8 +134,8 @@ const InvestorDetails: React.FC = () => {
       if (data.formatted_activity_logs) {
         setNotes(parseActivityLogs(data.formatted_activity_logs, getCurrentUserName()));
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
+      console.error('InvestorDetails fetch error:', err);
       showAlert({ type: "error", message: "Failed to fetch investor details" });
     } finally {
       setLoading(false);
@@ -130,6 +164,20 @@ const InvestorDetails: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-screen">
         <BrandSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!buyer || Object.keys(buyer).length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <p className="text-gray-500 text-lg">Unable to load investor details. Please go back and try again.</p>
+        <button
+          onClick={() => navigate('/prospects?tab=investors')}
+          className="px-4 py-2 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+        >
+          Back to Investors
+        </button>
       </div>
     );
   }
@@ -347,9 +395,36 @@ const InvestorDetails: React.FC = () => {
             {/* Company Header */}
             <div className="space-y-7">
               <div className="flex items-center gap-3">
-                {/* Company Avatar - Primary Color */}
-                <div className="w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium">
-                  {getInitials(companyName)}
+                {/* Company Avatar - click to upload */}
+                <div
+                  className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
+                  onClick={() => avatarInputRef.current?.click()}
+                  title="Click to change photo"
+                >
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  {getAvatarUrl() ? (
+                    <img
+                      src={getAvatarUrl()}
+                      alt={companyName}
+                      className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : null}
+                  <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                    {getInitials(companyName)}
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    {avatarUploading
+                      ? <Loader className="w-4 h-4 text-white animate-spin" />
+                      : <Camera className="w-4 h-4 text-white" />
+                    }
+                  </div>
                 </div>
 
                 <div className="flex flex-col justify-between">

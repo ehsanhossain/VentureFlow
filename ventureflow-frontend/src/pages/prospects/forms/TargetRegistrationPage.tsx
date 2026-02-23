@@ -4,12 +4,14 @@
  */
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { TargetRegistration } from './TargetRegistration';
 
 const TargetRegistrationPage: React.FC = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
 
     return (
         <div className="flex flex-col h-full min-h-screen bg-white">
@@ -23,7 +25,9 @@ const TargetRegistrationPage: React.FC = () => {
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back</span>
                 </button>
-                <h1 className="text-xl md:text-2xl font-medium text-gray-900">Add Target</h1>
+                <h1 className="text-xl md:text-2xl font-medium text-gray-900">
+                    {isEdit ? 'Edit Target' : 'Add Target'}
+                </h1>
             </div>
 
             {/* Main Content */}

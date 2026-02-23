@@ -1571,7 +1571,7 @@ const ProspectsPortal: React.FC = () => {
                     <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
                         <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">{t('prospects.title')}</h1>
 
-                        <div className="relative flex bg-gray-100 rounded-[6px] p-1" style={{ minWidth: '260px' }}>
+                        <div className="relative flex bg-gray-100 rounded-[6px] p-1">
                             {/* Sliding pill background */}
                             <div
                                 className="absolute top-1 bottom-1 rounded-[5px] bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
@@ -1585,7 +1585,7 @@ const ProspectsPortal: React.FC = () => {
                                     setActiveTab('investors');
                                     setSearchParams({ tab: 'investors' });
                                 }}
-                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'investors'
+                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium whitespace-nowrap transition-colors duration-300 ${activeTab === 'investors'
                                     ? 'text-[#064771]'
                                     : 'text-gray-400 hover:text-gray-600'
                                     }`}
@@ -1597,7 +1597,7 @@ const ProspectsPortal: React.FC = () => {
                                     setActiveTab('targets');
                                     setSearchParams({ tab: 'targets' });
                                 }}
-                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium transition-colors duration-300 ${activeTab === 'targets'
+                                className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium whitespace-nowrap transition-colors duration-300 ${activeTab === 'targets'
                                     ? 'text-[#064771]'
                                     : 'text-gray-400 hover:text-gray-600'
                                     }`}

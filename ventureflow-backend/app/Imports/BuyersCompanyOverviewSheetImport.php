@@ -89,8 +89,9 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
         $row = $row->toArray();
 
         $commaSeparatedToArray = function ($value) {
-            if (is_null($value) || trim($value) === '') return [];
+            if (is_null($value) || (!is_string($value) && !is_numeric($value))) return [];
             if (is_array($value)) return $value;
+            if (trim((string)$value) === '') return [];
             // Support both comma and semicolon
             $delimiters = [',', ';'];
             $escaped_delimiters = array_map(function($d) { return preg_quote($d, '/'); }, $delimiters);
@@ -180,7 +181,9 @@ class BuyersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wit
         // 8. Addresses & Website
         $hqAddressesStr = $row['hq_addresses'] ?? $row['hq-addresses'] ?? $row['hqaddresses'] ?? null;
         $hqAddresses = $this->parseJsonColumn($hqAddressesStr) ?? ($hqAddressesStr ? [$hqAddressesStr] : []); 
-        $website = $row['website_links'] ?? $row['website-links'] ?? $row['websitelinks'] ?? $row['website'] ?? null;
+        $websiteRaw = $row['website_links'] ?? $row['website-links'] ?? $row['websitelinks'] ?? $row['website'] ?? null;
+        // 'website' column is cast as array in InvestorsCompanyOverview — wrap plain string in array
+        $website = is_array($websiteRaw) ? $websiteRaw : ($websiteRaw ? [$websiteRaw] : []);
         $profileLink = $row['investor_profile_link'] ?? $row['investor-profile-link'] ?? $row['investorprofilelink'] ?? $row['investor_profile'] ?? null;
 
         // 9. Contacts

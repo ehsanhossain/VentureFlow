@@ -9,7 +9,6 @@ import { BrandSpinner } from './BrandSpinner';
 import api from '../config/api';
 import dealsPipelineIcon from '../assets/icons/deals-pipeline.svg';
 import introducedProjectsIcon from '../assets/icons/introduced-projects.svg';
-import filesFolderIcon from '../assets/icons/files-folder.svg';
 import logsDocumentIcon from '../assets/icons/logs-document.svg';
 import impactAccountsIcon from '../assets/icons/impact-accounts.svg';
 
@@ -18,7 +17,6 @@ interface DeletionImpact {
     deals: number;
     active_deals: number;
     introduced_projects: number;
-    files: number;
     activities: number;
 }
 
@@ -344,41 +342,6 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                                             <div style={{ height: '1px', background: '#E5E7EB' }} />
                                         </div>
 
-                                        {/* Files Row */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <div style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center'
-                                            }}>
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px'
-                                                }}>
-                                                    <img
-                                                        src={filesFolderIcon}
-                                                        alt=""
-                                                        style={{ width: '24px', height: '24px' }}
-                                                    />
-                                                    <span style={{
-                                                        color: '#4B5563',
-                                                        fontSize: '14px',
-                                                        fontFamily: 'Inter, sans-serif',
-                                                        fontWeight: 400,
-                                                        lineHeight: '20px'
-                                                    }}>Files</span>
-                                                </div>
-                                                <span style={{
-                                                    color: '#000',
-                                                    fontSize: '14px',
-                                                    fontFamily: 'Inter, sans-serif',
-                                                    fontWeight: 400,
-                                                    lineHeight: '20px'
-                                                }}>{impact.files}</span>
-                                            </div>
-                                            <div style={{ height: '1px', background: '#E5E7EB' }} />
-                                        </div>
 
                                         {/* Logs Row */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

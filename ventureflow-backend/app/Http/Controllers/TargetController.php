@@ -19,7 +19,6 @@ use App\Models\TargetsTeaserCenter;
 use App\Models\Investor;
 use App\Models\ActivityLog;
 use App\Models\TargetsPartnershipDetail;
-use App\Models\FileFolder;
 use App\Models\InvestorsCompanyOverview;
 use Carbon\Carbon;
 use App\Models\User; // Notification recipient
@@ -887,7 +886,7 @@ class TargetController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Target $target)
+    public function show(Target $seller)
     {
         $request = request();
         $user = $request->user();
@@ -895,7 +894,7 @@ class TargetController extends Controller
 
         if ($isPartner) {
             $allowedFields = $this->getParsedAllowedFields('target');
-            $query = Target::where('id', $target->id);
+            $query = Target::where('id', $seller->id);
 
             $rootFields = array_unique(array_merge(
                  ['id', 'seller_id', 'pinned', 'created_at', 'status', 'updated_at'], 
@@ -943,7 +942,7 @@ class TargetController extends Controller
             ]);
 
         } else {
-             $target->load([
+             $seller->load([
                 'companyOverview.hqCountry',
                 'financialDetails',
                 'partnershipDetails',
@@ -952,7 +951,7 @@ class TargetController extends Controller
             ]);
 
             // Format deals as introduced projects (paired buyers) for frontend
-            $introducedProjects = $target->deals->map(function ($deal) {
+            $introducedProjects = $seller->deals->map(function ($deal) {
                 $buyerName = 'Unknown Investor';
                 $buyerCode = 'N/A';
                 
@@ -977,7 +976,7 @@ class TargetController extends Controller
             });
 
             // Format activity logs
-            $formattedLogs = $target->activityLogs()
+            $formattedLogs = $seller->activityLogs()
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(function ($log) {
@@ -992,7 +991,7 @@ class TargetController extends Controller
                     ];
                 });
 
-            $sellerData = $target->toArray();
+            $sellerData = $seller->toArray();
             $sellerData['formatted_activity_logs'] = $formattedLogs;
             $sellerData['formatted_introduced_projects'] = $introducedProjects;
 
@@ -1006,15 +1005,15 @@ class TargetController extends Controller
     /**
      * Pinned/Unpinned
      */
-    public function pinned(Target $target)
+    public function pinned(Target $seller)
     {
         try {
-            $target->pinned = !$target->pinned;
-            $target->save();
+            $seller->pinned = !$seller->pinned;
+            $seller->save();
 
             return response()->json([
                 'message' => 'Seller pinned status updated successfully.',
-                'data' => $target,
+                'data' => $seller,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error updating pinned status: ' . $e->getMessage());
@@ -1029,7 +1028,7 @@ class TargetController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Target $target)
+    public function edit(Target $seller)
     {
         //
     }
@@ -1037,7 +1036,7 @@ class TargetController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Target $target)
+    public function update(Request $request, Target $seller)
     {
         //
     }
@@ -1079,7 +1078,7 @@ class TargetController extends Controller
                     ->where('progress_percent', '<', 100)
                     ->count(),
                 'introduced_projects' => $introducedProjectsCount,
-                'files' => FileFolder::whereIn('seller_id', $ids)->count(),
+                'files' => 0, // File management removed in Phase 2
                 'activities' => ActivityLog::where('loggable_type', Target::class)
                     ->whereIn('loggable_id', $ids)
                     ->count(),
@@ -1125,8 +1124,7 @@ class TargetController extends Controller
                     ->whereIn('loggable_id', $idsToDelete)
                     ->delete();
 
-                // 2. Delete file associations
-                FileFolder::whereIn('seller_id', $idsToDelete)->delete();
+                // 2. File management was removed in Phase 2 — no file cleanup needed
 
                 // 3. Clean up introduced_projects references from buyers' company overviews
                 // When a seller is deleted, any buyer that references this seller in their
@@ -1754,6 +1752,27 @@ class TargetController extends Controller
                 'last_page' => $sellers->lastPage(),
                 'per_page' => $sellers->perPage(),
             ]
+        ]);
+    }
+
+    /**
+     * POST /api/seller/{id}/avatar
+     * Upload or replace the avatar image for a target.
+     */
+    public function uploadAvatar(Request $request, string $id)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
+
+        $target = Target::findOrFail($id);
+        $imagePath = $request->file('image')->store('sellers', 'public');
+        $target->update(['image' => $imagePath]);
+
+        return response()->json([
+            'message'    => 'Avatar updated successfully.',
+            'image_path' => $imagePath,
+            'image_url'  => asset('storage/' . $imagePath),
         ]);
     }
 }

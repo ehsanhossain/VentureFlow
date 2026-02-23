@@ -12,7 +12,6 @@ use App\Models\Target;
 use App\Models\ActivityLog;
 use App\Models\InvestorsCompanyOverview;
 use App\Models\InvestorsTargetPreferences;
-use App\Models\FileFolder;
 use Illuminate\Http\Request;
 use App\Models\InvestorsFinancialDetails;
 use App\Models\InvestorsPartnershipDetails;
@@ -988,7 +987,7 @@ class InvestorController extends Controller
 
 
 
-    public function show(Investor $investor)
+    public function show(Investor $buyer)
     {
         $request = request();
         $user = $request->user();
@@ -996,7 +995,7 @@ class InvestorController extends Controller
 
         if ($isPartner) {
             $allowedFields = $this->getParsedAllowedFields('investor');
-            $query = Investor::where('id', $investor->id);
+            $query = Investor::where('id', $buyer->id);
 
             $rootFields = array_unique(array_merge(
                 ['id', 'buyer_id', 'pinned', 'created_at', 'pipeline_status', 'updated_at'], 
@@ -1050,7 +1049,7 @@ class InvestorController extends Controller
 
         } else {
             // Admin
-            $investor->load([
+            $buyer->load([
                 'companyOverview.hqCountry',
                 'companyOverview.employeeDetails',
                 'targetPreference',
@@ -1064,7 +1063,7 @@ class InvestorController extends Controller
             ]);
 
             // Format activity logs for frontend
-            $formattedLogs = $investor->activityLogs->map(function ($log) {
+            $formattedLogs = $buyer->activityLogs->map(function ($log) {
                 $userName = 'Ventureflow';
                 $avatar = null;
                 $isSystem = $log->type === 'system';
@@ -1091,7 +1090,7 @@ class InvestorController extends Controller
             });
 
             // Format deals as introduced projects for frontend
-            $introducedProjects = $investor->deals->map(function ($deal) {
+            $introducedProjects = $buyer->deals->map(function ($deal) {
                 $sellerName = 'Unknown Target';
                 $sellerCode = 'N/A';
                 
@@ -1116,7 +1115,7 @@ class InvestorController extends Controller
                 ];
             });
 
-            $buyerData = $investor->toArray();
+            $buyerData = $buyer->toArray();
             $buyerData['formatted_activity_logs'] = $formattedLogs;
             $buyerData['formatted_introduced_projects'] = $introducedProjects;
 
@@ -1127,15 +1126,15 @@ class InvestorController extends Controller
     }
 
 
-    public function pinned(Investor $investor)
+    public function pinned(Investor $buyer)
     {
         try {
-            $investor->pinned = !$investor->pinned;
-            $investor->save();
+            $buyer->pinned = !$buyer->pinned;
+            $buyer->save();
 
             return response()->json([
                 'message' => 'Buyer pinned status updated successfully.',
-                'data' => $investor,
+                'data' => $buyer,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error updating buyer pinned status: ' . $e->getMessage());
@@ -1196,7 +1195,7 @@ class InvestorController extends Controller
                     ->where('progress_percent', '<', 100)
                     ->count(),
                 'introduced_projects' => $introducedProjectsCount,
-                'files' => FileFolder::whereIn('buyer_id', $ids)->count(),
+                'files' => 0, // File management removed in Phase 2
                 'activities' => ActivityLog::where('loggable_type', Investor::class)
                     ->whereIn('loggable_id', $ids)
                     ->count(),
@@ -1242,8 +1241,7 @@ class InvestorController extends Controller
                     ->whereIn('loggable_id', $idsToDelete)
                     ->delete();
                 
-                // 2. Delete file associations
-                FileFolder::whereIn('buyer_id', $idsToDelete)->delete();
+                // 2. File management was removed in Phase 2 — no file cleanup needed
 
                 // 3. Clean up introduced_projects references from sellers' company overviews
                 // When a buyer is deleted, any seller that references this buyer in their
@@ -1900,24 +1898,24 @@ class InvestorController extends Controller
 
             ->when(!empty($ebitdaRequirements), function ($query) use ($ebitdaRequirements) {
                 $query->whereHas('financialDetails', function ($q) use ($ebitdaRequirements) {
+                    // Use SQLite-compatible json_extract instead of MySQL JSON_UNQUOTE
                     if (isset($ebitdaRequirements['min']) && is_numeric($ebitdaRequirements['min'])) {
-                        $q->where('expected_ebitda->max', '>=', $ebitdaRequirements['min']);
+                        $q->whereRaw("CAST(json_extract(expected_ebitda, '$.max') AS REAL) >= ?", [(float)$ebitdaRequirements['min']]);
                     }
-
                     if (isset($ebitdaRequirements['max']) && is_numeric($ebitdaRequirements['max'])) {
-                        $q->where('expected_ebitda->min', '<=', $ebitdaRequirements['max']);
+                        $q->whereRaw("CAST(json_extract(expected_ebitda, '$.min') AS REAL) <= ?", [(float)$ebitdaRequirements['max']]);
                     }
                 });
             })
-            // --- Filter by expected investment amount range ---
+            // --- Filter by expected investment amount range (SQLite-compatible) ---
             ->when(!empty($expectedInvestmentAmount), function ($query) use ($expectedInvestmentAmount) {
                 $query->whereHas('financialDetails', function ($q) use ($expectedInvestmentAmount) {
+                    // Use SQLite-compatible json_extract instead of MySQL JSON_UNQUOTE
                     if (isset($expectedInvestmentAmount['min']) && is_numeric($expectedInvestmentAmount['min'])) {
-                        $q->where('investment_budget->max', '>=', $expectedInvestmentAmount['min']);
+                        $q->whereRaw("CAST(json_extract(investment_budget, '$.max') AS REAL) >= ?", [(float)$expectedInvestmentAmount['min']]);
                     }
-
                     if (isset($expectedInvestmentAmount['max']) && is_numeric($expectedInvestmentAmount['max'])) {
-                        $q->where('investment_budget->min', '<=', $expectedInvestmentAmount['max']);
+                        $q->whereRaw("CAST(json_extract(investment_budget, '$.min') AS REAL) <= ?", [(float)$expectedInvestmentAmount['max']]);
                     }
                 });
             })
@@ -1937,6 +1935,27 @@ class InvestorController extends Controller
                 'last_page' => $buyers->lastPage(),
                 'per_page' => $buyers->perPage(),
             ]
+        ]);
+    }
+
+    /**
+     * POST /api/buyer/{id}/avatar
+     * Upload or replace the avatar image for an investor.
+     */
+    public function uploadAvatar(Request $request, string $id)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048',
+        ]);
+
+        $investor = Investor::findOrFail($id);
+        $imagePath = $request->file('image')->store('buyers', 'public');
+        $investor->update(['image' => $imagePath]);
+
+        return response()->json([
+            'message'    => 'Avatar updated successfully.',
+            'image_path' => $imagePath,
+            'image_url'  => asset('storage/' . $imagePath),
         ]);
     }
 }

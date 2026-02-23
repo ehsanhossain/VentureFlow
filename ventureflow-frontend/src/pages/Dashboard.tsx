@@ -9,15 +9,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Users, Target, Briefcase, Activity, ArrowUpRight, AlertTriangle,
-  Clock, ChevronRight, RefreshCw, Globe, ArrowRight, Zap
+  Users, Target, Briefcase, Activity, ArrowUpRight,
+  Clock, ChevronRight, RefreshCw, Globe, Zap
 } from 'lucide-react';
 import globalAddButtonIcon from '../assets/icons/global-add-button.svg';
 import { BrandSpinner } from '../components/BrandSpinner';
 import api from '../config/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, LineChart, Line, Legend
+  LineChart, Line, Legend
 } from 'recharts';
 
 // =============== TYPES ===============
@@ -25,6 +25,7 @@ interface DashboardData {
   stats: {
     active_deals: number;
     pipeline_value: number;
+    tvc_expected_fees: number;
     deals_this_month: number;
     total_investors: number;
     total_targets: number;
@@ -34,7 +35,7 @@ interface DashboardData {
     unmatched_targets: number;
     month_name: string;
   };
-  deals_needing_action: DealAction[];
+  deal_velocity_days: number;
   buyer_pipeline: PipelineStage[];
   seller_pipeline: PipelineStage[];
   deal_flow_trend: MonthTrend[];
@@ -42,23 +43,6 @@ interface DashboardData {
   activities: ActivityItem[];
   recent_investors: RecentItem[];
   recent_targets: RecentItem[];
-}
-
-interface DealAction {
-  id: number;
-  name: string;
-  buyer_name: string | null;
-  seller_name: string | null;
-  stage_name: string;
-  stage_code: string;
-  progress: number;
-  priority: string;
-  urgency: string;
-  days_since_update: number;
-  target_close_date: string | null;
-  pic_name: string;
-  estimated_value: number | null;
-  currency: string;
 }
 
 interface PipelineStage {
@@ -118,18 +102,7 @@ const formatCurrency = (value: number): string => {
   return `$${value.toFixed(0)}`;
 };
 
-const PIPELINE_COLORS = ['#064771', '#0a6e9e', '#2196F3', '#64B5F6', '#90CAF9', '#BBDEFB', '#0d8bc2', '#3aa8d8', '#1976D2', '#0D47A1'];
 
-const getUrgencyBadge = (urgency: string, t: (key: string) => string) => {
-  switch (urgency) {
-    case 'overdue':
-      return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: t('dashboard.overdue') };
-    case 'stale':
-      return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: t('dashboard.stale') };
-    default:
-      return { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: t('dashboard.onTrack') };
-  }
-};
 
 const getActivityIcon = (entityType: string) => {
   switch (entityType) {
@@ -146,8 +119,6 @@ const Dashboard: React.FC = () => {
   const { t } = useTranslation();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pipelineView, setPipelineView] = useState<'buyer' | 'seller'>('buyer');
-
   const fetchDashboard = async () => {
     setLoading(true);
     try {
@@ -163,14 +134,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboard();
   }, []);
-
-  const activePipeline = useMemo(() => {
-    if (!data) return [];
-    return pipelineView === 'buyer' ? data.buyer_pipeline : data.seller_pipeline;
-  }, [data, pipelineView]);
-
-  const totalPipelineDeals = useMemo(() =>
-    activePipeline.reduce((s, p) => s + p.count, 0), [activePipeline]);
 
   const geoBarData = useMemo(() => {
     if (!data) return [];
@@ -217,97 +180,20 @@ const Dashboard: React.FC = () => {
 
       <div className="px-5 py-5 space-y-0">
 
-        {/* ======= ROW 1: DEALS NEEDING ACTION (full width) ======= */}
-        <div className="border border-[#E5E7EB] rounded-t-[3px]">
-          <div className="px-4 py-3 flex items-center justify-between border-b border-[#F3F4F6]">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.dealsRequiringAction')}</h2>
-              <span className="text-[11px] text-gray-400 font-medium ml-1">
-                {t('dashboard.dealCount', { count: data.deals_needing_action.length })}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/deal-pipeline')}
-              className="text-[11px] text-[#064771] font-medium hover:underline flex items-center gap-0.5"
-            >
-              {t('dashboard.viewPipeline')} <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-
-          {data.deals_needing_action.length > 0 ? (
-            <div className="overflow-x-auto scrollbar-premium">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-[#F3F4F6]">
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.deal')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.buyerToSeller')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.stage')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.value')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.pic')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.status')}</th>
-                    <th className="px-4 py-2 text-[11px] font-medium text-gray-400 uppercase">{t('dashboard.idle')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.deals_needing_action.map((deal) => {
-                    const badge = getUrgencyBadge(deal.urgency, t);
-                    return (
-                      <tr
-                        key={deal.id}
-                        className="border-b border-[#F9FAFB] hover:bg-[#FAFBFC] cursor-pointer transition-colors"
-                        onClick={() => navigate('/deal-pipeline')}
-                      >
-                        <td className="px-4 py-2.5">
-                          <span className="text-sm font-medium text-gray-900">{deal.name}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-1.5 text-[12px] text-gray-500">
-                            <span className="font-medium text-gray-700">{deal.buyer_name || '—'}</span>
-                            <ArrowRight className="w-3 h-3 text-gray-400" />
-                            <span className="font-medium text-gray-700">{deal.seller_name || '—'}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-gray-500">{deal.stage_name}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-[12px] font-medium text-gray-900">
-                            {deal.estimated_value ? formatCurrency(deal.estimated_value) : '—'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-gray-500">{deal.pic_name}</span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className={`px-2 py-0.5 text-[11px] font-medium rounded-[2px] border ${badge.bg} ${badge.text} ${badge.border}`}>
-                            {badge.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-[12px] text-gray-400">{deal.days_since_update}d</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <Zap className="w-8 h-8 mx-auto mb-2 text-green-400" />
-              <p className="text-sm text-gray-500">{t('dashboard.allDealsOnTrack')}</p>
-            </div>
-          )}
-        </div>
-
-        {/* ======= ROW 2: KPI SUMMARY BAR (connected to top) ======= */}
-        <div className="grid grid-cols-5 border border-t-0 border-[#E5E7EB] divide-x divide-[#E5E7EB]">
+        {/* ======= KPI SUMMARY BAR ======= */}
+        <div className="grid grid-cols-6 border border-[#E5E7EB] rounded-t-[3px] divide-x divide-[#E5E7EB]">
           {/* Pipeline Value */}
           <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/deal-pipeline')}>
             <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">{t('dashboard.pipelineValue')}</p>
             <p className="text-lg font-semibold text-gray-900 mt-0.5">{formatCurrency(stats.pipeline_value)}</p>
             <p className="text-[11px] text-gray-400">{t('dashboard.activeDeals', { count: stats.active_deals })}</p>
+          </div>
+
+          {/* TVC Expected Fees */}
+          <div className="p-3.5 cursor-pointer hover:bg-[#FAFBFC] transition-colors" onClick={() => navigate('/deal-pipeline')}>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">TVC Expected Fees</p>
+            <p className="text-lg font-semibold text-green-700 mt-0.5">{formatCurrency(stats.tvc_expected_fees)}</p>
+            <p className="text-[11px] text-gray-400">From active deals</p>
           </div>
 
           {/* Investors */}
@@ -351,58 +237,20 @@ const Dashboard: React.FC = () => {
 
         {/* ======= ROW 3: Pipeline Funnel + Deal Flow Trend ======= */}
         <div className="grid grid-cols-5 border border-t-0 border-[#E5E7EB] divide-x divide-[#E5E7EB]">
-          {/* Pipeline Funnel (3 cols) */}
-          <div className="col-span-3 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.pipelineStages')}</h2>
-                <span className="text-[11px] text-gray-400 font-medium">{t('dashboard.deals', { count: totalPipelineDeals })}</span>
-              </div>
-              <div className="flex border border-[#E5E7EB] rounded-[3px] overflow-hidden">
-                <button
-                  onClick={() => setPipelineView('buyer')}
-                  className={`px-3 py-1 text-[11px] font-medium transition-colors ${pipelineView === 'buyer' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  {t('dashboard.investorSide')}
-                </button>
-                <button
-                  onClick={() => setPipelineView('seller')}
-                  className={`px-3 py-1 text-[11px] font-medium border-l border-[#E5E7EB] transition-colors ${pipelineView === 'seller' ? 'bg-[#064771] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                  {t('dashboard.targetSide')}
-                </button>
-              </div>
+          {/* Deal Velocity (3 cols) */}
+          <div className="col-span-3 p-4 flex flex-col justify-center">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-4 h-4 text-purple-600" />
+              <h2 className="text-[13px] font-semibold text-gray-900 uppercase tracking-wide">{t('dashboard.dealVelocity', 'Deal Velocity')}</h2>
             </div>
 
-            {activePipeline.length > 0 ? (
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={activePipeline} layout="vertical" barSize={16}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} stroke="#F3F4F6" />
-                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                    <YAxis
-                      type="category" dataKey="name" axisLine={false} tickLine={false}
-                      tick={{ fontSize: 11, fill: '#6B7280' }} width={90}
-                    />
-                    <Tooltip
-                      contentStyle={{ border: '1px solid #E5E7EB', borderRadius: '3px', fontSize: '11px', backgroundColor: '#fff' }}
-                      formatter={((v: any, _name: any, props: any) => [`${v ?? 0} ${t('dashboard.deals', { count: v ?? 0 })} (${formatCurrency(props.payload.value)})`, '']) as any}
-                    />
-                    <Bar dataKey="count" radius={[0, 2, 2, 0]}>
-                      {activePipeline.map((_, i) => (
-                        <Cell key={i} fill={PIPELINE_COLORS[i % PIPELINE_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 rounded-[3px] border border-gray-100 py-6 min-h-[220px]">
+              <div className="flex items-end gap-1 mb-1">
+                <p className="text-5xl font-bold text-gray-900">{data.deal_velocity_days}</p>
+                <p className="text-lg font-medium text-gray-400 mb-1.5">{t('dashboard.days', 'days')}</p>
               </div>
-            ) : (
-              <div className="h-[220px] flex items-center justify-center">
-                <p className="text-sm text-gray-400">{t('dashboard.noPipelineData')}</p>
-              </div>
-            )}
+              <p className="text-[13px] text-gray-500 font-medium">{t('dashboard.avgDaysPerStage', 'Average time spent per pipeline stage')}</p>
+            </div>
           </div>
 
           {/* Deal Flow Trend (2 cols) */}
@@ -413,7 +261,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {data.deal_flow_trend.length > 0 ? (
-              <div className="h-[220px]">
+              <div className="h-[220px]" style={{ minWidth: 0, minHeight: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data.deal_flow_trend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -450,7 +298,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {geoBarData.length > 0 ? (
-              <div className="h-[200px]">
+              <div className="h-[200px]" style={{ minWidth: 0, minHeight: 200 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={geoBarData} barGap={0} barSize={10}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />

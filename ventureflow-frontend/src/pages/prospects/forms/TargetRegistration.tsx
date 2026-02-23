@@ -353,14 +353,19 @@ export const TargetRegistration: React.FC = () => {
 
     // ID Generation (New Only)
     useEffect(() => {
-        if (id || !originCountry?.alpha) return;
+        if (id || !originCountry) return;
+        // Resolve alpha from the countries list if it wasn't loaded when originCountry was set
+        const alpha = originCountry.alpha
+            || countries.find(c => c.id === originCountry.id)?.alpha
+            || '';
+        if (!alpha) return;
 
         const generateId = async () => {
             try {
-                const response = await api.get(`/api/seller/get-last-sequence?country=${originCountry.alpha}`);
+                const response = await api.get(`/api/seller/get-last-sequence?country=${alpha}`);
                 const nextSeq = (response.data.lastSequence || 0) + 1;
                 const formatted = String(nextSeq).padStart(3, '0');
-                setValue('projectCode', `${originCountry.alpha}-S-${formatted}`);
+                setValue('projectCode', `${alpha}-S-${formatted}`);
                 setIsCheckingId(false);
                 setIsIdAvailable(true);
             } catch (error) {
@@ -369,7 +374,7 @@ export const TargetRegistration: React.FC = () => {
         };
 
         generateId();
-    }, [originCountry?.alpha, setValue, id]);
+    }, [originCountry?.id, originCountry?.alpha, countries.length, setValue, id]);
 
     // Check ID Availability
     const checkIdAvailability = async (code: string) => {

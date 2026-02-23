@@ -4,15 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, Info } from 'lucide-react';
 import loginImage from '../../assets/image/ventureflow_login.png';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '../../components/Alert';
-import api from '../../config/api';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
-    const [loading, setLoading] = useState(false);
     const [sent, setSent] = useState(false);
     const [mounted, setMounted] = useState(false);
     const navigate = useNavigate();
@@ -28,28 +26,15 @@ const ForgotPassword = () => {
         };
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!email) {
             showAlert({ type: 'error', message: 'Please enter your email address.' });
             return;
         }
-
-        setLoading(true);
-        try {
-            await api.get('/sanctum/csrf-cookie');
-            await api.post('/api/forgot-password', { email });
-            setSent(true);
-        } catch (error) {
-            const err = error as { response?: { data?: { message?: string } } };
-            showAlert({
-                type: 'error',
-                message: err.response?.data?.message || 'Failed to send reset link. Please try again.',
-            });
-        } finally {
-            setLoading(false);
-        }
+        // Password resets are handled by the administrator.
+        // Admin visits Settings → Staff or Settings → Partners to reset any user's password.
+        setSent(true);
     };
 
     return (
@@ -113,7 +98,7 @@ const ForgotPassword = () => {
                                         Forgot your password?
                                     </h2>
                                     <p style={{ fontSize: 14, color: '#838383', fontFamily: 'Inter, sans-serif', margin: 0, lineHeight: '22px' }}>
-                                        No worries — enter your work email and we'll send you a link to reset your password.
+                                        Enter your work email and we'll confirm your account, then prompt you to contact your administrator for a reset.
                                     </p>
                                 </div>
 
@@ -148,7 +133,6 @@ const ForgotPassword = () => {
                                 {/* Submit */}
                                 <button
                                     type="submit"
-                                    disabled={loading}
                                     className="h-11 rounded-[3px] border-none cursor-pointer flex items-center justify-center"
                                     style={{
                                         backgroundColor: '#064771',
@@ -158,17 +142,12 @@ const ForgotPassword = () => {
                                         fontFamily: 'Inter, sans-serif',
                                         letterSpacing: 0.3,
                                         transition: 'background-color 0.2s ease, transform 0.1s ease',
-                                        opacity: loading ? 0.8 : 1,
                                     }}
                                     onMouseDown={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'; }}
                                     onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
                                 >
-                                    {loading ? (
-                                        <span className="animate-spin border-2 border-white border-t-transparent rounded-full w-5 h-5" />
-                                    ) : (
-                                        'Send Reset Link'
-                                    )}
+                                    Continue
                                 </button>
 
                                 {/* Back */}
@@ -189,32 +168,30 @@ const ForgotPassword = () => {
                                 </button>
                             </form>
                         ) : (
-                            /* Success state */
+                            /* Admin contact state */
                             <div
                                 className="flex flex-col items-center gap-6 text-center"
-                                style={{
-                                    animation: 'loginFadeSlideUp 0.5s ease-out',
-                                }}
+                                style={{ animation: 'loginFadeSlideUp 0.5s ease-out' }}
                             >
                                 <style>{`
-                  @keyframes loginFadeSlideUp {
-                    from { opacity: 0; transform: translateY(24px); }
-                    to   { opacity: 1; transform: translateY(0); }
-                  }
-                  @keyframes loginCheckPop {
-                    0%   { transform: scale(0); opacity: 0; }
-                    60%  { transform: scale(1.15); }
-                    100% { transform: scale(1); opacity: 1; }
-                  }
-                `}</style>
-                                <div style={{ animation: 'loginCheckPop 0.6s ease-out 0.15s both' }}>
-                                    <CheckCircle size={64} color="#064771" strokeWidth={1.2} />
+                                    @keyframes loginFadeSlideUp {
+                                        from { opacity: 0; transform: translateY(24px); }
+                                        to   { opacity: 1; transform: translateY(0); }
+                                    }
+                                    @keyframes loginInfoPop {
+                                        0%   { transform: scale(0); opacity: 0; }
+                                        60%  { transform: scale(1.15); }
+                                        100% { transform: scale(1); opacity: 1; }
+                                    }
+                                `}</style>
+                                <div style={{ animation: 'loginInfoPop 0.6s ease-out 0.15s both' }}>
+                                    <Info size={64} color="#064771" strokeWidth={1.2} />
                                 </div>
                                 <h2 style={{ fontSize: 22, fontWeight: 600, color: '#30313D', fontFamily: 'Inter, sans-serif', margin: 0 }}>
-                                    Check your email
+                                    Contact your administrator
                                 </h2>
                                 <p style={{ fontSize: 14, color: '#838383', fontFamily: 'Inter, sans-serif', margin: 0, lineHeight: '22px', maxWidth: 340 }}>
-                                    We've sent a password reset link to <strong style={{ color: '#30313D' }}>{email}</strong>. Check your inbox and follow the instructions.
+                                    Password resets for <strong style={{ color: '#30313D' }}>{email}</strong> must be processed by your system administrator. Please reach out to them directly.
                                 </p>
                                 <button
                                     onClick={() => navigate('/login')}
@@ -242,7 +219,7 @@ const ForgotPassword = () => {
                                         textDecoration: 'underline',
                                     }}
                                 >
-                                    Didn't receive it? Try again
+                                    Use a different email
                                 </button>
                             </div>
                         )}

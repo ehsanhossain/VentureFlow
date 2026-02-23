@@ -110,7 +110,7 @@ const MatchIQ: React.FC = () => {
     const [countries, setCountries] = useState<FilterCountry[]>([]);
     const [industries, setIndustries] = useState<FilterIndustry[]>([]);
     const [filters, setFilters] = useState<MatchFiltersState>({
-        min_score: 60,
+        min_score: 30,
         industry_ids: [],
         country_ids: [],
         buyer_id: '',

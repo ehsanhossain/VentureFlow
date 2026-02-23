@@ -5,7 +5,7 @@
 
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-import CreateEmployee from "../pages/employee/create/CreateEmployee";
+import MyProfile from "../pages/auth/MyProfile";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import Login from "../pages/auth/Login";
 import CurrencyTable from "../pages/currency/CurrencyTable";
@@ -168,12 +168,11 @@ const AppRoutes = () => {
         <Route path="profile" element={<PartnerProfile />} />
       </Route>
 
-      {/* Profile & Employee Edit */}
       <Route
         path="/profile"
         element={
           <ProtectedRoute>
-            <CreateEmployee />
+            <MyProfile />
           </ProtectedRoute>
         }
       />

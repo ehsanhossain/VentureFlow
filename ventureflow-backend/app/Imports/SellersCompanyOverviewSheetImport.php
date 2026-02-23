@@ -89,8 +89,9 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
         $row = $row->toArray();
 
         $commaSeparatedToArray = function ($value) {
-            if (is_null($value) || trim($value) === '') return [];
+            if (is_null($value) || (!is_string($value) && !is_numeric($value))) return [];
             if (is_array($value)) return $value;
+            if (trim((string)$value) === '') return [];
             $delimiters = [',', ';'];
             $escaped_delimiters = array_map(function($d) { return preg_quote($d, '/'); }, $delimiters);
             $pattern = '/' . implode('|', $escaped_delimiters) . '/';
@@ -183,7 +184,7 @@ class SellersCompanyOverviewSheetImport implements OnEachRow, WithHeadingRow, Wi
             'industry_ops'        => $industries,
             'niche_industry'      => $nicheTags, 
             'company_rank'        => $rank,
-            'reason_ma'           => $row['reason_for_ma'] ? [$row['reason_for_ma']] : ($row['purpose_of_mna'] ? [$row['purpose_of_mna']] : null), // TODO: Add variations for reason_for_ma
+            'reason_ma'           => $row['reason_for_ma'] ?? $row['purpose_of_mna'] ?? null, // reason_ma is VARCHAR — store as plain string
             'status'              => $row['status'] ?? 'Active',
             'details'             => $row['project_details'] ?? $row['project-details'] ?? $row['projectdetails'] ?? null,
             'website'             => $website,

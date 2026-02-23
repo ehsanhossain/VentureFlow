@@ -341,14 +341,19 @@ export const InvestorRegistration: React.FC = () => {
 
     // ID Generation Logic (only for new records)
     useEffect(() => {
-        if (id || !originCountry?.alpha) return;
+        if (id || !originCountry) return;
+        // If countries haven't loaded yet, alpha might be missing — resolve it from countries list
+        const alpha = originCountry.alpha
+            || countries.find(c => c.id === originCountry.id)?.alpha
+            || '';
+        if (!alpha) return;
 
         const generateId = async () => {
             try {
-                const response = await api.get(`/api/buyer/get-last-sequence?country=${originCountry.alpha}`);
+                const response = await api.get(`/api/buyer/get-last-sequence?country=${alpha}`);
                 const nextSeq = (response.data.lastSequence || 0) + 1;
                 const formatted = String(nextSeq).padStart(3, '0');
-                setValue('projectCode', `${originCountry.alpha}-B-${formatted}`);
+                setValue('projectCode', `${alpha}-B-${formatted}`);
                 setIsCheckingId(false);
                 setIsIdAvailable(true);
             } catch (error) {
@@ -357,7 +362,7 @@ export const InvestorRegistration: React.FC = () => {
         };
 
         generateId();
-    }, [originCountry?.alpha, setValue, id]);
+    }, [originCountry?.id, originCountry?.alpha, countries.length, setValue, id]);
 
     // Check ID Availability
     const checkIdAvailability = async (code: string) => {
@@ -397,6 +402,9 @@ export const InvestorRegistration: React.FC = () => {
                     setValue('projectCode', buyer.buyer_id || '');
                     setValue('rank', overview.rank || 'B');
                     setValue('channel', overview.channel || 'TCF');
+                    // Restore status: backend stores 1=Active, 2=Draft
+                    const statusVal = buyer.status === '2' || buyer.status === 2 ? 'Draft' : 'Active';
+                    setValue('status', statusVal);
 
                     try {
                         let links: any[] = [];
@@ -454,6 +462,7 @@ export const InvestorRegistration: React.FC = () => {
                     const countryData = overview.hq_country;
                     if (countryData) {
                         if (typeof countryData === 'object' && countryData.id) {
+                            // Full object from the API (hqCountry relationship loaded)
                             setValue('originCountry', {
                                 id: countryData.id,
                                 name: countryData.name || '',
@@ -462,11 +471,14 @@ export const InvestorRegistration: React.FC = () => {
                                 status: 'registered'
                             });
                         } else if (typeof countryData === 'number' || typeof countryData === 'string') {
+                            // Only an ID — look up in the countries list already loaded
+                            const numId = Number(countryData);
+                            const found = countries.find(c => c.id === numId);
                             setValue('originCountry', {
-                                id: Number(countryData),
-                                name: '',
-                                alpha: '',
-                                flagSrc: '',
+                                id: numId,
+                                name: found?.name || '',
+                                alpha: found?.alpha || '',
+                                flagSrc: found?.flagSrc || '',
                                 status: 'registered'
                             });
                         }
@@ -553,8 +565,8 @@ export const InvestorRegistration: React.FC = () => {
                     } catch (e) { /* ignored */ }
                     // ignored
                 }
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
+                console.error('Failed to load investor data:', err);
                 showAlert({ type: "error", message: "Failed to load investor data" });
             }
         };

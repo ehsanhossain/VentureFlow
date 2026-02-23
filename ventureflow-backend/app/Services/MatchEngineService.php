@@ -10,7 +10,7 @@ namespace App\Services;
 
 use App\Models\Investor;
 use App\Models\Target;
-use App\Models\Match as MatchModel;
+use App\Models\DealMatch as MatchModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -301,17 +301,26 @@ class MatchEngineService
             return [0.3, 'Industry: Target has no industry listed'];
         }
 
-        // --- ID-based exact match (preferred — survives industry renames) ---
-        $investorIds = array_filter(array_column($investorIndustries, 'id'));
-        $targetIds   = array_filter(array_column($targetIndustries, 'id'));
+        // Separate canonical IDs (small integers from industries table) from adhoc IDs (timestamps)
+        $isAdhocId = fn($id) => is_numeric($id) && $id > 9999999999; // timestamp-based IDs > 10 digits
 
-        if (!empty($investorIds) && !empty($targetIds)) {
-            $intersection = count(array_intersect($investorIds, $targetIds));
-            $union        = count(array_unique(array_merge($investorIds, $targetIds)));
+        $investorCanonicalIds = array_filter(
+            array_column($investorIndustries, 'id'),
+            fn($id) => $id !== null && !$isAdhocId($id)
+        );
+        $targetCanonicalIds = array_filter(
+            array_column($targetIndustries, 'id'),
+            fn($id) => $id !== null && !$isAdhocId($id)
+        );
+
+        // --- ID-based exact match (only for canonical industry IDs) ---
+        if (!empty($investorCanonicalIds) && !empty($targetCanonicalIds)) {
+            $intersection = count(array_intersect($investorCanonicalIds, $targetCanonicalIds));
+            $union        = count(array_unique(array_merge($investorCanonicalIds, $targetCanonicalIds)));
             $idScore      = $union > 0 ? $intersection / $union : 0.0;
 
             if ($idScore > 0) {
-                $matched = array_intersect($investorIds, $targetIds);
+                $matched = array_intersect($investorCanonicalIds, $targetCanonicalIds);
                 $names   = array_map(fn($item) => $item['name'] ?? 'Unknown',
                     array_filter($targetIndustries, fn($i) => in_array($i['id'], $matched)));
                 $nameStr = implode(', ', $names) ?: 'Matched industries';
@@ -322,42 +331,86 @@ class MatchEngineService
             }
         }
 
-        // --- Name-based fuzzy fallback ---
-        $investorNames = array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $investorIndustries);
-        $targetNames   = array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $targetIndustries);
-        $investorNames = array_filter($investorNames);
-        $targetNames   = array_filter($targetNames);
+        // --- Name-based matching (handles adhoc industries from imports) ---
+        $investorNames = array_values(array_filter(
+            array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $investorIndustries)
+        ));
+        $targetNames = array_values(array_filter(
+            array_map(fn($s) => mb_strtolower(trim($s['name'] ?? '')), $targetIndustries)
+        ));
 
-        // Jaccard on names
+        if (empty($investorNames) || empty($targetNames)) {
+            return [0.2, 'Industry: Insufficient name data for matching'];
+        }
+
+        // Exact name match (Jaccard)
         $intersection = count(array_intersect($investorNames, $targetNames));
         $union = count(array_unique(array_merge($investorNames, $targetNames)));
-        $exactScore = $union > 0 ? $intersection / $union : 0.0;
-
-        if ($exactScore > 0) {
+        if ($intersection > 0) {
             return [
-                min(1.0, $exactScore + 0.1),
-                'Industry: Name overlap — "' . implode(', ', array_intersect($investorNames, $targetNames)) . '"'
+                min(1.0, ($intersection / $union) + 0.1),
+                'Industry: Exact name match — "' . implode(', ', array_intersect($investorNames, $targetNames)) . '"'
             ];
         }
 
-        // Levenshtein similarity
-        $best = 0.0;
-        $bestPair = ['', ''];
+        // Smart similarity using IndustrySimilarityService (handles adhoc vs canonical names)
+        $primaryIndustries = \App\Models\Industry::where('status', 1)->get();
+        $bestScore = 0.0;
+        $bestExplanation = '';
+
+        // Try matching each target industry name against investor's industries
         foreach ($targetNames as $tName) {
+            // Use IndustrySimilarityService to find if tName maps to any investor industry
             foreach ($investorNames as $iName) {
+                // Direct Levenshtein
                 $sim = $this->textSimilarity($iName, $tName);
-                if ($sim > $best) {
-                    $best = $sim;
-                    $bestPair = [$iName, $tName];
+                if ($sim > $bestScore) {
+                    $bestScore = $sim;
+                    $bestExplanation = "Industry: Similar names — \"{$tName}\" ≈ \"{$iName}\"";
+                }
+                // Token overlap (catches 'Water Electric' vs 'Electric Power Generation')
+                $tTokens = array_filter(explode(' ', $tName), fn($w) => strlen($w) >= 4);
+                $iTokens = array_filter(explode(' ', $iName), fn($w) => strlen($w) >= 4);
+                if (!empty($tTokens) && !empty($iTokens)) {
+                    $tokenOverlap = count(array_intersect($tTokens, $iTokens))
+                        / count(array_unique(array_merge($tTokens, $iTokens)));
+                    if ($tokenOverlap > $bestScore) {
+                        $bestScore = $tokenOverlap;
+                        $bestExplanation = "Industry: Token overlap — \"{$tName}\" shares terms with \"{$iName}\"";
+                    }
+                }
+            }
+
+            // Also try matching target's adhoc name against investor's canonical industry sub-industries
+            $suggestions = $this->industrySimilarity->suggest($tName, $primaryIndustries);
+            foreach ($suggestions as $suggestion) {
+                // Check if the suggested canonical industry is one investor is interested in
+                $suggestedId = $suggestion['id'];
+                if (in_array($suggestedId, array_column($investorIndustries, 'id'), true)) {
+                    $simScore = $suggestion['score'] / 100.0;
+                    if ($simScore > $bestScore) {
+                        $bestScore = $simScore;
+                        $bestExplanation = "Industry: Adhoc '{$tName}' maps to '{$suggestion['name']}' (investor preference)";
+                    }
+                }
+                // Also check sub-industry names
+                foreach ($investorNames as $iName) {
+                    if (mb_strtolower($suggestion['name']) === mb_strtolower($iName)) {
+                        $simScore = $suggestion['score'] / 100.0;
+                        if ($simScore > $bestScore) {
+                            $bestScore = $simScore;
+                            $bestExplanation = "Industry: '{$tName}' matches investor industry '{$iName}' via similarity";
+                        }
+                    }
                 }
             }
         }
 
-        if ($best > 0.5) {
-            return [$best, "Industry: Similar — \"{$bestPair[1]}\" ≈ \"{$bestPair[0]}\""];
+        if ($bestScore > 0.3) {
+            return [min(1.0, $bestScore), $bestExplanation];
         }
 
-        return [0.1, 'Industry: No industry overlap found'];
+        return [0.1, 'Industry: No significant industry overlap found'];
     }
 
     /**

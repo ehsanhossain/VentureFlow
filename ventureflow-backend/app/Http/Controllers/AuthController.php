@@ -49,8 +49,15 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+
+        // Reject deactivated accounts
+        if (isset($user->is_active) && !$user->is_active) {
+            Auth::logout();
+            return response()->json(['message' => 'Your account has been deactivated. Please contact your administrator.'], 403);
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
-        
+
         // Check if user is a partner
         $role = $user->getRoleNames()->first();
         $isPartner = $role === 'partner' || $user->is_partner;

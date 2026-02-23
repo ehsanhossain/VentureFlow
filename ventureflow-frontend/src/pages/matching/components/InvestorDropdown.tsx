@@ -61,14 +61,14 @@ export const InvestorDropdown = ({
     const fetchInvestors = useCallback(async (q: string) => {
         setLoading(true);
         try {
-            const res = await api.get('/api/prospects/investors', {
+            const res = await api.get('/api/buyer', {
                 params: { search: q, per_page: 20, page: 1 },
             });
             const raw = res.data?.data ?? [];
             setResults(raw.map((inv: any) => ({
                 id: inv.id,
-                project_code: inv.project_code ?? '',
-                reg_name: inv.company_overview?.reg_name ?? inv.project_code ?? `#${inv.id}`,
+                project_code: inv.buyer_id ?? '',
+                reg_name: inv.company_overview?.reg_name ?? inv.buyer_id ?? `#${inv.id}`,
             })));
         } catch {
             setResults([]);

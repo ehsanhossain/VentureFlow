@@ -4,17 +4,19 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Mail, Globe, Building2, User } from 'lucide-react';
+import { Mail, Globe, Building2, User, KeyRound, PowerOff, Power, Loader, Camera } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
+import { AuthContext } from '../../../routes/AuthContext';
 
 interface Partner {
     id: number;
     partner_id: string;
     status: string;
+    image?: string;
     created_at?: string;
     updated_at?: string;
     user?: {
@@ -22,6 +24,7 @@ interface Partner {
         name: string;
         email: string;
         created_at?: string;
+        is_active?: boolean;
     };
     partner_overview?: {
         reg_name: string;
@@ -65,8 +68,51 @@ interface Partner {
 const PartnerDetails: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const authCtx = useContext(AuthContext);
+    const currentRole = authCtx?.role;
+
     const [partner, setPartner] = useState<Partner | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Admin action state
+    const [newPassword, setNewPassword] = useState('');
+    const [showPwForm, setShowPwForm] = useState(false);
+    const [pwSaving, setPwSaving] = useState(false);
+    const [statusSaving, setStatusSaving] = useState(false);
+
+    // Avatar upload
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const baseURL = import.meta.env.VITE_API_BASE_URL;
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !id) return;
+        const fd = new FormData();
+        fd.append('image', file);
+        setAvatarUploading(true);
+        try {
+            const res = await api.post(`/api/partners/${id}/avatar`, fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setPartner((prev) => prev ? { ...prev, image: res.data.image_path } : prev);
+            showAlert({ type: 'success', message: 'Avatar updated.' });
+        } catch {
+            showAlert({ type: 'error', message: 'Failed to upload avatar.' });
+        } finally {
+            setAvatarUploading(false);
+            if (avatarInputRef.current) avatarInputRef.current.value = '';
+        }
+    };
+
+    const getAvatarUrl = () => {
+        if (partner?.image) {
+            return partner.image.startsWith('http')
+                ? partner.image
+                : `${baseURL}/storage/${partner.image}`;
+        }
+        return '';
+    };
 
     useEffect(() => {
         if (id) {
@@ -84,6 +130,50 @@ const PartnerDetails: React.FC = () => {
             showAlert({ type: 'error', message: 'Failed to load partner details' });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!partner?.user?.id) return;
+        if (newPassword.length < 8) {
+            showAlert({ type: 'error', message: 'Password must be at least 8 characters.' });
+            return;
+        }
+        setPwSaving(true);
+        try {
+            await api.post(`/api/admin/users/${partner.user.id}/reset-password`, {
+                password: newPassword,
+                password_confirmation: newPassword,
+            });
+            showAlert({ type: 'success', message: `Password reset for ${partner.user.name}.` });
+            setNewPassword('');
+            setShowPwForm(false);
+        } catch (err) {
+            const e = err as { response?: { data?: { message?: string } } };
+            showAlert({ type: 'error', message: e.response?.data?.message || 'Failed to reset password.' });
+        } finally {
+            setPwSaving(false);
+        }
+    };
+
+    const handleToggleActive = async () => {
+        if (!partner?.user?.id) return;
+        const currentlyActive = partner.user.is_active !== false;
+        setStatusSaving(true);
+        try {
+            await api.patch(`/api/admin/users/${partner.user.id}/status`, {
+                is_active: !currentlyActive,
+            });
+            setPartner((prev) => prev ? {
+                ...prev,
+                user: prev.user ? { ...prev.user, is_active: !currentlyActive } : prev.user,
+            } : prev);
+            showAlert({ type: 'success', message: `Account ${!currentlyActive ? 'activated' : 'deactivated'}.` });
+        } catch (err) {
+            const e = err as { response?: { data?: { message?: string } } };
+            showAlert({ type: 'error', message: e.response?.data?.message || 'Failed to update status.' });
+        } finally {
+            setStatusSaving(false);
         }
     };
 
@@ -205,9 +295,39 @@ const PartnerDetails: React.FC = () => {
                         <div className="space-y-7">
                             {/* Partner Header */}
                             <div className="flex items-center gap-3">
-                                {/* Partner Avatar */}
-                                <div className="w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium">
-                                    {getInitials(partnerName)}
+                                {/* Partner Avatar — click to upload */}
+                                <div
+                                    className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
+                                    onClick={() => avatarInputRef.current?.click()}
+                                    title="Click to change photo"
+                                >
+                                    <input
+                                        ref={avatarInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleAvatarChange}
+                                    />
+                                    {getAvatarUrl() ? (
+                                        <img
+                                            src={getAvatarUrl()}
+                                            alt={partnerName}
+                                            className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                                        {getInitials(partnerName)}
+                                    </div>
+                                    {/* Upload overlay */}
+                                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        {avatarUploading
+                                            ? <Loader className="w-4 h-4 text-white animate-spin" />
+                                            : <Camera className="w-4 h-4 text-white" />
+                                        }
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col justify-between">
@@ -507,6 +627,71 @@ const PartnerDetails: React.FC = () => {
                                     </a>
                                 )}
                             </div>
+                        </div>
+                    )}
+                    {/* Admin Actions — only visible to System Admin */}
+                    {currentRole === 'System Admin' && partner.user?.id && (
+                        <div className="space-y-3 pt-2 border-t border-gray-100">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Admin Actions</h3>
+
+                            {/* Reset Password */}
+                            {!showPwForm ? (
+                                <button
+                                    onClick={() => setShowPwForm(true)}
+                                    className="w-full flex items-center gap-2 px-3 py-2 rounded border border-gray-200 text-sm text-gray-700 hover:border-[#064771] hover:text-[#064771] transition-colors"
+                                >
+                                    <KeyRound className="w-4 h-4" />
+                                    Reset Password
+                                </button>
+                            ) : (
+                                <div className="flex flex-col gap-2">
+                                    <input
+                                        type="password"
+                                        placeholder="New password (min 8)"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="h-9 px-3 border border-gray-200 rounded text-sm outline-none focus:border-[#064771] focus:ring-1 focus:ring-[#064771]/20"
+                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleResetPassword}
+                                            disabled={pwSaving}
+                                            className="flex-1 h-8 text-xs font-medium text-white rounded flex items-center justify-center gap-1.5 transition-colors"
+                                            style={{ backgroundColor: pwSaving ? '#9ab3c7' : '#064771' }}
+                                        >
+                                            {pwSaving && <Loader className="w-3 h-3 animate-spin" />}
+                                            {pwSaving ? 'Saving…' : 'Set Password'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowPwForm(false); setNewPassword(''); }}
+                                            className="h-8 px-3 text-xs text-gray-500 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Activate / Deactivate */}
+                            {(() => {
+                                const isActive = partner.user!.is_active !== false;
+                                return (
+                                    <button
+                                        onClick={handleToggleActive}
+                                        disabled={statusSaving}
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded border text-sm font-medium transition-colors ${isActive
+                                            ? 'border-red-200 text-red-600 hover:bg-red-50'
+                                            : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                            }`}
+                                    >
+                                        {statusSaving
+                                            ? <Loader className="w-4 h-4 animate-spin" />
+                                            : isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />
+                                        }
+                                        {isActive ? 'Deactivate Account' : 'Activate Account'}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>

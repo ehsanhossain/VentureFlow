@@ -42,23 +42,52 @@ class DashboardController extends Controller
         })->selectRaw('COALESCE(SUM(COALESCE(ticket_size, estimated_ev_value, 0)), 0) as total')->value('total');
 
         $dealsThisMonth = Deal::where('created_at', '>=', $startOfMonth)->count();
-        $totalInvestors = Investor::where('status', 1)->count();
-        $totalTargets = Target::where('status', 1)->count();
+        $totalInvestors = Investor::whereIn('status', [1, '1', 'Active', 'active'])->count();
+        $totalTargets = Target::whereIn('status', [1, '1', 'Active', 'active'])->count();
         $investorsThisMonth = Investor::where('created_at', '>=', $startOfMonth)->count();
         $targetsThisMonth = Target::where('created_at', '>=', $startOfMonth)->count();
 
+        // Calculate TVC Expected Fees
+        $activeDealsList = Deal::where(function($q) {
+            $q->whereNotIn('status', ['lost', 'closed', 'Lost', 'Closed'])
+              ->orWhereNull('status');
+        })->get(['ticket_size', 'estimated_ev_value', 'pipeline_type']);
+
+        $feeTiers = \App\Models\FeeTier::where('is_active', true)->get();
+        $tvcExpectedFees = 0;
+
+        foreach ($activeDealsList as $d) {
+            $val = $d->ticket_size ?? $d->estimated_ev_value ?? 0;
+            if ($val <= 0) continue;
+
+            $feeType = $d->pipeline_type === 'buyer' ? 'investor' : 'target';
+            
+            $tier = $feeTiers->first(function ($t) use ($feeType, $val) {
+                if ($t->fee_type !== $feeType) return false;
+                if ($val < $t->min_amount) return false;
+                if ($t->max_amount !== null && $val > $t->max_amount) return false;
+                return true;
+            });
+
+            if ($tier) {
+                if ($tier->success_fee_fixed) {
+                    $tvcExpectedFees += $tier->success_fee_fixed;
+                } elseif ($tier->success_fee_rate) {
+                    $tvcExpectedFees += $val * ($tier->success_fee_rate / 100);
+                }
+            }
+        }
+
         // Unmatched investors (no deal linked)
-        $unmatchedInvestors = Investor::where('status', 1)
+        $unmatchedInvestors = Investor::whereIn('status', [1, '1', 'Active', 'active'])
             ->whereDoesntHave('deals')
             ->count();
 
         // Unmatched targets (no deal linked)
-        $unmatchedTargets = Target::where('status', 1)
+        $unmatchedTargets = Target::whereIn('status', [1, '1', 'Active', 'active'])
             ->whereDoesntHave('deals')
             ->count();
 
-        // === DEALS REQUIRING ACTION ===
-        $dealsNeedingAction = $this->getDealsNeedingAction();
 
         // === PIPELINE FUNNEL ===
         $buyerPipeline = $this->getPipelineData('buyer');
@@ -76,11 +105,37 @@ class DashboardController extends Controller
         // === RECENT REGISTRATIONS ===
         $recentInvestors = $this->getRecentRegistrations('investor', 4);
         $recentTargets = $this->getRecentRegistrations('target', 4);
+        // Calculate Deal Velocity (average days to progress a stage)
+        $stageHistories = \App\Models\DealStageHistory::orderBy('deal_id')->orderBy('changed_at')->get();
+        $totalDays = 0;
+        $transitionCount = 0;
+        $dealTimestamps = [];
+
+        foreach ($stageHistories as $history) {
+            $dealId = $history->deal_id;
+            $changedAt = Carbon::parse($history->changed_at);
+            
+            if (!isset($dealTimestamps[$dealId])) {
+                $dealTimestamps[$dealId] = $changedAt;
+                continue;
+            }
+
+            $days = $dealTimestamps[$dealId]->diffInDays($changedAt);
+            if ($days >= 0) {
+                $totalDays += $days;
+                $transitionCount++;
+            }
+
+            $dealTimestamps[$dealId] = $changedAt;
+        }
+
+        $dealVelocityDays = $transitionCount > 0 ? round($totalDays / $transitionCount, 1) : 0;
 
         return response()->json([
             'stats' => [
                 'active_deals' => $activeDeals,
                 'pipeline_value' => round($pipelineValue, 2),
+                'tvc_expected_fees' => round($tvcExpectedFees, 2),
                 'deals_this_month' => $dealsThisMonth,
                 'total_investors' => $totalInvestors,
                 'total_targets' => $totalTargets,
@@ -90,7 +145,7 @@ class DashboardController extends Controller
                 'unmatched_targets' => $unmatchedTargets,
                 'month_name' => $now->format('F Y'),
             ],
-            'deals_needing_action' => $dealsNeedingAction,
+            'deal_velocity_days' => $dealVelocityDays,
             'buyer_pipeline' => $buyerPipeline,
             'seller_pipeline' => $sellerPipeline,
             'deal_flow_trend' => $dealFlowTrend,
@@ -99,60 +154,6 @@ class DashboardController extends Controller
             'recent_investors' => $recentInvestors,
             'recent_targets' => $recentTargets,
         ]);
-    }
-
-    /**
-     * Deals that need attention — stuck, overdue target_close_date, recently stalled
-     */
-    private function getDealsNeedingAction()
-    {
-        $now = Carbon::now();
-
-        // Active deals with details
-        $deals = Deal::with([
-                'buyer.companyOverview',
-                'seller.companyOverview',
-                'pic',
-            ])
-            ->where(function($q) {
-                $q->whereNotIn('status', ['lost', 'closed', 'Lost', 'Closed', 'won', 'Won'])
-                  ->orWhereNull('status');
-            })
-            ->orderByRaw("CASE WHEN target_close_date IS NOT NULL AND target_close_date < ? THEN 0 ELSE 1 END", [$now])
-            ->orderBy('updated_at', 'asc') // Least recently updated first (most stale)
-            ->limit(6)
-            ->get()
-            ->map(function ($deal) use ($now) {
-                $isOverdue = $deal->target_close_date && Carbon::parse($deal->target_close_date)->lt($now);
-                $daysSinceUpdate = $deal->updated_at ? Carbon::parse($deal->updated_at)->diffInDays($now) : 0;
-                $isStale = $daysSinceUpdate > 14;
-
-                $urgency = 'normal';
-                if ($isOverdue) $urgency = 'overdue';
-                elseif ($isStale) $urgency = 'stale';
-
-                $buyerName = $deal->buyer?->companyOverview?->reg_name;
-                $sellerName = $deal->seller?->companyOverview?->reg_name;
-
-                return [
-                    'id' => $deal->id,
-                    'name' => $deal->name,
-                    'buyer_name' => $buyerName,
-                    'seller_name' => $sellerName,
-                    'stage_name' => $deal->stage_name,
-                    'stage_code' => $deal->stage_code,
-                    'progress' => $deal->progress_percent,
-                    'priority' => $deal->priority,
-                    'urgency' => $urgency,
-                    'days_since_update' => (int)$daysSinceUpdate,
-                    'target_close_date' => $deal->target_close_date?->format('Y-m-d'),
-                    'pic_name' => $deal->pic?->name ?? 'Unassigned',
-                    'estimated_value' => $deal->ticket_size ?? $deal->estimated_ev_value,
-                    'currency' => $deal->estimated_ev_currency ?? 'USD',
-                ];
-            });
-
-        return $deals;
     }
 
     /**
