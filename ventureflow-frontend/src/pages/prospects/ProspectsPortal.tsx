@@ -625,7 +625,18 @@ const ProspectsPortal: React.FC = () => {
                         channel: overview.channel,
                         sourceCurrencyRate: sourceRate,
                         companyIndustry: parseArray(overview.company_industry, 'name'),
+                        createdAt: b.created_at,
                     };
+                });
+                // Sort: newest (within 7 days) first, then rest in existing order
+                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                mappedInvestors.sort((a, b) => {
+                    const aIsNew = a.createdAt ? new Date(a.createdAt).getTime() > sevenDaysAgo : false;
+                    const bIsNew = b.createdAt ? new Date(b.createdAt).getTime() > sevenDaysAgo : false;
+                    if (aIsNew && !bIsNew) return -1;
+                    if (!aIsNew && bIsNew) return 1;
+                    if (aIsNew && bIsNew) return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+                    return 0;
                 });
                 setInvestors(mappedInvestors);
             } else {
@@ -746,7 +757,18 @@ const ProspectsPortal: React.FC = () => {
                         isPinned: !!s.pinned,
                         sourceCurrencyRate: sourceRate,
                         investmentCondition: parseMultiField(fin.investment_condition),
+                        createdAt: s.created_at,
                     };
+                });
+                // Sort: newest (within 7 days) first, then rest in existing order
+                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                mappedTargets.sort((a, b) => {
+                    const aIsNew = a.createdAt ? new Date(a.createdAt).getTime() > sevenDaysAgo : false;
+                    const bIsNew = b.createdAt ? new Date(b.createdAt).getTime() > sevenDaysAgo : false;
+                    if (aIsNew && !bIsNew) return -1;
+                    if (!aIsNew && bIsNew) return 1;
+                    if (aIsNew && bIsNew) return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+                    return 0;
                 });
                 setTargets(mappedTargets);
             }

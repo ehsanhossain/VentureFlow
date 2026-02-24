@@ -17,6 +17,7 @@ interface CreateDealModalProps {
 
 interface Buyer {
     id: number;
+    created_at?: string;
     company_overview?: {
         reg_name: string;
         financial_advisor?: string | Record<string, string>[];
@@ -26,6 +27,7 @@ interface Buyer {
 
 interface Seller {
     id: number;
+    created_at?: string;
     company_overview?: {
         reg_name: string;
         financial_advisor?: string | Record<string, string>[];
@@ -44,16 +46,18 @@ interface User {
     status: 'registered' | 'unregistered';
 }
 
-// Relationship types between buyer and seller
-const RELATIONSHIP_TYPES = [
-    { value: 'acquiring', buyerLabel: 'Acquiring', sellerLabel: 'Being acquired by' },
-    { value: 'joint_venture', buyerLabel: 'Joint Venturing with', sellerLabel: 'Joint Venturing with' },
-    { value: 'strategic_investment', buyerLabel: 'Strategically Investing in', sellerLabel: 'Receiving strategic investment from' },
-    { value: 'merger', buyerLabel: 'Merging with', sellerLabel: 'Merging with' },
-    { value: 'minority_stake', buyerLabel: 'Acquiring minority stake in', sellerLabel: 'Selling minority stake to' },
-    { value: 'majority_stake', buyerLabel: 'Acquiring majority stake in', sellerLabel: 'Selling majority stake to' },
-    { value: 'buyout', buyerLabel: 'Buying out', sellerLabel: 'Being bought out by' },
-    { value: 'partnership', buyerLabel: 'Partnering with', sellerLabel: 'Partnering with' },
+// Deal types — context-aware labels for buyer-side vs seller-side FA
+const DEAL_TYPES = [
+    { value: 'acquisition', buyerLabel: 'Acquisition', sellerLabel: 'Divestiture' },
+    { value: 'merger', buyerLabel: 'Merger', sellerLabel: 'Merger' },
+    { value: 'joint_venture', buyerLabel: 'Joint Venture', sellerLabel: 'Joint Venture' },
+    { value: 'strategic_investment', buyerLabel: 'Strategic Investment', sellerLabel: 'Capital Raise' },
+    { value: 'minority_stake', buyerLabel: 'Minority Acquisition', sellerLabel: 'Minority Divestiture' },
+    { value: 'majority_stake', buyerLabel: 'Majority Acquisition', sellerLabel: 'Majority Divestiture' },
+    { value: 'buyout', buyerLabel: 'Buyout', sellerLabel: 'Sell-out' },
+    { value: 'partnership', buyerLabel: 'Partnership', sellerLabel: 'Partnership' },
+    { value: 'management_buyout', buyerLabel: 'Management Buyout (MBO)', sellerLabel: 'Management Buyout (MBO)' },
+    { value: 'leveraged_buyout', buyerLabel: 'Leveraged Buyout (LBO)', sellerLabel: 'Leveraged Buyout (LBO)' },
 ];
 
 /** Format a number string with commas (e.g. 4972520 → 4,972,520) */
@@ -92,7 +96,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         estimated_ev_currency: 'USD',
         priority: 'medium',
         possibility: 'Medium',
-        relationship_type: 'acquiring',
+        deal_type: 'acquisition',
         internal_pic: [] as User[],
         target_close_date: '',
         stage_code: '',
@@ -351,6 +355,27 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         s.company_overview?.reg_name?.toLowerCase().includes(searchSeller.toLowerCase())
     );
 
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const isNewEntry = (created_at?: string) => created_at ? (Date.now() - new Date(created_at).getTime()) < SEVEN_DAYS_MS : false;
+
+    const sortedFilteredBuyers = [...filteredBuyers].sort((a, b) => {
+        const aNew = isNewEntry(a.created_at);
+        const bNew = isNewEntry(b.created_at);
+        if (aNew && !bNew) return -1;
+        if (!aNew && bNew) return 1;
+        if (aNew && bNew) return new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime();
+        return 0;
+    });
+
+    const sortedFilteredSellers = [...filteredSellers].sort((a, b) => {
+        const aNew = isNewEntry(a.created_at);
+        const bNew = isNewEntry(b.created_at);
+        if (aNew && !bNew) return -1;
+        if (!aNew && bNew) return 1;
+        if (aNew && bNew) return new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime();
+        return 0;
+    });
+
     // Determine step labels based on defaultView
     const step1Label = defaultView === 'seller' ? 'Select Target' : 'Select Investor';
     const step2Label = defaultView === 'seller' ? 'Select Investor' : 'Select Target';
@@ -426,7 +451,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         className={`${inputClass} mb-4`}
                                     />
                                     <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
-                                        {filteredBuyers.map((buyer) => (
+                                        {sortedFilteredBuyers.map((buyer) => (
                                             <button
                                                 key={buyer.id}
                                                 onClick={() => handleSelectBuyer(buyer)}
@@ -439,6 +464,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
                                                 </span>
+                                                {isNewEntry(buyer.created_at) && (
+                                                    <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', marginLeft: 'auto', flexShrink: 0 }}>New</span>
+                                                )}
                                             </button>
                                         ))}
                                         {filteredBuyers.length === 0 && (
@@ -458,7 +486,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         className={`${inputClass} mb-4`}
                                     />
                                     <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
-                                        {filteredSellers.map((seller) => (
+                                        {sortedFilteredSellers.map((seller) => (
                                             <button
                                                 key={seller.id}
                                                 onClick={() => handleSelectSeller(seller)}
@@ -471,6 +499,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {seller.company_overview?.reg_name || `Seller #${seller.id}`}
                                                 </span>
+                                                {isNewEntry(seller.created_at) && (
+                                                    <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', marginLeft: 'auto', flexShrink: 0 }}>New</span>
+                                                )}
                                             </button>
                                         ))}
                                         {filteredSellers.length === 0 && (
@@ -497,7 +528,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         className={`${inputClass} mb-4`}
                                     />
                                     <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
-                                        {filteredSellers.map((seller) => (
+                                        {sortedFilteredSellers.map((seller) => (
                                             <button
                                                 key={seller.id}
                                                 onClick={() => handleSelectSeller(seller)}
@@ -510,6 +541,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {seller.company_overview?.reg_name || `Seller #${seller.id}`}
                                                 </span>
+                                                {isNewEntry(seller.created_at) && (
+                                                    <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', marginLeft: 'auto', flexShrink: 0 }}>New</span>
+                                                )}
                                             </button>
                                         ))}
                                         {filteredSellers.length === 0 && (
@@ -546,7 +580,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         className={`${inputClass} mb-4`}
                                     />
                                     <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-premium">
-                                        {filteredBuyers.map((buyer) => (
+                                        {sortedFilteredBuyers.map((buyer) => (
                                             <button
                                                 key={buyer.id}
                                                 onClick={() => handleSelectBuyer(buyer)}
@@ -559,6 +593,9 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
                                                 </span>
+                                                {isNewEntry(buyer.created_at) && (
+                                                    <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', marginLeft: 'auto', flexShrink: 0 }}>New</span>
+                                                )}
                                             </button>
                                         ))}
                                         {filteredBuyers.length === 0 && (
@@ -614,18 +651,18 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 />
                             </div>
 
-                            {/* Relationship Type */}
+                            {/* Deal Type */}
                             <div>
-                                <label htmlFor="deal-relationship" className="block text-sm font-medium text-gray-700 mb-1">Relationship Type</label>
+                                <label htmlFor="deal-type" className="block text-sm font-medium text-gray-700 mb-1">Deal Type</label>
                                 <select
-                                    id="deal-relationship"
-                                    value={formData.relationship_type}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, relationship_type: e.target.value }))}
+                                    id="deal-type"
+                                    value={formData.deal_type}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, deal_type: e.target.value }))}
                                     className={selectClass}
                                 >
-                                    {RELATIONSHIP_TYPES.map((rel) => (
-                                        <option key={rel.value} value={rel.value}>
-                                            {rel.buyerLabel}
+                                    {DEAL_TYPES.map((dt) => (
+                                        <option key={dt.value} value={dt.value}>
+                                            {defaultView === 'seller' ? dt.sellerLabel : dt.buyerLabel}
                                         </option>
                                     ))}
                                 </select>
@@ -634,13 +671,13 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     <p className="mt-1.5 text-xs text-gray-500">
                                         Preview: <span className="font-medium text-gray-700">
                                             {(() => {
-                                                const rel = RELATIONSHIP_TYPES.find(r => r.value === formData.relationship_type);
+                                                const dt = DEAL_TYPES.find(r => r.value === formData.deal_type);
                                                 const bName = selectedBuyer?.company_overview?.reg_name || 'Investor';
                                                 const sName = selectedSeller?.company_overview?.reg_name || 'Target';
                                                 if (defaultView === 'buyer') {
-                                                    return `${bName} ${rel?.buyerLabel.toLowerCase()} ${sName}`;
+                                                    return `${bName} — ${dt?.buyerLabel} → ${sName}`;
                                                 }
-                                                return `${sName} ${rel?.sellerLabel.toLowerCase()} ${bName}`;
+                                                return `${sName} — ${dt?.sellerLabel} → ${bName}`;
                                             })()}
                                         </span>
                                     </p>

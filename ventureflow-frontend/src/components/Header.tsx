@@ -113,7 +113,15 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
         setLoading(true);
         try {
           const response = await api.get('/api/search', { params: { query } });
-          setResults(response.data);
+          const data = response.data || {};
+          setResults({
+            deals: data.deals || [],
+            investors: data.investors || [],
+            targets: data.targets || [],
+            staff: data.staff || [],
+            partners: data.partners || [],
+            documents: data.documents || [],
+          });
         } catch (error) {
           console.error("Search failed", error);
         } finally {
@@ -442,10 +450,10 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Deals</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.deals.map((deal) => (
-                        <li key={`deal-${deal.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100" onClick={() => { navigate('/deal-pipeline'); closeSearch(); }}>
-                          <CatalystIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
+                        <li key={`deal-${deal.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100" onClick={() => { navigate('/deal-pipeline'); closeSearch(); }}>
+                          <CatalystIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{deal.name}</span>
-                          <span className="ml-3 flex-none text-xs text-gray-400">{deal.status}</span>
+                          {deal.status && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{deal.status}</span>}
                         </li>
                       ))}
                     </ul>
@@ -458,12 +466,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Investors</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.investors.map((investor) => (
-                        <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                        <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/investor/${investor.id}`); closeSearch(); }}>
-                          {investor.country_flag && <img src={investor.country_flag} alt="" className="h-4 w-4 rounded-full object-cover" />}
-                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771] ml-1" />
+                          <ProspectsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{investor.name}</span>
-                          {investor.project_code && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 bg-blue-50 rounded">{investor.project_code}</span>}
+                          {investor.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{investor.project_code}</span>}
                         </li>
                       ))}
                     </ul>
@@ -476,12 +483,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Targets</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.targets.map((target) => (
-                        <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                        <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/target/${target.id}`); closeSearch(); }}>
-                          {target.country_flag && <img src={target.country_flag} alt="" className="h-4 w-4 rounded-full object-cover" />}
-                          <ProspectsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771] ml-1" />
+                          <ProspectsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{target.name}</span>
-                          {target.project_code && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 bg-emerald-50 rounded">{target.project_code}</span>}
+                          {target.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{target.project_code}</span>}
                         </li>
                       ))}
                     </ul>
@@ -494,11 +500,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Staff</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.staff.map((employee) => (
-                        <li key={`staff-${employee.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                        <li key={`staff-${employee.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/employee/details/${employee.id}`); closeSearch(); }}>
-                          <StaffAccountsIcon className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <StaffAccountsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{employee.first_name} {employee.last_name}</span>
-                          <span className="ml-3 flex-none text-xs text-gray-400">{employee.work_email}</span>
+                          {employee.work_email && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px] truncate max-w-[180px]">{employee.work_email}</span>}
                         </li>
                       ))}
                     </ul>
@@ -511,11 +517,11 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Partners</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.partners.map((partner) => (
-                        <li key={`partner-${partner.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100"
+                        <li key={`partner-${partner.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/settings/partners`); closeSearch(); }}>
-                          <PartnerIconCustom className="h-4 w-4 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <PartnerIconCustom className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{partner.name}</span>
-                          {partner.partner_id && <span className="ml-2 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 bg-purple-50 rounded">{partner.partner_id}</span>}
+                          {partner.partner_id && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{partner.partner_id}</span>}
                         </li>
                       ))}
                     </ul>
@@ -528,10 +534,10 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Documents</div>
                     <ul className="py-2 text-sm text-gray-700">
                       {results.documents.map((doc) => (
-                        <li key={`doc-${doc.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2 hover:bg-gray-100">
-                          <FileText className="h-4 w-4 flex-none text-gray-400 group-hover:text-gray-500" />
+                        <li key={`doc-${doc.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100">
+                          <FileText className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
                           <span className="ml-3 flex-auto truncate">{doc.filename}</span>
-                          <span className="ml-3 flex-none text-xs text-gray-400">{doc.size ? Math.round(doc.size / 1024) + ' KB' : ''}</span>
+                          {doc.size && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{Math.round(doc.size / 1024)} KB</span>}
                         </li>
                       ))}
                     </ul>

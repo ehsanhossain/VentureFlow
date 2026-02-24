@@ -28,7 +28,7 @@ class Deal extends Model
         'estimated_ev_currency',
         'stage_code',
         'pipeline_type',
-        'relationship_type',
+        'deal_type',
         'progress_percent',
         'priority',
         'possibility',

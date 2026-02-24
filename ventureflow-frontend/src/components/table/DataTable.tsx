@@ -644,32 +644,35 @@ function DataTable<T>({
                                         )}
                                     >
                                         {selectable && (
-                                            <td className={cn(
-                                                "px-4 py-3 text-center sticky left-0 z-10 border-b border-[#f1f5f9] transition-all duration-150",
-                                                isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
-                                                scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
-                                            )}>
+                                            <td
+                                                className={cn(
+                                                    "px-4 py-3 text-center sticky left-0 z-10 border-b border-[#f1f5f9] transition-all duration-150 cursor-pointer",
+                                                    isSelected ? 'bg-blue-50/70 group-hover:bg-[#f1f5f9]' : 'bg-white group-hover:bg-[#f8fafc]',
+                                                    scrolledLeft > 0 && "shadow-[2px_0_5px_rgba(0,0,0,0.05)]"
+                                                )}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!onSelectionChange) return;
+                                                    const newSet = new Set(selectedIds);
+                                                    const id = typeof rowId === 'string' ? String(rowId) : Number(rowId);
+                                                    if (isSelected) {
+                                                        (newSet as Set<string | number>).delete(id);
+                                                    } else {
+                                                        (newSet as Set<string | number>).add(id);
+                                                    }
+                                                    onSelectionChange(newSet);
+                                                }}
+                                            >
                                                 <div className="flex items-center justify-center h-14">
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (!onSelectionChange) return;
-                                                            const newSet = new Set(selectedIds);
-                                                            const id = typeof rowId === 'string' ? String(rowId) : Number(rowId);
-                                                            if (isSelected) {
-                                                                (newSet as Set<string | number>).delete(id);
-                                                            } else {
-                                                                (newSet as Set<string | number>).add(id);
-                                                            }
-                                                            onSelectionChange(newSet);
-                                                        }}
-                                                        className="flex items-center justify-center w-5 h-5 cursor-pointer hover:opacity-80 transition-opacity"
+                                                    <div
+                                                        className="flex items-center justify-center w-10 h-10 rounded-md hover:bg-gray-100/60 transition-colors"
                                                         title={isSelected ? 'Deselect row' : 'Select row'}
                                                         aria-label={isSelected ? 'Deselect row' : 'Select row'}
+                                                        role="checkbox"
+                                                        aria-checked={isSelected}
                                                     >
-                                                        {isSelected ? <RowCheckedIcon className="w-5 h-5" /> : <RowUncheckedIcon className="w-5 h-5" />}
-                                                    </button>
+                                                        {isSelected ? <RowCheckedIcon className="w-6 h-6" /> : <RowUncheckedIcon className="w-6 h-6" />}
+                                                    </div>
                                                 </div>
                                             </td>
                                         )}

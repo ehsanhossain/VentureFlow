@@ -24,40 +24,48 @@ export const SortDescIcon: React.FC<{ className?: string }> = ({ className = 'w-
     </svg>
 );
 
-// ============ CHECKBOX ICONS ============
+// ============ CHECKBOX ICONS (Header) ============
+// Header checkbox — no rows selected (default)
 export const CheckboxDefaultIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16.5 8.25V6C16.5 4.75736 15.4926 3.75 14.25 3.75H6C4.75736 3.75 3.75 4.75736 3.75 6V14.25C3.75 15.4926 4.75736 16.5 6 16.5H8.25M16.5 8.25H18C19.2426 8.25 20.25 9.25736 20.25 10.5V18C20.25 19.2426 19.2426 20.25 18 20.25H10.5C9.25736 20.25 8.25 19.2426 8.25 18V16.5M16.5 8.25H10.5C9.25736 8.25 8.25 9.25736 8.25 10.5V16.5" stroke="#767676" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="5" y="5" width="14" height="14" rx="2" stroke="#767676" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
+// Header checkbox — some rows selected (indeterminate)
 export const CheckboxSomeIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21.0018 5.83537V8.26572C21.0018 10.291 20.1917 11.1011 18.1663 11.1011H15.7359C13.7106 11.1011 12.9005 10.291 12.9005 8.26572V5.83537C12.9005 3.8101 13.7106 3 15.7359 3H18.1663C20.1917 3 21.0018 3.8101 21.0018 5.83537Z" fill="white" stroke="#064771" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M11.1013 15.7338V18.1641C11.1013 20.1894 10.2912 20.9995 8.26583 20.9995H5.83542C3.81008 20.9995 2.99994 20.1894 2.99994 18.1641V15.7338C2.99994 13.7085 3.81008 12.8984 5.83542 12.8984H8.26583C10.2912 12.8984 11.1013 13.7085 11.1013 15.7338Z" fill="white" stroke="#064771" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16.8438 11.1007V13.459C16.8438 15.8804 15.8806 16.8435 13.4592 16.8435H11.1008V15.7363C11.1008 13.7111 10.2906 12.901 8.26533 12.901H7.15814V10.5426C7.15814 8.12134 8.12131 7.1582 10.5427 7.1582H12.9011V8.26536C12.9011 10.2906 13.7112 11.1007 15.7366 11.1007H16.8438Z" stroke="#064771" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="3.09375" y="3.55762" width="12.5273" height="12.5273" rx="2" stroke="#767676" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="7.04297" y="6.57812" width="13.8633" height="13.8633" rx="2" fill="#064771" />
+        <rect x="7.04297" y="6.57812" width="13.8633" height="13.8633" rx="2" stroke="#E0F2F9" strokeWidth="1.1063" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10.8438 13.5098L17.1094 13.5098" stroke="#E0F2F9" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
 );
 
+// Header checkbox — all rows selected
 export const CheckboxAllIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21.0018 5.83537V8.26572C21.0018 10.291 20.1917 11.1011 18.1663 11.1011H15.7359C13.7106 11.1011 12.9005 10.291 12.9005 8.26572V5.83537C12.9005 3.8101 13.7106 3 15.7359 3H18.1663C20.1917 3 21.0018 3.8101 21.0018 5.83537Z" fill="#064771" stroke="#EDF8FF" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M11.1013 15.7338V18.1641C11.1013 20.1894 10.2912 20.9995 8.26583 20.9995H5.83542C3.81008 20.9995 2.99994 20.1894 2.99994 18.1641V15.7338C2.99994 13.7085 3.81008 12.8984 5.83542 12.8984H8.26583C10.2912 12.8984 11.1013 13.7085 11.1013 15.7338Z" fill="#064771" stroke="#EDF8FF" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16.8438 11.1007V13.459C16.8438 15.8804 15.8806 16.8435 13.4592 16.8435H11.1008V15.7363C11.1008 13.7111 10.2906 12.901 8.26533 12.901H7.15814V10.5426C7.15814 8.12134 8.12131 7.1582 10.5427 7.1582H12.9011V8.26536C12.9011 10.2906 13.7112 11.1007 15.7366 11.1007H16.8438Z" fill="#064771" stroke="#EDF8FF" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="3.09375" y="3.55762" width="12.5273" height="12.5273" rx="2" fill="#064771" />
+        <rect x="3.09375" y="3.55762" width="12.5273" height="12.5273" rx="2" stroke="#E0F2F9" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="7.04297" y="6.57812" width="13.8633" height="13.8633" rx="2" fill="#064771" />
+        <rect x="7.04297" y="6.57812" width="13.8633" height="13.8633" rx="2" stroke="#E0F2F9" strokeWidth="1.1063" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10.8906 13.6569L12.9463 15.7126L17.0576 11.3076" stroke="#E0F2F9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
 // ============ ROW SELECTION ICONS ============
+// Row checkbox — unchecked (default)
 export const RowUncheckedIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0.75" y="0.75" width="22.5" height="22.5" rx="2.25" fill="white" stroke="#767676" strokeWidth="1.5" />
+        <rect x="5" y="5" width="14" height="14" rx="2" stroke="#767676" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
+// Row checkbox — checked
 export const RowCheckedIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
     <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="3" fill="#064771" />
-        <path fillRule="evenodd" clipRule="evenodd" d="M18.3801 7.08535C18.6091 7.29527 18.6246 7.65109 18.4146 7.8801L10.1646 16.8801C10.061 16.9932 9.91561 17.059 9.76222 17.0624C9.60883 17.0657 9.46074 17.0062 9.35225 16.8978L5.60225 13.1478C5.38258 12.9281 5.38258 12.5719 5.60225 12.3523C5.82192 12.1326 6.17808 12.1326 6.39775 12.3523L9.73233 15.6868L17.5854 7.11991C17.7953 6.8909 18.1511 6.87543 18.3801 7.08535Z" fill="white" stroke="white" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="5" y="5" width="14" height="14" rx="2" fill="#064771" />
+        <path d="M8.20312 12.1804L10.7356 14.7129L15.8006 9.28613" stroke="#E0F2F9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 

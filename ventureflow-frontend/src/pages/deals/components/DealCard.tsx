@@ -85,23 +85,27 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const primaryImage = pipelineView === 'buyer' ? buyerImage : sellerImage;
     const secondaryImage = pipelineView === 'buyer' ? sellerImage : buyerImage;
 
-    // Dynamic relationship label from deal data
-    const getRelationLabel = (): string => {
-        const type = (deal as any).relationship_type || 'acquiring';
+    // Dynamic deal type label from deal data
+    const getDealTypeLabel = (): string => {
+        const type = (deal as any).deal_type || 'acquisition';
         const labels: Record<string, { buyer: string; seller: string }> = {
-            acquiring: { buyer: 'Acquiring', seller: 'Being acquired by' },
-            joint_venture: { buyer: 'Joint Venturing with', seller: 'Joint Venturing with' },
-            strategic_investment: { buyer: 'Strategically Investing in', seller: 'Receiving strategic investment from' },
-            merger: { buyer: 'Merging with', seller: 'Merging with' },
-            minority_stake: { buyer: 'Acquiring minority stake in', seller: 'Selling minority stake to' },
-            majority_stake: { buyer: 'Acquiring majority stake in', seller: 'Selling majority stake to' },
-            buyout: { buyer: 'Buying out', seller: 'Being bought out by' },
-            partnership: { buyer: 'Partnering with', seller: 'Partnering with' },
+            acquisition: { buyer: 'Acquisition', seller: 'Divestiture' },
+            merger: { buyer: 'Merger', seller: 'Merger' },
+            joint_venture: { buyer: 'Joint Venture', seller: 'Joint Venture' },
+            strategic_investment: { buyer: 'Strategic Investment', seller: 'Capital Raise' },
+            minority_stake: { buyer: 'Minority Acquisition', seller: 'Minority Divestiture' },
+            majority_stake: { buyer: 'Majority Acquisition', seller: 'Majority Divestiture' },
+            buyout: { buyer: 'Buyout', seller: 'Sell-out' },
+            partnership: { buyer: 'Partnership', seller: 'Partnership' },
+            management_buyout: { buyer: 'MBO', seller: 'MBO' },
+            leveraged_buyout: { buyer: 'LBO', seller: 'LBO' },
+            // Legacy value fallback
+            acquiring: { buyer: 'Acquisition', seller: 'Divestiture' },
         };
-        const pair = labels[type] || labels.acquiring;
+        const pair = labels[type] || labels.acquisition;
         return pipelineView === 'buyer' ? pair.buyer : pair.seller;
     };
-    const relationLabel = getRelationLabel();
+    const relationLabel = getDealTypeLabel();
 
     const priorityInfo = getPriorityInfo();
     const shareholdingRatio = getShareholdingRatio();

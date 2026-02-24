@@ -40,6 +40,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    // Track consecutive failures to implement backoff & stop on auth errors
+    const failCountRef = React.useRef(0);
+    const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
     // Fetch count and latest notifications
     const fetchNotifications = async () => {
         try {
@@ -50,17 +54,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             setUnreadCount(countRes.data.count);
             setNotifications(listRes.data.data);
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
+            failCountRef.current = 0; // Reset on success
+        } catch (error: any) {
+            const status = error?.response?.status;
+            // Stop polling entirely on auth failures — session is dead
+            if (status === 401 || status === 403) {
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                }
+                return; // Silently stop — no console spam
+            }
+            failCountRef.current += 1;
+            if (failCountRef.current <= 3) {
+                console.error('Failed to fetch notifications:', error);
+            }
         }
     };
 
     useEffect(() => {
         fetchNotifications();
 
-        // Poll every 60 seconds
-        const interval = setInterval(fetchNotifications, 15000);
-        return () => clearInterval(interval);
+        // Poll every 30 seconds
+        intervalRef.current = setInterval(fetchNotifications, 30000);
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
     }, []);
 
     const markAsRead = async (id: string) => {

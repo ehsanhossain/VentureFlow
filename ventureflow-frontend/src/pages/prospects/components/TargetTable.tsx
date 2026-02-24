@@ -54,6 +54,7 @@ export interface TargetRowData {
     sourceCurrencyRate?: number;
     channel?: string;
     investmentCondition?: string[];
+    createdAt?: string;
 }
 
 /* Helper to parse multi-select fields which may be stored as string, JSON string, or array */
@@ -281,11 +282,17 @@ export const TargetTable: React.FC<TargetTableProps> = ({
         {
             id: 'companyName',
             header: t('prospects.table.companyName'),
-            accessor: (row) => (
-                <div className="flex flex-col min-w-0">
-                    <span className="text-[14px] font-normal text-gray-900 truncate tracking-tight">{row.companyName}</span>
-                </div>
-            ),
+            accessor: (row) => {
+                const isNew = row.createdAt ? (Date.now() - new Date(row.createdAt).getTime()) < 7 * 24 * 60 * 60 * 1000 : false;
+                return (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[14px] font-normal text-gray-900 truncate tracking-tight">{row.companyName}</span>
+                        {isNew && (
+                            <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', flexShrink: 0 }}>New</span>
+                        )}
+                    </div>
+                );
+            },
             textAccessor: (row) => row.companyName,
             width: 200,
             minWidth: 80,
@@ -622,7 +629,7 @@ export const TargetTable: React.FC<TargetTableProps> = ({
                                         className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        {selectedIds.size > 1 ? t('prospects.table.bulkDelete') : t('common.delete')}
+                                        {selectedIds.size > 1 ? t('prospects.table.portal.bulkDelete') : t('common.delete')}
                                     </button>
                                     <button
                                         onClick={handleExportCSV}

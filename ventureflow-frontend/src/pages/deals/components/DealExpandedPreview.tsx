@@ -55,22 +55,26 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     // Acquiring info
     const acquiringRatio = deal.shareholding_ratio || deal.share_ratio || 'Majority ~70%';
 
-    // Dynamic relationship label
-    const getRelationLabel = (): string => {
-        const type = (deal as any).relationship_type || 'acquiring';
+    // Dynamic deal type label
+    const getDealTypeLabel = (): string => {
+        const type = (deal as any).deal_type || 'acquisition';
         const labels: Record<string, string> = {
-            acquiring: 'Acquiring',
-            joint_venture: 'Joint Venturing',
+            acquisition: 'Acquisition',
+            merger: 'Merger',
+            joint_venture: 'Joint Venture',
             strategic_investment: 'Strategic Investment',
-            merger: 'Merging',
             minority_stake: 'Minority Stake',
             majority_stake: 'Majority Stake',
             buyout: 'Buyout',
             partnership: 'Partnership',
+            management_buyout: 'MBO',
+            leveraged_buyout: 'LBO',
+            // Legacy fallback
+            acquiring: 'Acquisition',
         };
-        return labels[type] || 'Acquiring';
+        return labels[type] || 'Acquisition';
     };
-    const relationLabel = getRelationLabel();
+    const relationLabel = getDealTypeLabel();
 
     // Comment count
     const commentCount = deal.comment_count || 0;
