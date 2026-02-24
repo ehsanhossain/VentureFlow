@@ -9,6 +9,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Employee;
 
 class NotificationController extends Controller
 {
@@ -20,8 +21,48 @@ class NotificationController extends Controller
         // Paginate notifications
         $notifications = $request->user()->notifications()->paginate(20);
 
+        // ─── Enrich with actor avatars ───────────────────────
+        // Collect unique actor names to batch-query employees
+        $actorNames = collect($notifications->items())
+            ->pluck('data.actor_name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        // Build a name → avatar_url lookup from the employees table
+        $avatarMap = [];
+        if ($actorNames->isNotEmpty()) {
+            $employees = Employee::query();
+            foreach ($actorNames as $name) {
+                $parts = explode(' ', trim($name), 2);
+                $firstName = $parts[0] ?? '';
+                $lastName  = $parts[1] ?? '';
+                $employees->orWhere(function ($q) use ($firstName, $lastName) {
+                    $q->where('first_name', $firstName)
+                      ->where('last_name', $lastName);
+                });
+            }
+            foreach ($employees->get() as $emp) {
+                $fullName = trim($emp->first_name . ' ' . $emp->last_name);
+                if ($emp->image) {
+                    $avatarMap[$fullName] = asset('storage/' . $emp->image);
+                }
+            }
+        }
+
+        // Inject avatar URLs into notification data
+        $enriched = collect($notifications->items())->map(function ($notification) use ($avatarMap) {
+            $data = $notification->data;
+            $actorName = $data['actor_name'] ?? null;
+            if ($actorName && isset($avatarMap[$actorName]) && empty($data['actor_avatar'])) {
+                $data['actor_avatar'] = $avatarMap[$actorName];
+                $notification->data = $data;
+            }
+            return $notification;
+        });
+
         return response()->json([
-            'data' => $notifications->items(),
+            'data' => $enriched->values(),
             'meta' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),

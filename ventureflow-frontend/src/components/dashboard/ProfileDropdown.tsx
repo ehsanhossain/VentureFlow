@@ -52,13 +52,15 @@ const ProfileDropdown: React.FC = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem("auth_token");
+      if (!token) return; // Not logged in — skip to avoid 401 console noise
       try {
         const { data } = await api.get("/api/user");
         setUser(data.user);
         setEmployee(data.employee);
         setPartner(data.partner);
-      } catch (error) {
-        console.error("Failed to fetch user data", error);
+      } catch {
+        // Silently handle 401 (expired token) — user will be redirected to login
       }
     };
     fetchUser();

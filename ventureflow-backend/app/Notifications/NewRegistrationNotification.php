@@ -81,7 +81,8 @@ class NewRegistrationNotification extends Notification
         // Attach actor info if available
         if ($this->actor) {
             $data['actor_name'] = trim(($this->actor->employee->first_name ?? '') . ' ' . ($this->actor->employee->last_name ?? '')) ?: ($this->actor->name ?? 'System');
-            $data['actor_avatar'] = $this->actor->employee->profile_picture ?? null;
+            $empImage = $this->actor->employee->image ?? null;
+            $data['actor_avatar'] = $empImage ? asset('storage/' . $empImage) : null;
         }
 
         return $data;

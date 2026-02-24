@@ -42,7 +42,7 @@ const EmployeeDetails: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages] = useState(1);
 
-  const tableHeaders = ["Company's Name", 'Prospect', 'Country', 'Dealroom ID', 'Status'];
+  const tableHeaders = ["Company's Name", 'Prospect', 'Country', 'Project Code', 'Status'];
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<any>>(new Set());

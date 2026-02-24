@@ -148,7 +148,7 @@ export const DealroomID: React.FC<DealroomIDProps> = ({
                               }}
                               className="bg-transparent font-semibold text-[22.4px] leading-6 outline-none w-[150px]"
                               autoFocus
-                              aria-label="Dealroom ID"
+                              aria-label="Project Code"
                             />
                             <div className="ml-2 flex items-center gap-1">
                               {isChecking && <Loader2 className="w-4 h-4 animate-spin text-white" />}

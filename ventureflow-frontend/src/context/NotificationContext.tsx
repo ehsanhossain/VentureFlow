@@ -46,6 +46,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Fetch count and latest notifications
     const fetchNotifications = async () => {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return; // Not logged in — skip
         try {
             const [countRes, listRes] = await Promise.all([
                 api.get('/api/notifications/unread-count'),
@@ -73,6 +75,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     useEffect(() => {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return; // Don't start polling if not logged in
+
         fetchNotifications();
 
         // Poll every 30 seconds

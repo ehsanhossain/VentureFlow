@@ -25,6 +25,7 @@ import UnsavedChangesModal from '../../../components/UnsavedChangesModal';
 interface FormValues {
     // Identity
     projectCode: string; // dealroomId
+    status: string;
     rank: 'A' | 'B' | 'C' | '';
     companyName: string; // reg_name
     websiteLinks: { url: string }[];
@@ -624,13 +625,15 @@ export const InvestorRegistration: React.FC = () => {
             }
 
             const response = await api.post('/api/investor/company-overviews', payload);
-            const savedId = response.data?.data || id;
+            void response; // ensures request is completed
 
             showAlert({ type: 'success', message: `Investor ${isDraft ? 'draft ' : ''}saved successfully` });
 
-            if (savedId) {
-                navigate(`/prospects/investor/${savedId}`);
+            if (id) {
+                // Editing an existing investor → go to detail
+                navigate(`/prospects/investor/${id}`);
             } else {
+                // New investor created → go to the investor table
                 navigate('/prospects?tab=investors');
             }
         } catch (error: any) {

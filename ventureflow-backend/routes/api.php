@@ -175,8 +175,8 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::post('/seller/financial-details',         [TargetController::class, 'sellerFinancialDetailsstore']);
     Route::post('/seller/teaser-center',             [TargetController::class, 'sellerTeaserCenterstore']);
     Route::post('/seller/partnership-details',       [TargetController::class, 'sellerPartnershipDetailsstore']);
-    Route::post('/seller/{id}/pinned',               [TargetController::class, 'pinned']);
-    Route::post('/seller/{id}/avatar',               [TargetController::class, 'uploadAvatar']);
+    Route::post('/seller/{seller}/pinned',               [TargetController::class, 'pinned']);
+    Route::post('/seller/{seller}/avatar',               [TargetController::class, 'uploadAvatar']);
     Route::apiResource('seller', TargetController::class);
     // Legacy /target/* routes (kept for backward compat)
     Route::post('/target/company-overviews',         [TargetController::class, 'sellerCompanyOverviewstore']);
@@ -265,10 +265,10 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::prefix('matchiq')->group(function () {
         Route::get('/',              [MatchController::class, 'index']);
         Route::get('/stats',         [MatchController::class, 'stats']);
+        Route::get('/match/{id}',    [MatchController::class, 'show']);
         Route::get('/investor/{id}', [MatchController::class, 'forInvestor']);
         Route::get('/target/{id}',   [MatchController::class, 'forTarget']);
         Route::post('/rescan',       [MatchController::class, 'rescan']);
-        Route::post('/custom-score', [MatchController::class, 'customScore']);
         Route::post('/{id}/dismiss',     [MatchController::class, 'dismiss']);
         Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
     });

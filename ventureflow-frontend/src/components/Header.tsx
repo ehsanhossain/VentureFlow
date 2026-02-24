@@ -3,7 +3,7 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Menu, X, Check, Search, Command, Loader2, FileText, Home, Plus, ChevronDown } from "lucide-react";
 import { useContext } from "react";
 import { AuthContext } from "../routes/AuthContext";
@@ -40,6 +40,7 @@ interface SearchResult {
   partner_id?: string;
   filename?: string;
   size?: number;
+  avatar_url?: string;
   [key: string]: unknown;
 }
 
@@ -52,6 +53,39 @@ interface SearchResults {
   documents: SearchResult[];
 }
 
+// Avatar initials helper — takes first letter of each word, max 2
+const getInitials = (name?: string, firstName?: string, lastName?: string): string => {
+  if (firstName || lastName) {
+    return ((firstName?.[0] || '') + (lastName?.[0] || '')).toUpperCase();
+  }
+  if (!name) return '??';
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+};
+
+// Avatar component for search results
+const SearchAvatar: React.FC<{ name?: string; firstName?: string; lastName?: string; avatarUrl?: string; size?: string }> = ({ name, firstName, lastName, avatarUrl, size = 'w-7 h-7' }) => {
+  const [imgError, setImgError] = React.useState(false);
+  const initials = getInitials(name, firstName, lastName);
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name || ''}
+        className={`${size} rounded-full object-cover flex-none`}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className={`${size} rounded-full flex-none flex items-center justify-center text-[10px] font-semibold text-white`} style={{ backgroundColor: '#064771' }}>
+      {initials}
+    </div>
+  );
+};
 export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: HeaderProps) {
   const { t } = useTranslation();
   const auth = useContext(AuthContext);
@@ -451,7 +485,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.deals.map((deal) => (
                         <li key={`deal-${deal.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100" onClick={() => { navigate('/deal-pipeline'); closeSearch(); }}>
-                          <CatalystIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <SearchAvatar name={deal.name} avatarUrl={deal.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{deal.name}</span>
                           {deal.status && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{deal.status}</span>}
                         </li>
@@ -468,7 +502,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       {results.investors.map((investor) => (
                         <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/investor/${investor.id}`); closeSearch(); }}>
-                          <ProspectsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <SearchAvatar name={investor.name} avatarUrl={investor.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{investor.name}</span>
                           {investor.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{investor.project_code}</span>}
                         </li>
@@ -485,7 +519,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       {results.targets.map((target) => (
                         <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/target/${target.id}`); closeSearch(); }}>
-                          <ProspectsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <SearchAvatar name={target.name} avatarUrl={target.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{target.name}</span>
                           {target.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{target.project_code}</span>}
                         </li>
@@ -502,7 +536,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       {results.staff.map((employee) => (
                         <li key={`staff-${employee.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/employee/details/${employee.id}`); closeSearch(); }}>
-                          <StaffAccountsIcon className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <SearchAvatar firstName={employee.first_name} lastName={employee.last_name} avatarUrl={employee.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{employee.first_name} {employee.last_name}</span>
                           {employee.work_email && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px] truncate max-w-[180px]">{employee.work_email}</span>}
                         </li>
@@ -519,7 +553,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       {results.partners.map((partner) => (
                         <li key={`partner-${partner.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/settings/partners`); closeSearch(); }}>
-                          <PartnerIconCustom className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <SearchAvatar name={partner.name} avatarUrl={partner.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{partner.name}</span>
                           {partner.partner_id && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{partner.partner_id}</span>}
                         </li>
@@ -535,7 +569,9 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.documents.map((doc) => (
                         <li key={`doc-${doc.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100">
-                          <FileText className="h-5 w-5 flex-none text-gray-400 group-hover:text-[#064771]" />
+                          <div className="w-7 h-7 rounded-full flex-none flex items-center justify-center bg-gray-200">
+                            <FileText className="h-3.5 w-3.5 text-gray-500" />
+                          </div>
                           <span className="ml-3 flex-auto truncate">{doc.filename}</span>
                           {doc.size && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{Math.round(doc.size / 1024)} KB</span>}
                         </li>

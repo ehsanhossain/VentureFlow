@@ -43,19 +43,33 @@ const formatRelativeTime = (dateString: string) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-// Generate a deterministic avatar color from name
-const getAvatarColor = (name: string) => {
-    const colors = [
-        'bg-blue-100 text-blue-700',
-        'bg-amber-100 text-amber-700',
-        'bg-emerald-100 text-emerald-700',
-        'bg-purple-100 text-purple-700',
-        'bg-rose-100 text-rose-700',
-        'bg-cyan-100 text-cyan-700',
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return colors[Math.abs(hash) % colors.length];
+// Brand-color avatar style for all notification actors
+const BRAND_COLOR = '#064771';
+
+// Proper React avatar component with image fallback
+const NotificationAvatar: React.FC<{ name: string; avatarUrl?: string | null }> = ({ name, avatarUrl }) => {
+    const [imgFailed, setImgFailed] = React.useState(false);
+    const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().substring(0, 2);
+
+    if (avatarUrl && !imgFailed) {
+        return (
+            <img
+                src={avatarUrl}
+                alt={name}
+                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                onError={() => setImgFailed(true)}
+            />
+        );
+    }
+
+    return (
+        <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-semibold flex-shrink-0 text-white"
+            style={{ backgroundColor: BRAND_COLOR }}
+        >
+            {initials}
+        </div>
+    );
 };
 
 export default function NotificationsPage() {
@@ -321,17 +335,7 @@ export default function NotificationsPage() {
                                                 {/* Avatar + Actor name */}
                                                 {actorName && (
                                                     <div className="flex items-center gap-2">
-                                                        {notification.data.actor_avatar ? (
-                                                            <img
-                                                                src={notification.data.actor_avatar}
-                                                                alt={actorName}
-                                                                className="w-5 h-5 rounded-full object-cover flex-shrink-0"
-                                                            />
-                                                        ) : (
-                                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-semibold flex-shrink-0 ${getAvatarColor(actorName)}`}>
-                                                                {actorName.split(' ').map((w: string) => w[0]).join('').toUpperCase().substring(0, 2)}
-                                                            </div>
-                                                        )}
+                                                        <NotificationAvatar name={actorName} avatarUrl={notification.data.actor_avatar} />
                                                         <span className="text-xs text-gray-500 leading-5 whitespace-nowrap">
                                                             {actorName}
                                                         </span>

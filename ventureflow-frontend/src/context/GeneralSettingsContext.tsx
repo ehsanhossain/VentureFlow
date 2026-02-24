@@ -37,6 +37,11 @@ export const GeneralSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
     const [isLoading, setIsLoading] = useState(true);
 
     const refreshSettings = useCallback(async () => {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+            setIsLoading(false);
+            return; // Not logged in — use defaults
+        }
         try {
             const res = await api.get('/api/general-settings');
             setSettings({
@@ -44,8 +49,8 @@ export const GeneralSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
                 timezone: res.data.timezone || defaultSettings.timezone,
                 date_format: res.data.date_format || defaultSettings.date_format,
             });
-        } catch (error) {
-            console.error('Failed to load general settings:', error);
+        } catch {
+            // Silently handle — use default settings
         } finally {
             setIsLoading(false);
         }

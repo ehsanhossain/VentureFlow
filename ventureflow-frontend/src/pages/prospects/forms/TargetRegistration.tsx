@@ -629,7 +629,14 @@ export const TargetRegistration: React.FC = () => {
             await api.post('/api/seller/financial-details', financePayload);
 
             showAlert({ type: 'success', message: isDraft ? t('prospects.registration.targetDraftSaved') : t('prospects.registration.targetSavedSuccess') });
-            navigate(`/prospects/target/${savedSellerId}`);
+
+            if (id) {
+                // Editing existing target → go to detail
+                navigate(`/prospects/target/${id}`);
+            } else {
+                // New target created → go to the targets table
+                navigate('/prospects?tab=targets');
+            }
 
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || t('prospects.registration.failedToSaveTarget');

@@ -4,57 +4,27 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../config/api';
-import { getCachedCountries, getCachedIndustries } from '../../utils/referenceDataCache';
-import { showAlert } from '../../components/Alert';
-import { BrandSpinner } from '../../components/BrandSpinner';
-import MatchCard from './components/MatchCard';
-import MatchFilters from './components/MatchFilters';
-import MatchStatsBar from './components/MatchStatsBar';
-import { RefreshCw } from 'lucide-react';
+import EngineController, { MatchWeights, EngineFilters } from './components/EngineController';
+import InvestorClusterCard, { ClusteredInvestor } from './components/InvestorClusterCard';
+import MatchComparisonPanel, { MatchDetail } from './components/MatchComparisonPanel';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-// ─── Types ──────────────────────────────────────────────────────────────
-export interface MatchData {
+/* ─── Types ───────────────────────────────────────────────────────────── */
+
+interface FilterCountry {
     id: number;
-    buyer_id: number;
-    seller_id: number;
-    total_score: number;
-    industry_score: number;
-    geography_score: number;
-    financial_score: number;
-    ownership_score: number;
-    status: string;
-    computed_at: string;
-    explanations?: {
-        industry?: string;
-        geography?: string;
-        financial?: string;
-        ownership?: string;
-    };
-    buyer?: {
-        id: number;
-        company_overview?: {
-            reg_name: string;
-            hq_country: string;
-            company_industry: any;
-            industry_ops: any;
-            target_countries: any;
-        };
-    };
-    seller?: {
-        id: number;
-        company_overview?: {
-            reg_name: string;
-            hq_country: string;
-            industry_ops: any;
-            op_countries: any;
-        };
-    };
+    country_name: string;
 }
 
-export interface MatchStats {
+interface FilterIndustry {
+    id: number;
+    name: string;
+}
+
+interface MatchStats {
     total: number;
     excellent: number;
     strong: number;
@@ -63,419 +33,320 @@ export interface MatchStats {
     avg_score: number;
 }
 
-export interface MatchFiltersState {
-    min_score: number;
-    industry_ids: number[];
-    country_ids: number[];
-    buyer_id: string;
-    seller_id: string;
-}
+/* ─── Constants ──────────────────────────────────────────────────────── */
 
-export interface FilterCountry {
-    id: number;
-    name: string;
-    flagSrc: string;
-    status: 'registered' | 'unregistered';
-}
+const DEFAULT_WEIGHTS: MatchWeights = {
+    industry: 30,
+    geography: 25,
+    financial: 25,
+    transaction: 20,
+};
 
-export interface FilterIndustry {
-    id: number;
-    name: string;
-    sub_industries?: FilterIndustry[];
-}
+const DEFAULT_FILTERS: EngineFilters = {
+    minScore: 30,
+    tier: 'all',
+    industry: '',
+    country: '',
+};
 
-// ─── Investor Criteria (for custom scoring) ─────────────────────────────
-export interface InvestorCriteria {
-    investor_id: string;
-    industry_ids: number[];
-    target_countries: number[];
-    ebitda_min: string;
-    budget_min: string;
-    budget_max: string;
-    ownership_condition: string;
-}
+/* ─── MatchIQ Page ───────────────────────────────────────────────────── */
 
-// ─── Main Component ─────────────────────────────────────────────────────
 const MatchIQ: React.FC = () => {
-    const navigate = useNavigate();
-    const [matches, setMatches] = useState<MatchData[]>([]);
+    const { t } = useTranslation();
+
+    // Engine state
+    const [weights, setWeights] = useState<MatchWeights>(DEFAULT_WEIGHTS);
+    const [filters, setFilters] = useState<EngineFilters>(DEFAULT_FILTERS);
+
+    // Data
+    const [clusters, setClusters] = useState<ClusteredInvestor[]>([]);
     const [stats, setStats] = useState<MatchStats | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [rescanning, setRescanning] = useState(false);
-    const [customLoading, setCustomLoading] = useState(false);
-    const [customResults, setCustomResults] = useState<MatchData[] | null>(null);
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [total, setTotal] = useState(0);
     const [countries, setCountries] = useState<FilterCountry[]>([]);
     const [industries, setIndustries] = useState<FilterIndustry[]>([]);
-    const [filters, setFilters] = useState<MatchFiltersState>({
-        min_score: 30,
-        industry_ids: [],
-        country_ids: [],
-        buyer_id: '',
-        seller_id: '',
-    });
 
-    // ─── Fetch Matches ──────────────────────────────────────────────────
-    const fetchMatches = useCallback(async () => {
+    // UI state
+    const [loading, setLoading] = useState(true);
+    const [rescanning, setRescanning] = useState(false);
+    const [engineCollapsed, setEngineCollapsed] = useState(false);
+    const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
+    const [matchDetail, setMatchDetail] = useState<MatchDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
+    /* ─── Data Loading ────────────────────────────────────────────────── */
+
+    const loadMatches = useCallback(async (pageNum = 1) => {
         setLoading(true);
         try {
-            const params: Record<string, any> = { page, per_page: 15 };
-            if (filters.min_score) params.min_score = filters.min_score;
-            if (filters.industry_ids.length > 0) params.industry_ids = filters.industry_ids;
-            if (filters.country_ids.length > 0) params.country_ids = filters.country_ids;
-            if (filters.buyer_id) params.buyer_id = filters.buyer_id;
-            if (filters.seller_id) params.seller_id = filters.seller_id;
+            const params: Record<string, any> = {
+                page: pageNum,
+                per_page: 20,
+            };
+            if (filters.tier !== 'all') params.tier = filters.tier;
+            if (filters.industry) params.industry_ids = [filters.industry];
+            if (filters.country) params.country_ids = [filters.country];
+            if (filters.minScore > 30) params.min_score = filters.minScore;
 
-            const response = await api.get('/api/matchiq', { params });
-            setMatches(response.data.data);
-            setTotalPages(response.data.meta.last_page);
-            setTotal(response.data.meta.total);
+            const { data } = await api.get('/api/matchiq', { params });
+            setClusters(data.data || []);
+            setTotalPages(data.meta?.last_page || 1);
+            setPage(pageNum);
         } catch (err) {
-            console.error('Failed to fetch matches:', err);
+            console.error('Failed to load matches', err);
         } finally {
             setLoading(false);
         }
-    }, [page, filters]);
+    }, [filters]);
 
-    const fetchStats = useCallback(async () => {
+    const loadStats = async () => {
         try {
-            const response = await api.get('/api/matchiq/stats');
-            setStats(response.data);
-        } catch (err) {
-            console.error('Failed to fetch match stats:', err);
-        }
+            const { data } = await api.get('/api/matchiq/stats');
+            setStats(data);
+        } catch { /* silently handle */ }
+    };
+
+    const loadFilters = async () => {
+        try {
+            const [countriesRes, industriesRes] = await Promise.all([
+                api.get('/api/countries'),
+                api.get('/api/industries'),
+            ]);
+            setCountries(countriesRes.data?.data || countriesRes.data || []);
+            setIndustries(industriesRes.data?.data || industriesRes.data || []);
+        } catch { /* silently handle */ }
+    };
+
+    useEffect(() => {
+        loadFilters();
+        loadStats();
     }, []);
 
     useEffect(() => {
-        fetchMatches();
-        fetchStats();
-    }, [fetchMatches, fetchStats]);
+        loadMatches(1);
+    }, [loadMatches]);
 
-    // ─── Load Reference Data (Countries & Industries) ───────────────────
-    useEffect(() => {
-        const loadRefData = async () => {
-            try {
-                const [countryData, industryData] = await Promise.all([
-                    getCachedCountries(),
-                    getCachedIndustries(),
-                ]);
-                if (countryData) {
-                    setCountries(countryData.map((c: any) => ({
-                        id: c.id,
-                        name: c.name,
-                        flagSrc: c.svg_icon_url || c.flagSrc || '',
-                        status: c.status || 'registered',
-                    })));
-                }
-                if (industryData) {
-                    setIndustries(industryData.map((i: any) => ({
-                        id: i.id,
-                        name: i.name,
-                        sub_industries: i.sub_industries || [],
-                    })));
-                }
-            } catch (err) {
-                console.error('Failed to load reference data:', err);
-            }
-        };
-        loadRefData();
-    }, []);
+    /* ─── Actions ─────────────────────────────────────────────────────── */
 
-    // ─── Run Scan ────────────────────────────────────────────────────────
     const handleRescan = async () => {
         setRescanning(true);
         try {
-            const res = await api.post('/api/matchiq/rescan');
-            const count = res.data?.count ?? 0;
-            await Promise.all([fetchMatches(), fetchStats()]);
-
-            if (count > 0) {
-                showAlert({ type: 'success', message: `Scan complete — ${count} match${count !== 1 ? 'es' : ''} computed.` });
-            } else {
-                showAlert({ type: 'info', message: 'Scan complete — no new matches found.' });
-            }
+            const weightsForApi = {
+                industry: weights.industry / 100,
+                geography: weights.geography / 100,
+                financial: weights.financial / 100,
+                transaction: weights.transaction / 100,
+            };
+            await api.post('/api/matchiq/rescan', { weights: weightsForApi });
+            await Promise.all([loadMatches(1), loadStats()]);
         } catch (err) {
-            console.error('Scan failed:', err);
-            showAlert({ type: 'error', message: 'Scan failed. Please try again.' });
+            console.error('Rescan failed', err);
         } finally {
             setRescanning(false);
         }
     };
 
-    // ─── Actions ────────────────────────────────────────────────────────
-    const handleDismiss = async (id: number) => {
+    const handleTargetClick = async (matchId: number) => {
+        setSelectedMatchId(matchId);
+        setDetailLoading(true);
         try {
-            await api.post(`/api/matchiq/${id}/dismiss`);
-            setMatches(prev => prev.filter(m => m.id !== id));
-            fetchStats();
-            showAlert({ type: 'success', message: 'Match dismissed.' });
+            const { data } = await api.get(`/api/matchiq/match/${matchId}`);
+            setMatchDetail(data);
         } catch (err) {
-            console.error('Dismiss failed:', err);
-            showAlert({ type: 'error', message: 'Failed to dismiss match.' });
-        }
-    };
-
-    const handleCreateDeal = async (id: number) => {
-        try {
-            const response = await api.post(`/api/matchiq/${id}/create-deal`);
-            const dealId = response.data.deal_id;
-            showAlert({ type: 'success', message: 'Deal created successfully!' });
-            navigate(`/deal-pipeline`);
-            return dealId;
-        } catch (err) {
-            console.error('Create deal failed:', err);
-            showAlert({ type: 'error', message: 'Failed to create deal.' });
-        }
-    };
-
-    const handleViewInvestor = (buyerId: number) => {
-        navigate(`/prospects/investor/${buyerId}`);
-    };
-
-    const handleViewTarget = (sellerId: number) => {
-        navigate(`/prospects/target/${sellerId}`);
-    };
-
-    const handleFilterChange = (newFilters: Partial<MatchFiltersState>) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
-        setPage(1);
-    };
-
-    // ─── Custom Score (Investor Criteria) ───────────────────────────────
-    const handleCustomScore = async (criteria: InvestorCriteria) => {
-        if (!criteria.investor_id) {
-            showAlert({ type: 'error', message: 'Please select an investor first.' });
-            return;
-        }
-        setCustomLoading(true);
-        setCustomResults(null);
-        try {
-            const payload: any = { investor_id: Number(criteria.investor_id), criteria: {} };
-            if (criteria.industry_ids.length > 0) payload.criteria.industry_ids = criteria.industry_ids;
-            if (criteria.target_countries.length > 0) payload.criteria.target_countries = criteria.target_countries;
-            if (criteria.ebitda_min) payload.criteria.ebitda_min = Number(criteria.ebitda_min);
-            if (criteria.budget_min) payload.criteria.budget_min = Number(criteria.budget_min);
-            if (criteria.budget_max) payload.criteria.budget_max = Number(criteria.budget_max);
-            if (criteria.ownership_condition) payload.criteria.ownership_condition = criteria.ownership_condition;
-
-            const res = await api.post('/api/matchiq/custom-score', payload);
-            const results: MatchData[] = (res.data.data || []).map((r: any) => ({
-                id: 0, // not a persisted match
-                buyer_id: Number(criteria.investor_id),
-                seller_id: r.target_id,
-                total_score: r.total_score,
-                industry_score: r.industry_score,
-                geography_score: r.geography_score,
-                financial_score: r.financial_score,
-                ownership_score: r.ownership_score,
-                status: 'custom',
-                computed_at: new Date().toISOString(),
-                explanations: r.explanations,
-                seller: r.seller,
-            }));
-            setCustomResults(results);
-            if (results.length === 0) {
-                showAlert({ type: 'info', message: 'No targets matched the criteria.' });
-            }
-        } catch (err) {
-            console.error('Custom score failed:', err);
-            showAlert({ type: 'error', message: 'Custom scoring failed. Please try again.' });
+            console.error('Failed to load match detail', err);
+            setMatchDetail(null);
         } finally {
-            setCustomLoading(false);
+            setDetailLoading(false);
         }
     };
 
-    // ─── Render ─────────────────────────────────────────────────────────
+    const handleCloseDetail = () => {
+        setSelectedMatchId(null);
+        setMatchDetail(null);
+    };
+
+    const handleFiltersChange = (partial: Partial<EngineFilters>) => {
+        setFilters(prev => ({ ...prev, ...partial }));
+    };
+
+    /* ─── Render ──────────────────────────────────────────────────────── */
+
     return (
-        <div className="flex flex-col h-screen bg-white overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 md:px-6 py-4 bg-white border-b">
-                <h1 className="text-base font-medium text-gray-900">MatchIQ</h1>
-                <button
-                    onClick={handleRescan}
-                    disabled={rescanning}
-                    title="Run scan"
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        padding: '8px 16px', borderRadius: '3px',
-                        border: '1px solid #d1d5db', background: '#fff',
-                        fontSize: '13px', fontWeight: 500, color: '#374151',
-                        cursor: rescanning ? 'not-allowed' : 'pointer',
-                        opacity: rescanning ? 0.6 : 1,
-                        transition: 'all 0.15s',
-                    }}
-                >
-                    <RefreshCw size={14} className={rescanning ? 'spin-animation' : ''} />
-                    {rescanning ? 'Scanning…' : 'Run Scan'}
-                </button>
-            </div>
-
-            {/* Stats Bar */}
-            {stats && <div style={{ padding: '12px 24px 0' }}><MatchStatsBar stats={stats} /></div>}
-
-            {/* Content: Filters + Results */}
-            <div style={{ display: 'flex', gap: '24px', padding: '16px 24px', flex: 1, overflow: 'auto' }}>
-                {/* Filters Sidebar */}
-                <div style={{ width: '300px', flexShrink: 0 }}>
-                    <MatchFilters
-                        filters={filters}
-                        onChange={handleFilterChange}
-                        countries={countries}
-                        industries={industries}
-                        onCustomScore={handleCustomScore}
-                        customLoading={customLoading}
-                    />
+        <div style={{
+            display: 'flex', flexDirection: 'column',
+            height: 'calc(100vh - 64px)', overflow: 'hidden',
+        }}>
+            {/* Page Header */}
+            <div style={{
+                padding: '16px 24px', borderBottom: '1px solid #e5e7eb',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: 'white', flexShrink: 0,
+            }}>
+                <div>
+                    <h1 style={{ fontSize: 20, fontWeight: 700, color: '#064771', margin: 0 }}>
+                        {t('matchIQ.title', 'Match')}IQ
+                    </h1>
                 </div>
 
-                {/* Custom Score Results (above standard matches when available) */}
-                {customResults !== null && (
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            marginBottom: '10px',
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{
-                                    fontSize: '12px', fontWeight: 600, color: '#6366f1',
-                                    background: '#eef2ff', padding: '2px 10px', borderRadius: '3px',
-                                }}>
-                                    Criteria Results
-                                </span>
-                                <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-                                    {customResults.length} target{customResults.length !== 1 ? 's' : ''} matched
-                                </span>
-                            </div>
-                            <button
-                                onClick={() => setCustomResults(null)}
-                                title="Clear criteria results"
-                                style={{
-                                    fontSize: '11px', color: '#9ca3af', background: 'none',
-                                    border: '1px solid #e5e7eb', padding: '3px 8px',
-                                    borderRadius: '3px', cursor: 'pointer',
-                                }}
-                            >
-                                Clear
-                            </button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {customResults.map((match, idx) => (
-                                <MatchCard
-                                    key={`custom-${match.seller_id}-${idx}`}
-                                    match={match}
-                                    onViewInvestor={handleViewInvestor}
-                                    onViewTarget={handleViewTarget}
-                                    isCustom
-                                />
-                            ))}
-                        </div>
-                        <div style={{ height: '1px', background: '#e5e7eb', margin: '20px 0' }} />
-                    </div>
-                )}
-
-                {loading ? (
-                    <div style={{
-                        display: 'flex', justifyContent: 'center', alignItems: 'center',
-                        flex: 1, minHeight: '400px'
-                    }}>
-                        <BrandSpinner />
-                    </div>
-                ) : matches.length === 0 ? (
-                    <div style={{
-                        display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-                        flex: 1, minHeight: 'calc(100vh - 300px)', color: '#9ca3af', textAlign: 'center'
-                    }}>
-                        <img
-                            src="/images/no-records-found.png"
-                            alt="No matches found"
-                            style={{ width: 144, height: 'auto', marginBottom: 16, opacity: 0.85 }}
-                            draggable={false}
-                        />
-                        <p style={{ fontSize: '15px', fontWeight: 500, color: '#374151' }}>No matches found</p>
-                        <p style={{ fontSize: '13px', marginTop: '4px', maxWidth: 320 }}>
-                            Try lowering the minimum score or click "Run Scan" to compute fresh matches
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        <div style={{
-                            fontSize: '12px', color: '#9ca3af', marginBottom: '12px',
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                        }}>
-                            <span>Showing {matches.length} of {total} matches</span>
-                            {stats && (
-                                <span>Average score: <strong style={{ color: '#064771' }}>{stats.avg_score}%</strong></span>
-                            )}
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {matches.map(match => (
-                                <MatchCard
-                                    key={match.id}
-                                    match={match}
-                                    onDismiss={handleDismiss}
-                                    onCreateDeal={handleCreateDeal}
-                                    onViewInvestor={handleViewInvestor}
-                                    onViewTarget={handleViewTarget}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Pagination */}
-                        {totalPages > 1 && (
-                            <div style={{
-                                display: 'flex', justifyContent: 'center', gap: '8px',
-                                marginTop: '24px'
+                {/* Stats pills */}
+                {stats && (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        {[
+                            { label: 'Best', value: stats.excellent },
+                            { label: 'Strong', value: stats.strong },
+                            { label: 'Good', value: stats.good },
+                            { label: 'Fair', value: stats.fair },
+                        ].map(s => (
+                            <div key={s.label} style={{
+                                padding: '6px 14px', borderRadius: 3,
+                                background: '#e8f0f6', color: '#064771',
+                                fontSize: 12, fontWeight: 600,
+                                display: 'flex', alignItems: 'center', gap: 4,
                             }}>
-                                <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    title="Previous page"
-                                    style={{
-                                        padding: '6px 14px', borderRadius: '3px',
-                                        border: '1px solid #e5e7eb', background: '#fff',
-                                        fontSize: '13px', cursor: page === 1 ? 'not-allowed' : 'pointer',
-                                        opacity: page === 1 ? 0.5 : 1,
-                                    }}
-                                >
-                                    ← Prev
-                                </button>
-                                <span style={{
-                                    padding: '6px 12px', fontSize: '13px', color: '#6b7280',
-                                    display: 'flex', alignItems: 'center'
-                                }}>
-                                    Page {page} of {totalPages}
-                                </span>
-                                <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    title="Next page"
-                                    style={{
-                                        padding: '6px 14px', borderRadius: '3px',
-                                        border: '1px solid #e5e7eb', background: '#fff',
-                                        fontSize: '13px', cursor: page === totalPages ? 'not-allowed' : 'pointer',
-                                        opacity: page === totalPages ? 0.5 : 1,
-                                    }}
-                                >
-                                    Next →
-                                </button>
+                                {s.label}: {s.value}
                             </div>
-                        )}
-                    </>
+                        ))}
+                    </div>
                 )}
             </div>
 
-            {/* Spinning animation for rescan button */}
-            <style>{`
-        .spin-animation {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+            {/* 3-Panel Body */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                {/* LEFT: Engine Controller */}
+                <EngineController
+                    weights={weights}
+                    onWeightsChange={setWeights}
+                    filters={filters}
+                    onFiltersChange={handleFiltersChange}
+                    onRescan={handleRescan}
+                    rescanning={rescanning}
+                    collapsed={engineCollapsed}
+                    onToggleCollapse={() => setEngineCollapsed(!engineCollapsed)}
+                    countries={countries}
+                    industries={industries}
+                />
+
+                {/* CENTER: Clustered Match Results */}
+                <div style={{
+                    flex: 1, display: 'flex', flexDirection: 'column',
+                    overflow: 'hidden', minWidth: 0,
+                }}>
+                    {/* Center header */}
+                    <div style={{
+                        padding: '10px 20px', borderBottom: '1px solid #e5e7eb',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        background: 'white', flexShrink: 0,
+                    }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                            {clusters.length} investor group{clusters.length !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                            onClick={() => loadMatches(page)}
+                            title="Refresh matches"
+                            style={{
+                                width: 28, height: 28, border: '1px solid #e5e7eb',
+                                borderRadius: 4, background: 'white', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#6b7280',
+                            }}
+                        >
+                            <RefreshCw size={13} />
+                        </button>
+                    </div>
+
+                    {/* Cards container */}
+                    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+                        {loading ? (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                height: '100%', color: '#9ca3af',
+                            }}>
+                                <Loader2 size={24} className="animate-spin" style={{ marginRight: 8 }} />
+                                <span style={{ fontSize: 13 }}>Loading matches…</span>
+                            </div>
+                        ) : clusters.length === 0 ? (
+                            <div style={{
+                                display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', justifyContent: 'center',
+                                height: '100%', color: '#9ca3af',
+                            }}>
+                                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+                                    {t('matchIQ.noMatchesFound', 'No matches found')}
+                                </div>
+                                <div style={{ fontSize: 12 }}>
+                                    Try adjusting your filters or running a new scan
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {clusters.map((cluster, idx) => (
+                                    <InvestorClusterCard
+                                        key={cluster.investor?.id || idx}
+                                        cluster={cluster}
+                                        onTargetClick={handleTargetClick}
+                                        selectedMatchId={selectedMatchId}
+                                        countries={countries}
+                                    />
+                                ))}
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div style={{
+                                        display: 'flex', justifyContent: 'center',
+                                        gap: 8, padding: '16px 0',
+                                    }}>
+                                        <button
+                                            onClick={() => loadMatches(Math.max(1, page - 1))}
+                                            disabled={page <= 1}
+                                            style={{
+                                                padding: '6px 14px', fontSize: 12, fontWeight: 500,
+                                                border: '1px solid #e5e7eb', borderRadius: 6,
+                                                background: 'white', color: page <= 1 ? '#d1d5db' : '#374151',
+                                                cursor: page <= 1 ? 'default' : 'pointer',
+                                            }}
+                                        >
+                                            Previous
+                                        </button>
+                                        <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center' }}>
+                                            Page {page} of {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => loadMatches(Math.min(totalPages, page + 1))}
+                                            disabled={page >= totalPages}
+                                            style={{
+                                                padding: '6px 14px', fontSize: 12, fontWeight: 500,
+                                                border: '1px solid #e5e7eb', borderRadius: 6,
+                                                background: 'white', color: page >= totalPages ? '#d1d5db' : '#374151',
+                                                cursor: page >= totalPages ? 'default' : 'pointer',
+                                            }}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* RIGHT: Match Comparison Panel */}
+                {(selectedMatchId || matchDetail) && (
+                    <div style={{
+                        width: 380, borderLeft: '1px solid #e5e7eb',
+                        background: 'white', display: 'flex', flexDirection: 'column',
+                        flexShrink: 0,
+                    }}>
+                        <MatchComparisonPanel
+                            detail={matchDetail}
+                            loading={detailLoading}
+                            onClose={handleCloseDetail}
+                            countries={countries}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

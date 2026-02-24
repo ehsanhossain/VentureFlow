@@ -72,6 +72,7 @@ class SearchController extends Controller
                     'project_code' => $seller->seller_id ?? '',
                     'country' => $seller->companyOverview->hqCountry->name ?? '',
                     'country_flag' => $seller->companyOverview->hqCountry->svg_icon_url ?? '',
+                    'avatar_url' => $seller->image ? asset('storage/' . $seller->image) : null,
                     'type' => 'Target'
                 ];
             });
@@ -101,6 +102,7 @@ class SearchController extends Controller
                     'project_code' => $buyer->buyer_id ?? '',
                     'country' => $buyer->companyOverview->hqCountry->name ?? '',
                     'country_flag' => $buyer->companyOverview->hqCountry->svg_icon_url ?? '',
+                    'avatar_url' => $buyer->image ? asset('storage/' . $buyer->image) : null,
                     'type' => 'Investor'
                 ];
             });
@@ -109,13 +111,23 @@ class SearchController extends Controller
         }
 
         // Search Staff (Employees)
-        $staff = [];
+        $mappedStaff = [];
         try {
-            $staff = Employee::where('first_name', 'like', "%{$query}%")
+            $employees = Employee::where('first_name', 'like', "%{$query}%")
                 ->orWhere('last_name', 'like', "%{$query}%")
                 ->orWhere('work_email', 'like', "%{$query}%")
                 ->take(5)
                 ->get();
+
+            $mappedStaff = $employees->map(function ($emp) {
+                return [
+                    'id' => $emp->id,
+                    'first_name' => $emp->first_name,
+                    'last_name' => $emp->last_name,
+                    'work_email' => $emp->work_email,
+                    'avatar_url' => $emp->image ? asset('storage/' . $emp->image) : null,
+                ];
+            });
         } catch (\Exception $e) {
             Log::warning('Search: Staff query failed — ' . $e->getMessage());
         }
@@ -136,6 +148,7 @@ class SearchController extends Controller
                     'id' => $partner->id,
                     'name' => $partner->partnerOverview->reg_name ?? 'Unknown Partner',
                     'partner_id' => $partner->partner_id ?? '',
+                    'avatar_url' => $partner->partner_image ? asset('storage/' . $partner->partner_image) : null,
                 ];
             });
         } catch (\Exception $e) {
@@ -146,7 +159,7 @@ class SearchController extends Controller
             'deals' => $deals,
             'investors' => $mappedBuyers,
             'targets' => $mappedSellers,
-            'staff' => $staff,
+            'staff' => $mappedStaff,
             'partners' => $mappedPartners,
         ]);
     }

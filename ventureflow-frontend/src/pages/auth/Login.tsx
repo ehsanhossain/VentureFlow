@@ -81,9 +81,8 @@ const Login = () => {
       const intendedUrl = localStorage.getItem('intended_url') || '/';
       localStorage.removeItem('intended_url');
       navigate(intendedUrl);
-    } catch (error) {
-      console.error(error);
-      showAlert({ type: 'error', message: 'Login failed' });
+    } catch {
+      // Login failure already handled by AuthContext with user-facing alert
       setLoading(false);
     }
   };
