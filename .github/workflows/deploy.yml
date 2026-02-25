@@ -107,7 +107,90 @@ jobs:
         working-directory: deploy
         run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-      # Step 8: Push to the deploy branch
+      # Step 8: Ensure vendor/ is NOT gitignored (it must be deployed!)
+      - name: Prepare for deployment push
+        run: |
+          # Remove vendor from .gitignore so it gets pushed to deploy branch
+          if [ -f deploy/.gitignore ]; then
+            sed -i '/^\/vendor/d' deploy/.gitignore
+            sed -i '/^vendor/d' deploy/.gitignore
+          fi
+
+          # Create production .env file
+          cat > deploy/.env << 'ENVFILE'
+          APP_NAME=VentureFlow
+          APP_ENV=production
+          APP_KEY=base64:VQlRnu+RInHur1PRi/ki3zNvAhkorb9BouqQNzwp3Yo=
+          APP_DEBUG=false
+          APP_URL=https://alpha.ventureflow.app
+          APP_VERSION=1.0.0
+          APP_DEVELOPER="VentureFlow"
+
+          SANCTUM_STATEFUL_DOMAINS=alpha.ventureflow.app
+          FRONTEND_URL=https://alpha.ventureflow.app
+
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          APP_FAKER_LOCALE=en_US
+
+          APP_MAINTENANCE_DRIVER=file
+
+          BCRYPT_ROUNDS=12
+
+          LOG_CHANNEL=stack
+          LOG_STACK=single
+          LOG_DEPRECATIONS_CHANNEL=null
+          LOG_LEVEL=error
+
+          DB_CONNECTION=mysql
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_DATABASE=VF_alpha
+          DB_USERNAME=VF_alpha
+          DB_PASSWORD=alpha_vf
+          DB_CHARSET=utf8mb4
+          DB_COLLATION=utf8mb4_unicode_ci
+
+          SESSION_DRIVER=database
+          SESSION_LIFETIME=120
+          SESSION_ENCRYPT=false
+          SESSION_PATH=/
+          SESSION_DOMAIN=alpha.ventureflow.app
+          SESSION_SAME_SITE=lax
+          SESSION_SECURE_COOKIE=true
+
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=database
+
+          CACHE_STORE=database
+
+          MAIL_MAILER=log
+          MAIL_SCHEME=null
+          MAIL_HOST=127.0.0.1
+          MAIL_PORT=2525
+          MAIL_USERNAME=null
+          MAIL_PASSWORD=null
+          MAIL_FROM_ADDRESS="noreply@ventureflow.app"
+          MAIL_FROM_NAME="${APP_NAME}"
+
+          VITE_APP_NAME="${APP_NAME}"
+          ENVFILE
+
+          # Remove leading spaces from .env (heredoc indentation)
+          sed -i 's/^          //' deploy/.env
+
+          # Verify
+          echo "=== .gitignore (no vendor line) ==="
+          cat deploy/.gitignore | head -20
+          echo ""
+          echo "=== vendor/ exists ==="
+          ls deploy/vendor/ | head -5
+          echo ""
+          echo "=== .env created ==="
+          head -5 deploy/.env
+
+      # Step 9: Push to the deploy branch
       - name: Deploy to deploy branch
         uses: peaceiris/actions-gh-pages@v3
         with:
