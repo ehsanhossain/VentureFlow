@@ -1,3 +1,0 @@
-
-storage\logs\laravel.log:577:[2026-01-22 06:10:54] local.ERROR: Import General Error via API: SQLSTATE[HY000]: General error: 1 table buyers_company_overviews has no column named buyer_id (Connection: sqlite, SQL: insert into "buyers_company_overviews" ("reg_name", "hq_country", "company_type", "year_founded", "rank", "reason_ma", "status", "email", "phone", "website", "investment_condition", "investor_profile_link", "investment_budget", "target_countries", "main_industry_operations", "contacts", "buyer_id", "updated_at", "created_at") values (Mr. Max Holdings Co., Ltd., 111, Corporate, ?, A, ?, Active, Takahashi@gmail.com, ?, https://www.mrmaxhd.co.jp/, "Majority ownership
-
