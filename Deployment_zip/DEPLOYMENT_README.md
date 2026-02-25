@@ -1,4 +1,5 @@
 # VentureFlow Alpha Deployment Guide
+## Updated: 2026-02-24
 
 ## Quick Start
 
@@ -42,8 +43,9 @@ php artisan view:clear
 Deployment_zip/
 ├── ventureflow_production.sql   ← Import this into MySQL first
 ├── DEPLOYMENT_README.md         ← This file
+├── ventureflow_alpha_deploy.zip ← Zip of the ventureflow/ folder
 └── ventureflow/                 ← Extract to server root
-    ├── .env                     ← Pre-configured for production
+    ├── .env                     ← Pre-configured for production (MySQL)
     ├── public/                  ← Set as Document Root in Plesk
     │   ├── index.php            ← Laravel entry point (API)
     │   ├── index.html           ← React SPA entry point
@@ -65,3 +67,12 @@ Deployment_zip/
 - **DB Pass**: alpha_vf
 - **Admin Email**: admin@ventureflow.com
 - **Admin Pass**: VentureFlow@2026!
+
+## Changes in This Update (2026-02-24)
+- **Fixed**: DELETE routes for investors (`/api/buyer`) and targets (`/api/seller`) — bulk delete now works
+- **Fixed**: EBITDA value displaying correctly in the target table (was mapped to wrong field name)
+- **Fixed**: Added `use Auth` imports in controllers to prevent "Class not found" errors
+- **Fixed**: Route parameter mismatch for pin/unpin functionality
+- **Fixed**: Redirect logic after creating/editing investors and targets
+- **Updated**: Frontend build with all latest fixes
+- **Updated**: MySQL database export with latest data

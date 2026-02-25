@@ -18,13 +18,17 @@ class MatchController extends Controller
 {
     /**
      * GET /api/matchiq
-     * List all matches, paginated, with filters.
+     * List all matches, clustered by investor, with filters.
+     *
+     * Returns: { data: [{ investor: {…}, targets: [{match, seller}] }], meta: {…} }
      */
     public function index(Request $request): JsonResponse
     {
         $query = MatchModel::with([
             'buyer.companyOverview',
             'seller.companyOverview',
+            'seller.financialDetails',
+            'buyer.financialDetails',
         ])
         ->notDismissed()
         ->orderByDesc('total_score');
@@ -33,7 +37,20 @@ class MatchController extends Controller
         if ($request->filled('min_score')) {
             $query->minScore((int) $request->min_score);
         } else {
-            $query->minScore(30); // Default: show any match above MIN_SCORE threshold
+            $query->minScore(30);
+        }
+
+        // Filter: tier (front-end dropdown: excellent, strong, good, fair, all)
+        if ($request->filled('tier') && $request->tier !== 'all') {
+            $tierMap = [
+                'excellent' => [90, 100],
+                'strong'    => [80, 89],
+                'good'      => [70, 79],
+                'fair'      => [60, 69],
+            ];
+            if (isset($tierMap[$request->tier])) {
+                $query->whereBetween('total_score', $tierMap[$request->tier]);
+            }
         }
 
         // Filter: industry_ids (array of industry IDs from dropdowns)
@@ -121,15 +138,150 @@ class MatchController extends Controller
             $query->where('seller_id', $request->seller_id);
         }
 
-        $matches = $query->paginate($request->get('per_page', 20));
+        // Get all matches (no hard pagination — cluster later)
+        $allMatches = $query->get();
+
+        // ─── Cluster by Investor ────────────────────────────────────────
+        $clustered = $allMatches->groupBy('buyer_id')->map(function ($matches, $buyerId) {
+            $firstMatch = $matches->first();
+            $investor = $firstMatch->buyer;
+            $overview = $investor?->companyOverview;
+
+            return [
+                'investor' => [
+                    'id'         => $investor?->id,
+                    'buyer_id'   => $investor?->buyer_id,
+                    'reg_name'   => $overview?->reg_name ?? 'Unknown Investor',
+                    'hq_country' => $overview?->hq_country,
+                    'industry'   => $overview?->company_industry,
+                    'image'      => $overview?->buyer_image ?? $overview?->profile_picture,
+                ],
+                'targets' => $matches->map(function ($match) {
+                    $seller   = $match->seller;
+                    $overview = $seller?->companyOverview;
+
+                    return [
+                        'match_id'          => $match->id,
+                        'target_id'         => $seller?->id,
+                        'seller_id'         => $seller?->seller_id,
+                        'reg_name'          => $overview?->reg_name ?? 'Unknown Target',
+                        'hq_country'        => $overview?->hq_country,
+                        'industry'          => $overview?->industry_ops,
+                        'image'             => $seller?->image,
+                        'total_score'       => $match->total_score,
+                        'industry_score'    => $match->industry_score,
+                        'geography_score'   => $match->geography_score,
+                        'financial_score'   => $match->financial_score,
+                        'transaction_score' => $match->transaction_score,
+                        'tier'              => $match->tier,
+                        'tier_label'        => $match->tier_label,
+                        'status'            => $match->status,
+                    ];
+                })->sortByDesc('total_score')->values(),
+                'best_score'    => $matches->max('total_score'),
+                'target_count'  => $matches->count(),
+            ];
+        })->sortByDesc('best_score')->values();
+
+        // Paginate the clustered results
+        $page    = max(1, (int) $request->get('page', 1));
+        $perPage = max(1, (int) $request->get('per_page', 20));
+        $total   = $clustered->count();
+        $paged   = $clustered->slice(($page - 1) * $perPage, $perPage)->values();
 
         return response()->json([
-            'data' => $matches->items(),
+            'data' => $paged,
             'meta' => [
-                'current_page' => $matches->currentPage(),
-                'last_page'    => $matches->lastPage(),
-                'total'        => $matches->total(),
-                'per_page'     => $matches->perPage(),
+                'current_page' => $page,
+                'last_page'    => (int) ceil($total / $perPage),
+                'total'        => $total,
+                'per_page'     => $perPage,
+                'total_matches' => $allMatches->count(),
+            ],
+            'weights' => MatchEngineService::DEFAULT_WEIGHTS,
+        ]);
+    }
+
+    /**
+     * GET /api/matchiq/match/{id}
+     * Get detailed match data for comparison panel.
+     */
+    public function show(int $id): JsonResponse
+    {
+        $match = MatchModel::with([
+            'buyer.companyOverview',
+            'buyer.financialDetails',
+            'seller.companyOverview',
+            'seller.financialDetails',
+        ])->findOrFail($id);
+
+        $investor = $match->buyer;
+        $target   = $match->seller;
+        $invCO    = $investor?->companyOverview;
+        $invFin   = $investor?->financialDetails;
+        $tgtCO    = $target?->companyOverview;
+        $tgtFin   = $target?->financialDetails;
+
+        // Resolve country IDs → {id, name, flag, is_region}
+        $resolveCountry = function ($id) {
+            if (empty($id)) return null;
+            $c = \App\Models\Country::find((int) $id);
+            return $c ? ['id' => $c->id, 'name' => $c->name, 'flag' => $c->svg_icon_url, 'is_region' => $c->is_region] : null;
+        };
+
+        // Resolve target_countries (JSON array of IDs or objects)
+        $resolveTargetCountries = function ($raw) use ($resolveCountry) {
+            if (empty($raw)) return [];
+            $arr = is_string($raw) ? json_decode($raw, true) : (is_array($raw) ? $raw : []);
+            if (!is_array($arr)) return [];
+            $result = [];
+            foreach ($arr as $item) {
+                $cid = is_array($item) ? ($item['id'] ?? null) : $item;
+                if ($cid) {
+                    $resolved = $resolveCountry($cid);
+                    if ($resolved) $result[] = $resolved;
+                }
+            }
+            return $result;
+        };
+
+        return response()->json([
+            'match' => [
+                'id'                => $match->id,
+                'total_score'       => $match->total_score,
+                'industry_score'    => $match->industry_score,
+                'geography_score'   => $match->geography_score,
+                'financial_score'   => $match->financial_score,
+                'transaction_score' => $match->transaction_score,
+                'tier'              => $match->tier,
+                'tier_label'        => $match->tier_label,
+                'status'            => $match->status,
+            ],
+            'investor' => [
+                'id'                   => $investor?->id,
+                'buyer_id'             => $investor?->buyer_id,
+                'reg_name'             => $invCO?->reg_name,
+                'hq_country'           => $resolveCountry($invCO?->hq_country),
+                'industry'             => $invCO?->company_industry,
+                'target_industries'    => $invCO?->main_industry_operations,
+                'target_countries'     => $resolveTargetCountries($invCO?->target_countries),
+                'investment_budget'    => $invCO?->investment_budget,
+                'investment_condition' => $invCO?->investment_condition,
+                'reason_ma'            => $invCO?->reason_ma,
+                'image'                => $invCO?->buyer_image ?? $invCO?->profile_picture,
+                'currency'             => $invFin?->default_currency ?? $invFin?->register_currency,
+            ],
+            'target' => [
+                'id'                          => $target?->id,
+                'seller_id'                   => $target?->seller_id,
+                'reg_name'                    => $tgtCO?->reg_name,
+                'hq_country'                  => $resolveCountry($tgtCO?->hq_country),
+                'industry'                    => $tgtCO?->industry_ops,
+                'reason_ma'                   => $tgtCO?->reason_ma,
+                'expected_investment_amount'   => $tgtFin?->expected_investment_amount,
+                'investment_condition'         => $tgtFin?->investment_condition,
+                'image'                        => $target?->image,
+                'currency'                     => $tgtFin?->default_currency,
             ],
         ]);
     }
@@ -172,71 +324,16 @@ class MatchController extends Controller
      * POST /api/matchiq/rescan
      * Full rescan — recomputes all matches.
      */
-    public function rescan(MatchEngineService $engine): JsonResponse
+    public function rescan(Request $request, MatchEngineService $engine): JsonResponse
     {
-        $count = $engine->fullRescan();
+        // Accept optional custom weights from the engine controller
+        $weights = $request->input('weights', []);
+
+        $count = $engine->fullRescan($weights);
 
         return response()->json([
             'message' => "Rescan complete. {$count} matches computed.",
             'count'   => $count,
-        ]);
-    }
-
-    /**
-     * POST /api/matchiq/custom-score
-     * Score targets in real-time using investor criteria overrides.
-     * Results are NOT stored in the database — live preview only.
-     *
-     * Body: {
-     *   investor_id: number,
-     *   criteria: {
-     *     industry_ids?: number[],
-     *     target_countries?: number[],
-     *     ebitda_min?: number,
-     *     budget_min?: number,
-     *     budget_max?: number,
-     *     ownership_condition?: string
-     *   }
-     * }
-     */
-    public function customScore(Request $request, MatchEngineService $engine): JsonResponse
-    {
-        $investorId = $request->input('investor_id');
-        $criteria   = $request->input('criteria', []);
-
-        if (!$investorId) {
-            return response()->json(['message' => 'investor_id is required.'], 422);
-        }
-
-        $investor = \App\Models\Investor::with(['companyOverview', 'financialDetails'])->find($investorId);
-
-        if (!$investor) {
-            return response()->json(['message' => 'Investor not found.'], 404);
-        }
-
-        $results = $engine->scoreWithCriteria($investor, $criteria);
-
-        // Load target relationships for the response
-        $formatted = array_map(function ($result) {
-            $target = $result['target'];
-            $target->load(['companyOverview', 'financialDetails']);
-
-            return [
-                'target_id'       => $result['target_id'],
-                'total_score'     => $result['total_score'],
-                'industry_score'  => $result['industry_score'],
-                'geography_score' => $result['geography_score'],
-                'financial_score' => $result['financial_score'],
-                'ownership_score' => $result['ownership_score'],
-                'explanations'    => $result['explanations'],
-                'seller'          => $target,
-            ];
-        }, $results);
-
-        return response()->json([
-            'data'  => $formatted,
-            'total' => count($formatted),
-            'note'  => 'Custom-scored results — not stored in database.',
         ]);
     }
 

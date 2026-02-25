@@ -33,16 +33,29 @@ class Country extends Model
      */
     public function getSvgIconUrlAttribute(): string
     {
-        // Regions don't have flag codes — use a globe/earth SVG instead
+        // Regions don't have flag codes — use region-specific SVGs
         if ($this->is_region || empty($this->alpha_2_code)) {
-            // Data URI for a simple globe SVG icon
-            return 'data:image/svg+xml,' . rawurlencode(
-                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23064771" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
-                . '<circle cx="12" cy="12" r="10"/>'
-                . '<path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>'
-                . '<path d="M2 12h20"/>'
-                . '</svg>'
-            );
+            $name = strtolower($this->name ?? '');
+
+            // Map region names to specific SVG icon files
+            $asiaRegions = ['asean', 'east asia', 'south asia', 'central asia', 'oceania', 'asia pacific', 'apac'];
+            $europeRegions = ['europe', 'nordic countries', 'eu'];
+            $americaRegions = ['north america', 'south america', 'americas', 'latin america'];
+            $middleEastRegions = ['middle east', 'gcc', 'mena'];
+
+            if (in_array($name, $asiaRegions)) {
+                $file = 'Asia.svg';
+            } elseif (in_array($name, $europeRegions)) {
+                $file = 'Europe.svg';
+            } elseif (in_array($name, $americaRegions)) {
+                $file = 'USA.svg';
+            } elseif (in_array($name, $middleEastRegions)) {
+                $file = 'Asia.svg'; // Use Asia icon for Middle East proximity
+            } else {
+                $file = 'Global and others.svg';
+            }
+
+            return url("/images/regions/{$file}");
         }
 
         return 'https://flagcdn.com/' . strtolower($this->alpha_2_code) . '.svg';

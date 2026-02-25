@@ -39,7 +39,7 @@ class EmployeeController extends Controller
 
         $employees = Employee::with([
             'country',
-            'user',
+            'user.roles',
             'company_data',
             'department_data',
             'branch_data',

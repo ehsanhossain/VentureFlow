@@ -23,6 +23,7 @@ use App\Models\InvestorsCompanyOverview;
 use Carbon\Carbon;
 use App\Models\User; // Notification recipient
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewRegistrationNotification;
 use App\Models\Deal;
 use App\Jobs\ComputeMatchesJob;
@@ -657,7 +658,7 @@ class TargetController extends Controller
                     ->when($target, function($q) use ($target) { $q->where('id', '!=', $target->id); })
                     ->exists();
                 if ($exists) {
-                    return response()->json(['message' => 'The project code (Dealroom ID) is already in use.'], 422);
+                    return response()->json(['message' => 'The Project Code is already in use.'], 422);
                 }
             }
 

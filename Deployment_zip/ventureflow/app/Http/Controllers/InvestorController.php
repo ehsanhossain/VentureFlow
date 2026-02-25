@@ -17,6 +17,7 @@ use App\Models\InvestorsFinancialDetails;
 use App\Models\InvestorsPartnershipDetails;
 use App\Models\InvestorsTeaserCenter;
 use App\Models\TargetsCompanyOverview;
+use App\Models\SellersCompanyOverview;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +27,7 @@ use DB;
 use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Auth;
 use App\Notifications\NewRegistrationNotification;
 use App\Models\Deal;
 use App\Jobs\ComputeMatchesJob;
@@ -683,6 +685,11 @@ class InvestorController extends Controller
                 // Validate buyer_id is provided for new records (database requires it)
                 if (empty($data['buyer_id'])) {
                     return response()->json(['message' => 'Project Code is required for new investors.'], 422);
+                }
+
+                // Check uniqueness of buyer_id
+                if (Investor::where('buyer_id', $data['buyer_id'])->exists()) {
+                    return response()->json(['message' => 'The Project Code is already in use.'], 422);
                 }
                 
                 $investor = Investor::create([

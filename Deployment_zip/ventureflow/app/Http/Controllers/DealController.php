@@ -164,6 +164,7 @@ class DealController extends Controller
             'internal_pic' => 'nullable|array',
             'target_close_date' => 'nullable|date',
             'pipeline_type' => 'nullable|in:buyer,seller',
+            'deal_type' => 'nullable|string|max:50',
         ]);
 
         // At least one party (buyer or seller) must be selected
@@ -270,6 +271,7 @@ class DealController extends Controller
             'target_close_date' => 'nullable|date',
             'status' => 'nullable|in:active,on_hold,lost,won',
             'lost_reason' => 'nullable|string',
+            'deal_type' => 'nullable|string|max:50',
         ]);
 
         $deal->update($validated);

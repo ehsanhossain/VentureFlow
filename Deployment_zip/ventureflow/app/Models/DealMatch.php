@@ -24,7 +24,7 @@ class DealMatch extends Model
         'financial_score',
         'profile_score',
         'timeline_score',
-        'ownership_score',
+        'transaction_score',
         'status',
         'reviewed_by',
         'deal_id',
@@ -33,14 +33,14 @@ class DealMatch extends Model
     ];
 
     protected $casts = [
-        'total_score'      => 'integer',
-        'industry_score'   => 'float',
-        'geography_score'  => 'float',
-        'financial_score'  => 'float',
-        'profile_score'    => 'float',
-        'timeline_score'   => 'float',
-        'ownership_score'  => 'float',
-        'computed_at'      => 'datetime',
+        'total_score'       => 'integer',
+        'industry_score'    => 'float',
+        'geography_score'   => 'float',
+        'financial_score'   => 'float',
+        'profile_score'     => 'float',
+        'timeline_score'    => 'float',
+        'transaction_score' => 'float',
+        'computed_at'       => 'datetime',
     ];
 
     // ─── Relationships ──────────────────────────────────────────────────
