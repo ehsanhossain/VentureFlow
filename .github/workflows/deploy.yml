@@ -1,1 +1,115 @@
-.github/workflows/deploy.yml
+name: Deploy to Production
+
+# When does this run? → Every push to the 'main' branch
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ventureflow-backend/**'
+      - 'ventureflow-frontend/**'
+
+# What does it do?
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Node.js for building React
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ventureflow-frontend/package-lock.json
+
+      # Step 3: Install frontend dependencies
+      - name: Install frontend dependencies
+        working-directory: ventureflow-frontend
+        run: npm ci
+
+      # Step 4: Build the React frontend
+      - name: Build frontend
+        working-directory: ventureflow-frontend
+        run: npm run build
+
+      # Step 5: Prepare the deploy folder
+      - name: Prepare deployment
+        run: |
+          # Start with the backend as the base
+          mkdir -p deploy
+
+          # Copy backend files (excluding dev files)
+          rsync -av --exclude='.git' \
+                    --exclude='node_modules' \
+                    --exclude='tests' \
+                    --exclude='*.sqlite' \
+                    --exclude='*.sqlite3' \
+                    --exclude='database/database.sqlite' \
+                    --exclude='.env' \
+                    ventureflow-backend/ deploy/
+
+          # Copy built frontend into public/
+          cp -r ventureflow-frontend/dist/* deploy/public/
+
+          # Copy the .htaccess for proper routing
+          cat > deploy/public/.htaccess << 'HTACCESS'
+          <IfModule mod_rewrite.c>
+              <IfModule mod_negotiation.c>
+                  Options -MultiViews -Indexes
+              </IfModule>
+
+              RewriteEngine On
+
+              # Handle Authorization Header
+              RewriteCond %{HTTP:Authorization} .
+              RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+              # Redirect Trailing Slashes If Not A Folder...
+              RewriteCond %{REQUEST_FILENAME} !-d
+              RewriteCond %{REQUEST_URI} (.+)/$
+              RewriteRule ^ %1 [L,R=301]
+
+              # API / Sanctum / Storage routes → Laravel (index.php)
+              RewriteCond %{REQUEST_URI} ^/api [OR]
+              RewriteCond %{REQUEST_URI} ^/sanctum [OR]
+              RewriteCond %{REQUEST_URI} ^/storage [OR]
+              RewriteCond %{REQUEST_URI} ^/login [OR]
+              RewriteCond %{REQUEST_URI} ^/logout [OR]
+              RewriteCond %{REQUEST_URI} ^/register [OR]
+              RewriteCond %{REQUEST_URI} ^/broadcasting
+              RewriteRule ^ index.php [L]
+
+              # Existing files and directories → serve directly
+              RewriteCond %{REQUEST_FILENAME} -f [OR]
+              RewriteCond %{REQUEST_FILENAME} -d
+              RewriteRule ^ - [L]
+
+              # Everything else → SPA (index.html)
+              RewriteRule ^ index.html [L]
+          </IfModule>
+          HTACCESS
+
+      # Step 6: Set up PHP for Composer
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      # Step 7: Install PHP dependencies (production only)
+      - name: Install Composer dependencies
+        working-directory: deploy
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      # Step 8: Push to the deploy branch
+      - name: Deploy to deploy branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: deploy
+          force_orphan: true
+          commit_message: "Deploy: ${{ github.event.head_commit.message }}"
