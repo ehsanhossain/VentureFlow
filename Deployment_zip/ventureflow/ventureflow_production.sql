@@ -1753,7 +1753,7 @@ DROP TABLE IF EXISTS `exchange_rates`;
 CREATE TABLE `exchange_rates` (
   `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `currency_code` VARCHAR(255) NOT NULL ,
-  `rate_to_usd` TEXT  DEFAULT '1',
+  `rate_to_usd` DECIMAL(20,10) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT NULL ,
   `updated_at` DATETIME DEFAULT NULL 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2742,12 +2742,12 @@ CREATE TABLE `matches` (
   `buyer_id` BIGINT NOT NULL ,
   `seller_id` BIGINT NOT NULL ,
   `total_score` BIGINT  DEFAULT '0',
-  `industry_score` TEXT  DEFAULT '0',
-  `geography_score` TEXT  DEFAULT '0',
-  `financial_score` TEXT  DEFAULT '0',
-  `profile_score` TEXT  DEFAULT '0',
-  `timeline_score` TEXT  DEFAULT '0',
-  `transaction_score` TEXT  DEFAULT '0',
+  `industry_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
+  `geography_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
+  `financial_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
+  `profile_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
+  `timeline_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
+  `transaction_score` DECIMAL(10,4) NOT NULL DEFAULT 0,
   `status` VARCHAR(255) DEFAULT 'pending',
   `reviewed_by` BIGINT DEFAULT NULL ,
   `deal_id` BIGINT DEFAULT NULL ,

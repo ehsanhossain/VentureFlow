@@ -1,6 +1,6 @@
 name: Deploy to Production
 
-# When does this run? → Every push to the 'main' branch
+# When does this run?
 on:
   push:
     branches: [main]
@@ -8,6 +8,8 @@ on:
       - "ventureflow-backend/**"
       - "ventureflow-frontend/**"
       - ".github/workflows/deploy.yml"
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 # Give the workflow permission to push to the deploy branch
 permissions:
@@ -45,7 +47,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2"
+          php-version: "8.3"
           tools: composer:v2
 
       # Step 6: Prepare the deploy folder
@@ -63,6 +65,15 @@ jobs:
             --exclude='database/database.sqlite' \
             --exclude='.env' \
             --exclude='.env.example' \
+            --exclude='docker-compose.yml' \
+            --exclude='Dockerfile' \
+            --exclude='phpunit.xml' \
+            --exclude='test-*.php' \
+            --exclude='test-*.ps1' \
+            --exclude='test_*.php' \
+            --exclude='last_error.txt' \
+            --exclude='verification-report.php' \
+            --exclude='ventureflow_production.sql' \
             --exclude='storage/logs/*.log' \
             --exclude='storage/framework/cache/data/*' \
             --exclude='storage/framework/sessions/*' \
@@ -72,21 +83,24 @@ jobs:
           # Copy built frontend into public/
           cp -rf ventureflow-frontend/dist/* deploy/public/
 
-          # Ensure storage directories exist
+          # Ensure storage directories exist with .gitkeep
           mkdir -p deploy/storage/app/public
           mkdir -p deploy/storage/framework/cache/data
           mkdir -p deploy/storage/framework/sessions
           mkdir -p deploy/storage/framework/views
           mkdir -p deploy/storage/logs
           mkdir -p deploy/bootstrap/cache
-
-          # Create .gitkeep files for empty dirs
           touch deploy/storage/app/public/.gitkeep
           touch deploy/storage/framework/cache/data/.gitkeep
           touch deploy/storage/framework/sessions/.gitkeep
           touch deploy/storage/framework/views/.gitkeep
           touch deploy/storage/logs/.gitkeep
           touch deploy/bootstrap/cache/.gitkeep
+
+          echo "=== Deploy folder contents ==="
+          ls -la deploy/
+          echo "=== Deploy public/ contents ==="
+          ls -la deploy/public/
 
       # Step 7: Install PHP dependencies (production only)
       - name: Install Composer dependencies
@@ -95,7 +109,7 @@ jobs:
 
       # Step 8: Push to the deploy branch
       - name: Deploy to deploy branch
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
