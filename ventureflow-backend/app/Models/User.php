@@ -66,4 +66,15 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employee::class);
     }
+
+    /**
+     * Send the password reset notification using the custom branded template.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $url = env('FRONTEND_URL', 'http://localhost:5173')
+            . "/reset-password?token={$token}&email=" . urlencode($this->getEmailForPasswordReset());
+
+        $this->notify(new \App\Notifications\ResetPasswordNotification($url));
+    }
 }

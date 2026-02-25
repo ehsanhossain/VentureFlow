@@ -29,11 +29,17 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserTablePreferenceController;
 use App\Http\Controllers\MatchController;
+use App\Http\Controllers\FileServeController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public routes (no auth required)
 // ─────────────────────────────────────────────────────────────────────────────
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/files/{path}', [FileServeController::class, 'serve'])->where('path', '.*');
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store']);
+Route::post('/reset-password', [NewPasswordController::class, 'store']);
 Route::get('/deals/seller', [ApiController::class, 'getSellerDealInfo']);
 Route::post('/ai/extract', [\App\Http\Controllers\AIController::class, 'extract']);
 

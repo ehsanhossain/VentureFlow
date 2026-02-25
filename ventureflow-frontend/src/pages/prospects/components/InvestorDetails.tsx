@@ -110,7 +110,7 @@ const InvestorDetails: React.FC = () => {
     if (buyer?.image) {
       return buyer.image.startsWith('http')
         ? buyer.image
-        : `${baseURL}/storage/${buyer.image}`;
+        : `${baseURL}/api/files/${buyer.image}`;
     }
     return '';
   };

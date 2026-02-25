@@ -148,7 +148,7 @@ const StaffManagement: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <img
                         src={row.image && row.image !== ''
-                            ? (row.image.startsWith('http') ? row.image : `${baseURL}/storage/${row.image}`)
+                            ? (row.image.startsWith('http') ? row.image : `${baseURL}/api/files/${row.image}`)
                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(`${row.first_name} ${row.last_name}`)}&background=064771&color=fff&rounded=true`
                         }
                         alt=""

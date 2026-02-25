@@ -68,7 +68,7 @@ const PartnerProfile: React.FC = () => {
                     contact_phone: data.contact_phone || '',
                 });
                 if (data.image) {
-                    setImagePreview(`${baseURL}/storage/${data.image}`);
+                    setImagePreview(`${baseURL}/api/files/${data.image}`);
                 }
             } catch (error) {
                 console.error('Failed to fetch partner data', error);

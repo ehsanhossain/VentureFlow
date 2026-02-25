@@ -66,7 +66,7 @@ const Row: React.FC<RowProps> = ({
             {image ? (
               <img
                 className="rounded-[180px] w-[31px] h-[31px]"
-                src={`${import.meta.env.VITE_API_BASE_URL}/storage/${image}`}
+                src={`${import.meta.env.VITE_API_BASE_URL}/api/files/${image}`}
                 style={{ objectFit: "cover", width: "31px" }}
                 alt="Logo"
               />
@@ -116,7 +116,7 @@ const Row: React.FC<RowProps> = ({
             {image ? (
               <img
                 className="rounded-[180px] w-[31px] h-[31px]"
-                src={`${import.meta.env.VITE_API_BASE_URL}/storage/${image}`}
+                src={`${import.meta.env.VITE_API_BASE_URL}/api/files/${image}`}
                 style={{ objectFit: "cover", width: "31px", height: "31px" }}
                 alt="Logo"
               />

@@ -456,7 +456,7 @@ export const InvestorRegistration: React.FC = () => {
                     if (buyer.image) {
                         const baseURL = import.meta.env.VITE_API_BASE_URL || '';
                         const isUrl = buyer.image.startsWith('http');
-                        const imagePath = isUrl ? buyer.image : `${baseURL}/storage/${buyer.image.replace(/^\//, '')}`;
+                        const imagePath = isUrl ? buyer.image : `${baseURL}/api/files/${buyer.image.replace(/^\//, '')}`;
                         setInitialProfileImage(imagePath);
                     }
 

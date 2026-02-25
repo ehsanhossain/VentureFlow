@@ -188,7 +188,7 @@ const CreateStaff: React.FC = () => {
 
             // Set profile image
             if (staff.image) {
-                setInitialProfileImage(`${baseURL}/storage/${staff.image}`);
+                setInitialProfileImage(`${baseURL}/api/files/${staff.image}`);
             }
         } catch (error) {
             console.error('Failed to fetch staff member:', error);

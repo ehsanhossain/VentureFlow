@@ -116,7 +116,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         if (!imagePath) return null;
         if (imagePath.startsWith('http')) return imagePath;
         const baseURL = import.meta.env.VITE_API_BASE_URL || '';
-        return `${baseURL}/storage/${imagePath.replace(/^\//, '')}`;
+        return `${baseURL}/api/files/${imagePath.replace(/^\//, '')}`;
     };
 
     const primaryImageUrl = getImageUrl(primaryImage);

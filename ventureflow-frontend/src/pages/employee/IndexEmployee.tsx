@@ -1086,7 +1086,7 @@ const IndexEmployee = ({
                           <img
                             src={
                               employee?.image
-                                ? `${baseURL}/storage/${employee.image}`
+                                ? `${baseURL}/api/files/${employee.image}`
                                 : `https://ui-avatars.com/api/?name=${employee?.first_name ?? 'User'
                                 }+${employee?.last_name ?? ''}&background=ccc&color=000&size=128`
                             }

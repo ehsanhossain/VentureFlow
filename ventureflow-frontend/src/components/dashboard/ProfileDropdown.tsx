@@ -67,7 +67,7 @@ const ProfileDropdown: React.FC = () => {
   }, []);
 
   const profileImageUrl = (employee?.image || partner?.image)
-    ? `${baseURL}/storage/${employee?.image || partner?.image}`
+    ? `${baseURL}/api/files/${employee?.image || partner?.image}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=064771&color=fff`;
 
   return (

@@ -119,7 +119,7 @@ const PartnerDetails: React.FC = () => {
         if (partner?.image) {
             return partner.image.startsWith('http')
                 ? partner.image
-                : `${baseURL}/storage/${partner.image}`;
+                : `${baseURL}/api/files/${partner.image}`;
         }
         return '';
     };

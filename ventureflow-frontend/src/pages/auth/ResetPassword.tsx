@@ -75,7 +75,6 @@ const ResetPassword = () => {
 
         setLoading(true);
         try {
-            await api.get('/sanctum/csrf-cookie');
             await api.post('/api/reset-password', {
                 token,
                 email,

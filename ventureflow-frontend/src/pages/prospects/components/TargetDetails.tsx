@@ -76,7 +76,7 @@ const TargetDetails: React.FC = () => {
         if (seller?.image) {
             return seller.image.startsWith('http')
                 ? seller.image
-                : `${baseURL}/storage/${seller.image}`;
+                : `${baseURL}/api/files/${seller.image}`;
         }
         return '';
     };

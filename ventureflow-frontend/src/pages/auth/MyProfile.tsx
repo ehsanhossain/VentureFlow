@@ -102,7 +102,7 @@ const MyProfile: React.FC = () => {
     };
 
     const getAvatarUrl = () => {
-        if (employee?.image) return `${baseURL}/storage/${employee.image}`;
+        if (employee?.image) return `${baseURL}/api/files/${employee.image}`;
         return null;
     };
 

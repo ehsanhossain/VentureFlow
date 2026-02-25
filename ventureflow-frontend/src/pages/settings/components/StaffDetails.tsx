@@ -3,15 +3,14 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Mail, Phone, Shield, ShieldCheck, User, KeyRound, PowerOff, Power, Loader, Camera } from 'lucide-react';
+import { Mail, Phone, Shield, ShieldCheck, KeyRound, PowerOff, Power, Loader } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { AuthContext } from '../../../routes/AuthContext';
-import ImageCropperModal from '../../../components/ImageCropperModal';
 
 interface StaffMember {
     id: number;
@@ -59,38 +58,7 @@ const StaffDetails: React.FC = () => {
     const [pwSaving, setPwSaving] = useState(false);
     const [statusSaving, setStatusSaving] = useState(false);
 
-    // Avatar upload
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const [avatarUploading, setAvatarUploading] = useState(false);
-    const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => setCropSrc(reader.result as string);
-        reader.readAsDataURL(file);
-        if (avatarInputRef.current) avatarInputRef.current.value = '';
-    };
-
-    const handleCropComplete = async (blob: Blob) => {
-        if (!id) return;
-        setCropSrc(null);
-        setAvatarUploading(true);
-        try {
-            const fd = new FormData();
-            fd.append('image', blob, 'avatar.jpg');
-            const res = await api.post(`/api/employees/${id}/avatar`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setStaff((prev) => prev ? { ...prev, image: res.data.image_path } : prev);
-            showAlert({ type: 'success', message: 'Avatar updated.' });
-        } catch {
-            showAlert({ type: 'error', message: 'Failed to upload avatar.' });
-        } finally {
-            setAvatarUploading(false);
-        }
-    };
 
     const baseURL = import.meta.env.VITE_API_BASE_URL;
 
@@ -199,7 +167,7 @@ const StaffDetails: React.FC = () => {
         if (staff.image) {
             return staff.image.startsWith('http')
                 ? staff.image
-                : `${baseURL}/storage/${staff.image}`;
+                : `${baseURL}/api/files/${staff.image}`;
         }
         return '';
     };
@@ -263,19 +231,8 @@ const StaffDetails: React.FC = () => {
                             <div className="space-y-7">
                                 {/* Staff Header */}
                                 <div className="flex items-center gap-3">
-                                    {/* Staff Avatar — click to upload */}
-                                    <div
-                                        className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
-                                        onClick={() => avatarInputRef.current?.click()}
-                                        title="Click to change photo"
-                                    >
-                                        <input
-                                            ref={avatarInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleAvatarChange}
-                                        />
+                                    {/* Staff Avatar — view only */}
+                                    <div className="relative w-[52px] h-[52px] shrink-0">
                                         {getAvatarUrl() ? (
                                             <img
                                                 src={getAvatarUrl()}
@@ -289,13 +246,6 @@ const StaffDetails: React.FC = () => {
                                         ) : null}
                                         <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
                                             {getInitials(fullName)}
-                                        </div>
-                                        {/* Upload overlay */}
-                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            {avatarUploading
-                                                ? <Loader className="w-4 h-4 text-white animate-spin" />
-                                                : <Camera className="w-4 h-4 text-white" />
-                                            }
                                         </div>
                                     </div>
 
@@ -557,17 +507,7 @@ const StaffDetails: React.FC = () => {
                 </div>
             </div>
 
-            {/* Image Cropper Modal */}
-            {
-                cropSrc && (
-                    <ImageCropperModal
-                        imageSrc={cropSrc}
-                        onCropComplete={handleCropComplete}
-                        onClose={() => setCropSrc(null)}
-                        aspect={1}
-                    />
-                )
-            }
+
         </>
     );
 };

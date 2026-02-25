@@ -150,7 +150,7 @@ const PartnerManagement: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <img
                         src={row.user?.image
-                            ? (row.user.image.startsWith('http') ? row.user.image : `${baseURL}/storage/${row.user.image}`)
+                            ? (row.user.image.startsWith('http') ? row.user.image : `${baseURL}/api/files/${row.user.image}`)
                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(row.user?.name || row.partner_overview?.reg_name || 'Partner')}&background=064771&color=fff&rounded=true`
                         }
                         alt=""
