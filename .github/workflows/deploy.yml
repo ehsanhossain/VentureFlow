@@ -3,10 +3,11 @@ name: Deploy to Production
 # When does this run? → Every push to the 'main' branch
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'ventureflow-backend/**'
-      - 'ventureflow-frontend/**'
+      - "ventureflow-backend/**"
+      - "ventureflow-frontend/**"
+      - ".github/workflows/deploy.yml"
 
 # What does it do?
 jobs:
@@ -22,8 +23,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: ventureflow-frontend/package-lock.json
 
       # Step 3: Install frontend dependencies
@@ -36,77 +37,61 @@ jobs:
         working-directory: ventureflow-frontend
         run: npm run build
 
-      # Step 5: Prepare the deploy folder
-      - name: Prepare deployment
-        run: |
-          # Start with the backend as the base
-          mkdir -p deploy
-
-          # Copy backend files (excluding dev files)
-          rsync -av --exclude='.git' \
-                    --exclude='node_modules' \
-                    --exclude='tests' \
-                    --exclude='*.sqlite' \
-                    --exclude='*.sqlite3' \
-                    --exclude='database/database.sqlite' \
-                    --exclude='.env' \
-                    ventureflow-backend/ deploy/
-
-          # Copy built frontend into public/
-          cp -r ventureflow-frontend/dist/* deploy/public/
-
-          # Copy the .htaccess for proper routing
-          cat > deploy/public/.htaccess << 'HTACCESS'
-          <IfModule mod_rewrite.c>
-              <IfModule mod_negotiation.c>
-                  Options -MultiViews -Indexes
-              </IfModule>
-
-              RewriteEngine On
-
-              # Handle Authorization Header
-              RewriteCond %{HTTP:Authorization} .
-              RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-
-              # Redirect Trailing Slashes If Not A Folder...
-              RewriteCond %{REQUEST_FILENAME} !-d
-              RewriteCond %{REQUEST_URI} (.+)/$
-              RewriteRule ^ %1 [L,R=301]
-
-              # API / Sanctum / Storage routes → Laravel (index.php)
-              RewriteCond %{REQUEST_URI} ^/api [OR]
-              RewriteCond %{REQUEST_URI} ^/sanctum [OR]
-              RewriteCond %{REQUEST_URI} ^/storage [OR]
-              RewriteCond %{REQUEST_URI} ^/login [OR]
-              RewriteCond %{REQUEST_URI} ^/logout [OR]
-              RewriteCond %{REQUEST_URI} ^/register [OR]
-              RewriteCond %{REQUEST_URI} ^/broadcasting
-              RewriteRule ^ index.php [L]
-
-              # Existing files and directories → serve directly
-              RewriteCond %{REQUEST_FILENAME} -f [OR]
-              RewriteCond %{REQUEST_FILENAME} -d
-              RewriteRule ^ - [L]
-
-              # Everything else → SPA (index.html)
-              RewriteRule ^ index.html [L]
-          </IfModule>
-          HTACCESS
-
-      # Step 6: Set up PHP for Composer
+      # Step 5: Set up PHP for Composer
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: "8.2"
+          tools: composer:v2
+
+      # Step 6: Prepare the deploy folder
+      - name: Prepare deployment
+        run: |
+          mkdir -p deploy
+
+          # Copy backend files (excluding dev/unnecessary files)
+          rsync -av \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='*.sqlite' \
+            --exclude='*.sqlite3' \
+            --exclude='database/database.sqlite' \
+            --exclude='.env' \
+            --exclude='.env.example' \
+            --exclude='storage/logs/*.log' \
+            --exclude='storage/framework/cache/data/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/views/*' \
+            ventureflow-backend/ deploy/
+
+          # Copy built frontend into public/
+          cp -rf ventureflow-frontend/dist/* deploy/public/
+
+          # Ensure storage directories exist
+          mkdir -p deploy/storage/app/public
+          mkdir -p deploy/storage/framework/cache/data
+          mkdir -p deploy/storage/framework/sessions
+          mkdir -p deploy/storage/framework/views
+          mkdir -p deploy/storage/logs
+          mkdir -p deploy/bootstrap/cache
+
+          # Create .gitkeep files for empty dirs
+          touch deploy/storage/app/public/.gitkeep
+          touch deploy/storage/framework/cache/data/.gitkeep
+          touch deploy/storage/framework/sessions/.gitkeep
+          touch deploy/storage/framework/views/.gitkeep
+          touch deploy/storage/logs/.gitkeep
+          touch deploy/bootstrap/cache/.gitkeep
 
       # Step 7: Install PHP dependencies (production only)
       - name: Install Composer dependencies
         working-directory: deploy
-        run: composer install --no-dev --optimize-autoloader --no-interaction
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
       # Step 8: Push to the deploy branch
       - name: Deploy to deploy branch
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy

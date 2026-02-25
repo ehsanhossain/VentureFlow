@@ -9,17 +9,26 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Handle X-XSRF-Token Header
-    RewriteCond %{HTTP:x-xsrf-token} .
-    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
-
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
+    # ---- API / Sanctum / Storage routes → Laravel (index.php) ----
+    RewriteCond %{REQUEST_URI} ^/api [OR]
+    RewriteCond %{REQUEST_URI} ^/sanctum [OR]
+    RewriteCond %{REQUEST_URI} ^/storage [OR]
+    RewriteCond %{REQUEST_URI} ^/login [OR]
+    RewriteCond %{REQUEST_URI} ^/logout [OR]
+    RewriteCond %{REQUEST_URI} ^/register [OR]
+    RewriteCond %{REQUEST_URI} ^/broadcasting
     RewriteRule ^ index.php [L]
+
+    # ---- Existing files and directories → serve directly ----
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # ---- Everything else → SPA (index.html) ----
+    RewriteRule ^ index.html [L]
 </IfModule>

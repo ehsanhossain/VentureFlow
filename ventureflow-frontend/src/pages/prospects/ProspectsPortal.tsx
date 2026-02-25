@@ -751,7 +751,7 @@ const ProspectsPortal: React.FC = () => {
                         })(),
                         website: ov.website || "",
                         teaserLink: ov.teaser_link || "",
-                        ebitda: fin.ttm_profit,
+                        ebitda: fin.ebitda_value || fin.ttm_profit,
                         ebitdaTimes: fin.ebitda_times || null,
                         channel: ov.channel,
                         isPinned: !!s.pinned,
