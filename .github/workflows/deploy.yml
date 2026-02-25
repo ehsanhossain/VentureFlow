@@ -9,6 +9,10 @@ on:
       - "ventureflow-frontend/**"
       - ".github/workflows/deploy.yml"
 
+# Give the workflow permission to push to the deploy branch
+permissions:
+  contents: write
+
 # What does it do?
 jobs:
   build-and-deploy:
