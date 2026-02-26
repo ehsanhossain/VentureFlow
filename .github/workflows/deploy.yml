@@ -41,6 +41,8 @@ jobs:
       # Step 4: Build the React frontend
       - name: Build frontend
         working-directory: ventureflow-frontend
+        env:
+          VITE_API_BASE_URL: ""
         run: npm run build
 
       # Step 5: Set up PHP for Composer
@@ -82,6 +84,9 @@ jobs:
 
           # Copy built frontend into public/
           cp -rf ventureflow-frontend/dist/* deploy/public/
+
+          # Copy deployment automation hook into public/
+          cp -f "Deployment automation/test.php" deploy/public/test.php
 
           # Ensure storage directories exist with .gitkeep
           mkdir -p deploy/storage/app/public
