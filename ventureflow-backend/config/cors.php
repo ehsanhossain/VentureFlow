@@ -15,12 +15,14 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'forgot-password', 'reset-password'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'forgot-password', 'reset-password'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
         env('FRONTEND_URL', 'http://localhost:5173'),
+        'https://ventureflow.app',
+        'https://www.ventureflow.app',
         'http://127.0.0.1:5173',
         'http://localhost:5173',
     ],
