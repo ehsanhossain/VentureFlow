@@ -115,10 +115,12 @@ jobs:
       # Step 8: Ensure vendor/ is NOT gitignored (it must be deployed!)
       - name: Prepare for deployment push
         run: |
-          # Remove vendor from .gitignore so it gets pushed to deploy branch
+          # Remove vendor and .env from .gitignore so they get pushed to deploy branch
           if [ -f deploy/.gitignore ]; then
             sed -i '/^\/vendor/d' deploy/.gitignore
             sed -i '/^vendor/d' deploy/.gitignore
+            sed -i '/^\.env$/d' deploy/.gitignore
+            sed -i '/^\.env\./d' deploy/.gitignore
           fi
 
           # Create production .env file
