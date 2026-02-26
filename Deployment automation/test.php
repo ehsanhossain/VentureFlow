@@ -8,6 +8,22 @@ $root = dirname(__DIR__);
 chdir($root);
 echo "Working in: $root\n\n";
 
+// Step 0: FORCE clear config cache (this was causing .env to not be read!)
+echo "=== Step 0: Clearing config cache ===\n";
+$cachedConfig = "$root/bootstrap/cache/config.php";
+if (file_exists($cachedConfig)) {
+    unlink($cachedConfig);
+    echo "Deleted cached config.php\n";
+} else {
+    echo "No cached config found\n";
+}
+// Also clear other cached files
+foreach (glob("$root/bootstrap/cache/*.php") as $cacheFile) {
+    unlink($cacheFile);
+    echo "Deleted: " . basename($cacheFile) . "\n";
+}
+echo "\n";
+
 // Step 1: Download Composer if not exists
 if (!file_exists("$root/composer.phar")) {
     echo "Downloading Composer...\n";
@@ -44,14 +60,31 @@ echo "Creating storage link...\n";
 exec("/opt/plesk/php/8.3/bin/php $root/artisan storage:link 2>&1", $out4);
 echo implode("\n", $out4) . "\n";
 
-// Step 6: Clear caches
-echo "Clearing caches...\n";
+// Step 6: Clear ALL caches
+echo "Clearing all caches...\n";
 exec("/opt/plesk/php/8.3/bin/php $root/artisan config:clear 2>&1", $out5);
 exec("/opt/plesk/php/8.3/bin/php $root/artisan cache:clear 2>&1", $out6);
 exec("/opt/plesk/php/8.3/bin/php $root/artisan route:clear 2>&1", $out7);
-echo implode("\n", array_merge($out5, $out6, $out7)) . "\n";
+exec("/opt/plesk/php/8.3/bin/php $root/artisan view:clear 2>&1", $out8);
+echo implode("\n", array_merge($out5, $out6, $out7, $out8)) . "\n";
 
 // Step 7: Verify
 echo "\n=== VERIFICATION ===\n";
 echo "vendor/autoload.php: " . (file_exists("$root/vendor/autoload.php") ? 'YES' : 'NO') . "\n";
-echo "Done!\n";
+
+// Show key .env values (safe ones only)
+if (file_exists("$root/.env")) {
+    $envContent = file_get_contents("$root/.env");
+    $lines = explode("\n", $envContent);
+    echo "\n.env key values:\n";
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || $line[0] === '#') continue;
+        // Only show safe keys, mask passwords
+        if (preg_match('/^(APP_URL|APP_ENV|DB_CONNECTION|DB_HOST|DB_DATABASE|SESSION_DRIVER|SESSION_DOMAIN|SANCTUM_STATEFUL_DOMAINS|FRONTEND_URL)=(.*)$/', $line, $m)) {
+            echo "  $line\n";
+        }
+    }
+}
+
+echo "\nDone!\n";

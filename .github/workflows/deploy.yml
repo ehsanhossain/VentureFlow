@@ -150,9 +150,9 @@ jobs:
           DB_CONNECTION=mysql
           DB_HOST=127.0.0.1
           DB_PORT=3306
-          DB_DATABASE=VF_alpha
-          DB_USERNAME=VF_alpha
-          DB_PASSWORD=alpha_vf
+          DB_DATABASE=VF_production
+          DB_USERNAME=VF_production
+          DB_PASSWORD="1_gmKx07kW#kPbeg"
           DB_CHARSET=utf8mb4
           DB_COLLATION=utf8mb4_unicode_ci
 
