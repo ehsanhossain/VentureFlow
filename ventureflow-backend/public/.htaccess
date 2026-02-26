@@ -18,9 +18,6 @@
     RewriteCond %{REQUEST_URI} ^/api [OR]
     RewriteCond %{REQUEST_URI} ^/sanctum [OR]
     RewriteCond %{REQUEST_URI} ^/storage [OR]
-    RewriteCond %{REQUEST_URI} ^/login [OR]
-    RewriteCond %{REQUEST_URI} ^/logout [OR]
-    RewriteCond %{REQUEST_URI} ^/register [OR]
     RewriteCond %{REQUEST_URI} ^/broadcasting
     RewriteRule ^ index.php [L]
 
