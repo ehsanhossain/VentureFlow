@@ -60,7 +60,7 @@ const StaffDetails: React.FC = () => {
 
 
 
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    const baseURL = ''; // deprecated — use getImageUrl
 
     useEffect(() => {
         if (id) {

@@ -50,7 +50,7 @@ const TargetDetails: React.FC = () => {
     // Avatar upload
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const [avatarUploading, setAvatarUploading] = useState(false);
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    const baseURL = ''; // deprecated — use getImageUrl
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

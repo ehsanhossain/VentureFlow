@@ -45,7 +45,7 @@ class NotificationController extends Controller
             foreach ($employees->get() as $emp) {
                 $fullName = trim($emp->first_name . ' ' . $emp->last_name);
                 if ($emp->image) {
-                    $avatarMap[$fullName] = asset('storage/' . $emp->image);
+                    $avatarMap[$fullName] = url('/api/files/' . $emp->image);
                 }
             }
         }

@@ -72,7 +72,7 @@ class SearchController extends Controller
                     'project_code' => $seller->seller_id ?? '',
                     'country' => $seller->companyOverview->hqCountry->name ?? '',
                     'country_flag' => $seller->companyOverview->hqCountry->svg_icon_url ?? '',
-                    'avatar_url' => $seller->image ? asset('storage/' . $seller->image) : null,
+                    'avatar_url' => $seller->image ? url('/api/files/' . $seller->image) : null,
                     'type' => 'Target'
                 ];
             });
@@ -102,7 +102,7 @@ class SearchController extends Controller
                     'project_code' => $buyer->buyer_id ?? '',
                     'country' => $buyer->companyOverview->hqCountry->name ?? '',
                     'country_flag' => $buyer->companyOverview->hqCountry->svg_icon_url ?? '',
-                    'avatar_url' => $buyer->image ? asset('storage/' . $buyer->image) : null,
+                    'avatar_url' => $buyer->image ? url('/api/files/' . $buyer->image) : null,
                     'type' => 'Investor'
                 ];
             });
@@ -125,7 +125,7 @@ class SearchController extends Controller
                     'first_name' => $emp->first_name,
                     'last_name' => $emp->last_name,
                     'work_email' => $emp->work_email,
-                    'avatar_url' => $emp->image ? asset('storage/' . $emp->image) : null,
+                    'avatar_url' => $emp->image ? url('/api/files/' . $emp->image) : null,
                 ];
             });
         } catch (\Exception $e) {
@@ -148,7 +148,7 @@ class SearchController extends Controller
                     'id' => $partner->id,
                     'name' => $partner->partnerOverview->reg_name ?? 'Unknown Partner',
                     'partner_id' => $partner->partner_id ?? '',
-                    'avatar_url' => $partner->partner_image ? asset('storage/' . $partner->partner_image) : null,
+                    'avatar_url' => $partner->partner_image ? url('/api/files/' . $partner->partner_image) : null,
                 ];
             });
         } catch (\Exception $e) {

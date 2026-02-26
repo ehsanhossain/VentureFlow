@@ -23,6 +23,7 @@ import { showAlert } from '../../components/Alert';
 import clsx from 'clsx';
 import SelectPicker from '../../components/SelectPicker';
 import { Controller, useForm } from 'react-hook-form';
+import { getImageUrl, getInitialsUrl } from '../../utils/imageUrl';
 
 import { Dropdown, Country } from './components/Dropdown';
 
@@ -275,7 +276,6 @@ const IndexEmployee = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [meta, setMeta] = useState<Meta>({});
   const inputRef = useRef<HTMLInputElement>(null);
-  const baseURL = import.meta.env.VITE_API_BASE_URL;
   const [loading, setLoading] = useState(false);
 
   const fetchEmployees = async (page = 1, query = '') => {
@@ -1085,10 +1085,8 @@ const IndexEmployee = ({
                           )}
                           <img
                             src={
-                              employee?.image
-                                ? `${baseURL}/api/files/${employee.image}`
-                                : `https://ui-avatars.com/api/?name=${employee?.first_name ?? 'User'
-                                }+${employee?.last_name ?? ''}&background=ccc&color=000&size=128`
+                              getImageUrl(employee?.image)
+                              || getInitialsUrl(`${employee?.first_name ?? 'User'} ${employee?.last_name ?? ''}`, 'ccc', '000')
                             }
                             alt={`${employee?.first_name ?? ''} ${employee?.last_name ?? ''}`}
                             className="w-[26px] h-[26px] rounded-full object-cover"

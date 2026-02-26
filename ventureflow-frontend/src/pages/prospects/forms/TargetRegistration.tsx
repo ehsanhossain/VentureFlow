@@ -470,7 +470,7 @@ export const TargetRegistration: React.FC = () => {
                 } catch (e) { /* ignored */ }
 
                 if (seller.image) {
-                    const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+                    const baseURL = '';
                     const isUrl = seller.image.startsWith('http');
                     const imagePath = isUrl ? seller.image : `${baseURL}/api/files/${seller.image.replace(/^\//, '')}`;
                     setInitialProfileImage(imagePath);

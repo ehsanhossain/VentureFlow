@@ -46,7 +46,7 @@ class ActivityLogController extends Controller
                         ? $log->user->employee->first_name . ' ' . $log->user->employee->last_name 
                         : $log->user->name,
                     'avatar' => $log->user->employee && $log->user->employee->image 
-                        ? asset('storage/' . $log->user->employee->image) 
+                        ? url('/api/files/' . $log->user->employee->image) 
                         : null,
                     'content' => $log->content,
                     'timestamp' => $log->created_at,

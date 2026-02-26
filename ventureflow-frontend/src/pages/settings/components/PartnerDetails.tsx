@@ -85,7 +85,7 @@ const PartnerDetails: React.FC = () => {
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    const baseURL = ''; // deprecated — use getImageUrl
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

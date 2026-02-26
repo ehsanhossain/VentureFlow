@@ -115,7 +115,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const getImageUrl = (imagePath: string | undefined): string | null => {
         if (!imagePath) return null;
         if (imagePath.startsWith('http')) return imagePath;
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+        const baseURL = '';
         return `${baseURL}/api/files/${imagePath.replace(/^\//, '')}`;
     };
 

@@ -5,6 +5,7 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { getImageUrl } from "../../utils/imageUrl";
 type RowProps = {
   id: number;
   type: number; // 1 for seller, 2 for non-seller
@@ -116,7 +117,7 @@ const Row: React.FC<RowProps> = ({
             {image ? (
               <img
                 className="rounded-[180px] w-[31px] h-[31px]"
-                src={`${import.meta.env.VITE_API_BASE_URL}/api/files/${image}`}
+                src={getImageUrl(image) || ''}
                 style={{ objectFit: "cover", width: "31px", height: "31px" }}
                 alt="Logo"
               />

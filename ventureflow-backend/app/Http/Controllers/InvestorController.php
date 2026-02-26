@@ -1078,7 +1078,7 @@ class InvestorController extends Controller
                 if ($log->user) {
                     if ($log->user->employee) {
                         $userName = trim($log->user->employee->first_name . ' ' . $log->user->employee->last_name);
-                        $avatar = $log->user->employee->image ? asset('storage/' . $log->user->employee->image) : null;
+                        $avatar = $log->user->employee->image ? url('/api/files/' . $log->user->employee->image) : null;
                     } else {
                         $userName = $log->user->name;
                     }
@@ -1962,7 +1962,7 @@ class InvestorController extends Controller
         return response()->json([
             'message'    => 'Avatar updated successfully.',
             'image_path' => $imagePath,
-            'image_url'  => asset('storage/' . $imagePath),
+            'image_url'  => url('/api/files/' . $imagePath),
         ]);
     }
 }

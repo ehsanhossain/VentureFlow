@@ -46,7 +46,7 @@ const PartnerManagement: React.FC = () => {
         direction: 'asc'
     });
 
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    const baseURL = ''; // deprecated — use getImageUrl
 
     // Close action menu when clicking outside
     useEffect(() => {

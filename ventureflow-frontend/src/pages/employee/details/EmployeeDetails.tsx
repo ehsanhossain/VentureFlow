@@ -13,7 +13,7 @@ import clsx from 'clsx';
 import MaleIcon from '../icons/MaleIcon';
 import FemaleIcon from '../icons/FemaleIcon';
 import { ActionButton } from '../../../components/ActionButton';
-const baseURL = import.meta.env.VITE_API_BASE_URL;
+import { getImageUrl } from '../../../utils/imageUrl';
 import {
   Table,
   TableBody,
@@ -295,7 +295,7 @@ const EmployeeDetails: React.FC = () => {
                 className="rounded-full w-34 h-34 object-cover"
                 src={
                   employee?.image
-                    ? `${baseURL}/api/files/${employee.image}`
+                    ? (getImageUrl(employee.image) || '')
                     : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='145' height='145' viewBox='0 0 145 145' fill='none'><rect x='1' y='1' width='143' height='143' rx='71.5' fill='%23F1FBFF'/><rect x='1' y='1' width='143' height='143' rx='71.5' stroke='%23064771' stroke-width='2'/><path d='M72.5001 73.2894C80.9906 73.2894 87.8954 66.3849 87.8954 57.8947C87.8954 49.4045 80.9906 42.5 72.5001 42.5C64.0095 42.5 57.1047 49.4045 57.1047 57.8947C57.1047 66.3849 64.0095 73.2894 72.5001 73.2894ZM72.5001 47.6316C78.1604 47.6316 82.7636 52.2346 82.7636 57.8947C82.7636 63.5548 78.1604 68.1578 72.5001 68.1578C66.8397 68.1578 62.2365 63.5548 62.2365 57.8947C62.2365 52.2346 66.8397 47.6316 72.5001 47.6316Z' fill='%23064771'/><path d='M95.593 99.9313C95.593 101.348 94.446 102.497 93.0271 102.497C91.6082 102.497 90.4612 101.348 90.4612 99.9313C90.4612 92.1852 85.5219 85.5886 78.635 83.0741L74.7426 88.9138L77.5471 99.1513C78.0167 100.86 76.5079 102.5 74.4655 102.5H70.5345C68.4921 102.5 66.9859 100.86 67.4529 99.1513L70.2574 88.9138L66.365 83.0741C59.4781 85.5886 54.5388 92.1852 54.5388 99.9338C54.5388 101.35 53.3892 102.5 51.9729 102.5C50.5565 102.5 49.407 101.35 49.407 99.9338C49.407 87.2024 59.768 76.8418 72.5 76.8418C85.2319 76.8418 95.593 87.1999 95.593 99.9313Z' fill='%23064771'/></svg>"
                 }
                 alt="profile"

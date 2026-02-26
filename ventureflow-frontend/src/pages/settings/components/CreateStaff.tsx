@@ -58,7 +58,7 @@ const CreateStaff: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [emailError, setEmailError] = useState<string | null>(null);
 
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
+    const baseURL = ''; // deprecated — use getImageUrl
 
     const { control, handleSubmit, setValue, register, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
         defaultValues: {

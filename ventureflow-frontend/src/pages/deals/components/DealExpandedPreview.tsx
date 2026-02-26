@@ -27,7 +27,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     const getImageUrl = (imagePath: string | undefined): string | null => {
         if (!imagePath) return null;
         if (imagePath.startsWith('http')) return imagePath;
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+        const baseURL = '';
         return `${baseURL}/api/files/${imagePath.replace(/^\//, '')}`;
     };
 

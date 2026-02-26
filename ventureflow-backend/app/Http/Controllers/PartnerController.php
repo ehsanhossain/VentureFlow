@@ -619,7 +619,7 @@ class PartnerController extends Controller
 
         return response()->json([
             'message'   => 'Avatar updated successfully.',
-            'image_url' => asset('storage/' . $path),
+            'image_url' => url('/api/files/' . $path),
         ]);
     }
 }

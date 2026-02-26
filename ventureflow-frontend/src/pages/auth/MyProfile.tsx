@@ -11,6 +11,7 @@ import { AuthContext } from '../../routes/AuthContext';
 import api from '../../config/api';
 import { showAlert } from '../../components/Alert';
 import ImageCropperModal from '../../components/ImageCropperModal';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
     Mail, Phone, Shield, ShieldCheck, Key, Loader, Camera,
 } from 'lucide-react';
@@ -61,7 +62,6 @@ const MyProfile: React.FC = () => {
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-    const baseURL = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
         api.get('/api/user')
@@ -102,8 +102,7 @@ const MyProfile: React.FC = () => {
     };
 
     const getAvatarUrl = () => {
-        if (employee?.image) return `${baseURL}/api/files/${employee.image}`;
-        return null;
+        return getImageUrl(employee?.image);
     };
 
     const getInitials = (name: string) => {

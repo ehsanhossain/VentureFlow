@@ -82,7 +82,7 @@ class NewRegistrationNotification extends Notification
         if ($this->actor) {
             $data['actor_name'] = trim(($this->actor->employee->first_name ?? '') . ' ' . ($this->actor->employee->last_name ?? '')) ?: ($this->actor->name ?? 'System');
             $empImage = $this->actor->employee->image ?? null;
-            $data['actor_avatar'] = $empImage ? asset('storage/' . $empImage) : null;
+            $data['actor_avatar'] = $empImage ? url('/api/files/' . $empImage) : null;
         }
 
         return $data;

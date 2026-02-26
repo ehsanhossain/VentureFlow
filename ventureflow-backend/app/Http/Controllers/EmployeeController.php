@@ -491,7 +491,7 @@ class EmployeeController extends Controller
         return response()->json([
             'message'    => 'Avatar updated successfully.',
             'image_path' => $imagePath,
-            'image_url'  => asset('storage/' . $imagePath),
+            'image_url'  => url('/api/files/' . $imagePath),
         ]);
     }
 }

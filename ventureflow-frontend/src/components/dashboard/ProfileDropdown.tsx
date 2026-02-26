@@ -9,6 +9,7 @@ import { AuthContext } from "../../routes/AuthContext";
 import api from "../../config/api";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getImageUrl, getInitialsUrl } from "../../utils/imageUrl";
 
 interface UserData {
   name: string;
@@ -37,7 +38,6 @@ const ProfileDropdown: React.FC = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [partner, setPartner] = useState<Partner | null>(null);
-  const baseURL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,9 +66,8 @@ const ProfileDropdown: React.FC = () => {
     fetchUser();
   }, []);
 
-  const profileImageUrl = (employee?.image || partner?.image)
-    ? `${baseURL}/api/files/${employee?.image || partner?.image}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=064771&color=fff`;
+  const profileImageUrl = getImageUrl(employee?.image || partner?.image)
+    || getInitialsUrl(user?.name || 'User');
 
   return (
     <div ref={dropdownRef} className="relative">
