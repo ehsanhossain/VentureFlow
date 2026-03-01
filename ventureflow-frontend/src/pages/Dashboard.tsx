@@ -5,7 +5,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,6 +15,7 @@ import {
 import globalAddButtonIcon from '../assets/icons/global-add-button.svg';
 import { BrandSpinner } from '../components/BrandSpinner';
 import api from '../config/api';
+import { AuthContext } from '../routes/AuthContext';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend
@@ -117,8 +118,17 @@ const getActivityIcon = (entityType: string) => {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const auth = useContext(AuthContext);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Partners should never see the dashboard — redirect to prospects
+  useEffect(() => {
+    if (auth?.isPartner) {
+      navigate('/prospects', { replace: true });
+    }
+  }, [auth?.isPartner, navigate]);
+
   const fetchDashboard = async () => {
     setLoading(true);
     try {
@@ -132,8 +142,10 @@ const Dashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    if (!auth?.isPartner) {
+      fetchDashboard();
+    }
+  }, [auth?.isPartner]);
 
   const geoBarData = useMemo(() => {
     if (!data) return [];

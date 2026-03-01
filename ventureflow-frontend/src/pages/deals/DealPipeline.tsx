@@ -66,15 +66,19 @@ export interface Deal {
     share_ratio?: string;
     comment_count: number;
     attachment_count: number;
+    investment_condition?: string;
     updated_at: string;
     has_new_activity?: boolean;
     onChatClick?: (deal: Deal) => void;
+    unread_comment_count?: number;
     buyer?: {
         id: number;
+        buyer_id?: string; // project code e.g. JP-B-001
         image?: string;
         company_overview?: {
             reg_name: string;
             hq_country?: number;
+            investment_budget?: string | { min?: number | string; max?: number | string; currency?: string };
         };
         investment_critera?: {
             target_countries?: Array<{ id: number; name: string; svg_icon_url?: string }>;
@@ -83,13 +87,14 @@ export interface Deal {
     };
     seller?: {
         id: number;
+        seller_id?: string; // project code e.g. JP-S-001
         image?: string;
         company_overview?: {
             reg_name: string;
             hq_country?: number;
         };
         financial_details?: {
-            desired_investment?: number;
+            desired_investment?: number | string | { min?: number | string; max?: number | string; currency?: string };
             maximum_investor_shareholding_percentage?: string;
             ebitda?: number;
         };
@@ -215,8 +220,6 @@ const DealPipeline = () => {
                 enhancedGrouped[stage].deals = enhancedGrouped[stage].deals.map((d: Deal) => ({
                     ...d,
                     onChatClick: (deal: Deal) => setChatDeal(deal),
-                    // Mock: randomly add some activity for demo
-                    has_new_activity: d.comment_count > 0 && Math.random() > 0.5
                 }));
             });
             setDeals(enhancedGrouped);

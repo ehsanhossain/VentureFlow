@@ -23,6 +23,7 @@ export interface SubMenuItem {
   icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   roles?: string[]; // If specified, only these roles can see this item
   partnerVisible?: boolean; // If true, partners can see this
+  partnerOnly?: boolean; // If true, ONLY partners can see this (hidden from admin/staff)
 }
 
 export interface MenuItem {
@@ -40,6 +41,7 @@ export const menuItems: MenuItem[] = [
     icon: ProspectsIcon,
     label: "Prospects",
     path: "/prospects",
+    partnerVisible: true,
   },
   { icon: MatchIcon, label: "MatchIQ", path: "/matchiq" },
   { icon: CatalystIcon, label: "Deal Pipeline", path: "/deal-pipeline" },
@@ -47,9 +49,11 @@ export const menuItems: MenuItem[] = [
     icon: SettingsMainIcon,
     label: "Settings",
     path: "/settings",
+    partnerVisible: true,
     // Settings is now visible to all, but has different sub-items based on role
     subItems: [
       { label: "General", path: "/settings/general", icon: GeneralSettingsSubIcon, partnerVisible: true },
+      { label: "My Profile", path: "/settings/profile", icon: StaffAccountsIcon, partnerVisible: true, partnerOnly: true },
       { label: "Staff & Accounts", path: "/settings/staff", icon: StaffAccountsIcon },
       { label: "Currency", path: "/settings/currency", icon: CurrencyIcon },
       { label: "Partner Management", path: "/settings/partners", icon: PartnerIconCustom },

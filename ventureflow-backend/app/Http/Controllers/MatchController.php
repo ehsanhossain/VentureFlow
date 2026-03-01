@@ -141,7 +141,53 @@ class MatchController extends Controller
         // Get all matches (no hard pagination — cluster later)
         $allMatches = $query->get();
 
-        // ─── Cluster by Investor ────────────────────────────────────────
+        // ─── Cluster by Investor or Target based on mode ────────
+        $mode = $request->get('mode', 'investor'); // 'investor' or 'target'
+
+        if ($mode === 'target') {
+            // Target-centric: group by seller, list matched investors
+            $clustered = $allMatches->groupBy('seller_id')->map(function ($matches, $sellerId) {
+                $firstMatch = $matches->first();
+                $target = $firstMatch->seller;
+                $overview = $target?->companyOverview;
+
+                return [
+                    'target' => [
+                        'id'         => $target?->id,
+                        'seller_id'  => $target?->seller_id,
+                        'reg_name'   => $overview?->reg_name ?? 'Unknown Target',
+                        'hq_country' => $overview?->hq_country,
+                        'industry'   => $overview?->industry_ops,
+                        'image'      => $target?->image,
+                    ],
+                    'investors' => $matches->map(function ($match) {
+                        $investor = $match->buyer;
+                        $overview = $investor?->companyOverview;
+
+                        return [
+                            'match_id'          => $match->id,
+                            'investor_id'       => $investor?->id,
+                            'buyer_id'          => $investor?->buyer_id,
+                            'reg_name'          => $overview?->reg_name ?? 'Unknown Investor',
+                            'hq_country'        => $overview?->hq_country,
+                            'industry'          => $overview?->company_industry,
+                            'image'             => $overview?->buyer_image ?? $overview?->profile_picture,
+                            'total_score'       => $match->total_score,
+                            'industry_score'    => $match->industry_score,
+                            'geography_score'   => $match->geography_score,
+                            'financial_score'   => $match->financial_score,
+                            'transaction_score' => $match->transaction_score,
+                            'tier'              => $match->tier,
+                            'tier_label'        => $match->tier_label,
+                            'status'            => $match->status,
+                        ];
+                    })->sortByDesc('total_score')->values(),
+                    'best_score'      => $matches->max('total_score'),
+                    'investor_count'  => $matches->count(),
+                ];
+            })->sortByDesc('best_score')->values();
+        } else {
+            // Investor-centric (default): group by buyer, list matched targets
         $clustered = $allMatches->groupBy('buyer_id')->map(function ($matches, $buyerId) {
             $firstMatch = $matches->first();
             $investor = $firstMatch->buyer;
@@ -182,6 +228,7 @@ class MatchController extends Controller
                 'target_count'  => $matches->count(),
             ];
         })->sortByDesc('best_score')->values();
+        } // end mode if/else
 
         // Paginate the clustered results
         $page    = max(1, (int) $request->get('page', 1));
@@ -245,6 +292,23 @@ class MatchController extends Controller
             return $result;
         };
 
+        // ─── Compute USD-converted budget values ──────────────────
+        $convertBudgetToUsd = function ($rawBudget, $currency) {
+            if (empty($rawBudget)) return null;
+            $arr = is_string($rawBudget) ? json_decode($rawBudget, true) : (is_array($rawBudget) ? $rawBudget : null);
+            if (!is_array($arr)) return null;
+            $min = (float) ($arr['min'] ?? $arr[0] ?? 0);
+            $max = (float) ($arr['max'] ?? $arr[1] ?? 0);
+            $cur = $currency ?: 'USD';
+            return [
+                'min' => \App\Models\ExchangeRate::toUsd($min, $cur),
+                'max' => \App\Models\ExchangeRate::toUsd($max, $cur),
+            ];
+        };
+
+        $investorCurrency = $invFin?->default_currency ?? $invFin?->register_currency ?? 'USD';
+        $targetCurrency   = $tgtFin?->default_currency ?? 'USD';
+
         return response()->json([
             'match' => [
                 'id'                => $match->id,
@@ -266,10 +330,11 @@ class MatchController extends Controller
                 'target_industries'    => $invCO?->main_industry_operations,
                 'target_countries'     => $resolveTargetCountries($invCO?->target_countries),
                 'investment_budget'    => $invCO?->investment_budget,
+                'investment_budget_usd' => $convertBudgetToUsd($invCO?->investment_budget, $investorCurrency),
                 'investment_condition' => $invCO?->investment_condition,
                 'reason_ma'            => $invCO?->reason_ma,
                 'image'                => $invCO?->buyer_image ?? $invCO?->profile_picture,
-                'currency'             => $invFin?->default_currency ?? $invFin?->register_currency,
+                'currency'             => $investorCurrency,
             ],
             'target' => [
                 'id'                          => $target?->id,
@@ -279,9 +344,10 @@ class MatchController extends Controller
                 'industry'                    => $tgtCO?->industry_ops,
                 'reason_ma'                   => $tgtCO?->reason_ma,
                 'expected_investment_amount'   => $tgtFin?->expected_investment_amount,
+                'expected_investment_amount_usd' => $convertBudgetToUsd($tgtFin?->expected_investment_amount, $targetCurrency),
                 'investment_condition'         => $tgtFin?->investment_condition,
                 'image'                        => $target?->image,
-                'currency'                     => $tgtFin?->default_currency,
+                'currency'                     => $targetCurrency,
             ],
         ]);
     }
@@ -350,6 +416,21 @@ class MatchController extends Controller
         ]);
 
         return response()->json(['message' => 'Match dismissed.']);
+    }
+
+    /**
+     * POST /api/matchiq/{id}/approve
+     * Approve/like a match.
+     */
+    public function approve(int $id): JsonResponse
+    {
+        $match = MatchModel::findOrFail($id);
+        $match->update([
+            'status'      => 'approved',
+            'reviewed_by' => auth()->id(),
+        ]);
+
+        return response()->json(['message' => 'Match approved.']);
     }
 
     /**

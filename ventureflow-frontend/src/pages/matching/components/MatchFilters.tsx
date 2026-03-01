@@ -31,7 +31,7 @@ const labelStyle: React.CSSProperties = {
 
 const sectionHeadingStyle: React.CSSProperties = {
     fontSize: '11px',
-    fontWeight: 700,
+    fontWeight: 600,
     color: '#6b7280',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
@@ -82,7 +82,7 @@ const MatchFilters: React.FC<MatchFiltersProps> = ({
             {/* ─── Standard Filters ───────────────────────────────────── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px', color: '#374151' }}>
                 <img src={filterIcon} alt="" style={{ width: 14, height: 14 }} />
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>Filters</span>
+                <span style={{ fontSize: '13px', fontWeight: 500 }}>Filters</span>
             </div>
 
             {/* Minimum Score */}
@@ -294,7 +294,7 @@ const MatchFilters: React.FC<MatchFiltersProps> = ({
                                 background: criteria.investor_id ? '#064771' : '#e5e7eb',
                                 color: criteria.investor_id ? '#fff' : '#9ca3af',
                                 border: 'none', borderRadius: '3px',
-                                fontSize: '12px', fontWeight: 600,
+                                fontSize: '12px', fontWeight: 500,
                                 cursor: criteria.investor_id && !customLoading ? 'pointer' : 'not-allowed',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                                 transition: 'background 0.15s',

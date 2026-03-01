@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { X, MessageSquare, Clock, SkipBack, SkipForward } from 'lucide-react';
-import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
+import { getCurrencySymbol, formatCompactNumber, formatCompactBudget } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
 
 interface DealExpandedPreviewProps {
@@ -32,20 +32,26 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     };
 
     // Buyer details
-    const buyerName = deal.buyer?.company_overview?.reg_name || 'Unknown Buyer';
+    const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'To be declared' : 'Undefined');
+    const buyerCode = (deal.buyer as any)?.buyer_id || '';
     const buyerImage = getImageUrl(deal.buyer?.image);
-    const budget = formatValue(deal.ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
+    // Budget range from investor profile
+    const investmentBudget = deal.buyer?.company_overview?.investment_budget;
+    const budgetDisplay = investmentBudget
+        ? formatCompactBudget(investmentBudget as any, getCurrencySymbol('USD'))
+        : formatValue(deal.ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
     const targetCountries = deal.buyer?.investment_critera?.target_countries || [];
-    const displayCountry = targetCountries[0]?.name || 'Not Specified';
-    const additionalCountries = targetCountries.length > 1 ? targetCountries.length - 1 : 0;
     const targetIndustries = deal.buyer?.investment_critera?.target_industries || [];
     const displayIndustries = targetIndustries.slice(0, 3).map((i: { name: string }) => i.name).join(', ') || 'Not Specified';
     const additionalIndustries = targetIndustries.length > 3 ? targetIndustries.length - 3 : 0;
 
     // Seller details
-    const sellerName = deal.seller?.company_overview?.reg_name || 'Unknown Seller';
+    const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'To be declared' : 'Undefined');
+    const sellerCode = (deal.seller as any)?.seller_id || '';
     const sellerImage = getImageUrl(deal.seller?.image);
-    const desiredInvestment = formatValue(deal.seller?.financial_details?.desired_investment, deal.estimated_ev_currency);
+    const desiredInvestment = deal.seller?.financial_details?.desired_investment
+        ? formatCompactBudget(deal.seller.financial_details.desired_investment as any, getCurrencySymbol('USD'))
+        : 'N/A';
     const shareRatio = deal.seller?.financial_details?.maximum_investor_shareholding_percentage ||
         deal.shareholding_ratio || 'Not Specified';
     const ebitda = deal.seller?.financial_details?.ebitda
@@ -119,7 +125,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <p className="text-[15px] font-semibold text-gray-900 truncate leading-6">{buyerName}</p>
-                                <p className="text-[13px] text-gray-500 leading-5">Buyer/Investor</p>
+                                {buyerCode && <p className="text-[11px] text-gray-400 leading-4 truncate">{buyerCode}</p>}
                             </div>
                         </div>
 
@@ -127,6 +133,9 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                         <div className="flex flex-col items-center gap-0.5 flex-shrink-0 px-4">
                             <span className="text-[13px] text-gray-400 leading-5">{relationLabel}</span>
                             <span className="text-[13px] font-medium text-gray-600 leading-5">{acquiringRatio}</span>
+                            {(deal as any).investment_condition && (
+                                <span className="text-[11px] text-gray-400 leading-4">{(deal as any).investment_condition}</span>
+                            )}
                         </div>
 
                         {/* Seller/Target */}
@@ -153,7 +162,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                                 <p className="text-[15px] font-semibold text-gray-900 truncate leading-6">{sellerName}</p>
-                                <p className="text-[13px] text-gray-500 leading-5">Seller/Target</p>
+                                {sellerCode && <p className="text-[11px] text-gray-400 leading-4 truncate">{sellerCode}</p>}
                             </div>
                         </div>
 
@@ -174,50 +183,38 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                     <div className="flex justify-between gap-10">
                         {/* Left Column - Investor/Buyer Details */}
                         <div className="flex-1 flex flex-col gap-4">
-                            <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide">Investor/Buyer Details</p>
+                            <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide">Investor Details</p>
 
                             {/* Budget */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Budget</span>
-                                <span className="text-[14px] font-semibold text-gray-900 leading-5">{budget}</span>
+                                <span className="text-[14px] font-semibold text-gray-900 leading-5">{budgetDisplay}</span>
                             </div>
 
                             {/* Target Country */}
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-start gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Target Country</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[14px] text-gray-900 leading-5">{displayCountry}</span>
-                                    {additionalCountries > 0 && (
-                                        <span
-                                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-gray-600"
-                                            style={{ background: '#F1F5F9' }}
-                                        >
-                                            +{additionalCountries}
-                                        </span>
+                                <div className="flex flex-col gap-1">
+                                    {targetCountries.length > 0 ? targetCountries.map((c, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            {c.svg_icon_url ? (
+                                                <img src={c.svg_icon_url} alt={c.name} className="w-4 h-3 object-cover rounded-sm" />
+                                            ) : (
+                                                <span className="text-xs">🏳️</span>
+                                            )}
+                                            <span className="text-[14px] text-gray-900 leading-5">{c.name}</span>
+                                        </div>
+                                    )) : (
+                                        <span className="text-[14px] text-gray-900 leading-5">Not Specified</span>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Target Industry */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Target Industry</span>
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <span className="text-[14px] text-gray-900 leading-5 truncate" style={{ maxWidth: 180 }}>{displayIndustries}</span>
-                                    {additionalIndustries > 0 && (
-                                        <span
-                                            className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-gray-600 flex-shrink-0"
-                                            style={{ background: '#F1F5F9' }}
-                                        >
-                                            +{additionalIndustries}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
                         </div>
 
                         {/* Right Column - Target/Seller Details */}
                         <div className="flex-1 flex flex-col gap-4">
-                            <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide">Target/Seller Details</p>
+                            <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wide">Target Details</p>
 
                             {/* Desired Investment */}
                             <div className="flex items-center gap-4">
@@ -259,7 +256,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                         <MessageSquare className="w-4 h-4 text-white" />
                         <div className="flex items-center gap-1.5">
                             <span className="text-[13px] font-medium text-white">{commentCount}</span>
-                            <span className="text-[13px] font-medium text-white">New Comments</span>
+                            <span className="text-[13px] font-medium text-white">Chats</span>
                         </div>
                     </div>
 

@@ -27,10 +27,12 @@ interface PartnerUser {
     };
     partner_overview?: {
         reg_name: string;
-        hq_country: string;
-    };
-    partnership_structure?: {
-        partnership_structure: string;
+        hq_country: number | string;
+        country?: {
+            id: number;
+            name: string;
+            svg_icon_url?: string;
+        };
     };
 }
 
@@ -196,21 +198,27 @@ const PartnerManagement: React.FC = () => {
         {
             id: 'country',
             header: t('settings.partners.table.country'),
-            accessor: (row) => (
-                <div className="text-xs text-gray-900">{row.partner_overview?.hq_country || 'N/A'}</div>
-            ),
-            width: 150,
+            accessor: (row) => {
+                const country = row.partner_overview?.country;
+                return (
+                    <div className="flex items-center gap-2">
+                        {country?.svg_icon_url ? (
+                            <img
+                                src={country.svg_icon_url}
+                                alt=""
+                                className="w-5 h-5 rounded-full object-cover ring-1 ring-gray-100 flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="w-5 h-5 rounded-full bg-gray-200 flex-shrink-0" />
+                        )}
+                        <span className="text-xs text-gray-900 truncate">
+                            {country?.name || 'N/A'}
+                        </span>
+                    </div>
+                );
+            },
+            width: 180,
             sortable: true
-        },
-        {
-            id: 'structure',
-            header: t('settings.partners.table.structure'),
-            accessor: (row) => (
-                <div className="text-xs text-gray-600 italic truncate">
-                    {row.partnership_structure?.partnership_structure || t('common.notSet')}
-                </div>
-            ),
-            width: 180
         },
         {
             id: 'status',
@@ -235,34 +243,34 @@ const PartnerManagement: React.FC = () => {
                     e.stopPropagation();
                     setOpenActionMenuId(openActionMenuId === row.id ? null : row.id);
                 }}
-                className="p-1.5 hover:bg-gray-100 rounded-[3px] text-gray-400 hover:text-gray-700 transition-colors"
+                className="w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded-[3px] text-gray-400 hover:text-gray-600 transition-colors"
                 title="Options"
             >
                 <MoreVertical className="w-4 h-4" />
             </button>
 
             {openActionMenuId === row.id && (
-                <div className="absolute right-0 mt-8 w-48 bg-white rounded-[3px] border border-gray-100 py-1 z-[70] shadow-xl animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-[3px] border border-gray-200 py-1.5 z-[70] shadow-lg animate-in fade-in zoom-in-95 duration-100 origin-top-right overflow-hidden" style={{ minWidth: '160px' }}>
                     <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/settings/partners/${row.id}`); setOpenActionMenuId(null); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50/50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
                     >
-                        <Eye className="w-4 h-4 text-gray-400" />
+                        <Eye className="w-3.5 h-3.5 text-gray-400" />
                         {t('common.viewDetails')}
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/settings/partners/edit/${row.id}`); setOpenActionMenuId(null); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50/50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                        className="w-full text-left px-3.5 py-2 text-[13px] text-gray-700 hover:bg-gray-50 flex items-center gap-2.5 transition-colors"
                     >
-                        <Edit2 className="w-4 h-4 text-gray-400" />
+                        <Edit2 className="w-3.5 h-3.5 text-gray-400" />
                         {t('common.edit')}
                     </button>
-                    <div className="h-px bg-gray-50 my-1" />
+                    <div className="h-px bg-gray-100 my-1 mx-2" />
                     <button
                         onClick={(e) => { e.stopPropagation(); handleDelete(row.id); setOpenActionMenuId(null); }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
+                        className="w-full text-left px-3.5 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                         {t('common.delete')}
                     </button>
                 </div>

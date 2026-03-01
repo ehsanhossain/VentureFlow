@@ -49,13 +49,15 @@ export function Sidebar({
       "MatchIQ": "navigation.matchIQ",
       "Industries": "navigation.industries",
       "Fee Structure": "navigation.feeStructure",
-      "Audit Log": "navigation.auditLog"
+      "Audit Log": "navigation.auditLog",
+      "My Profile": context?.isPartner ? "My Account" : "My Profile"
     };
     return mapping[label] || label;
   };
 
   const filteredMenuItems = menuItems.filter((item) => {
-    if (context?.isPartner && item.label === "Deal Pipeline") return false;
+    // Partners only see items explicitly marked as partnerVisible
+    if (context?.isPartner && !item.partnerVisible) return false;
     if (!item.roles) return true;
     return item.roles.includes(userRole);
   });
@@ -63,9 +65,12 @@ export function Sidebar({
   // Filter sub-items based on partner visibility
   const getFilteredSubItems = (subItems: SubMenuItem[] | undefined) => {
     if (!subItems) return [];
-    if (!context?.isPartner) return subItems;
-    // Partners only see sub-items marked as partnerVisible
-    return subItems.filter((sub: SubMenuItem) => sub.partnerVisible);
+    if (context?.isPartner) {
+      // Partners only see sub-items marked as partnerVisible
+      return subItems.filter((sub: SubMenuItem) => sub.partnerVisible);
+    }
+    // Non-partners: hide partnerOnly items
+    return subItems.filter((sub: SubMenuItem) => !sub.partnerOnly);
   };
 
   const isSubItemActive = (subItems: SubMenuItem[]) => {

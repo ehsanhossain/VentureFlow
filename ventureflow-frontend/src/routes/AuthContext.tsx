@@ -16,11 +16,14 @@ export interface User {
   must_change_password?: boolean;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
   isPartner: boolean;
   role: string | null;
+  partner: any | null;
+  employee: any | null;
   login: (credentials: unknown) => Promise<unknown>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -30,6 +33,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [partner, setPartner] = useState<any | null>(null);
+  const [employee, setEmployee] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Derived state for partner check
@@ -43,12 +48,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const res = await api.get("/api/user", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // Merge user and role from response
         const userData = res.data.user || res.data;
         const userRole = res.data.role || userData.role;
         setUser({ ...userData, role: userRole });
+        setPartner(res.data.partner || null);
+        setEmployee(res.data.employee || null);
       } catch {
         setUser(null);
+        setPartner(null);
+        setEmployee(null);
       }
     }
   };
@@ -63,8 +71,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const userData = res.data.user || res.data;
           const userRole = res.data.role || userData.role;
           setUser({ ...userData, role: userRole });
+          setPartner(res.data.partner || null);
+          setEmployee(res.data.employee || null);
         })
-        .catch(() => setUser(null))
+        .catch(() => { setUser(null); setPartner(null); setEmployee(null); })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -123,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isPartner, role, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, isPartner, role, partner, employee, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

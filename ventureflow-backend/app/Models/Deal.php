@@ -39,6 +39,11 @@ class Deal extends Model
         'lost_reason',
         'comment_count',
         'attachment_count',
+        'investment_condition',
+        'ebitda_investor_value',
+        'ebitda_investor_times',
+        'ebitda_target_value',
+        'ebitda_target_times',
     ];
 
     protected $casts = [
@@ -46,6 +51,10 @@ class Deal extends Model
         'ticket_size' => 'decimal:2',
         'target_close_date' => 'date',
         'internal_pic' => 'array',
+        'ebitda_investor_value' => 'decimal:2',
+        'ebitda_investor_times' => 'decimal:2',
+        'ebitda_target_value' => 'decimal:2',
+        'ebitda_target_times' => 'decimal:2',
     ];
 
     protected $appends = ['stage_name', 'stage_progress', 'buyer_stage_name', 'seller_stage_name'];

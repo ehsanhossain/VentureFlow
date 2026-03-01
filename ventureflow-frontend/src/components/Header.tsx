@@ -453,7 +453,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm outline-none"
-                placeholder="Search deals, companies, documents..."
+                placeholder={isPartner ? "Search by project code..." : "Search deals, companies, documents..."}
                 autoFocus
               />
               <div className="absolute right-3 top-3.5 flex items-center gap-1">
@@ -478,8 +478,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                   </div>
                 )}
 
-                {/* Deals */}
-                {results.deals.length > 0 && (
+                {/* Deals — hidden for partners */}
+                {!isPartner && results.deals.length > 0 && (
                   <div key="deals-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Deals</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -503,8 +503,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                         <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/investor/${investor.id}`); closeSearch(); }}>
                           <SearchAvatar name={investor.name} avatarUrl={investor.avatar_url as string | undefined} />
-                          <span className="ml-3 flex-auto truncate">{investor.name}</span>
-                          {investor.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{investor.project_code}</span>}
+                          <span className="ml-3 flex-auto truncate">{isPartner ? investor.project_code : investor.name}</span>
+                          {investor.project_code && !isPartner && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{investor.project_code}</span>}
                         </li>
                       ))}
                     </ul>
@@ -520,16 +520,16 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                         <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
                           onClick={() => { navigate(`/prospects/target/${target.id}`); closeSearch(); }}>
                           <SearchAvatar name={target.name} avatarUrl={target.avatar_url as string | undefined} />
-                          <span className="ml-3 flex-auto truncate">{target.name}</span>
-                          {target.project_code && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{target.project_code}</span>}
+                          <span className="ml-3 flex-auto truncate">{isPartner ? target.project_code : target.name}</span>
+                          {target.project_code && !isPartner && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{target.project_code}</span>}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Staff */}
-                {results.staff.length > 0 && (
+                {/* Staff — hidden for partners */}
+                {!isPartner && results.staff.length > 0 && (
                   <div key="staff-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Staff</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -545,8 +545,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                   </div>
                 )}
 
-                {/* Partners */}
-                {results.partners.length > 0 && (
+                {/* Partners — hidden for partners */}
+                {!isPartner && results.partners.length > 0 && (
                   <div key="partners-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Partners</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -562,8 +562,8 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                   </div>
                 )}
 
-                {/* Documents */}
-                {results.documents.length > 0 && (
+                {/* Documents — hidden for partners */}
+                {!isPartner && results.documents.length > 0 && (
                   <div key="documents-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Documents</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -585,9 +585,12 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               query.length <= 1 ? (
                 <div className="py-14 px-6 text-center text-sm sm:px-14">
                   <Command className="mx-auto h-6 w-6 text-gray-400" />
-                  <p className="mt-4 font-medium text-gray-900">Search the entire platform</p>
+                  <p className="mt-4 font-medium text-gray-900">{isPartner ? 'Search shared prospects' : 'Search the entire platform'}</p>
                   <p className="mt-2 text-gray-500">
-                    Search for active deals, buyer profiles, sellers, or documents.
+                    {isPartner
+                      ? 'Search for shared prospects by project code.'
+                      : 'Search for active deals, buyer profiles, sellers, or documents.'
+                    }
                   </p>
                 </div>
               ) : null

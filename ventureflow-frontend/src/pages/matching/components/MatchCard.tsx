@@ -115,7 +115,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
                         flexShrink: 0
                     }}>
                         <span style={{
-                            fontSize: '14px', fontWeight: 700, color: tier.color
+                            fontSize: '14px', fontWeight: 600, color: tier.color
                         }}>
                             {match.total_score}
                         </span>
@@ -128,7 +128,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
                                 onClick={() => onViewInvestor(match.buyer_id)}
                                 title={`View ${buyerName}`}
                                 style={{
-                                    fontSize: '14px', fontWeight: 600, color: '#0a2540',
+                                    fontSize: '14px', fontWeight: 500, color: '#0a2540',
                                     cursor: 'pointer', textDecoration: 'none',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.color = '#064771')}
@@ -141,7 +141,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
                                 onClick={() => onViewTarget(match.seller_id)}
                                 title={`View ${sellerName}`}
                                 style={{
-                                    fontSize: '14px', fontWeight: 600, color: '#0a2540',
+                                    fontSize: '14px', fontWeight: 500, color: '#0a2540',
                                     cursor: 'pointer', textDecoration: 'none',
                                 }}
                                 onMouseEnter={e => (e.currentTarget.style.color = '#064771')}
@@ -152,7 +152,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                             <span style={{
-                                fontSize: '11px', fontWeight: 600, color: tier.color,
+                                fontSize: '11px', fontWeight: 500, color: tier.color,
                                 background: tier.bg, padding: '1px 8px', borderRadius: '3px',
                             }}>
                                 {tier.label}

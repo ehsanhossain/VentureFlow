@@ -39,7 +39,7 @@ class PartnerController extends Controller
             $statusValue = $status == 1 ? '1' : '0';
         }
 
-        $partners = Partner::with(['partnerOverview', 'partnershipStructure', 'user'])
+        $partners = Partner::with(['partnerOverview.country', 'partnershipStructure', 'user'])
             ->when($search, function ($query) use ($search) {
                 $query->whereHas('partnerOverview', function ($q) use ($search) {
                     $q->where('reg_name', 'like', "%{$search}%");

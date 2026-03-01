@@ -36,7 +36,6 @@ import ChangePassword from "../pages/auth/ChangePassword";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
-import PartnerProfile from '../pages/settings/components/PartnerProfile';
 import MatchIQ from '../pages/matching/MatchIQ';
 
 const AppRoutes = () => {
@@ -165,7 +164,7 @@ const AppRoutes = () => {
         <Route path="industries" element={<IndustrySettings />} />
         <Route path="fee-structure" element={<FeeStructureSettings />} />
         <Route path="audit-log" element={<AuditLog />} />
-        <Route path="profile" element={<PartnerProfile />} />
+        <Route path="profile" element={<MyProfile />} />
       </Route>
 
       <Route

@@ -46,7 +46,7 @@ interface Employee {
 const MyProfile: React.FC = () => {
     const context = useContext(AuthContext);
     if (!context) throw new Error('AuthContext missing');
-    const { user, role } = context;
+    const { user, role, isPartner, partner: authPartner } = context;
 
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [loading, setLoading] = useState(true);
@@ -62,15 +62,32 @@ const MyProfile: React.FC = () => {
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const [partnerData, setPartnerData] = useState<any>(null);
 
     useEffect(() => {
-        api.get('/api/user')
-            .then((res) => {
-                setEmployee(res.data.employee || null);
-            })
-            .catch(() => setEmployee(null))
-            .finally(() => setLoading(false));
-    }, []);
+        if (isPartner) {
+            // For partners, use the partner data from auth context or fetch it
+            if (authPartner) {
+                setPartnerData(authPartner);
+                setLoading(false);
+            } else {
+                api.get('/api/user')
+                    .then((res) => {
+                        setPartnerData(res.data.partner || null);
+                    })
+                    .catch(() => setPartnerData(null))
+                    .finally(() => setLoading(false));
+            }
+        } else {
+            api.get('/api/user')
+                .then((res) => {
+                    setEmployee(res.data.employee || null);
+                })
+                .catch(() => setEmployee(null))
+                .finally(() => setLoading(false));
+        }
+    }, [isPartner, authPartner]);
 
     // ── Avatar handlers ──
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,16 +100,22 @@ const MyProfile: React.FC = () => {
     };
 
     const handleCropComplete = async (blob: Blob) => {
-        if (!employee?.id) return;
         setCropSrc(null);
         setAvatarUploading(true);
         try {
             const fd = new FormData();
             fd.append('image', blob, 'avatar.jpg');
-            const res = await api.post(`/api/employees/${employee.id}/avatar`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setEmployee((prev) => prev ? { ...prev, image: res.data.image_path } : prev);
+            if (isPartner && partnerData?.id) {
+                const res = await api.post(`/api/partners/${partnerData.id}/avatar`, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                setPartnerData((prev: any) => prev ? { ...prev, partner_image: res.data.image_url } : prev);
+            } else if (employee?.id) {
+                const res = await api.post(`/api/employees/${employee.id}/avatar`, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                setEmployee((prev) => prev ? { ...prev, image: res.data.image_path } : prev);
+            }
             showAlert({ type: 'success', message: 'Profile picture updated.' });
         } catch {
             showAlert({ type: 'error', message: 'Failed to upload profile picture.' });
@@ -102,6 +125,9 @@ const MyProfile: React.FC = () => {
     };
 
     const getAvatarUrl = () => {
+        if (isPartner && partnerData?.partner_image) {
+            return getImageUrl(partnerData.partner_image);
+        }
         return getImageUrl(employee?.image);
     };
 
@@ -153,15 +179,17 @@ const MyProfile: React.FC = () => {
         );
     }
 
-    const displayName = employee
-        ? `${employee.first_name} ${employee.last_name}`
-        : user?.name || 'User';
+    const displayName = isPartner
+        ? (partnerData?.partner_overview?.reg_name || user?.name || 'Partner')
+        : employee
+            ? `${employee.first_name} ${employee.last_name}`
+            : user?.name || 'User';
 
     const isAdmin = role === 'System Admin';
-    const roleLabel = isAdmin ? 'System Admin' : role || 'Staff';
-    const lastUpdated = employee?.user?.created_at
-        ? formatDate(employee.user.created_at)
-        : 'N/A';
+    const roleLabel = isPartner ? 'Partner' : isAdmin ? 'System Admin' : role || 'Staff';
+    const lastUpdated = isPartner
+        ? (partnerData?.created_at ? formatDate(partnerData.created_at) : 'N/A')
+        : (employee?.user?.created_at ? formatDate(employee.user.created_at) : 'N/A');
 
     const inputClass = "w-full h-10 px-3 border border-gray-200 rounded-[3px] text-sm outline-none focus:border-[#064771] focus:ring-2 focus:ring-[#064771]/10 transition";
 
@@ -171,7 +199,7 @@ const MyProfile: React.FC = () => {
                 {/* Header Bar */}
                 <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-5 py-2.5">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-medium text-gray-900">My Profile</h1>
+                        <h1 className="text-2xl font-medium text-gray-900">{isPartner ? 'My Account' : 'My Profile'}</h1>
                     </div>
                 </div>
 
@@ -227,7 +255,12 @@ const MyProfile: React.FC = () => {
                                     <div className="flex flex-col justify-between">
                                         <div className="flex items-center gap-3">
                                             <span className="text-2xl font-medium text-black capitalize">{displayName}</span>
-                                            {employee?.employee_id && (
+                                            {isPartner && partnerData?.partner_id && (
+                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
+                                                    {partnerData.partner_id}
+                                                </span>
+                                            )}
+                                            {!isPartner && employee?.employee_id && (
                                                 <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
                                                     {employee.employee_id}
                                                 </span>
@@ -239,34 +272,64 @@ const MyProfile: React.FC = () => {
 
                                 {/* Overview Stats Row */}
                                 <div className="flex items-start gap-20">
-                                    {employee?.country?.name && (
-                                        <div className="flex flex-col gap-1.5">
-                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Nationality</span>
-                                            <div className="flex items-center gap-2">
-                                                {employee.country.svg_icon_url && (
-                                                    <img src={employee.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                                )}
-                                                <span className="text-sm font-medium text-gray-900">{employee.country.name}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {employee?.gender && (
-                                        <div className="flex flex-col gap-1.5">
-                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Gender</span>
-                                            <span className="text-sm font-normal text-black">{employee.gender}</span>
-                                        </div>
-                                    )}
-                                    {(employee?.department_data?.name || employee?.department?.name) && (
-                                        <div className="flex flex-col gap-1.5">
-                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Department</span>
-                                            <span className="text-sm font-normal text-black">{employee?.department_data?.name || employee?.department?.name}</span>
-                                        </div>
-                                    )}
-                                    {(employee?.designation_data?.title || employee?.designation?.designation_name) && (
-                                        <div className="flex flex-col gap-1.5">
-                                            <span className="text-[11px] font-medium text-gray-400 uppercase">Designation</span>
-                                            <span className="text-sm font-normal text-black">{employee?.designation_data?.title || employee?.designation?.designation_name}</span>
-                                        </div>
+                                    {isPartner ? (
+                                        <>
+                                            {partnerData?.partner_overview?.country?.name && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Country</span>
+                                                    <div className="flex items-center gap-2">
+                                                        {partnerData.partner_overview.country.svg_icon_url && (
+                                                            <img src={partnerData.partner_overview.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                                        )}
+                                                        <span className="text-sm font-medium text-gray-900">{partnerData.partner_overview.country.name}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {partnerData?.partner_overview?.company_type && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Company Type</span>
+                                                    <span className="text-sm font-normal text-black">{partnerData.partner_overview.company_type}</span>
+                                                </div>
+                                            )}
+                                            {partnerData?.partner_overview?.year_founded && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Year Founded</span>
+                                                    <span className="text-sm font-normal text-black">{partnerData.partner_overview.year_founded}</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            {employee?.country?.name && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Nationality</span>
+                                                    <div className="flex items-center gap-2">
+                                                        {employee.country.svg_icon_url && (
+                                                            <img src={employee.country.svg_icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                                        )}
+                                                        <span className="text-sm font-medium text-gray-900">{employee.country.name}</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {employee?.gender && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Gender</span>
+                                                    <span className="text-sm font-normal text-black">{employee.gender}</span>
+                                                </div>
+                                            )}
+                                            {(employee?.department_data?.name || employee?.department?.name) && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Department</span>
+                                                    <span className="text-sm font-normal text-black">{employee?.department_data?.name || employee?.department?.name}</span>
+                                                </div>
+                                            )}
+                                            {(employee?.designation_data?.title || employee?.designation?.designation_name) && (
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-[11px] font-medium text-gray-400 uppercase">Designation</span>
+                                                    <span className="text-sm font-normal text-black">{employee?.designation_data?.title || employee?.designation?.designation_name}</span>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -278,29 +341,35 @@ const MyProfile: React.FC = () => {
                             <div className="h-px bg-[#E5E7EB]" />
 
                             <div className="flex gap-4">
-                                {/* Work Email Card */}
+                                {/* Email Card */}
                                 <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
                                             <Mail className="w-5 h-5 text-gray-400" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-medium text-gray-400">Work Email</span>
-                                            <span className="text-base font-medium text-gray-900">{employee?.work_email || user?.email || 'Not set'}</span>
+                                            <span className="text-xs font-medium text-gray-400">{isPartner ? 'Email' : 'Work Email'}</span>
+                                            <span className="text-base font-medium text-gray-900">
+                                                {isPartner
+                                                    ? (partnerData?.partner_overview?.contact_person_email || user?.email || 'Not set')
+                                                    : (employee?.work_email || user?.email || 'Not set')}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Contact Number Card */}
-                                {employee?.contact_number && (
+                                {(isPartner ? partnerData?.partner_overview?.company_phone : employee?.contact_number) && (
                                     <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
                                                 <Phone className="w-5 h-5 text-gray-400" />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-medium text-gray-400">Contact Number</span>
-                                                <span className="text-base font-medium text-gray-900">{employee.contact_number}</span>
+                                                <span className="text-xs font-medium text-gray-400">{isPartner ? 'Company Phone' : 'Contact Number'}</span>
+                                                <span className="text-base font-medium text-gray-900">
+                                                    {isPartner ? partnerData.partner_overview.company_phone : employee?.contact_number}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -334,8 +403,8 @@ const MyProfile: React.FC = () => {
                             </div>
                         </section>
 
-                        {/* Organization Section */}
-                        {(employee?.company_data?.name || employee?.branch_data?.name || employee?.team_data?.name) && (
+                        {/* Organization Section — Staff/Admin only */}
+                        {!isPartner && (employee?.company_data?.name || employee?.branch_data?.name || employee?.team_data?.name) && (
                             <section className="space-y-7">
                                 <h2 className="text-base font-medium text-gray-500 capitalize">Organization</h2>
                                 <div className="h-px bg-[#E5E7EB]" />
@@ -441,8 +510,16 @@ const MyProfile: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Employee ID */}
-                        {employee?.employee_id && (
+                        {/* Employee/Partner ID */}
+                        {isPartner && partnerData?.partner_id && (
+                            <div className="space-y-3">
+                                <h3 className="text-base font-medium text-gray-500 capitalize">Partner ID</h3>
+                                <span className="inline-flex px-3 py-1.5 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771] font-mono">
+                                    {partnerData.partner_id}
+                                </span>
+                            </div>
+                        )}
+                        {!isPartner && employee?.employee_id && (
                             <div className="space-y-3">
                                 <h3 className="text-base font-medium text-gray-500 capitalize">Employee ID</h3>
                                 <span className="inline-flex px-3 py-1.5 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771] font-mono">
@@ -464,7 +541,9 @@ const MyProfile: React.FC = () => {
                         <div className="space-y-3">
                             <h3 className="text-base font-medium text-gray-500 capitalize">Member Since</h3>
                             <span className="text-base font-normal text-black">
-                                {formatDate(employee?.joining_date || employee?.user?.created_at)}
+                                {isPartner
+                                    ? formatDate(partnerData?.created_at)
+                                    : formatDate(employee?.joining_date || employee?.user?.created_at)}
                             </span>
                         </div>
 

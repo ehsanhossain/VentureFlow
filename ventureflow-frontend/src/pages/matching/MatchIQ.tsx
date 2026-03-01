@@ -4,27 +4,45 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../config/api';
 import EngineController, { MatchWeights, EngineFilters } from './components/EngineController';
 import InvestorClusterCard, { ClusteredInvestor } from './components/InvestorClusterCard';
 import MatchComparisonPanel, { MatchDetail } from './components/MatchComparisonPanel';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { BrandSpinner } from '../../components/BrandSpinner';
+import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /* ─── Types ───────────────────────────────────────────────────────────── */
 
-interface FilterCountry {
+export interface MatchData {
     id: number;
-    country_name: string;
+    buyer_id: number;
+    seller_id: number;
+    total_score: number;
+    industry_score: number;
+    geography_score: number;
+    financial_score: number;
+    ownership_score: number;
+    transaction_score: number;
+    computed_at: string;
+    buyer?: any;
+    seller?: any;
 }
 
-interface FilterIndustry {
+export interface FilterCountry {
     id: number;
-    name: string;
+    country_name?: string;
+    name?: string;
 }
 
-interface MatchStats {
+export interface FilterIndustry {
+    id: number;
+    name?: string;
+    label?: string;
+}
+
+export interface MatchStats {
     total: number;
     excellent: number;
     strong: number;
@@ -33,7 +51,29 @@ interface MatchStats {
     avg_score: number;
 }
 
+export interface MatchFiltersState {
+    min_score: number;
+    industry_ids: number[];
+    country_ids: number[];
+    buyer_id: string;
+    seller_id: string;
+}
+
+export interface InvestorCriteria {
+    investor_id: string;
+    industry_ids: number[];
+    target_countries: number[];
+    ebitda_min: string;
+    budget_min: string;
+    budget_max: string;
+    ownership_condition: string;
+}
+
+type ViewMode = 'investor' | 'target';
+
 /* ─── Constants ──────────────────────────────────────────────────────── */
+
+const BRAND = '#064771';
 
 const DEFAULT_WEIGHTS: MatchWeights = {
     industry: 30,
@@ -49,6 +89,65 @@ const DEFAULT_FILTERS: EngineFilters = {
     country: '',
 };
 
+/* ─── Resizable Divider ──────────────────────────────────────────────── */
+
+const ResizeDivider: React.FC<{
+    onResize: (delta: number) => void;
+}> = ({ onResize }) => {
+    const [dragging, setDragging] = useState(false);
+    const lastX = useRef(0);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setDragging(true);
+        lastX.current = e.clientX;
+
+        const handleMouseMove = (ev: MouseEvent) => {
+            const delta = ev.clientX - lastX.current;
+            lastX.current = ev.clientX;
+            onResize(delta);
+        };
+
+        const handleMouseUp = () => {
+            setDragging(false);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    };
+
+    return (
+        <div
+            onMouseDown={handleMouseDown}
+            style={{
+                width: 6,
+                cursor: 'col-resize',
+                background: dragging ? '#d1d5db' : 'transparent',
+                borderLeft: '1px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'background 0.15s ease',
+            }}
+            onMouseEnter={e => { if (!dragging) e.currentTarget.style.background = '#f3f4f6'; }}
+            onMouseLeave={e => { if (!dragging) e.currentTarget.style.background = 'transparent'; }}
+            title="Drag to resize panels"
+        >
+            <div style={{
+                width: 2, height: 32, borderRadius: 1,
+                background: '#d1d5db',
+            }} />
+        </div>
+    );
+};
+
 /* ─── MatchIQ Page ───────────────────────────────────────────────────── */
 
 const MatchIQ: React.FC = () => {
@@ -57,6 +156,9 @@ const MatchIQ: React.FC = () => {
     // Engine state
     const [weights, setWeights] = useState<MatchWeights>(DEFAULT_WEIGHTS);
     const [filters, setFilters] = useState<EngineFilters>(DEFAULT_FILTERS);
+
+    // View mode: investor-centric or target-centric
+    const [viewMode, setViewMode] = useState<ViewMode>('investor');
 
     // Data
     const [clusters, setClusters] = useState<ClusteredInvestor[]>([]);
@@ -72,6 +174,9 @@ const MatchIQ: React.FC = () => {
     const [matchDetail, setMatchDetail] = useState<MatchDetail | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
+    // Panel sizes (center column width)
+    const [centerWidth, setCenterWidth] = useState<number | null>(null);
+
     // Pagination
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -84,6 +189,7 @@ const MatchIQ: React.FC = () => {
             const params: Record<string, any> = {
                 page: pageNum,
                 per_page: 20,
+                mode: viewMode,
             };
             if (filters.tier !== 'all') params.tier = filters.tier;
             if (filters.industry) params.industry_ids = [filters.industry];
@@ -91,7 +197,37 @@ const MatchIQ: React.FC = () => {
             if (filters.minScore > 30) params.min_score = filters.minScore;
 
             const { data } = await api.get('/api/matchiq', { params });
-            setClusters(data.data || []);
+
+            // Normalize target-mode response to match investor-mode shape
+            if (viewMode === 'target') {
+                const normalized = (data.data || []).map((item: any) => ({
+                    investor: item.target || item.investor, // target becomes the "grouping entity"
+                    targets: (item.investors || item.targets || []).map((inv: any) => ({
+                        ...inv,
+                        match_id: inv.match_id,
+                        target_id: inv.investor_id || inv.target_id,
+                        seller_id: inv.buyer_id || inv.seller_id,
+                        reg_name: inv.reg_name,
+                        hq_country: inv.hq_country,
+                        industry: inv.industry,
+                        image: inv.image,
+                        total_score: inv.total_score,
+                        industry_score: inv.industry_score,
+                        geography_score: inv.geography_score,
+                        financial_score: inv.financial_score,
+                        transaction_score: inv.transaction_score,
+                        tier: inv.tier,
+                        tier_label: inv.tier_label,
+                        status: inv.status,
+                    })),
+                    best_score: item.best_score,
+                    target_count: item.investor_count || item.target_count,
+                }));
+                setClusters(normalized);
+            } else {
+                setClusters(data.data || []);
+            }
+
             setTotalPages(data.meta?.last_page || 1);
             setPage(pageNum);
         } catch (err) {
@@ -99,7 +235,7 @@ const MatchIQ: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, [filters, viewMode]);
 
     const loadStats = async () => {
         try {
@@ -171,6 +307,48 @@ const MatchIQ: React.FC = () => {
         setFilters(prev => ({ ...prev, ...partial }));
     };
 
+    const handleDismiss = async (matchId: number) => {
+        try {
+            await api.post(`/api/matchiq/${matchId}/dismiss`);
+            // Remove from clusters
+            setClusters(prev => prev.map(cluster => ({
+                ...cluster,
+                targets: cluster.targets.filter(t => t.match_id !== matchId),
+                target_count: cluster.targets.filter(t => t.match_id !== matchId).length,
+            })).filter(c => c.targets.length > 0));
+            // Clear detail if dismissed match was selected
+            if (selectedMatchId === matchId) {
+                handleCloseDetail();
+            }
+        } catch (err) {
+            console.error('Failed to dismiss match', err);
+        }
+    };
+
+    const handleApprove = async (matchId: number) => {
+        try {
+            await api.post(`/api/matchiq/${matchId}/approve`);
+            // Update status in clusters
+            setClusters(prev => prev.map(cluster => ({
+                ...cluster,
+                targets: cluster.targets.map(t =>
+                    t.match_id === matchId ? { ...t, status: 'approved' } : t
+                ),
+            })));
+        } catch (err) {
+            console.error('Failed to approve match', err);
+        }
+    };
+
+    const handleResize = (delta: number) => {
+        setCenterWidth(prev => {
+            const current = prev ?? 400;
+            return Math.max(250, Math.min(800, current + delta));
+        });
+    };
+
+    /* ─── (labels removed — no longer needed) ─── */
+
     /* ─── Render ──────────────────────────────────────────────────────── */
 
     return (
@@ -178,21 +356,42 @@ const MatchIQ: React.FC = () => {
             display: 'flex', flexDirection: 'column',
             height: 'calc(100vh - 64px)', overflow: 'hidden',
         }}>
-            {/* Page Header */}
-            <div style={{
-                padding: '16px 24px', borderBottom: '1px solid #e5e7eb',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'white', flexShrink: 0,
-            }}>
-                <div>
-                    <h1 style={{ fontSize: 20, fontWeight: 700, color: '#064771', margin: 0 }}>
-                        {t('matchIQ.title', 'Match')}IQ
-                    </h1>
+            {/* Page Header — matches Prospects layout exactly */}
+            <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4" style={{ flexShrink: 0 }}>
+                <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
+                    <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">MatchIQ</h1>
+
+                    <div className="relative flex bg-gray-100 rounded-[6px] p-1">
+                        {/* Sliding pill background */}
+                        <div
+                            className="absolute top-1 bottom-1 rounded-[5px] bg-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                            style={{
+                                width: 'calc(50% - 4px)',
+                                left: viewMode === 'investor' ? '4px' : 'calc(50%)',
+                            }}
+                        />
+                        <button
+                            onClick={() => { setViewMode('investor'); setSelectedMatchId(null); setMatchDetail(null); }}
+                            className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium whitespace-nowrap transition-colors duration-300 ${
+                                viewMode === 'investor' ? 'text-[#064771]' : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            Find Targets for Investors
+                        </button>
+                        <button
+                            onClick={() => { setViewMode('target'); setSelectedMatchId(null); setMatchDetail(null); }}
+                            className={`relative z-[1] flex-1 px-4 py-1.5 rounded-[5px] text-sm font-medium whitespace-nowrap transition-colors duration-300 ${
+                                viewMode === 'target' ? 'text-[#064771]' : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                        >
+                            Find Investors for Targets
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats pills */}
                 {stats && (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="flex items-center gap-2 w-full md:w-auto">
                         {[
                             { label: 'Best', value: stats.excellent },
                             { label: 'Strong', value: stats.strong },
@@ -201,8 +400,8 @@ const MatchIQ: React.FC = () => {
                         ].map(s => (
                             <div key={s.label} style={{
                                 padding: '6px 14px', borderRadius: 3,
-                                background: '#e8f0f6', color: '#064771',
-                                fontSize: 12, fontWeight: 600,
+                                background: '#f3f4f6', color: '#374151',
+                                fontSize: 12, fontWeight: 500,
                                 display: 'flex', alignItems: 'center', gap: 4,
                             }}>
                                 {s.label}: {s.value}
@@ -230,8 +429,10 @@ const MatchIQ: React.FC = () => {
 
                 {/* CENTER: Clustered Match Results */}
                 <div style={{
-                    flex: 1, display: 'flex', flexDirection: 'column',
-                    overflow: 'hidden', minWidth: 0,
+                    width: centerWidth ?? undefined,
+                    flex: centerWidth ? 'none' : '2 1 0%',
+                    display: 'flex', flexDirection: 'column',
+                    overflow: 'hidden', minWidth: 250,
                 }}>
                     {/* Center header */}
                     <div style={{
@@ -239,15 +440,15 @@ const MatchIQ: React.FC = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         background: 'white', flexShrink: 0,
                     }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>
-                            {clusters.length} investor group{clusters.length !== 1 ? 's' : ''}
+                        <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>
+                            Potential Matches ({clusters.length})
                         </span>
                         <button
                             onClick={() => loadMatches(page)}
                             title="Refresh matches"
                             style={{
                                 width: 28, height: 28, border: '1px solid #e5e7eb',
-                                borderRadius: 4, background: 'white', cursor: 'pointer',
+                                borderRadius: 3, background: 'white', cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: '#6b7280',
                             }}
@@ -257,14 +458,15 @@ const MatchIQ: React.FC = () => {
                     </div>
 
                     {/* Cards container */}
-                    <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+                    <div className="scrollbar-premium" style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
                         {loading ? (
                             <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', justifyContent: 'center',
                                 height: '100%', color: '#9ca3af',
                             }}>
-                                <Loader2 size={24} className="animate-spin" style={{ marginRight: 8 }} />
-                                <span style={{ fontSize: 13 }}>Loading matches…</span>
+                                <BrandSpinner size="sm" />
+                                <span style={{ fontSize: 13, marginTop: 12 }}>Loading matches…</span>
                             </div>
                         ) : clusters.length === 0 ? (
                             <div style={{
@@ -288,6 +490,8 @@ const MatchIQ: React.FC = () => {
                                         onTargetClick={handleTargetClick}
                                         selectedMatchId={selectedMatchId}
                                         countries={countries}
+                                        onDismiss={handleDismiss}
+                                        onApprove={handleApprove}
                                     />
                                 ))}
 
@@ -302,7 +506,7 @@ const MatchIQ: React.FC = () => {
                                             disabled={page <= 1}
                                             style={{
                                                 padding: '6px 14px', fontSize: 12, fontWeight: 500,
-                                                border: '1px solid #e5e7eb', borderRadius: 6,
+                                                border: '1px solid #e5e7eb', borderRadius: 3,
                                                 background: 'white', color: page <= 1 ? '#d1d5db' : '#374151',
                                                 cursor: page <= 1 ? 'default' : 'pointer',
                                             }}
@@ -317,7 +521,7 @@ const MatchIQ: React.FC = () => {
                                             disabled={page >= totalPages}
                                             style={{
                                                 padding: '6px 14px', fontSize: 12, fontWeight: 500,
-                                                border: '1px solid #e5e7eb', borderRadius: 6,
+                                                border: '1px solid #e5e7eb', borderRadius: 3,
                                                 background: 'white', color: page >= totalPages ? '#d1d5db' : '#374151',
                                                 cursor: page >= totalPages ? 'default' : 'pointer',
                                             }}
@@ -331,21 +535,24 @@ const MatchIQ: React.FC = () => {
                     </div>
                 </div>
 
-                {/* RIGHT: Match Comparison Panel */}
-                {(selectedMatchId || matchDetail) && (
-                    <div style={{
-                        width: 380, borderLeft: '1px solid #e5e7eb',
-                        background: 'white', display: 'flex', flexDirection: 'column',
-                        flexShrink: 0,
-                    }}>
-                        <MatchComparisonPanel
-                            detail={matchDetail}
-                            loading={detailLoading}
-                            onClose={handleCloseDetail}
-                            countries={countries}
-                        />
-                    </div>
-                )}
+                {/* RESIZE DIVIDER between center and right */}
+                <ResizeDivider onResize={handleResize} />
+
+                {/* RIGHT: Match Comparison Panel — ALWAYS visible */}
+                <div style={{
+                    flex: '3 1 0%',
+                    minWidth: 300,
+                    borderLeft: '0px', // divider handles the border
+                    background: 'white', display: 'flex', flexDirection: 'column',
+                    overflow: 'hidden',
+                }}>
+                    <MatchComparisonPanel
+                        detail={matchDetail}
+                        loading={detailLoading}
+                        onClose={handleCloseDetail}
+                        countries={countries}
+                    />
+                </div>
             </div>
         </div>
     );

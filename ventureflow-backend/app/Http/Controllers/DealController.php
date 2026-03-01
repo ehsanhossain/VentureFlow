@@ -21,6 +21,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\DealStatusNotification;
 use App\Models\ActivityLog;
+use App\Models\DealCommentRead;
 
 class DealController extends Controller
 {
@@ -29,7 +30,7 @@ class DealController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'pic']);
+        $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'seller.financialDetails', 'pic']);
         $view = $request->query('view', 'buyer');
         
         // Ensure view is valid
@@ -84,6 +85,32 @@ class DealController extends Controller
         $deals = $query->withCount(['activityLogs as comment_count' => function($q) {
             $q->where('type', 'comment');
         }])->orderBy('updated_at', 'desc')->get();
+
+        // Compute unread comment count per deal for current user
+        $userId = Auth::id();
+        if ($userId) {
+            $readMap = DealCommentRead::where('user_id', $userId)
+                ->pluck('last_read_at', 'deal_id');
+
+            $deals->each(function ($deal) use ($userId, $readMap) {
+                $lastRead = $readMap->get($deal->id);
+                if ($lastRead) {
+                    $deal->unread_comment_count = ActivityLog::where('loggable_type', Deal::class)
+                        ->where('loggable_id', $deal->id)
+                        ->where('type', 'comment')
+                        ->where('created_at', '>', $lastRead)
+                        ->where('user_id', '!=', $userId)
+                        ->count();
+                } else {
+                    // User has never read — all comments from others are unread
+                    $deal->unread_comment_count = ActivityLog::where('loggable_type', Deal::class)
+                        ->where('loggable_id', $deal->id)
+                        ->where('type', 'comment')
+                        ->where('user_id', '!=', $userId)
+                        ->count();
+                }
+            });
+        }
 
         // Fetch dynamic stages
         $stages = \App\Models\PipelineStage::where('pipeline_type', $view)
@@ -165,6 +192,11 @@ class DealController extends Controller
             'target_close_date' => 'nullable|date',
             'pipeline_type' => 'nullable|in:buyer,seller',
             'deal_type' => 'nullable|string|max:50',
+            'investment_condition' => 'nullable|string|max:100',
+            'ebitda_investor_value' => 'nullable|numeric',
+            'ebitda_investor_times' => 'nullable|numeric',
+            'ebitda_target_value' => 'nullable|numeric',
+            'ebitda_target_times' => 'nullable|numeric',
         ]);
 
         // At least one party (buyer or seller) must be selected
@@ -242,12 +274,31 @@ class DealController extends Controller
             'deal' => $deal->load([
                 'buyer.companyOverview',
                 'seller.companyOverview',
+                'seller.financialDetails',
                 'pic',
                 'stageHistory.changedBy.employee',
                 'activityLogs.user.employee',
                 'documents',
             ]),
         ]);
+    }
+
+    /**
+     * Mark deal comments as read for the authenticated user
+     */
+    public function markCommentsRead(Deal $deal): JsonResponse
+    {
+        $userId = Auth::id();
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        DealCommentRead::updateOrCreate(
+            ['user_id' => $userId, 'deal_id' => $deal->id],
+            ['last_read_at' => now()]
+        );
+
+        return response()->json(['message' => 'Comments marked as read']);
     }
 
     /**
@@ -272,6 +323,11 @@ class DealController extends Controller
             'status' => 'nullable|in:active,on_hold,lost,won',
             'lost_reason' => 'nullable|string',
             'deal_type' => 'nullable|string|max:50',
+            'investment_condition' => 'nullable|string|max:100',
+            'ebitda_investor_value' => 'nullable|numeric',
+            'ebitda_investor_times' => 'nullable|numeric',
+            'ebitda_target_value' => 'nullable|numeric',
+            'ebitda_target_times' => 'nullable|numeric',
         ]);
 
         $deal->update($validated);

@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
@@ -60,6 +61,15 @@ const DEAL_TYPES = [
     { value: 'leveraged_buyout', buyerLabel: 'Leveraged Buyout (LBO)', sellerLabel: 'Leveraged Buyout (LBO)' },
 ];
 
+const INVESTMENT_CONDITIONS = [
+    { value: 'Minority (<50%)', label: 'Minority (<50%)' },
+    { value: 'Significant minority (25–49%)', label: 'Significant minority (25–49%)' },
+    { value: 'Joint control (51/49)', label: 'Joint control (51/49)' },
+    { value: 'Majority (51–99%)', label: 'Majority (51–99%)' },
+    { value: 'Full acquisition (100%)', label: 'Full acquisition (100%)' },
+    { value: 'Flexible', label: 'Flexible' },
+];
+
 /** Format a number string with commas (e.g. 4972520 → 4,972,520) */
 const formatWithCommas = (value: string): string => {
     // Remove existing commas
@@ -97,6 +107,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         priority: 'medium',
         possibility: 'Medium',
         deal_type: 'acquisition',
+        investment_condition: '',
+        ebitda_investor_value: '',
+        ebitda_investor_times: '',
+        ebitda_target_value: '',
+        ebitda_target_times: '',
         internal_pic: [] as User[],
         target_close_date: '',
         stage_code: '',
@@ -397,7 +412,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     // Shared input/component style with 3px border-radius
     const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
-    const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+    const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none bg-white";
     const buttonItemClass = (isSelected: boolean, accentColor: string) =>
         `w-full flex items-center gap-3 px-4 py-3 rounded-[3px] border transition-colors ${isSelected
             ? `border-${accentColor}-500 bg-${accentColor}-50`
@@ -654,18 +669,21 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                             {/* Deal Type */}
                             <div>
                                 <label htmlFor="deal-type" className="block text-sm font-medium text-gray-700 mb-1">Deal Type</label>
-                                <select
-                                    id="deal-type"
-                                    value={formData.deal_type}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, deal_type: e.target.value }))}
-                                    className={selectClass}
-                                >
-                                    {DEAL_TYPES.map((dt) => (
-                                        <option key={dt.value} value={dt.value}>
-                                            {defaultView === 'seller' ? dt.sellerLabel : dt.buyerLabel}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        id="deal-type"
+                                        value={formData.deal_type}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, deal_type: e.target.value }))}
+                                        className={selectClass}
+                                    >
+                                        {DEAL_TYPES.map((dt) => (
+                                            <option key={dt.value} value={dt.value}>
+                                                {defaultView === 'seller' ? dt.sellerLabel : dt.buyerLabel}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
                                 {/* Preview of how it will display */}
                                 {(selectedBuyer || selectedSeller) && (
                                     <p className="mt-1.5 text-xs text-gray-500">
@@ -682,6 +700,27 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         </span>
                                     </p>
                                 )}
+                            </div>
+
+                            {/* Investment Condition */}
+                            <div>
+                                <label htmlFor="deal-investment-condition" className="block text-sm font-medium text-gray-700 mb-1">Investment Condition</label>
+                                <div className="relative">
+                                    <select
+                                        id="deal-investment-condition"
+                                        value={formData.investment_condition}
+                                        onChange={(e) => setFormData((prev) => ({ ...prev, investment_condition: e.target.value }))}
+                                        className={selectClass}
+                                    >
+                                        <option value="">Select condition</option>
+                                        {INVESTMENT_CONDITIONS.map((ic) => (
+                                            <option key={ic.value} value={ic.value}>
+                                                {ic.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -756,6 +795,56 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     />
                                 </div>
                             </div>
+
+                            {/* EBITDA Fields (non-mandatory) */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">EBITDA (Optional)</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Value</label>
+                                        <input
+                                            type="number"
+                                            value={formData.ebitda_investor_value}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_investor_value: e.target.value }))}
+                                            className={inputClass}
+                                            placeholder="e.g. 5000000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Multiple</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.ebitda_investor_times}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_investor_times: e.target.value }))}
+                                            className={inputClass}
+                                            placeholder="e.g. 8.5x"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Target EBITDA Value</label>
+                                        <input
+                                            type="number"
+                                            value={formData.ebitda_target_value}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_target_value: e.target.value }))}
+                                            className={inputClass}
+                                            placeholder="e.g. 3000000"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Target EBITDA Multiple</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={formData.ebitda_target_times}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_target_times: e.target.value }))}
+                                            className={inputClass}
+                                            placeholder="e.g. 6.0x"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Internal PIC (Assigned Staff)

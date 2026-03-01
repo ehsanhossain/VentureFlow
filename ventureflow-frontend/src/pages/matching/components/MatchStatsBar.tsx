@@ -31,7 +31,7 @@ const StatCard: React.FC<{
             <Icon size={16} style={{ color }} />
         </div>
         <div>
-            <div style={{ fontSize: '17px', fontWeight: 700, color: '#0a2540' }}>{value}</div>
+            <div style={{ fontSize: '17px', fontWeight: 600, color: '#0a2540' }}>{value}</div>
             <div style={{ fontSize: '11px', color: '#9ca3af' }}>{label}</div>
         </div>
     </div>

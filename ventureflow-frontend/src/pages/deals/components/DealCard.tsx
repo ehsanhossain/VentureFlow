@@ -73,8 +73,10 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         return priorityMap[priority] || priorityMap.medium;
     };
 
-    const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'Unknown Buyer' : 'Investor TBD');
-    const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'Unknown Seller' : 'Target TBD');
+    const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'To be declared' : 'Undefined');
+    const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'To be declared' : 'Undefined');
+    const buyerCode = deal.buyer?.buyer_id || '';
+    const sellerCode = deal.seller?.seller_id || '';
     const buyerImage = deal.buyer?.image;
     const sellerImage = deal.seller?.image;
 
@@ -82,6 +84,8 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     // For seller view: show seller being acquired by buyer
     const primaryEntity = pipelineView === 'buyer' ? buyerName : sellerName;
     const secondaryEntity = pipelineView === 'buyer' ? sellerName : buyerName;
+    const primaryCode = pipelineView === 'buyer' ? buyerCode : sellerCode;
+    const secondaryCode = pipelineView === 'buyer' ? sellerCode : buyerCode;
     const primaryImage = pipelineView === 'buyer' ? buyerImage : sellerImage;
     const secondaryImage = pipelineView === 'buyer' ? sellerImage : buyerImage;
 
@@ -173,11 +177,16 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                                 </span>
                             )}
                         </div>
-                        {/* Primary Name */}
+                        {/* Primary Name + Code */}
                         <div className="flex-1 min-w-0 overflow-hidden">
                             <span className="text-xs font-medium text-[#111827] leading-4 truncate block">
                                 {primaryEntity}
                             </span>
+                            {primaryCode && (
+                                <span className="text-[10px] text-gray-400 leading-3 truncate block">
+                                    {primaryCode}
+                                </span>
+                            )}
                         </div>
                     </div>
                     {/* 3-Dot Menu */}
@@ -232,9 +241,12 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                     </div>
                 </div>
 
-                {/* Relation Label */}
+                {/* Relation Label + Investment Condition */}
                 <div className="text-xs text-[#6B7280] leading-4">
                     {relationLabel}
+                    {deal.investment_condition && (
+                        <span className="block text-[10px] text-gray-400 mt-0.5">{deal.investment_condition}</span>
+                    )}
                 </div>
 
                 {/* Secondary Entity Row */}
@@ -262,11 +274,16 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                             </span>
                         )}
                     </div>
-                    {/* Secondary Name */}
+                    {/* Secondary Name + Code */}
                     <div className="flex-1 min-w-0 overflow-hidden">
                         <span className="text-xs font-medium text-[#111827] leading-4 truncate block">
                             {secondaryEntity}
                         </span>
+                        {secondaryCode && (
+                            <span className="text-[10px] text-gray-400 leading-3 truncate block">
+                                {secondaryCode}
+                            </span>
+                        )}
                     </div>
                 </div>
 
@@ -302,12 +319,14 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                             e.stopPropagation();
                             if ((deal as any).onChatClick) (deal as any).onChatClick(deal);
                         }}
-                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#064771] text-white"
+                        className="relative flex items-center gap-1 px-2 py-0.5 rounded bg-[#064771] text-white"
                     >
                         <MessageSquare className="w-4 h-4" />
                         <span className="text-xs font-medium">{deal.comment_count || 0}</span>
-                        {deal.has_new_activity && (
-                            <span className="w-2 h-2 bg-red-500 rounded-full ml-1" />
+                        {(deal.unread_comment_count ?? 0) > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold border-2 border-white">
+                                {deal.unread_comment_count}
+                            </span>
                         )}
                     </button>
                     {/* Navigation Arrows */}

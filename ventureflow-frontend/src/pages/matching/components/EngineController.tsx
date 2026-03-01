@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, AlertTriangle } from 'lucide-react';
 
 /* ─── Types ───────────────────────────────────────────────────────────── */
 
@@ -31,8 +31,8 @@ interface EngineControllerProps {
     rescanning: boolean;
     collapsed: boolean;
     onToggleCollapse: () => void;
-    countries: { id: number; country_name: string }[];
-    industries: { id: number; name: string }[];
+    countries: { id: number; country_name?: string; name?: string }[];
+    industries: { id: number; name?: string; label?: string }[];
 }
 
 const DEFAULT_WEIGHTS: MatchWeights = {
@@ -42,7 +42,7 @@ const DEFAULT_WEIGHTS: MatchWeights = {
     transaction: 20,
 };
 
-/* ─── Helpers ─────────────────────────────────────────────────────────── */
+/* ─── Constants ───────────────────────────────────────────────────────── */
 
 const BRAND = '#064771';
 
@@ -69,35 +69,12 @@ const EngineController: React.FC<EngineControllerProps> = ({
     countries, industries,
 }) => {
 
+    const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+    const isValid = totalWeight === 100;
+
     const handleSliderChange = (key: keyof MatchWeights, newValue: number) => {
         const clamped = Math.max(0, Math.min(100, newValue));
-        const oldValue = weights[key];
-        const delta = clamped - oldValue;
-
-        if (delta === 0) return;
-
-        const otherKeys = DIMENSION_META.map(d => d.key).filter(k => k !== key);
-        const otherSum = otherKeys.reduce((s, k) => s + weights[k], 0);
-
-        const updated = { ...weights, [key]: clamped };
-
-        if (otherSum > 0) {
-            otherKeys.forEach(k => {
-                updated[k] = Math.max(0, Math.round(weights[k] - (delta * (weights[k] / otherSum))));
-            });
-        } else {
-            const share = Math.round((100 - clamped) / otherKeys.length);
-            otherKeys.forEach(k => { updated[k] = share; });
-        }
-
-        const sum = Object.values(updated).reduce((a, b) => a + b, 0);
-        if (sum !== 100) {
-            const diff = 100 - sum;
-            const adjustKey = otherKeys.find(k => updated[k] + diff >= 0) || otherKeys[0];
-            updated[adjustKey] += diff;
-        }
-
-        onWeightsChange(updated);
+        onWeightsChange({ ...weights, [key]: clamped });
     };
 
     const resetWeights = () => onWeightsChange({ ...DEFAULT_WEIGHTS });
@@ -109,7 +86,8 @@ const EngineController: React.FC<EngineControllerProps> = ({
                 width: 40, minHeight: '100%', background: '#fafbfc',
                 borderRight: '1px solid #e5e7eb', display: 'flex',
                 flexDirection: 'column', alignItems: 'center', paddingTop: 16,
-                transition: 'width 0.25s ease',
+                transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                overflow: 'hidden', flexShrink: 0,
             }}>
                 <button
                     onClick={onToggleCollapse}
@@ -136,11 +114,12 @@ const EngineController: React.FC<EngineControllerProps> = ({
 
     /* ─── Expanded panel ─── */
     return (
-        <div style={{
+        <div className="scrollbar-premium" style={{
             width: 280, minHeight: '100%', background: '#fafbfc',
             borderRight: '1px solid #e5e7eb', display: 'flex',
-            flexDirection: 'column', overflowY: 'auto',
-            transition: 'width 0.25s ease',
+            flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden',
+            transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            flexShrink: 0,
         }}>
             {/* Header */}
             <div style={{
@@ -149,7 +128,7 @@ const EngineController: React.FC<EngineControllerProps> = ({
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <SlidersHorizontal size={16} color={BRAND} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>Match Engine</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Match Engine</span>
                 </div>
                 <button
                     onClick={onToggleCollapse}
@@ -165,9 +144,9 @@ const EngineController: React.FC<EngineControllerProps> = ({
                 </button>
             </div>
 
-            {/* Dimension Sliders */}
+            {/* Dimension Sliders — all use BRAND color */}
             <div style={{ padding: '16px' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
                     Weight Distribution
                 </div>
 
@@ -175,7 +154,7 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     <div key={dim.key} style={{ marginBottom: 18 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                             <span style={{ fontSize: 12, fontWeight: 500, color: '#374151' }}>{dim.label}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: BRAND }}>{weights[dim.key]}%</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: BRAND }}>{weights[dim.key]}%</span>
                         </div>
                         <div style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
                             <div style={{
@@ -207,11 +186,36 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     </div>
                 ))}
 
+                {/* Total indicator */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 12px', marginBottom: 12,
+                    borderRadius: 3,
+                    background: isValid ? '#ecfdf5' : '#fef2f2',
+                    border: `1px solid ${isValid ? '#a7f3d0' : '#fecaca'}`,
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {!isValid && <AlertTriangle size={13} color="#dc2626" />}
+                        <span style={{
+                            fontSize: 12, fontWeight: 600,
+                            color: isValid ? '#059669' : '#dc2626',
+                        }}>
+                            Total: {totalWeight}%
+                        </span>
+                    </div>
+                    <span style={{
+                        fontSize: 11, fontWeight: 500,
+                        color: isValid ? '#059669' : '#dc2626',
+                    }}>
+                        {isValid ? '✓ Ready' : `${totalWeight > 100 ? 'Over' : 'Under'} by ${Math.abs(100 - totalWeight)}%`}
+                    </span>
+                </div>
+
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                     <button
                         onClick={resetWeights}
                         style={{
-                            flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600,
+                            flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 500,
                             border: '1px solid #e5e7eb', borderRadius: 3,
                             background: 'white', color: '#6b7280', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
@@ -221,13 +225,16 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     </button>
                     <button
                         onClick={onRescan}
-                        disabled={rescanning}
+                        disabled={rescanning || !isValid}
+                        title={!isValid ? 'Weights must total 100% to scan' : ''}
                         style={{
-                            flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 600,
+                            flex: 1, padding: '8px 0', fontSize: 12, fontWeight: 500,
                             border: 'none', borderRadius: 3,
-                            background: rescanning ? '#9ca3af' : BRAND,
-                            color: 'white', cursor: rescanning ? 'default' : 'pointer',
+                            background: (rescanning || !isValid) ? '#9ca3af' : BRAND,
+                            color: 'white',
+                            cursor: (rescanning || !isValid) ? 'default' : 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                            opacity: !isValid ? 0.6 : 1,
                         }}
                     >
                         <Search size={12} /> {rescanning ? 'Scanning…' : 'Run Scan'}
@@ -237,73 +244,70 @@ const EngineController: React.FC<EngineControllerProps> = ({
 
             {/* Filters */}
             <div style={{ padding: '0 16px 16px', borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>
                     Filters
                 </div>
 
                 {/* Tier Filter */}
                 <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
+                    <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Tier
                     </label>
-                    <select
-                        value={filters.tier}
-                        onChange={e => onFiltersChange({ tier: e.target.value })}
-                        title="Filter by tier"
-                        style={{
-                            width: '100%', padding: '7px 10px', fontSize: 12,
-                            border: '1px solid #e5e7eb', borderRadius: 3,
-                            background: 'white', color: '#374151',
-                        }}
-                    >
-                        {TIER_OPTIONS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={filters.tier}
+                            onChange={e => onFiltersChange({ tier: e.target.value })}
+                            title="Filter by tier"
+                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
+                        >
+                            {TIER_OPTIONS.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
 
                 {/* Industry Filter */}
                 <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
+                    <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Industry
                     </label>
-                    <select
-                        value={filters.industry}
-                        onChange={e => onFiltersChange({ industry: e.target.value })}
-                        title="Filter by industry"
-                        style={{
-                            width: '100%', padding: '7px 10px', fontSize: 12,
-                            border: '1px solid #e5e7eb', borderRadius: 3,
-                            background: 'white', color: '#374151',
-                        }}
-                    >
-                        <option value="">All Industries</option>
-                        {industries.map(i => (
-                            <option key={i.id} value={String(i.id)}>{i.name}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={filters.industry}
+                            onChange={e => onFiltersChange({ industry: e.target.value })}
+                            title="Filter by industry"
+                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
+                        >
+                            <option value="">All Industries</option>
+                            {industries.map(i => (
+                                <option key={i.id} value={String(i.id)}>{i.name || i.label || `Industry #${i.id}`}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
 
                 {/* Country Filter */}
                 <div style={{ marginBottom: 12 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: '#374151', display: 'block', marginBottom: 4 }}>
+                    <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Country
                     </label>
-                    <select
-                        value={filters.country}
-                        onChange={e => onFiltersChange({ country: e.target.value })}
-                        title="Filter by country"
-                        style={{
-                            width: '100%', padding: '7px 10px', fontSize: 12,
-                            border: '1px solid #e5e7eb', borderRadius: 3,
-                            background: 'white', color: '#374151',
-                        }}
-                    >
-                        <option value="">All Countries</option>
-                        {countries.map(c => (
-                            <option key={c.id} value={String(c.id)}>{c.country_name}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={filters.country}
+                            onChange={e => onFiltersChange({ country: e.target.value })}
+                            title="Filter by country"
+                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
+                        >
+                            <option value="">All Countries</option>
+                            {countries.map(c => (
+                                <option key={c.id} value={String(c.id)}>{c.name || c.country_name || `Country #${c.id}`}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
             </div>
         </div>

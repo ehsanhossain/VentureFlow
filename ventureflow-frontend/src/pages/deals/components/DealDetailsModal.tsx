@@ -4,9 +4,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, Building2, User, Calendar, DollarSign, Activity, FileText, MessageSquare, Clock, MapPin, Tag, Briefcase, TrendingUp } from 'lucide-react';
+import { X, Building2, User, Calendar, DollarSign, Activity, FileText, MessageSquare, Clock, MapPin, Globe, Briefcase, TrendingUp } from 'lucide-react';
 import api from '../../../config/api';
-import { formatCompactNumber, getCurrencySymbol } from '../../../utils/formatters';
+import { formatCompactNumber, getCurrencySymbol, formatCompactBudget } from '../../../utils/formatters';
 
 interface DealDetailsModalProps {
     dealId: number;
@@ -49,25 +49,46 @@ interface DealDetail {
     status: string;
     stage_code: string;
     updated_at: string;
+    created_at?: string;
     progress_percent: number;
     estimated_ev_value?: number;
     estimated_ev_currency?: string;
+    ticket_size?: number | string;
     possibility?: string;
     priority?: string;
     pic?: UserObj;
     region?: string;
     target_close_date?: string;
     industry?: string;
+    deal_type?: string;
+    investment_condition?: string;
     buyer_id?: number;
+    seller_id?: number;
+    ebitda_investor_value?: number;
+    ebitda_investor_times?: number;
+    ebitda_target_value?: number;
+    ebitda_target_times?: number;
     buyer?: {
+        buyer_id?: string;
+        company_overview?: {
+            reg_name?: string;
+            hq_country?: { name?: string };
+            investment_budget?: string | { min?: number | string; max?: number | string; currency?: string };
+        };
+        investment_critera?: {
+            target_countries?: Array<{ id: number; name: string; svg_icon_url?: string }>;
+        };
+    };
+    seller?: {
+        seller_id?: string;
         company_overview?: {
             reg_name?: string;
             hq_country?: { name?: string };
         };
-    };
-    seller?: {
-        company_overview?: {
-            reg_name?: string;
+        financial_details?: {
+            desired_investment?: number | string | { min?: number | string; max?: number | string; currency?: string };
+            maximum_investor_shareholding_percentage?: string;
+            ebitda?: number;
         };
     };
     documents?: DocumentItem[];
@@ -86,6 +107,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
     useEffect(() => {
         fetchDealDetails();
     }, [dealId]);
+
+    // Mark comments as read when the Chats tab is opened
+    useEffect(() => {
+        if (activeTab === 'comments' && dealId) {
+            api.post(`/api/deals/${dealId}/mark-comments-read`).catch(() => { /* silent */ });
+        }
+    }, [activeTab, dealId]);
 
     const fetchDealDetails = async () => {
         try {
@@ -263,6 +291,98 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                     </div>
                                 </div>
 
+                                {/* Transaction Size & Stage Duration */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {(d!.ticket_size || d!.estimated_ev_value) && (
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Transaction Size</p>
+                                                <DollarSign className="w-4 h-4 text-blue-500" />
+                                            </div>
+                                            <span className="text-2xl font-semibold text-gray-900 tracking-tight">
+                                                {`${getCurrencySymbol(d!.estimated_ev_currency || 'USD')}${formatCompactNumber(Number(d!.ticket_size || d!.estimated_ev_value || 0))}`}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {d!.created_at && (
+                                        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Time in Pipeline</p>
+                                                <Clock className="w-4 h-4 text-purple-500" />
+                                            </div>
+                                            <span className="text-xl font-semibold text-gray-900">
+                                                {(() => {
+                                                    const days = Math.floor((Date.now() - new Date(d!.created_at!).getTime()) / (1000 * 60 * 60 * 24));
+                                                    if (days < 1) return 'Today';
+                                                    if (days === 1) return '1 day';
+                                                    if (days < 30) return `${days} days`;
+                                                    const months = Math.floor(days / 30);
+                                                    return months === 1 ? '1 month' : `${months} months`;
+                                                })()}
+                                            </span>
+                                            {d!.stage_history && d!.stage_history.length > 0 && (
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    In current stage: {(() => {
+                                                        const latest = d!.stage_history![0];
+                                                        const stageDate = latest.changed_at || latest.created_at;
+                                                        if (!stageDate) return 'N/A';
+                                                        const days = Math.floor((Date.now() - new Date(stageDate).getTime()) / (1000 * 60 * 60 * 24));
+                                                        if (days < 1) return 'Today';
+                                                        if (days === 1) return '1 day';
+                                                        return `${days} days`;
+                                                    })()}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Deal Type & Investment Condition */}
+                                {(d!.deal_type || d!.investment_condition) && (
+                                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Deal Structure</h3>
+                                        <div className="flex items-center gap-4">
+                                            {d!.deal_type && (
+                                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-[#064771]">
+                                                    {d!.deal_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                </span>
+                                            )}
+                                            {d!.investment_condition && (
+                                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+                                                    {d!.investment_condition}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* EBITDA Metrics */}
+                                {(d!.ebitda_investor_value || d!.ebitda_target_value) && (
+                                    <div className="bg-white/50 rounded-2xl border border-gray-100 p-6">
+                                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">EBITDA Metrics</h3>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">Investor EBITDA</label>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {d!.ebitda_investor_value ? `${getCurrencySymbol(d!.estimated_ev_currency || 'USD')}${formatCompactNumber(Number(d!.ebitda_investor_value))}` : 'N/A'}
+                                                </span>
+                                                {d!.ebitda_investor_times && (
+                                                    <span className="ml-2 text-xs text-gray-500">{d!.ebitda_investor_times}x</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-medium text-gray-400 uppercase block mb-1.5">Target EBITDA</label>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {d!.ebitda_target_value ? `${getCurrencySymbol(d!.estimated_ev_currency || 'USD')}${formatCompactNumber(Number(d!.ebitda_target_value))}` : 'N/A'}
+                                                </span>
+                                                {d!.ebitda_target_times && (
+                                                    <span className="ml-2 text-xs text-gray-500">{d!.ebitda_target_times}x</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Entities */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="bg-white p-6 rounded-2xl border border-gray-200/60 shadow-sm relative overflow-hidden group hover:border-[#064771]/30 transition-colors">
@@ -271,14 +391,47 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             <div className="p-2 bg-blue-50 rounded-xl transition-colors group-hover:bg-blue-100">
                                                 <Building2 className="w-5 h-5 text-[#064771]" />
                                             </div>
-                                            <h3 className="font-semibold text-gray-900 tracking-tight">The Buyer</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight">Investor Details</h3>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-lg font-medium text-gray-900 leading-tight">{d!.buyer?.company_overview?.reg_name || 'N/A'}</p>
+                                        <div className="space-y-2">
+                                            <p className="text-lg font-medium text-gray-900 leading-tight">{d!.buyer?.company_overview?.reg_name || (d!.buyer_id ? 'To be declared' : 'Undefined')}</p>
+                                            {d!.buyer?.buyer_id && (
+                                                <p className="text-xs text-gray-400">{d!.buyer.buyer_id}</p>
+                                            )}
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                                 <MapPin className="w-3.5 h-3.5" />
                                                 {d!.buyer?.company_overview?.hq_country?.name || 'Location Not Specified'}
                                             </div>
+                                            {/* Budget Range */}
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                                <DollarSign className="w-3.5 h-3.5" />
+                                                <span>Budget: </span>
+                                                <span className="text-gray-900 font-semibold">
+                                                    {d!.buyer?.company_overview?.investment_budget
+                                                        ? formatCompactBudget(d!.buyer.company_overview.investment_budget as any, getCurrencySymbol('USD'))
+                                                        : d!.ticket_size
+                                                            ? `${getCurrencySymbol(d!.estimated_ev_currency || 'USD')}${formatCompactNumber(Number(d!.ticket_size))}`
+                                                            : 'N/A'}
+                                                </span>
+                                            </div>
+                                            {/* Target Countries */}
+                                            {d!.buyer?.investment_critera?.target_countries && d!.buyer.investment_critera.target_countries.length > 0 && (
+                                                <div className="flex items-start gap-2 text-xs text-gray-500 font-medium">
+                                                    <Globe className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex flex-col gap-0.5">
+                                                        {d!.buyer.investment_critera.target_countries.map((c, i) => (
+                                                            <div key={i} className="flex items-center gap-1.5">
+                                                                {c.svg_icon_url ? (
+                                                                    <img src={c.svg_icon_url} alt={c.name} className="w-4 h-3 object-cover rounded-sm" />
+                                                                ) : (
+                                                                    <span className="text-[10px]">🏳️</span>
+                                                                )}
+                                                                <span className="text-gray-700">{c.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -288,13 +441,26 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             <div className="p-2 bg-green-50 rounded-xl transition-colors group-hover:bg-green-100">
                                                 <Briefcase className="w-5 h-5 text-green-600" />
                                             </div>
-                                            <h3 className="font-semibold text-gray-900 tracking-tight">The Target</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight">Target Details</h3>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-lg font-medium text-gray-900 leading-tight">{d!.seller?.company_overview?.reg_name || 'N/A'}</p>
+                                        <div className="space-y-2">
+                                            <p className="text-lg font-medium text-gray-900 leading-tight">{d!.seller?.company_overview?.reg_name || (d!.seller_id ? 'To be declared' : 'Undefined')}</p>
+                                            {d!.seller?.seller_id && (
+                                                <p className="text-xs text-gray-400">{d!.seller.seller_id}</p>
+                                            )}
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                                                <Tag className="w-3.5 h-3.5 text-green-500" />
-                                                {d!.industry || 'General Industry'}
+                                                <MapPin className="w-3.5 h-3.5" />
+                                                {d!.seller?.company_overview?.hq_country?.name || 'Location Not Specified'}
+                                            </div>
+                                            {/* Desired Investment */}
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                                <DollarSign className="w-3.5 h-3.5" />
+                                                <span>Desired Investment: </span>
+                                                <span className="text-gray-900 font-semibold">
+                                                    {d!.seller?.financial_details?.desired_investment
+                                                        ? formatCompactBudget(d!.seller.financial_details.desired_investment as any, getCurrencySymbol('USD'))
+                                                        : 'N/A'}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -344,7 +510,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                     className={`relative flex-1 py-4 text-[10px] font-semibold uppercase tracking-widest transition-all ${activeTab === tab ? 'text-[#064771]' : 'text-gray-400 hover:text-gray-600'
                                         }`}
                                 >
-                                    {tab}
+                                    {tab === 'comments' ? 'chats' : tab}
                                     {activeTab === tab && (
                                         <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064771] animate-in slide-in-from-left-full duration-200" />
                                     )}

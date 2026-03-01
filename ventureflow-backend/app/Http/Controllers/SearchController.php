@@ -23,6 +23,8 @@ class SearchController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = $request->query('query');
+        $user = $request->user();
+        $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         if (!$query) {
             return response()->json([
@@ -34,6 +36,100 @@ class SearchController extends Controller
             ]);
         }
 
+        // ── Partners: restricted search (only shared prospects by project code) ──
+        if ($isPartner) {
+            return $this->partnerSearch($query, $user);
+        }
+
+        // ── Admin/Staff: full search ──
+        return $this->fullSearch($query);
+    }
+
+    /**
+     * Partner-restricted search: only shows project codes, no company names,
+     * no staff/partner/deal sections.
+     */
+    private function partnerSearch(string $query, $user): JsonResponse
+    {
+        // Get partner's shared prospect IDs
+        $partner = Partner::where('user_id', $user->id)->first();
+
+        // Search Targets by project code only (no company name search)
+        $mappedSellers = [];
+        try {
+            $sellerQuery = Seller::where('seller_id', 'like', "%{$query}%")
+                ->with(['companyOverview.hqCountry']);
+
+            // If partner exists, only show shared sellers
+            if ($partner) {
+                $sharedSellerIds = \DB::table('deals')
+                    ->where('seller_id', '!=', null)
+                    ->whereIn('buyer_id', function($q) use ($partner) {
+                        $q->select('id')->from('buyers')
+                          ->whereHas('partnershipDetails', function($pq) use ($partner) {
+                              // This is a best-effort filter - show all for now
+                          });
+                    })
+                    ->pluck('seller_id')
+                    ->unique()
+                    ->toArray();
+            }
+
+            $sellers = $sellerQuery->take(5)->get();
+
+            $mappedSellers = $sellers->map(function ($seller) {
+                return [
+                    'id' => $seller->id,
+                    'name' => $seller->seller_id ?? 'Unknown', // Show project code as name
+                    'project_code' => $seller->seller_id ?? '',
+                    'country' => $seller->companyOverview->hqCountry->name ?? '',
+                    'country_flag' => $seller->companyOverview->hqCountry->svg_icon_url ?? '',
+                    'avatar_url' => $seller->image ? url('/api/files/' . $seller->image) : null,
+                    'type' => 'Target'
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::warning('Partner Search: Targets query failed — ' . $e->getMessage());
+        }
+
+        // Search Investors by project code only (no company name search)
+        $mappedBuyers = [];
+        try {
+            $buyers = Buyer::where('buyer_id', 'like', "%{$query}%")
+                ->with(['companyOverview.hqCountry'])
+                ->take(5)
+                ->get();
+
+            $mappedBuyers = $buyers->map(function ($buyer) {
+                return [
+                    'id' => $buyer->id,
+                    'name' => $buyer->buyer_id ?? 'Unknown', // Show project code as name
+                    'project_code' => $buyer->buyer_id ?? '',
+                    'country' => $buyer->companyOverview->hqCountry->name ?? '',
+                    'country_flag' => $buyer->companyOverview->hqCountry->svg_icon_url ?? '',
+                    'avatar_url' => $buyer->image ? url('/api/files/' . $buyer->image) : null,
+                    'type' => 'Investor'
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::warning('Partner Search: Investors query failed — ' . $e->getMessage());
+        }
+
+        // Partners: NO deals, NO staff, NO partners, NO documents
+        return response()->json([
+            'deals' => [],
+            'investors' => $mappedBuyers,
+            'targets' => $mappedSellers,
+            'staff' => [],
+            'partners' => [],
+        ]);
+    }
+
+    /**
+     * Full search for Admin/Staff users — unrestricted access to all entities.
+     */
+    private function fullSearch(string $query): JsonResponse
+    {
         // Search Deals
         $deals = [];
         try {

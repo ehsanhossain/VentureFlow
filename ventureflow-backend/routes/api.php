@@ -240,6 +240,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::get('/deals/{deal}/stage-check',           [\App\Http\Controllers\DealController::class, 'stageCheck']);
     Route::patch('/deals/{deal}/stage',               [\App\Http\Controllers\DealController::class, 'updateStage']);
     Route::get('/deals/{deal}/delete-analyze',        [\App\Http\Controllers\DealController::class, 'deleteAnalyze']);
+    Route::post('/deals/{deal}/mark-comments-read',   [\App\Http\Controllers\DealController::class, 'markCommentsRead']);
     Route::apiResource('deals', \App\Http\Controllers\DealController::class);
 
     // Import (staff can import data)
@@ -279,6 +280,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
         Route::get('/target/{id}',   [MatchController::class, 'forTarget']);
         Route::post('/rescan',       [MatchController::class, 'rescan']);
         Route::post('/{id}/dismiss',     [MatchController::class, 'dismiss']);
+        Route::post('/{id}/approve',     [MatchController::class, 'approve']);
         Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
     });
 
@@ -297,4 +299,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/change-password', [AuthController::class, 'changePassword']);
     Route::post('/change-password',      [AuthController::class, 'changePassword']);
     Route::get('/user',                  [AuthController::class, 'user']);
+
+    // Read-only access to currencies and general settings for all roles (including partner)
+    Route::get('/currencies',            [CurrencyController::class, 'index']);
+    Route::get('/general-settings',      [\App\Http\Controllers\GeneralSettingsController::class, 'index']);
+    Route::get('/countries',             [CountryController::class, 'index']);
+    Route::get('/countries/{id}',        [CountryController::class, 'show']);
+
+    // Global Search — accessible to all authenticated users (controller handles role-based filtering)
+    Route::get('/search',                [SearchController::class, 'index']);
+
+    // Notifications — accessible to all authenticated users
+    Route::get('/notifications',                     [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count',        [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/mark-all-read',      [NotificationController::class, 'markAllRead']);
+    Route::post('/notifications/{id}/read',          [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}',             [NotificationController::class, 'destroy']);
 });

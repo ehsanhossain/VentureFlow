@@ -278,10 +278,10 @@ class MatchEngineService
         $targetIndustries   = $this->extractTargetIndustries($target);
 
         if (empty($investorIndustries)) {
-            return [0.5, 'Industry: Investor has no industry preference set (neutral)'];
+            return [0.0, 'Industry: Investor has no industry preference set'];
         }
         if (empty($targetIndustries)) {
-            return [0.3, 'Industry: Target has no industry listed'];
+            return [0.0, 'Industry: Target has no industry listed'];
         }
 
         // Separate canonical IDs (small integers from industries table) from adhoc IDs (timestamps)
@@ -308,7 +308,7 @@ class MatchEngineService
                     array_filter($targetIndustries, fn($i) => in_array($i['id'], $matched)));
                 $nameStr = implode(', ', $names) ?: 'Matched industries';
                 return [
-                    min(1.0, $idScore + 0.2),
+                    min(1.0, $idScore),
                     "Industry: {$nameStr} — exact match by industry ID"
                 ];
             }
@@ -323,7 +323,7 @@ class MatchEngineService
         ));
 
         if (empty($investorNames) || empty($targetNames)) {
-            return [0.2, 'Industry: Insufficient name data for matching'];
+            return [0.0, 'Industry: Insufficient name data for matching'];
         }
 
         // Exact name match (Jaccard)
@@ -331,7 +331,7 @@ class MatchEngineService
         $union = count(array_unique(array_merge($investorNames, $targetNames)));
         if ($intersection > 0) {
             return [
-                min(1.0, ($intersection / $union) + 0.1),
+                min(1.0, $intersection / $union),
                 'Industry: Exact name match — "' . implode(', ', array_intersect($investorNames, $targetNames)) . '"'
             ];
         }
@@ -393,7 +393,7 @@ class MatchEngineService
             return [min(1.0, $bestScore), $bestExplanation];
         }
 
-        return [0.1, 'Industry: No significant industry overlap found'];
+        return [0.0, 'Industry: No significant industry overlap found'];
     }
 
     /**
@@ -406,12 +406,12 @@ class MatchEngineService
         $investorCountries = $this->extractInvestorCountries($investor);
 
         if (empty($investorCountries)) {
-            return [0.5, 'Geography: Investor has no target country preference (neutral)'];
+            return [0.0, 'Geography: Investor has no target country preference'];
         }
 
         $targetHq = $target->companyOverview?->hq_country;
         if (empty($targetHq)) {
-            return [0.3, 'Geography: Target has no HQ country on record'];
+            return [0.0, 'Geography: Target has no HQ country on record'];
         }
 
         $targetHqStr = strval($targetHq);
@@ -436,13 +436,13 @@ class MatchEngineService
         $sellerAmount = $this->toArray($target->financialDetails?->expected_investment_amount);
 
         if (empty($buyerBudget) && empty($sellerAmount)) {
-            return [0.5, 'Financial: No financial data available (neutral)'];
+            return [0.0, 'Financial: No financial data available'];
         }
         if (empty($buyerBudget)) {
-            return [0.4, 'Financial: Investor has no budget set'];
+            return [0.0, 'Financial: Investor has no budget set'];
         }
         if (empty($sellerAmount)) {
-            return [0.4, 'Financial: Target has no investment amount set'];
+            return [0.0, 'Financial: Target has no investment amount set'];
         }
 
         // Get currencies
@@ -473,10 +473,12 @@ class MatchEngineService
             return [0.7, 'Financial: Partial budget overlap (USD-normalised)'];
         }
 
+        // Logarithmic proximity for more realistic curve
         $gap = min(abs($sellerMin - $budgetMax), abs($sellerMax - $budgetMin));
-        $range = max($budgetMax - $budgetMin, 1);
-        $proximity = max(0, 1 - ($gap / $range));
-        return [$proximity * 0.5, 'Financial: Deal size near but outside investor budget (USD-normalised)'];
+        $midBudget = max(($budgetMax + $budgetMin) / 2, 1);
+        $relativeGap = $gap / $midBudget;
+        $proximity = max(0, 1 - log1p($relativeGap * 10) / log1p(10));
+        return [$proximity * 0.4, 'Financial: Deal size outside investor budget (USD-normalised)'];
     }
 
     /**
@@ -515,7 +517,7 @@ class MatchEngineService
         );
 
         if (empty($investorConditions) && empty($targetConditions)) {
-            return [0.5, 'Structure: No preference set (neutral)'];
+            return [0.0, 'Structure: No preference set'];
         }
 
         // Flexible on either side = high compatibility
@@ -528,7 +530,7 @@ class MatchEngineService
         }
 
         if (empty($investorConditions) || empty($targetConditions)) {
-            return [0.5, 'Structure: One side has no condition specified (neutral)'];
+            return [0.0, 'Structure: One side has no condition specified'];
         }
 
         // Normalize for comparison
@@ -579,13 +581,13 @@ class MatchEngineService
         );
 
         if (empty($investorPurposes) && empty($targetReasons)) {
-            return [0.5, 'Purpose: No M&A purpose specified (neutral)'];
+            return [0.0, 'Purpose: No M&A purpose specified'];
         }
         if (empty($investorPurposes)) {
-            return [0.4, 'Purpose: Investor has no M&A purpose set'];
+            return [0.0, 'Purpose: Investor has no M&A purpose set'];
         }
         if (empty($targetReasons)) {
-            return [0.4, 'Purpose: Target has no M&A reason set'];
+            return [0.0, 'Purpose: Target has no M&A reason set'];
         }
 
         $invNorm = array_map(fn($s) => mb_strtolower(trim($s)), $investorPurposes);
@@ -599,10 +601,10 @@ class MatchEngineService
             $compatible = self::PURPOSE_COMPATIBILITY[$invPurpose] ?? null;
 
             if ($compatible === null) {
-                // "Other" or unrecognised — neutral match against all targets
-                if ($bestScore < 0.5) {
-                    $bestScore = 0.5;
-                    $bestExplanation = "Purpose: \"{$invPurpose}\" — neutral compatibility";
+                // "Other" or unrecognised — low compatibility
+                if ($bestScore < 0.15) {
+                    $bestScore = 0.15;
+                    $bestExplanation = "Purpose: \"{$invPurpose}\" — unrecognised purpose";
                 }
                 continue;
             }
@@ -628,7 +630,7 @@ class MatchEngineService
             return [$bestScore, $bestExplanation];
         }
 
-        return [0.2, 'Purpose: No M&A purpose alignment found'];
+        return [0.05, 'Purpose: No M&A purpose alignment found'];
     }
 
     // ─── Data Extraction Helpers ────────────────────────────────────────

@@ -129,7 +129,7 @@ const ProfileDropdown: React.FC = () => {
               <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-[#064771] group-hover:text-white transition-all">
                 <User className="w-4 h-4" />
               </div>
-              <span className="font-medium">{t('profile.myProfile', 'My Profile')}</span>
+              <span className="font-medium">{partner?.id ? t('profile.myAccount', 'My Account') : t('profile.myProfile', 'My Profile')}</span>
             </button>
 
             <button

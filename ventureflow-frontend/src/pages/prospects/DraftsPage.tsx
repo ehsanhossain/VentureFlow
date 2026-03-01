@@ -245,8 +245,8 @@ const DraftsPage: React.FC = () => {
                     targetIndustries: indMap,
                     pipelineStatus: 'N/A',
                     budget: overview.investment_budget,
-                    investmentCondition: overview.investment_condition || "",
-                    purposeMNA: overview.reason_ma || "",
+                    investmentCondition: parseMultiField(overview.investment_condition),
+                    purposeMNA: parseMultiField(overview.reason_ma),
                     internalPIC: parseArray(overview.internal_pic, 'name'),
                     financialAdvisor: parseArray(overview.financial_advisor, 'name'),
                     introducedProjects: parseArray(overview.introduced_projects, 'name'),
@@ -273,10 +273,10 @@ const DraftsPage: React.FC = () => {
                     hqCountry = found ? { name: found.name, flagSrc: found.flagSrc } : undefined;
                 }
 
-                let indMajor = "N/A";
+                let industryArr: string[] = [];
                 try {
                     const ops = typeof ov.industry_ops === 'string' ? JSON.parse(ov.industry_ops) : ov.industry_ops;
-                    if (Array.isArray(ops) && ops.length > 0) indMajor = ops[0]?.name || "N/A";
+                    if (Array.isArray(ops) && ops.length > 0) industryArr = ops.map((i: any) => i?.name || "Unknown").filter(Boolean);
                 } catch { /* ignored */ }
 
                 const defaultCurrencyId = fin.default_currency;
@@ -330,23 +330,32 @@ const DraftsPage: React.FC = () => {
 
                 return {
                     id: s.id,
+                    addedDate: s.created_at || '',
                     projectCode: s.seller_id || "N/A",
                     rank: ov.rank || '',
                     companyName: ov.reg_name || "Unknown Company",
+                    name: ov.reg_name || "Unknown Company",
                     originCountry: { name: hqCountry?.name || "Unknown", flag: hqCountry?.flagSrc || "" },
-                    industry: indMajor,
+                    flag: hqCountry?.flagSrc || '',
+                    industry: industryArr,
+                    projectDetails: ov.project_details || '',
                     reasonForMA: parseMultiField(ov.reason_ma || ov.reason_for_mna),
                     investmentCondition: parseMultiField(fin.investment_condition),
                     desiredInvestment: desiredInv,
                     ebitda: ebitdaDisplay,
                     ebitdaTimes: fin.ebitda_times || null,
+                    status: s.status || 'Draft',
                     primaryContact: primaryContactName,
+                    primaryEmail: primaryContactObj?.email || '',
+                    primaryPhone: primaryContactObj?.phone || '',
                     internalPIC: parseArray(ov.internal_pic, 'name'),
                     financialAdvisor: parseArray(ov.financial_advisor, 'name'),
+                    introducedProjects: parseArray(ov.introduced_projects, 'name'),
                     teaserLink: '',
                     pipelineStatus: 'N/A',
                     isPinned: false,
                     website: ov.website,
+                    createdAt: s.created_at,
                 };
             });
 

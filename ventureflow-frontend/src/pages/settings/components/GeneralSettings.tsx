@@ -4,12 +4,13 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import LanguageSelect from '../../../components/dashboard/LanguageSelect';
 import { useTranslation } from 'react-i18next';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { useGeneralSettings } from '../../../context/GeneralSettingsContext';
+import { AuthContext } from '../../../routes/AuthContext';
 
 interface Currency {
     id: string | number;
@@ -57,6 +58,8 @@ const dateFormats = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD'];
 const GeneralSettings: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { refreshSettings: refreshGlobalSettings } = useGeneralSettings();
+    const auth = useContext(AuthContext);
+    const isReadOnly = auth?.isPartner === true;
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
     const [systemNotifications, setSystemNotifications] = useState(true);
@@ -230,7 +233,7 @@ const GeneralSettings: React.FC = () => {
                                     id="default-currency"
                                     value={defaultCurrency}
                                     onChange={(e) => setDefaultCurrency(e.target.value)}
-                                    disabled={isLoadingCurrencies || isLoadingSettings}
+                                    disabled={isReadOnly || isLoadingCurrencies || isLoadingSettings}
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
                                 >
                                     {isLoadingCurrencies ? (
@@ -255,7 +258,7 @@ const GeneralSettings: React.FC = () => {
                                     id="preferred-timezone"
                                     value={timezone}
                                     onChange={(e) => setTimezone(e.target.value)}
-                                    disabled={isLoadingSettings}
+                                    disabled={isReadOnly || isLoadingSettings}
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
                                 >
                                     {timezones.map((tz, idx) => (
@@ -269,7 +272,7 @@ const GeneralSettings: React.FC = () => {
                                     id="date-format"
                                     value={dateFormat}
                                     onChange={(e) => setDateFormat(e.target.value)}
-                                    disabled={isLoadingSettings}
+                                    disabled={isReadOnly || isLoadingSettings}
                                     className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
                                 >
                                     {dateFormats.map((fmt) => (
@@ -315,33 +318,35 @@ const GeneralSettings: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-                        <button
-                            onClick={handleCancel}
-                            disabled={!isDirty}
-                            className={`px-6 py-2 text-sm font-medium transition-all ${isDirty ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 cursor-not-allowed'}`}
-                        >
-                            {t('common.cancel', 'Cancel')}
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving || !isDirty}
-                            className={`flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-8 py-2.5 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 ${(!isDirty || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            {isSaving ? (
-                                <>
-                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    Saving...
-                                </>
-                            ) : (
-                                t('common.saveChanges', 'Save Changes')
-                            )}
-                        </button>
-                    </div>
+                    {/* Action Buttons — hidden for partners */}
+                    {!isReadOnly && (
+                        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+                            <button
+                                onClick={handleCancel}
+                                disabled={!isDirty}
+                                className={`px-6 py-2 text-sm font-medium transition-all ${isDirty ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 cursor-not-allowed'}`}
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving || !isDirty}
+                                className={`flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-8 py-2.5 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95 ${(!isDirty || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    t('common.saveChanges', 'Save Changes')
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
