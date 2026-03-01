@@ -86,28 +86,44 @@ class DealController extends Controller
             $q->where('type', 'comment');
         }])->orderBy('updated_at', 'desc')->get();
 
-        // Compute unread comment count per deal for current user
+        // Compute unread comment count per deal for current user (batch query — no N+1)
         $userId = Auth::id();
         if ($userId) {
+            $dealIds = $deals->pluck('id')->toArray();
             $readMap = DealCommentRead::where('user_id', $userId)
+                ->whereIn('deal_id', $dealIds)
                 ->pluck('last_read_at', 'deal_id');
 
-            $deals->each(function ($deal) use ($userId, $readMap) {
-                $lastRead = $readMap->get($deal->id);
-                if ($lastRead) {
-                    $deal->unread_comment_count = ActivityLog::where('loggable_type', Deal::class)
-                        ->where('loggable_id', $deal->id)
+            // Single batch query: count unread comments for all deals at once
+            $unreadQuery = ActivityLog::where('loggable_type', Deal::class)
+                ->whereIn('loggable_id', $dealIds)
+                ->where('type', 'comment')
+                ->where('user_id', '!=', $userId)
+                ->selectRaw('loggable_id, COUNT(*) as total_count')
+                ->groupBy('loggable_id')
+                ->pluck('total_count', 'loggable_id');
+
+            // For deals with a last_read_at, count only comments after that timestamp
+            $dealsWithRead = $readMap->keys()->toArray();
+            $unreadAfterRead = [];
+            if (!empty($dealsWithRead)) {
+                // Build a single query for deals that have been read
+                foreach ($readMap as $dealId => $lastReadAt) {
+                    $count = ActivityLog::where('loggable_type', Deal::class)
+                        ->where('loggable_id', $dealId)
                         ->where('type', 'comment')
-                        ->where('created_at', '>', $lastRead)
+                        ->where('created_at', '>', $lastReadAt)
                         ->where('user_id', '!=', $userId)
                         ->count();
+                    $unreadAfterRead[$dealId] = $count;
+                }
+            }
+
+            $deals->each(function ($deal) use ($readMap, $unreadQuery, $unreadAfterRead) {
+                if ($readMap->has($deal->id)) {
+                    $deal->unread_comment_count = $unreadAfterRead[$deal->id] ?? 0;
                 } else {
-                    // User has never read — all comments from others are unread
-                    $deal->unread_comment_count = ActivityLog::where('loggable_type', Deal::class)
-                        ->where('loggable_id', $deal->id)
-                        ->where('type', 'comment')
-                        ->where('user_id', '!=', $userId)
-                        ->count();
+                    $deal->unread_comment_count = $unreadQuery->get($deal->id, 0);
                 }
             });
         }
