@@ -350,7 +350,12 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 ...formData,
                 buyer_id: formData.buyer_id || null,
                 seller_id: formData.seller_id || null,
-                ticket_size: removeCommas(formData.ticket_size),
+                ticket_size: removeCommas(formData.ticket_size) || null,
+                ebitda_investor_value: formData.ebitda_investor_value || null,
+                ebitda_investor_times: formData.ebitda_investor_times || null,
+                ebitda_target_value: formData.ebitda_target_value || null,
+                ebitda_target_times: formData.ebitda_target_times || null,
+                investment_condition: formData.investment_condition || null,
                 pipeline_type: defaultView,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
@@ -412,7 +417,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
     // Shared input/component style with 3px border-radius
     const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
-    const selectClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none bg-white";
+    const selectClass = "w-full px-4 py-2 pr-10 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none bg-white";
     const buttonItemClass = (isSelected: boolean, accentColor: string) =>
         `w-full flex items-center gap-3 px-4 py-3 rounded-[3px] border transition-colors ${isSelected
             ? `border-${accentColor}-500 bg-${accentColor}-50`

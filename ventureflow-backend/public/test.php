@@ -1,93 +1,124 @@
 <?php
 /**
- * Migration & Cache Runner — Access via: https://ventureflow.app/test.php
- * DELETE AFTER USE
+ * VentureFlow Production Deployment Helper
+ * ⚠️ DELETE THIS FILE AFTER USE — contains privileged operations
  */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('max_execution_time', 120);
-header('Content-Type: text/plain; charset=utf-8');
+echo "<pre style='font-family: monospace; background: #1a1a2e; color: #e94560; padding: 20px; font-size: 13px;'>\n";
+echo "======================================\n";
+echo "  VentureFlow Deployment Helper\n";
+echo "  " . date('Y-m-d H:i:s') . "\n";
+echo "======================================\n\n";
 
-$root = dirname(__FILE__) . '/..';
+$base = dirname(__DIR__);
+chdir($base);
+echo "Working in: $base\n\n";
 
-echo "=== VentureFlow Post-Deploy Runner ===\n\n";
-
-if (!file_exists("$root/vendor/autoload.php")) {
-    echo "ERROR: vendor/autoload.php not found!\n";
-    exit(1);
+// ── Step 0: Clear ALL caches ──
+echo "=== Step 0: Clearing ALL caches ===\n";
+foreach (['packages.php', 'services.php'] as $f) {
+    $path = "$base/bootstrap/cache/$f";
+    if (file_exists($path)) { unlink($path); echo "Deleted: $f\n"; }
+}
+$cacheCommands = [
+    'php artisan config:clear',
+    'php artisan cache:clear',
+    'php artisan route:clear',
+    'php artisan view:clear',
+];
+foreach ($cacheCommands as $cmd) {
+    exec("cd $base && $cmd 2>&1", $out, $rc);
+    echo ($rc === 0 ? "✅" : "❌") . " $cmd\n";
 }
 
+// ── Step 1: Storage directories ──
+echo "\n=== Step 1: Creating storage directories ===\n";
+$dirs = [
+    '/storage/app/public', '/storage/app/public/employees',
+    '/storage/app/public/partners', '/storage/app/public/sellers',
+    '/storage/app/public/buyers', '/storage/app/public/email-assets',
+    '/storage/framework/cache/data', '/storage/framework/sessions',
+    '/storage/framework/views', '/storage/logs', '/bootstrap/cache',
+];
+foreach ($dirs as $d) {
+    $full = $base . $d;
+    if (!is_dir($full)) { mkdir($full, 0775, true); echo "Created: $d\n"; }
+    else echo "Exists:  $d\n";
+}
+
+// ── Step 2: Fix permissions ──
+echo "\n=== Step 2: Fixing permissions ===\n";
+exec("chmod -R 775 $base/storage $base/bootstrap/cache 2>&1");
+echo "storage writable: " . (is_writable("$base/storage") ? "YES ✅" : "NO ❌") . "\n";
+
+// ── Step 3: Check .env ──
+echo "\n=== Step 3: Checking .env ===\n";
+$envPath = "$base/.env";
+if (file_exists($envPath)) {
+    $envContent = file_get_contents($envPath);
+    $keys = ['APP_ENV', 'APP_URL', 'SANCTUM_STATEFUL_DOMAINS', 'FRONTEND_URL', 'DB_CONNECTION', 'DB_HOST', 'DB_DATABASE', 'DB_USERNAME', 'SESSION_DRIVER', 'SESSION_DOMAIN'];
+    foreach ($keys as $k) {
+        if (preg_match("/^{$k}=(.*)$/m", $envContent, $m)) {
+            echo "  $k=" . trim($m[1]) . "\n";
+        }
+    }
+} else {
+    echo "❌ .env file NOT FOUND!\n";
+}
+
+// ── Step 4: Composer check ──
+echo "\n=== Step 4: Composer autoload ===\n";
+if (file_exists("$base/vendor/autoload.php")) {
+    echo "Composer already exists ✅\n";
+} else {
+    echo "❌ vendor/autoload.php missing! Run: composer install --no-dev\n";
+}
+
+// ── Step 5: Run migrations ──
+echo "\n=== Step 5: Running database migrations ===\n";
+exec("cd $base && php artisan migrate --force 2>&1", $migOut, $migRc);
+echo implode("\n", $migOut) . "\n";
+echo ($migRc === 0 ? "✅ Migrations completed" : "❌ Migration failed (exit code: $migRc)") . "\n";
+
+// ── Step 6: Verify new deal columns ──
+echo "\n=== Step 6: Verifying deal table columns ===\n";
 try {
-    require "$root/vendor/autoload.php";
-    $app = require_once "$root/bootstrap/app.php";
-    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    require_once "$base/vendor/autoload.php";
+    $app = require_once "$base/bootstrap/app.php";
+    $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
 
-    echo "Laravel booted successfully.\n\n";
-
-    // Step 1: Clear all caches
-    echo "=== Step 1: Clearing caches ===\n";
-    Illuminate\Support\Facades\Artisan::call('config:clear');
-    echo "  config:clear ✅\n";
-    Illuminate\Support\Facades\Artisan::call('route:clear');
-    echo "  route:clear ✅\n";
-    Illuminate\Support\Facades\Artisan::call('view:clear');
-    echo "  view:clear ✅\n";
-    try {
-        Illuminate\Support\Facades\Artisan::call('cache:clear');
-        echo "  cache:clear ✅\n";
-    } catch (Exception $e) {
-        echo "  cache:clear skipped: " . $e->getMessage() . "\n";
+    $columns = \Illuminate\Support\Facades\Schema::getColumnListing('deals');
+    $required = ['investment_condition', 'ebitda_investor_value', 'ebitda_investor_times', 'ebitda_target_value', 'ebitda_target_times', 'deal_type', 'pipeline_type', 'ticket_size'];
+    foreach ($required as $col) {
+        $exists = in_array($col, $columns);
+        echo ($exists ? "✅" : "❌") . " Column '$col' " . ($exists ? "exists" : "MISSING") . "\n";
     }
 
-    // Step 2: Run pending migrations
-    echo "\n=== Step 2: Running migrations ===\n";
-    $exitCode = Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    $output = Illuminate\Support\Facades\Artisan::output();
-    echo $output;
-    echo "Migration exit code: $exitCode\n";
+    // Quick deal count
+    $dealCount = \App\Models\Deal::count();
+    echo "\nTotal deals in DB: $dealCount\n";
 
-    // Step 3: Verify critical tables
-    echo "\n=== Step 3: Verification ===\n";
-    $tables = ['deal_comment_reads', 'deals', 'buyers', 'sellers', 'activity_logs'];
-    foreach ($tables as $table) {
-        $exists = Illuminate\Support\Facades\Schema::hasTable($table);
-        echo "  Table '$table': " . ($exists ? 'YES ✅' : 'NO ❌') . "\n";
-    }
+    // Quick stage count
+    $stageCount = \App\Models\PipelineStage::where('is_active', true)->count();
+    echo "Active pipeline stages: $stageCount\n";
 
-    // Step 4: Quick API test — check if /api/deals works
-    echo "\n=== Step 4: Quick DB test ===\n";
-    try {
-        $dealCount = DB::table('deals')->count();
-        echo "  Deals count: $dealCount\n";
-        $buyerCount = DB::table('buyers')->count();
-        echo "  Buyers count: $buyerCount\n";
-        $sellerCount = DB::table('sellers')->count();
-        echo "  Sellers count: $sellerCount\n";
-        $commentReadsCount = DB::table('deal_comment_reads')->count();
-        echo "  DealCommentReads count: $commentReadsCount\n";
-    } catch (Exception $e) {
-        echo "  DB test error: " . $e->getMessage() . "\n";
-    }
-
-    // Step 5: Check last error in logs
-    echo "\n=== Step 5: Last log entries ===\n";
-    $logFile = "$root/storage/logs/laravel.log";
-    if (file_exists($logFile)) {
-        $size = filesize($logFile);
-        echo "  Log size: " . round($size / 1024) . " KB\n";
-        $lastLines = array_slice(explode("\n", file_get_contents($logFile)), -10);
-        foreach ($lastLines as $line) {
-            echo "  $line\n";
-        }
-    } else {
-        echo "  No log file found.\n";
-    }
-
-} catch (Exception $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo "File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+} catch (\Exception $e) {
+    echo "❌ Verification failed: " . $e->getMessage() . "\n";
 }
 
-echo "\n=== Done ===\n";
-echo "\n⚠️  DELETE THIS FILE from server after use!\n";
+// ── Step 7: Rebuild caches ──
+echo "\n=== Step 7: Rebuilding caches ===\n";
+$rebuildCmds = [
+    'php artisan config:cache',
+    'php artisan route:cache',
+];
+foreach ($rebuildCmds as $cmd) {
+    exec("cd $base && $cmd 2>&1", $rOut, $rRc);
+    echo ($rRc === 0 ? "✅" : "❌") . " $cmd\n";
+}
+
+echo "\n======================================\n";
+echo "  ✅ Deployment complete!\n";
+echo "  ⚠️  DELETE THIS FILE NOW!\n";
+echo "======================================\n";
+echo "</pre>";

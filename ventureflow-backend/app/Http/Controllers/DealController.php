@@ -104,18 +104,38 @@ class DealController extends Controller
                 ->pluck('total_count', 'loggable_id');
 
             // For deals with a last_read_at, count only comments after that timestamp
-            $dealsWithRead = $readMap->keys()->toArray();
+            // Use a single batch query with CASE WHEN instead of per-deal loop
             $unreadAfterRead = [];
-            if (!empty($dealsWithRead)) {
-                // Build a single query for deals that have been read
+            if (!$readMap->isEmpty()) {
+                $whenClauses = [];
+                $bindings = [];
                 foreach ($readMap as $dealId => $lastReadAt) {
-                    $count = ActivityLog::where('loggable_type', Deal::class)
-                        ->where('loggable_id', $dealId)
-                        ->where('type', 'comment')
-                        ->where('created_at', '>', $lastReadAt)
-                        ->where('user_id', '!=', $userId)
-                        ->count();
-                    $unreadAfterRead[$dealId] = $count;
+                    $whenClauses[] = 'WHEN loggable_id = ? THEN ?';
+                    $bindings[] = $dealId;
+                    $bindings[] = $lastReadAt;
+                }
+                $caseExpr = implode(' ', $whenClauses);
+                $readDealIds = $readMap->keys()->toArray();
+                $placeholders = implode(',', array_fill(0, count($readDealIds), '?'));
+                
+                $sql = "SELECT loggable_id, COUNT(*) as cnt FROM activity_logs "
+                     . "WHERE loggable_type = ? "
+                     . "AND loggable_id IN ({$placeholders}) "
+                     . "AND type = 'comment' "
+                     . "AND user_id != ? "
+                     . "AND created_at > (CASE {$caseExpr} END) "
+                     . "GROUP BY loggable_id";
+                
+                $allBindings = array_merge(
+                    [Deal::class],
+                    $readDealIds,
+                    [$userId],
+                    $bindings
+                );
+                
+                $results = DB::select($sql, $allBindings);
+                foreach ($results as $row) {
+                    $unreadAfterRead[$row->loggable_id] = $row->cnt;
                 }
             }
 
@@ -289,6 +309,7 @@ class DealController extends Controller
         return response()->json([
             'deal' => $deal->load([
                 'buyer.companyOverview',
+                'buyer.targetPreference',
                 'seller.companyOverview',
                 'seller.financialDetails',
                 'pic',

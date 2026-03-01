@@ -78,6 +78,10 @@ interface DealDetail {
         investment_critera?: {
             target_countries?: Array<{ id: number; name: string; svg_icon_url?: string }>;
         };
+        target_preference?: {
+            target_countries?: Array<number | { id: number; name: string; svg_icon_url?: string }>;
+            target_industries?: Array<number | { id: number; name: string }>;
+        };
     };
     seller?: {
         seller_id?: string;
@@ -415,23 +419,30 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                 </span>
                                             </div>
                                             {/* Target Countries */}
-                                            {d!.buyer?.investment_critera?.target_countries && d!.buyer.investment_critera.target_countries.length > 0 && (
-                                                <div className="flex items-start gap-2 text-xs text-gray-500 font-medium">
-                                                    <Globe className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                                                    <div className="flex flex-col gap-0.5">
-                                                        {d!.buyer.investment_critera.target_countries.map((c, i) => (
-                                                            <div key={i} className="flex items-center gap-1.5">
-                                                                {c.svg_icon_url ? (
-                                                                    <img src={c.svg_icon_url} alt={c.name} className="w-4 h-3 object-cover rounded-sm" />
-                                                                ) : (
-                                                                    <span className="text-[10px]">🏳️</span>
-                                                                )}
-                                                                <span className="text-gray-700">{c.name}</span>
-                                                            </div>
-                                                        ))}
+                                            {(() => {
+                                                // Try investment_critera first (legacy), then target_preference (new eager load)
+                                                const countries = d!.buyer?.investment_critera?.target_countries || d!.buyer?.target_preference?.target_countries || [];
+                                                // Filter to only objects with name (skip raw IDs)
+                                                const countriesWithNames = countries.filter((c): c is { id: number; name: string; svg_icon_url?: string } => typeof c === 'object' && 'name' in c);
+                                                if (countriesWithNames.length === 0) return null;
+                                                return (
+                                                    <div className="flex items-start gap-2 text-xs text-gray-500 font-medium">
+                                                        <Globe className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex flex-col gap-0.5">
+                                                            {countriesWithNames.map((c, i) => (
+                                                                <div key={i} className="flex items-center gap-1.5">
+                                                                    {c.svg_icon_url ? (
+                                                                        <img src={c.svg_icon_url} alt={c.name} className="w-4 h-3 object-cover rounded-sm" />
+                                                                    ) : (
+                                                                        <span className="text-[10px]">🏳️</span>
+                                                                    )}
+                                                                    <span className="text-gray-700">{c.name}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
