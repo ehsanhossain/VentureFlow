@@ -157,6 +157,8 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::get('/seller/unpinned',          [TargetController::class, 'unpinnedData']);
     Route::get('/seller/investment-range',  [TargetController::class, 'investmentRange']);
     Route::get('/seller/ebitda-range',      [TargetController::class, 'ebitdaRange']);
+    // Index route — used by frontend for ?status=Draft checks + main table listing
+    Route::get('/seller',                   [TargetController::class, 'index']);
     // Detail view — controllers strip pipeline_status, deals, reg_name for partners
     Route::get('/seller/{seller}',          [TargetController::class, 'show']);
 
@@ -167,6 +169,8 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::get('/investor/budget-range',    [InvestorController::class, 'budgetRange']);
     Route::get('/buyer/fetch',              [InvestorController::class, 'fetchAll']);
     Route::get('/buyer/budget-range',       [InvestorController::class, 'budgetRange']);
+    // Index route — used by frontend for ?status=Draft checks + main table listing
+    Route::get('/buyer',                    [InvestorController::class, 'index']);
     // Detail view — controllers strip pipeline_status, deals, reg_name for partners
     Route::get('/buyer/{buyer}',            [InvestorController::class, 'show']);
 
