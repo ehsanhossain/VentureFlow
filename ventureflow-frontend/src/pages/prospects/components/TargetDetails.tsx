@@ -40,6 +40,7 @@ const TargetDetails: React.FC = () => {
     const navigate = useNavigate();
     const authContext = useContext(AuthContext);
     const user = authContext?.user;
+    const isPartner = Boolean((user as any)?.role === 'partner' || (user as any)?.is_partner);
     const [loading, setLoading] = useState(true);
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [seller, setSeller] = useState<any>(null);
@@ -331,17 +332,19 @@ const TargetDetails: React.FC = () => {
                         <h1 className="text-2xl font-medium text-gray-900">Target&apos;s Profile</h1>
                     </div>
 
-                    {/* Edit Button - Secondary Style */}
-                    <button
-                        onClick={() => navigate(`/prospects/edit-target/${id}`)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit Target
-                    </button>
+                    {/* Edit Button - Secondary Style (admin only) */}
+                    {!isPartner && (
+                        <button
+                            onClick={() => navigate(`/prospects/edit-target/${id}`)}
+                            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                            Edit Target
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -358,42 +361,44 @@ const TargetDetails: React.FC = () => {
                         {/* Company Header */}
                         <div className="space-y-7">
                             <div className="flex items-center gap-3">
-                                {/* Company Avatar - click to upload */}
-                                <div
-                                    className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
-                                    onClick={() => avatarInputRef.current?.click()}
-                                    title="Click to change photo"
-                                >
-                                    <input
-                                        ref={avatarInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleAvatarChange}
-                                    />
-                                    {getAvatarUrl() ? (
-                                        <img
-                                            src={getAvatarUrl()}
-                                            alt={companyName}
-                                            className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
-                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                {/* Company Avatar - click to upload (admin only) */}
+                                {!isPartner && (
+                                    <div
+                                        className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
+                                        onClick={() => avatarInputRef.current?.click()}
+                                        title="Click to change photo"
+                                    >
+                                        <input
+                                            ref={avatarInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleAvatarChange}
                                         />
-                                    ) : null}
-                                    <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
-                                        {getInitials(companyName)}
+                                        {getAvatarUrl() ? (
+                                            <img
+                                                src={getAvatarUrl()}
+                                                alt={companyName}
+                                                className="w-[52px] h-[52px] rounded-full object-cover ring-1 ring-gray-100"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            />
+                                        ) : null}
+                                        <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                                            {getInitials(companyName)}
+                                        </div>
+                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                            {avatarUploading
+                                                ? <Loader className="w-4 h-4 text-white animate-spin" />
+                                                : <Camera className="w-4 h-4 text-white" />
+                                            }
+                                        </div>
                                     </div>
-                                    <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                        {avatarUploading
-                                            ? <Loader className="w-4 h-4 text-white animate-spin" />
-                                            : <Camera className="w-4 h-4 text-white" />
-                                        }
-                                    </div>
-                                </div>
+                                )}
 
                                 <div className="flex flex-col justify-between">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-2xl font-medium text-black capitalize">{companyName}</span>
-                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] text-base font-medium">
+                                        {!isPartner && <span className="text-2xl font-medium text-black capitalize">{companyName}</span>}
+                                        <span className={`px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] ${isPartner ? 'text-2xl' : 'text-base'} font-medium`}>
                                             {projectCode}
                                         </span>
                                     </div>
@@ -495,8 +500,8 @@ const TargetDetails: React.FC = () => {
                                 </div>
                             </RestrictedField>
 
-                            {/* Addresses / Entities in Overview */}
-                            {hqAddresses && hqAddresses.length > 0 && (
+                            {/* Addresses / Entities in Overview (admin only) */}
+                            {!isPartner && hqAddresses && hqAddresses.length > 0 && (
                                 <div className="flex flex-col gap-3">
                                     <span className="text-[11px] font-medium text-gray-400 uppercase">Addresses / Entities</span>
                                     <div className="flex flex-col gap-2">
@@ -613,65 +618,69 @@ const TargetDetails: React.FC = () => {
                         </section>
                     )}
 
-                    {/* Key Personnel Section */}
-                    <section className="space-y-7">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-base font-medium text-gray-500 capitalize">Key Personnel</h2>
-                            <span className="text-xs font-medium text-gray-400">1 Contact(s)</span>
-                        </div>
-                        <div className="h-px bg-[#E5E7EB]" />
+                    {/* Key Personnel Section (admin only) */}
+                    {!isPartner && (
+                        <section className="space-y-7">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-base font-medium text-gray-500 capitalize">Key Personnel</h2>
+                                <span className="text-xs font-medium text-gray-400">1 Contact(s)</span>
+                            </div>
+                            <div className="h-px bg-[#E5E7EB]" />
 
-                        <RestrictedField allowed={allowedFields} section="companyOverview" item="seller_contact_name">
-                            <div className="flex gap-4">
-                                <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
-                                    <div className="flex flex-col gap-4">
-                                        {/* Contact Header */}
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
-                                                    <User className="w-5 h-5 text-gray-400" />
+                            <RestrictedField allowed={allowedFields} section="companyOverview" item="seller_contact_name">
+                                <div className="flex gap-4">
+                                    <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                        <div className="flex flex-col gap-4">
+                                            {/* Contact Header */}
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-white border border-[#E5E7EB] flex items-center justify-center">
+                                                        <User className="w-5 h-5 text-gray-400" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-base font-medium text-gray-900">{overview.seller_contact_name || 'N/A'}</span>
+                                                        <span className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-base font-medium text-gray-900">{overview.seller_contact_name || 'N/A'}</span>
-                                                    <span className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</span>
-                                                </div>
-                                            </div>
-                                            <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-xs font-medium text-[#064771]">
-                                                Primary
-                                            </span>
-                                        </div>
-
-                                        {/* Contact Details */}
-                                        <div className="pt-4 border-t border-[#F3F4F6] flex flex-col gap-3">
-                                            <div className="flex items-center gap-2">
-                                                <Mail className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="text-xs font-normal text-gray-600">{overview.seller_email || 'N/A'}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Phone className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="text-xs font-normal text-gray-600">
-                                                    {Array.isArray(overview.seller_phone)
-                                                        ? (overview.seller_phone.find((p: any) => p.isPrimary)?.phone || overview.seller_phone[0]?.phone || 'N/A')
-                                                        : (overview.seller_phone || 'N/A')}
+                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-xs font-medium text-[#064771]">
+                                                    Primary
                                                 </span>
+                                            </div>
+
+                                            {/* Contact Details */}
+                                            <div className="pt-4 border-t border-[#F3F4F6] flex flex-col gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                                    <span className="text-xs font-normal text-gray-600">{overview.seller_email || 'N/A'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                                                    <span className="text-xs font-normal text-gray-600">
+                                                        {Array.isArray(overview.seller_phone)
+                                                            ? (overview.seller_phone.find((p: any) => p.isPrimary)?.phone || overview.seller_phone[0]?.phone || 'N/A')
+                                                            : (overview.seller_phone || 'N/A')}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </RestrictedField>
-                    </section>
+                            </RestrictedField>
+                        </section>
+                    )}
 
-                    {/* Notes Section */}
-                    <div style={{ maxHeight: '500px' }}>
-                        <NotesSection
-                            notes={notes}
-                            onNotesChange={setNotes}
-                            entityId={id!}
-                            entityType="seller"
-                            currentUserName={getCurrentUserName()}
-                        />
-                    </div>
+                    {/* Notes Section (admin only) */}
+                    {!isPartner && (
+                        <div style={{ maxHeight: '500px' }}>
+                            <NotesSection
+                                notes={notes}
+                                onNotesChange={setNotes}
+                                entityId={id!}
+                                entityType="seller"
+                                currentUserName={getCurrentUserName()}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column - Sidebar */}
@@ -720,49 +729,51 @@ const TargetDetails: React.FC = () => {
                         )}
                     </div>
 
-                    {/* 2. Introduced Projects (with icon) */}
-                    <div className="space-y-5">
-                        <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
-                            <img src={introducedProjectsIcon} alt="" className="w-5 h-5" />
-                            {introducedProjects && introducedProjects.length > 0 ? 'Introduced Projects' : 'Propose Investors'}
-                        </h3>
-                        <div className="space-y-3">
-                            {introducedProjects && introducedProjects.length > 0 ? introducedProjects.map((project: any, idx: number) => (
-                                <div
-                                    key={project.id || idx}
-                                    className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
-                                    onClick={() => navigate(`/prospects/investor/${project.id}`)}
-                                >
-                                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
-                                        {project.code}
-                                    </span>
-                                    <div className="flex-1 min-w-0">
-                                        <span className="block text-base font-medium text-[#064771] truncate">
-                                            {project.name}
-                                        </span>
-                                        {project.introduced_at && (
-                                            <span className="block text-[11px] text-gray-400 mt-0.5">
-                                                Introduced {new Date(project.introduced_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="text-sm text-gray-400 italic">
-                                    No investors have been introduced yet.
-                                    <button
-                                        onClick={() => navigate('/prospects?tab=investors')}
-                                        className="block mt-2 text-[#064771] underline hover:no-underline"
+                    {/* 2. Introduced Projects (admin only) */}
+                    {!isPartner && (
+                        <div className="space-y-5">
+                            <h3 className="flex items-center gap-2 text-base font-medium text-gray-500 capitalize">
+                                <img src={introducedProjectsIcon} alt="" className="w-5 h-5" />
+                                {introducedProjects && introducedProjects.length > 0 ? 'Introduced Projects' : 'Propose Investors'}
+                            </h3>
+                            <div className="space-y-3">
+                                {introducedProjects && introducedProjects.length > 0 ? introducedProjects.map((project: any, idx: number) => (
+                                    <div
+                                        key={project.id || idx}
+                                        className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
+                                        onClick={() => navigate(`/prospects/investor/${project.id}`)}
                                     >
-                                        Browse available investors →
-                                    </button>
-                                </div>
-                            )}
+                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
+                                            {project.code}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="block text-base font-medium text-[#064771] truncate">
+                                                {project.name}
+                                            </span>
+                                            {project.introduced_at && (
+                                                <span className="block text-[11px] text-gray-400 mt-0.5">
+                                                    Introduced {new Date(project.introduced_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="text-sm text-gray-400 italic">
+                                        No investors have been introduced yet.
+                                        <button
+                                            onClick={() => navigate('/prospects?tab=investors')}
+                                            className="block mt-2 text-[#064771] underline hover:no-underline"
+                                        >
+                                            Browse available investors →
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* 3. Deal Pipeline Stage (with icon) */}
-                    {(() => {
+                    {/* 3. Deal Pipeline Stage (admin only) */}
+                    {!isPartner && (() => {
                         const pipeInfo = getDealPipelineInfo();
                         return (
                             <div className="space-y-5">
@@ -798,55 +809,59 @@ const TargetDetails: React.FC = () => {
                         );
                     })()}
 
-                    {/* 4. Assigned PIC (show all) */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Assigned PIC</h3>
-                        <div className="space-y-2.5">
-                            {internalPICs && internalPICs.length > 0 ? internalPICs.map((pic, idx) => {
-                                const picName = pic.name || `${pic.first_name || ''} ${pic.last_name || ''}`.trim() || 'N/A';
-                                return (
-                                    <div key={pic.id || idx} className="flex items-center gap-3.5">
-                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                            <span className="text-white text-sm font-normal">{getInitials(picName)}</span>
+                    {/* 4. Assigned PIC (admin only) */}
+                    {!isPartner && (
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Assigned PIC</h3>
+                            <div className="space-y-2.5">
+                                {internalPICs && internalPICs.length > 0 ? internalPICs.map((pic, idx) => {
+                                    const picName = pic.name || `${pic.first_name || ''} ${pic.last_name || ''}`.trim() || 'N/A';
+                                    return (
+                                        <div key={pic.id || idx} className="flex items-center gap-3.5">
+                                            <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                                <span className="text-white text-sm font-normal">{getInitials(picName)}</span>
+                                            </div>
+                                            <span className="text-base font-normal text-black">{picName}</span>
                                         </div>
-                                        <span className="text-base font-normal text-black">{picName}</span>
+                                    );
+                                }) : (
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                            <span className="text-white text-sm font-normal">{getInitials(getPrimaryPIC())}</span>
+                                        </div>
+                                        <span className="text-base font-normal text-black">{getPrimaryPIC()}</span>
                                     </div>
-                                );
-                            }) : (
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                        <span className="text-white text-sm font-normal">{getInitials(getPrimaryPIC())}</span>
-                                    </div>
-                                    <span className="text-base font-normal text-black">{getPrimaryPIC()}</span>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* 5. Financial Advisor Role (show all) */}
-                    <div className="space-y-3">
-                        <h3 className="text-base font-medium text-gray-500 capitalize">Financial Advisor Role (Partner)</h3>
-                        <div className="space-y-2.5">
-                            {financialAdvisors && financialAdvisors.length > 0 ? financialAdvisors.map((advisor, idx) => {
-                                const advisorName = advisor.name || advisor.reg_name || 'N/A';
-                                return (
-                                    <div key={advisor.id || idx} className="flex items-center gap-3.5">
-                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                            <span className="text-white text-sm font-normal">{getInitials(advisorName)}</span>
+                    {/* 5. Financial Advisor Role (admin only) */}
+                    {!isPartner && (
+                        <div className="space-y-3">
+                            <h3 className="text-base font-medium text-gray-500 capitalize">Financial Advisor Role (Partner)</h3>
+                            <div className="space-y-2.5">
+                                {financialAdvisors && financialAdvisors.length > 0 ? financialAdvisors.map((advisor, idx) => {
+                                    const advisorName = advisor.name || advisor.reg_name || 'N/A';
+                                    return (
+                                        <div key={advisor.id || idx} className="flex items-center gap-3.5">
+                                            <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                                <span className="text-white text-sm font-normal">{getInitials(advisorName)}</span>
+                                            </div>
+                                            <span className="text-base font-normal text-black">{advisorName}</span>
                                         </div>
-                                        <span className="text-base font-normal text-black">{advisorName}</span>
+                                    );
+                                }) : (
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
+                                            <span className="text-white text-sm font-normal">{getInitials(getPrimaryAdvisor())}</span>
+                                        </div>
+                                        <span className="text-base font-normal text-black">{getPrimaryAdvisor()}</span>
                                     </div>
-                                );
-                            }) : (
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-full bg-[#064771] flex items-center justify-center">
-                                        <span className="text-white text-sm font-normal">{getInitials(getPrimaryAdvisor())}</span>
-                                    </div>
-                                    <span className="text-base font-normal text-black">{getPrimaryAdvisor()}</span>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

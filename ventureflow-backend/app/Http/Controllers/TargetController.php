@@ -898,17 +898,22 @@ class TargetController extends Controller
             $allowedFields = $this->getParsedAllowedFields('target');
             $query = Target::where('id', $seller->id);
 
+            // SECURITY: Strip pipeline_status — never expose to partners
             $rootFields = array_unique(array_merge(
-                 ['id', 'seller_id', 'pinned', 'created_at', 'status', 'updated_at'], 
+                 ['id', 'seller_id', 'pinned', 'created_at', 'updated_at'], 
                  $allowedFields['root'] ?? [],
                  ['company_overview_id', 'financial_detail_id', 'partnership_detail_id', 'teaser_center_id']
             ));
+            // Strip status (pipeline) even if it's in allowed fields
+            $rootFields = array_values(array_diff($rootFields, ['pipeline_status']));
             $query->select($rootFields);
 
             $query->with([
                 'companyOverview' => function($q) use ($allowedFields) {
                     if (isset($allowedFields['relationships']['companyOverview'])) {
-                        $q->select(array_merge(['id', 'hq_country'], $allowedFields['relationships']['companyOverview']));
+                        // SECURITY: Strip reg_name (company name) — partners see project code only
+                        $safeFields = array_values(array_diff($allowedFields['relationships']['companyOverview'], ['reg_name']));
+                        $q->select(array_merge(['id', 'hq_country'], $safeFields));
                     } else { $q->select('id'); }
                     $q->with('hqCountry');
                 },
@@ -927,9 +932,7 @@ class TargetController extends Controller
                         $q->select(array_merge(['id'], $allowedFields['relationships']['teaserCenter']));
                     } else { $q->select('id'); }
                 },
-                'deals' => function($q) {
-                     $q->select('id', 'seller_id', 'stage_code', 'progress_percent', 'created_at');
-                }
+                // SECURITY: DO NOT load deals for partners — pipeline data is confidential
             ]);
 
             $result = $query->first();

@@ -130,17 +130,44 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Staff + Admin + Partner shared routes
-// Partners see the same UI but controllers filter data based on sharing settings
+// Partner read-only routes — prospect detail views + listing data
+// Partners ONLY get read access. Controllers further filter by sharing config.
+// SECURITY: No write, delete, deals, dashboard, MatchIQ, or import access.
 // ─────────────────────────────────────────────────────────────────────────────
-Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:partner'])->group(function () {
+    // Prospect detail views (controllers strip pipeline_status, deals, reg_name)
+    Route::get('/seller/{seller}',   [TargetController::class, 'show']);
+    Route::get('/buyer/{buyer}',     [InvestorController::class, 'show']);
 
-    // Auth utilities
-    Route::get('/search',                     [SearchController::class, 'index']);
-    Route::post('/logout',                    [AuthController::class, 'logout']);
-    Route::post('/user/change-password',      [AuthController::class, 'changePassword']);
-    Route::post('/change-password',           [AuthController::class, 'changePassword']); // alias
-    Route::get('/user',                       [AuthController::class, 'user']);
+    // Listing data — pinned/unpinned tabs (controllers already filter by partner sharing)
+    Route::get('/seller/pinned',     [TargetController::class, 'pinnedData']);
+    Route::get('/seller/unpinned',   [TargetController::class, 'unpinnedData']);
+    Route::get('/seller/fetch',      [TargetController::class, 'fetchAll']);
+    Route::get('/target/pinned',     [TargetController::class, 'pinnedData']);
+    Route::get('/target/unpinned',   [TargetController::class, 'unpinnedData']);
+    Route::get('/target/fetch',      [TargetController::class, 'fetchAll']);
+    Route::get('/buyer/fetch',       [InvestorController::class, 'fetchAll']);
+    Route::get('/investor/pinned',   [InvestorController::class, 'pinnedData']);
+    Route::get('/investor/unpinned', [InvestorController::class, 'unpinnedData']);
+    Route::get('/investor/fetch',    [InvestorController::class, 'fetchAll']);
+
+    // Table preferences (partners can customize their own column visibility)
+    Route::get('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'show']);
+    Route::put('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'update']);
+    Route::delete('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'destroy']);
+
+    // Pipeline Stages (read-only — needed for filter dropdowns)
+    Route::get('/pipeline-stages', [PipelineStageController::class, 'index']);
+
+    // Fee Tiers (read-only)
+    Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Staff + Admin routes — full CRUD access to prospects, deals, MatchIQ, etc.
+// SECURITY: Partners CANNOT reach these endpoints.
+// ─────────────────────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function () {
 
     // User Table Preferences
     Route::get('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'show']);
@@ -224,7 +251,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::post('/investor/{buyer}/pinned',     [InvestorController::class, 'pinned']);
     Route::post('/buyer/{id}/avatar',           [InvestorController::class, 'uploadAvatar']);
 
-    // Partner Routes (read + write — admin also covered by admin group above)
+    // Partner Routes (admin/staff manage partners — read + write)
     Route::get('/partner/get-last-sequence',              [PartnerController::class, 'getLastSequence']);
     Route::get('/partner/check-id',                       [PartnerController::class, 'checkId']);
     Route::delete('/partners',                            [PartnerController::class, 'destroy']);
@@ -237,7 +264,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::get('/partner-structure/{id}',                 [PartnerController::class, 'partnerStructureShow']);
     Route::post('/partner-partnership-structures',        [PartnerController::class, 'partnerPartnershipStructuresStore']);
 
-    // Deals
+    // Deals — admin/staff only
     Route::get('/deals/dashboard',                    [\App\Http\Controllers\DealController::class, 'dashboard']);
     Route::get('/deals/{deal}/stage-check',           [\App\Http\Controllers\DealController::class, 'stageCheck']);
     Route::patch('/deals/{deal}/stage',               [\App\Http\Controllers\DealController::class, 'updateStage']);
@@ -249,19 +276,12 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::post('/import/validate/{type}', [ImportController::class, 'validate']);
     Route::post('/import/confirm/{type}',  [ImportController::class, 'confirm']);
 
-    // Notifications
-    Route::get('/notifications',                     [NotificationController::class, 'index']);
-    Route::get('/notifications/unread-count',        [NotificationController::class, 'unreadCount']);
-    Route::post('/notifications/mark-all-read',      [NotificationController::class, 'markAllRead']);
-    Route::post('/notifications/{id}/read',          [NotificationController::class, 'markAsRead']);
-    Route::delete('/notifications/{id}',             [NotificationController::class, 'destroy']);
-
-    // Activity Logs
+    // Activity Logs — admin/staff only
     Route::get('/activity-logs',          [\App\Http\Controllers\ActivityLogController::class, 'index']);
     Route::post('/activity-logs',         [\App\Http\Controllers\ActivityLogController::class, 'store']);
     Route::delete('/activity-logs/{id}',  [\App\Http\Controllers\ActivityLogController::class, 'destroy']);
 
-    // Dashboard
+    // Dashboard — admin/staff only
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::prefix('dashboard')->group(function () {
         Route::get('/stats',          [DashboardController::class, 'stats']);
@@ -273,7 +293,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
         Route::get('/counts',         [DashboardController::class, 'getCounts']);
     });
 
-    // MatchIQ
+    // MatchIQ — admin/staff only
     Route::prefix('matchiq')->group(function () {
         Route::get('/',              [MatchController::class, 'index']);
         Route::get('/stats',         [MatchController::class, 'stats']);
