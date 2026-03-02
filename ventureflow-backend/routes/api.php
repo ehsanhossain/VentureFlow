@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
     // Employee / HR
     Route::get('/employees/fetch', [EmployeeController::class, 'fetchAllEmployees']);
     Route::get('/employees/assigned-projects/{employeeId}', [EmployeeController::class, 'assigned_projects']);
+    Route::post('/employees/deletion-impact', [EmployeeController::class, 'deletionImpact']);
     Route::delete('/employees', [EmployeeController::class, 'destroy']);
     Route::apiResource('employees', EmployeeController::class);
     Route::apiResource('designations', DesignationController::class);

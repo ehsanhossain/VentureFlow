@@ -9,9 +9,11 @@
 namespace App\Http\Controllers;
 use App\Models\Buyer;
 use App\Models\BuyersCompanyOverview;
+use App\Models\Deal;
 use App\Models\Employee;
 use App\Models\Partner;
 use App\Models\PartnersPartnerOverview;
+use App\Models\Seller;
 use App\Models\SellersCompanyOverview;
 use DB;
 use Illuminate\Support\Facades\Log;
@@ -390,6 +392,125 @@ class EmployeeController extends Controller
     }
 
 
+    /**
+     * Check the impact of deleting one or more employees.
+     * Returns a summary of where each employee is referenced (deals, investors, targets).
+     */
+    public function deletionImpact(Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+            $ids = is_array($ids) ? $ids : [$ids];
+
+            if (empty($ids)) {
+                return response()->json(['impacts' => []], 200);
+            }
+
+            // Check if any of the IDs is the current user
+            $currentEmployee = Employee::where('user_id', $request->user()->id)->first();
+            $isSelfIncluded = $currentEmployee && in_array($currentEmployee->id, $ids);
+
+            $impacts = [];
+
+            foreach ($ids as $empId) {
+                $employee = Employee::with('user')->find($empId);
+                if (!$employee) continue;
+
+                $userId = $employee->user_id;
+                $empName = trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? ''));
+                if (empty($empName) && $employee->user) {
+                    $empName = $employee->user->name;
+                }
+
+                // Find deals where this employee is PIC (pic_user_id)
+                $dealsPic = Deal::where('pic_user_id', $userId)
+                    ->select('id', 'name')
+                    ->get()
+                    ->toArray();
+
+                // Find deals where this employee is in internal_pic JSON
+                $dealsInternalPic = Deal::whereNotNull('internal_pic')
+                    ->get()
+                    ->filter(function ($deal) use ($empId) {
+                        $pics = is_array($deal->internal_pic) ? $deal->internal_pic : json_decode($deal->internal_pic, true);
+                        if (!is_array($pics)) return false;
+                        foreach ($pics as $pic) {
+                            if (isset($pic['id']) && $pic['id'] == $empId) return true;
+                        }
+                        return false;
+                    })
+                    ->map(fn($d) => ['id' => $d->id, 'name' => $d->name])
+                    ->values()
+                    ->toArray();
+
+                // Find investor profiles (BuyersCompanyOverview) where this employee is internal_pic
+                $investorProfiles = BuyersCompanyOverview::whereNotNull('internal_pic')
+                    ->get()
+                    ->filter(function ($overview) use ($empId) {
+                        $pics = is_array($overview->internal_pic) ? $overview->internal_pic : json_decode($overview->internal_pic, true);
+                        if (!is_array($pics)) return false;
+                        foreach ($pics as $pic) {
+                            if (isset($pic['id']) && $pic['id'] == $empId) return true;
+                        }
+                        return false;
+                    })
+                    ->map(fn($o) => ['id' => $o->id, 'name' => $o->reg_name ?? 'Unknown'])
+                    ->values()
+                    ->toArray();
+
+                // Find target profiles (SellersCompanyOverview) where this employee is internal_pic
+                $targetProfiles = SellersCompanyOverview::whereNotNull('internal_pic')
+                    ->get()
+                    ->filter(function ($overview) use ($empId) {
+                        $pics = is_array($overview->internal_pic) ? $overview->internal_pic : json_decode($overview->internal_pic, true);
+                        if (!is_array($pics)) return false;
+                        foreach ($pics as $pic) {
+                            if (isset($pic['id']) && $pic['id'] == $empId) return true;
+                        }
+                        return false;
+                    })
+                    ->map(fn($o) => ['id' => $o->id, 'name' => $o->reg_name ?? 'Unknown'])
+                    ->values()
+                    ->toArray();
+
+                // Find investor/target profiles where this employee is incharge_name
+                $investorIncharge = BuyersCompanyOverview::where('incharge_name', $empId)
+                    ->select('id', 'reg_name as name')
+                    ->get()
+                    ->toArray();
+
+                $targetIncharge = SellersCompanyOverview::where('incharge_name', $empId)
+                    ->select('id', 'reg_name as name')
+                    ->get()
+                    ->toArray();
+
+                $impacts[] = [
+                    'employee_id' => $empId,
+                    'employee_name' => $empName,
+                    'is_self' => $currentEmployee && $currentEmployee->id == $empId,
+                    'deals_as_pic' => $dealsPic,
+                    'deals_as_internal_pic' => $dealsInternalPic,
+                    'investor_profiles' => array_merge($investorProfiles, $investorIncharge),
+                    'target_profiles' => array_merge($targetProfiles, $targetIncharge),
+                ];
+            }
+
+            return response()->json([
+                'impacts' => $impacts,
+                'is_self_included' => $isSelfIncluded,
+                'total_employees' => count($impacts),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Deletion impact check failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to check deletion impact',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
     public function destroy(Request $request)
     {
         try {
@@ -401,9 +522,16 @@ class EmployeeController extends Controller
 
             $idsToDelete = is_array($idsToDelete) ? $idsToDelete : [$idsToDelete];
 
+            // Self-deletion prevention
+            $currentEmployee = Employee::where('user_id', $request->user()->id)->first();
+            if ($currentEmployee && in_array($currentEmployee->id, $idsToDelete)) {
+                return response()->json(['message' => 'You cannot delete your own account.'], 403);
+            }
+
             $deletedCount = 0;
 
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
+                // Clean up incharge_name references
                 SellersCompanyOverview::whereIn('incharge_name', $idsToDelete)
                     ->update(['incharge_name' => null]);
 
@@ -414,7 +542,53 @@ class EmployeeController extends Controller
                     ->update(['our_contact_person' => null]);
 
                 $employees = Employee::with('user')->whereIn('id', $idsToDelete)->get();
+                $userIds = $employees->pluck('user_id')->filter()->toArray();
 
+                // Clean up Deal PIC references
+                if (!empty($userIds)) {
+                    Deal::whereIn('pic_user_id', $userIds)->update(['pic_user_id' => null]);
+                }
+
+                // Clean up internal_pic JSON in Deals
+                $dealsWithPic = Deal::whereNotNull('internal_pic')->get();
+                foreach ($dealsWithPic as $deal) {
+                    $pics = is_array($deal->internal_pic) ? $deal->internal_pic : json_decode($deal->internal_pic, true);
+                    if (!is_array($pics)) continue;
+                    $filtered = array_values(array_filter($pics, function ($pic) use ($idsToDelete) {
+                        return !isset($pic['id']) || !in_array($pic['id'], $idsToDelete);
+                    }));
+                    if (count($filtered) !== count($pics)) {
+                        $deal->update(['internal_pic' => $filtered]);
+                    }
+                }
+
+                // Clean up internal_pic JSON in Investor overviews
+                $investorOverviews = BuyersCompanyOverview::whereNotNull('internal_pic')->get();
+                foreach ($investorOverviews as $overview) {
+                    $pics = is_array($overview->internal_pic) ? $overview->internal_pic : json_decode($overview->internal_pic, true);
+                    if (!is_array($pics)) continue;
+                    $filtered = array_values(array_filter($pics, function ($pic) use ($idsToDelete) {
+                        return !isset($pic['id']) || !in_array($pic['id'], $idsToDelete);
+                    }));
+                    if (count($filtered) !== count($pics)) {
+                        $overview->update(['internal_pic' => $filtered]);
+                    }
+                }
+
+                // Clean up internal_pic JSON in Target overviews
+                $targetOverviews = SellersCompanyOverview::whereNotNull('internal_pic')->get();
+                foreach ($targetOverviews as $overview) {
+                    $pics = is_array($overview->internal_pic) ? $overview->internal_pic : json_decode($overview->internal_pic, true);
+                    if (!is_array($pics)) continue;
+                    $filtered = array_values(array_filter($pics, function ($pic) use ($idsToDelete) {
+                        return !isset($pic['id']) || !in_array($pic['id'], $idsToDelete);
+                    }));
+                    if (count($filtered) !== count($pics)) {
+                        $overview->update(['internal_pic' => $filtered]);
+                    }
+                }
+
+                // Delete Employee + User records
                 $employees->each(function ($employee) {
                     $employee->delete();
                     $employee->user?->delete();
