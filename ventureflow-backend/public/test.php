@@ -135,8 +135,95 @@ try {
     echo "❌ Verification failed: " . $e->getMessage() . "\n";
 }
 
+// Step 8.5: Build Frontend
+echo "\n=== Step 8.5: Building Frontend ===\n";
+$frontendDir = dirname($root) . '/ventureflow-frontend';
+if (!is_dir($frontendDir)) {
+    // Try monorepo layout (frontend is sibling of backend in httpdocs)
+    $frontendDir = $root . '/../ventureflow-frontend';
+}
+// Normalize path for safety
+$frontendDir = realpath($frontendDir) ?: $frontendDir;
+
+echo "Frontend dir: $frontendDir\n";
+
+if (is_dir($frontendDir)) {
+    // Find node binary - check common Plesk paths
+    $nodePaths = [
+        '/opt/plesk/node/22/bin/node',
+        '/opt/plesk/node/20/bin/node',
+        '/opt/plesk/node/18/bin/node',
+        '/usr/local/bin/node',
+        '/usr/bin/node',
+    ];
+    $nodeFound = '';
+    foreach ($nodePaths as $np) {
+        if (file_exists($np)) {
+            $nodeFound = $np;
+            break;
+        }
+    }
+    
+    // Also try which
+    if (!$nodeFound) {
+        $nodeFound = trim(shell_exec('which node 2>/dev/null') ?? '');
+    }
+    
+    if ($nodeFound) {
+        $nodeDir = dirname($nodeFound);
+        $npmBin = "$nodeDir/npm";
+        echo "Node: $nodeFound\n";
+        echo "npm: $npmBin\n";
+        
+        // Get node version
+        exec("$nodeFound --version 2>&1", $nv);
+        echo "Node version: " . implode('', $nv) . "\n\n";
+        
+        // npm install
+        echo ">>> npm install...\n";
+        $npmInstallOut = [];
+        exec("cd $frontendDir && PATH=$nodeDir:\$PATH $npmBin install --production=false 2>&1", $npmInstallOut, $npmInstallExit);
+        echo implode("\n", array_slice($npmInstallOut, -3)) . "\n";
+        echo "npm install exit: $npmInstallExit\n\n";
+        
+        if ($npmInstallExit === 0) {
+            // npm run build
+            echo ">>> npm run build...\n";
+            $npmBuildOut = [];
+            exec("cd $frontendDir && PATH=$nodeDir:\$PATH $npmBin run build 2>&1", $npmBuildOut, $npmBuildExit);
+            echo implode("\n", array_slice($npmBuildOut, -5)) . "\n";
+            echo "npm build exit: $npmBuildExit\n";
+            
+            if ($npmBuildExit === 0) {
+                echo "✅ Frontend built successfully!\n";
+                // Check dist exists
+                echo "dist/index.html: " . (file_exists("$frontendDir/dist/index.html") ? 'YES ✅' : 'NO ❌') . "\n";
+            } else {
+                echo "❌ Frontend build FAILED\n";
+            }
+        } else {
+            echo "❌ npm install FAILED\n";
+        }
+    } else {
+        echo "⚠️ Node.js not found on server.\n";
+        echo "Checked: " . implode(', ', $nodePaths) . "\n";
+        echo "Frontend cannot be built automatically.\n";
+        
+        // Check if dist already exists (from git or manual build)
+        if (file_exists("$frontendDir/dist/index.html")) {
+            echo "dist/index.html: EXISTS (using git-committed build) ✅\n";
+        } else {
+            echo "dist/index.html: MISSING ❌\n";
+            echo "You need Node.js on the server or commit dist/ to git.\n";
+        }
+    }
+} else {
+    echo "⚠️ Frontend directory not found at: $frontendDir\n";
+}
+echo "\n";
+
 // Step 9: Final cache clear
-echo "\n=== Step 9: Final cache clear ===\n";
+echo "=== Step 9: Final cache clear ===\n";
 exec("$php $root/artisan config:clear 2>&1", $f1);
 exec("$php $root/artisan cache:clear 2>&1", $f2);
 echo "Done.\n\n";
