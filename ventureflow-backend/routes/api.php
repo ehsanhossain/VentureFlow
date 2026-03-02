@@ -130,9 +130,10 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Staff + Admin shared routes (System Admin OR Staff)
+// Staff + Admin + Partner shared routes
+// Partners see the same UI but controllers filter data based on sharing settings
 // ─────────────────────────────────────────────────────────────────────────────
-Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(function () {
 
     // Auth utilities
     Route::get('/search',                     [SearchController::class, 'index']);
