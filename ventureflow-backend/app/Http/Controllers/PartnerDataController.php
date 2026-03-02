@@ -173,57 +173,5 @@ class PartnerDataController extends Controller
             return response()->json(['error' => 'Failed to fetch targets: ' . $e->getMessage()], 500);
         }
     }
-
-    /**
-     * Get the currently-logged-in partner's profile
-     */
-    public function getMyProfile(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $partner = \App\Models\Partner::where('user_id', $user->id)->first();
-
-            if (!$partner) {
-                return response()->json(['error' => 'Partner profile not found'], 404);
-            }
-
-            return response()->json([
-                'data' => $partner,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('getMyProfile Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch profile'], 500);
-        }
-    }
-
-    /**
-     * Update the currently-logged-in partner's profile
-     */
-    public function updateMyProfile(Request $request)
-    {
-        try {
-            $user = $request->user();
-            $partner = \App\Models\Partner::where('user_id', $user->id)->first();
-
-            if (!$partner) {
-                return response()->json(['error' => 'Partner profile not found'], 404);
-            }
-
-            $partner->update($request->only([
-                'company_name',
-                'company_address',
-                'contact_person',
-                'contact_email',
-                'contact_phone',
-            ]));
-
-            return response()->json([
-                'data' => $partner->fresh(),
-                'message' => 'Profile updated successfully',
-            ]);
-        } catch (\Exception $e) {
-            Log::error('updateMyProfile Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to update profile'], 500);
-        }
-    }
 }
+

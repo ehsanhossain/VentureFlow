@@ -78,13 +78,6 @@ const Login = () => {
 
       showAlert({ type: 'success', message: 'Login successful!' });
 
-      // Redirect partner to partner portal
-      const isPartnerUser = res.data.is_partner || res.data.role === 'partner';
-      if (isPartnerUser) {
-        navigate('/partner-portal');
-        return;
-      }
-
       const intendedUrl = localStorage.getItem('intended_url') || '/';
       localStorage.removeItem('intended_url');
       navigate(intendedUrl);

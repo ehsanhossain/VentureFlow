@@ -50,8 +50,6 @@ Route::middleware(['auth:sanctum', 'role:partner'])->prefix('partner-portal')->g
     Route::get('/stats',     [\App\Http\Controllers\PartnerDataController::class, 'getDashboardStats']);
     Route::get('/investors', [\App\Http\Controllers\PartnerDataController::class, 'getSharedBuyers']);
     Route::get('/targets',   [\App\Http\Controllers\PartnerDataController::class, 'getSharedSellers']);
-    Route::get('/profile',   [\App\Http\Controllers\PartnerDataController::class, 'getMyProfile']);
-    Route::put('/profile',   [\App\Http\Controllers\PartnerDataController::class, 'updateMyProfile']);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
