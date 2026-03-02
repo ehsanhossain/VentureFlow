@@ -165,21 +165,13 @@ class TargetController extends Controller
         $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         $allowedFields = null;
-        $partnerId = null;
         if ($isPartner) {
             $allowedFields = $this->getParsedAllowedFields('seller');
-            // Get the partner_id from the user's associated partner record
-            $partnerId = $user->partner_id ?? $user->partner?->id ?? null;
+            // Partners see ALL targets (same as old PartnerDataController behavior)
+            // Column-level filtering is handled below via $allowedFields
         }
 
         $query = Target::query();
-
-        // --- Partner Filtering: Only show prospects assigned to this partner ---
-        if ($isPartner && $partnerId) {
-            $query->whereHas('partnershipDetails', function ($q) use ($partnerId) {
-                $q->where('partner', $partnerId);
-            });
-        }
 
         // --- Select Fields & Eager Load ---
         if ($isPartner && $allowedFields) {
@@ -250,8 +242,12 @@ class TargetController extends Controller
             // --- Filters ---
             $query->when($status === 'Draft', function ($query) {
                 $query->where('status', 2);
-            }, function ($query) {
-                $query->where('status', 1);
+            }, function ($query) use ($isPartner) {
+                // Partners see ALL targets regardless of status (matching old partner portal)
+                // Admins/Staff default to status=1 (Active)
+                if (!$isPartner) {
+                    $query->where('status', 1);
+                }
             })
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {

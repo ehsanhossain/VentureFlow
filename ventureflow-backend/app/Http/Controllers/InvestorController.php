@@ -148,22 +148,14 @@ class InvestorController extends Controller
         $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         $allowedFields = null;
-        $partnerId = null;
         if ($isPartner) {
             $allowedFields = $this->getParsedAllowedFields('buyer');
-            // Get the partner_id from the user's associated partner record
-            $partnerId = $user->partner_id ?? $user->partner?->id ?? null;
+            // Partners see ALL prospects (same as old PartnerDataController behavior)
+            // Column-level filtering is handled below via $allowedFields
         }
 
         // --- Build the base query ---
         $query = Investor::query();
-
-        // --- Partner Filtering: Only show prospects assigned to this partner ---
-        if ($isPartner && $partnerId) {
-            $query->whereHas('partnershipDetails', function ($q) use ($partnerId) {
-                $q->where('partner', $partnerId);
-            });
-        }
 
         // --- Select Fields & Eager Load ---
         if ($isPartner && $allowedFields) {
@@ -308,10 +300,14 @@ class InvestorController extends Controller
                 $query->whereHas('companyOverview', function ($q) use ($status) {
                     $q->where('status', 'LIKE', trim($status));
                 });
-            }, function ($query) {
-                $query->whereHas('companyOverview', function ($q) {
-                    $q->where('status', 'Active');
-                });
+            }, function ($query) use ($isPartner) {
+                // Partners see ALL prospects regardless of status (matching old partner portal)
+                // Admins/Staff default to Active only
+                if (!$isPartner) {
+                    $query->whereHas('companyOverview', function ($q) {
+                        $q->where('status', 'Active');
+                    });
+                }
             })
 
             // --- Filter by source ---
