@@ -122,7 +122,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
+      if (!isPartner && (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'f')) {
         e.preventDefault();
         setSearchOpen(true);
       }
@@ -265,19 +265,21 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               </div>
             </div>
 
-            {/* Global Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-xl mx-auto lg:ml-8 relative">
-              <div
-                className="w-full flex items-center bg-gray-50 border border-gray-200 rounded px-3 py-2 cursor-text hover:border-gray-300 transition-colors group"
-                onClick={() => setSearchOpen(true)}
-              >
-                <Search className="w-4 h-4 text-gray-400 mr-2 group-hover:text-gray-500 transition-colors" />
-                <span className="text-sm text-gray-400 font-medium">Search anything...</span>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400">
-                  <span className="text-xs">⌘</span> K
+            {/* Global Search Bar — hidden for partners */}
+            {!isPartner && (
+              <div className="hidden md:flex flex-1 max-w-xl mx-auto lg:ml-8 relative">
+                <div
+                  className="w-full flex items-center bg-gray-50 border border-gray-200 rounded px-3 py-2 cursor-text hover:border-gray-300 transition-colors group"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <Search className="w-4 h-4 text-gray-400 mr-2 group-hover:text-gray-500 transition-colors" />
+                  <span className="text-sm text-gray-400 font-medium">Search anything...</span>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded border border-gray-200 bg-white text-[10px] font-medium text-gray-400">
+                    <span className="text-xs">⌘</span> K
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Section: Create + Notifications + Profile */}
@@ -344,15 +346,17 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
               </div>
             )}
 
-            {/* Mobile Search Icon */}
-            <button
-              className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded"
-              onClick={() => setSearchOpen(true)}
-              title="Search"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5" />
-            </button>
+            {/* Mobile Search Icon — hidden for partners */}
+            {!isPartner && (
+              <button
+                className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded"
+                onClick={() => setSearchOpen(true)}
+                title="Search"
+                aria-label="Search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Notification Icon */}
             <div className="relative" ref={dropdownRef}>

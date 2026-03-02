@@ -5,7 +5,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useMemo } from 'react';
-import { Users, Edit2, Trash2, Eye, Share2, MoreVertical, Mail } from 'lucide-react';
+import { Edit2, Trash2, Eye, MoreVertical, Mail } from 'lucide-react';
 import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import api from '../../../config/api';
 
@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DataTable, { DataTableColumn } from "../../../components/table/DataTable";
 import DataTableSearch from "../../../components/table/DataTableSearch";
-import PartnerSharingSettings from './PartnerSharingSettings';
+
 
 interface PartnerUser {
     id: number;
@@ -38,7 +38,6 @@ interface PartnerUser {
 
 const PartnerManagement: React.FC = () => {
     const { t } = useTranslation();
-    const [activeTab, setActiveTab] = useState<'list' | 'sharing'>('list');
     const [partners, setPartners] = useState<PartnerUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -62,10 +61,8 @@ const PartnerManagement: React.FC = () => {
 
 
     useEffect(() => {
-        if (activeTab === 'list') {
-            fetchPartners();
-        }
-    }, [activeTab]);
+        fetchPartners();
+    }, []);
 
     const fetchPartners = async () => {
         setLoading(true);
@@ -306,59 +303,27 @@ const PartnerManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="px-8 border-b border-gray-100">
-                <div className="flex space-x-8">
-                    <button
-                        onClick={() => setActiveTab('list')}
-                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-all flex items-center gap-2 ${activeTab === 'list'
-                            ? 'border-[#064771] text-[#064771]'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                    >
-                        <Users className="w-4 h-4" />
-                        All Partners
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('sharing')}
-                        className={`py-4 px-2 border-b-2 font-medium text-sm transition-all flex items-center gap-2 ${activeTab === 'sharing'
-                            ? 'border-[#064771] text-[#064771]'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
-                    >
-                        <Share2 className="w-4 h-4" />
-                        Sharing Settings
-                    </button>
-                </div>
-            </div>
-
             {/* Content Area */}
             <div className="flex-1 overflow-hidden flex flex-col mt-6">
-                {activeTab === 'list' ? (
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Table */}
-                        <div className="flex-1 px-8 pb-8 overflow-hidden">
-                            <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
-                                <DataTable
-                                    data={filteredPartners}
-                                    columns={columns}
-                                    isLoading={loading}
-                                    emptyMessage={t('settings.partners.noPartners')}
-                                    getRowId={(row) => row.id}
-                                    sortConfig={sortConfig}
-                                    onSortChange={(key, direction) => setSortConfig({ key, direction })}
-                                    actionsColumn={actionsColumn}
-                                    actionsColumnWidth={60}
-                                    onRowClick={(row) => navigate(`/settings/partners/${row.id}`)}
-                                />
-                            </div>
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Table */}
+                    <div className="flex-1 px-8 pb-8 overflow-hidden">
+                        <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
+                            <DataTable
+                                data={filteredPartners}
+                                columns={columns}
+                                isLoading={loading}
+                                emptyMessage={t('settings.partners.noPartners')}
+                                getRowId={(row) => row.id}
+                                sortConfig={sortConfig}
+                                onSortChange={(key, direction) => setSortConfig({ key, direction })}
+                                actionsColumn={actionsColumn}
+                                actionsColumnWidth={60}
+                                onRowClick={(row) => navigate(`/settings/partners/${row.id}`)}
+                            />
                         </div>
                     </div>
-                ) : (
-                    <div className="flex-1 overflow-auto p-8 scrollbar-premium">
-                        <PartnerSharingSettings />
-                    </div>
-                )}
+                </div>
             </div>
 
 

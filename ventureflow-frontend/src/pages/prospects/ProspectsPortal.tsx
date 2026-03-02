@@ -135,6 +135,17 @@ const DEFAULT_TARGET_ORDER = [
     'internalPIC', 'financialAdvisor',
 ];
 
+// ============ PARTNER FIXED COLUMNS (no customization) ============
+const PARTNER_INVESTOR_COLUMNS = [
+    'projectCode', 'rank', 'originCountry', 'companyIndustry',
+    'targetCountries', 'targetIndustries', 'purposeMNA',
+    'investmentCondition', 'budget', 'investorProfileLink',
+];
+const PARTNER_TARGET_COLUMNS = [
+    'projectCode', 'rank', 'originCountry', 'industry',
+    'reasonForMA', 'investmentCondition', 'desiredInvestment', 'teaserLink',
+];
+
 /* Helper to parse multi-select fields which may be stored as string, JSON string, or array */
 const parseMultiField = (val: any): string[] => {
     if (!val) return [];
@@ -1086,6 +1097,7 @@ const ProspectsPortal: React.FC = () => {
     }, [activeTab, debouncedSearch, countries, filters, pagination.currentPage]);
 
     const handleTogglePin = async (id: number) => {
+        if (isPartner) return; // Partners cannot pin/unpin
         try {
             const isInvestor = activeTab === 'investors';
             const endpoint = isInvestor ? 'investor' : 'seller';
@@ -1133,9 +1145,15 @@ const ProspectsPortal: React.FC = () => {
 
 
 
-    const effectiveVisibleColumns = visibleColumns.filter(col =>
-        isFieldAllowed(col, serverAllowedFields, activeTab)
-    );
+    // Partners get fixed columns — no customization
+    const effectiveVisibleColumns = isPartner
+        ? (activeTab === 'investors' ? PARTNER_INVESTOR_COLUMNS : PARTNER_TARGET_COLUMNS)
+        : visibleColumns.filter(col =>
+            isFieldAllowed(col, serverAllowedFields, activeTab)
+        );
+    const effectiveColumnOrder = isPartner
+        ? (activeTab === 'investors' ? PARTNER_INVESTOR_COLUMNS : PARTNER_TARGET_COLUMNS)
+        : columnOrder;
 
     return (
         <>
@@ -1645,12 +1663,14 @@ const ProspectsPortal: React.FC = () => {
                             </button>
                         </div>
 
-                        <DataTableSearch
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            placeholder={activeTab === 'investors' ? t('prospects.searchInvestors') : t('prospects.searchTargets')}
-                            className="w-full md:w-72"
-                        />
+                        {!isPartner && (
+                            <DataTableSearch
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                                placeholder={activeTab === 'investors' ? t('prospects.searchInvestors') : t('prospects.searchTargets')}
+                                className="w-full md:w-72"
+                            />
+                        )}
                     </div>
 
                     <div className="flex items-center gap-3 w-full md:w-auto">
@@ -1683,15 +1703,17 @@ const ProspectsPortal: React.FC = () => {
                             )}
                         </button>
 
-                        <div ref={toolsDropdownRef}>
-                            <button
-                                onClick={() => setIsToolsOpen(!isToolsOpen)}
-                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
-                            >
-                                <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                {t('prospects.portal.tools', 'Tools')}
-                            </button>
-                        </div>
+                        {!isPartner && (
+                            <div ref={toolsDropdownRef}>
+                                <button
+                                    onClick={() => setIsToolsOpen(!isToolsOpen)}
+                                    className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
+                                >
+                                    <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                    {t('prospects.portal.tools', 'Tools')}
+                                </button>
+                            </div>
+                        )}
 
                         {/* Tools Flyover Drawer - Right Side */}
                         {isToolsOpen && (
@@ -1865,11 +1887,12 @@ const ProspectsPortal: React.FC = () => {
                                 hasLoadedOnce={hasLoadedOnce}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
-                                columnOrder={columnOrder}
+                                columnOrder={effectiveColumnOrder}
                                 onColumnOrderChange={setColumnOrder}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}
+                                isPartner={!!isPartner}
                                 pagination={{
                                     currentPage: pagination.currentPage,
                                     totalPages: pagination.totalPages,
@@ -1885,11 +1908,12 @@ const ProspectsPortal: React.FC = () => {
                                 hasLoadedOnce={hasLoadedOnce}
                                 onTogglePin={handleTogglePin}
                                 visibleColumns={effectiveVisibleColumns}
-                                columnOrder={columnOrder}
+                                columnOrder={effectiveColumnOrder}
                                 onColumnOrderChange={setColumnOrder}
                                 selectedCurrency={selectedCurrency || undefined}
                                 onRefresh={fetchData}
                                 isRestricted={!!serverAllowedFields}
+                                isPartner={!!isPartner}
                                 pagination={{
                                     currentPage: pagination.currentPage,
                                     totalPages: pagination.totalPages,

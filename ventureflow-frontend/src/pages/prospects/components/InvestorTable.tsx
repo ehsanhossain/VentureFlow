@@ -76,6 +76,7 @@ interface InvestorTableProps {
     selectedCurrency?: { id: number; code: string; symbol: string; rate: number; };
     onRefresh: () => void;
     isRestricted?: boolean;
+    isPartner?: boolean;
     pagination?: {
         currentPage: number;
         totalPages: number;
@@ -96,6 +97,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
     selectedCurrency,
     onRefresh,
     isRestricted = false,
+    isPartner = false,
     pagination
 }) => {
     const navigate = useNavigate();
@@ -249,16 +251,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             header: t('prospects.table.projectCode'),
             accessor: (row) => (
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePin(row.id);
-                        }}
-                        className="p-1 rounded transition-all duration-200 hover:bg-gray-50"
-                        aria-label={row.isPinned ? 'Unpin prospect' : 'Pin prospect'}
-                    >
-                        {row.isPinned ? <PinnedIcon className="w-5 h-5" /> : <UnpinnedIcon className="w-5 h-5" />}
-                    </button>
+                    {!isPartner && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onTogglePin(row.id);
+                            }}
+                            className="p-1 rounded transition-all duration-200 hover:bg-gray-50"
+                            aria-label={row.isPinned ? 'Unpin prospect' : 'Pin prospect'}
+                        >
+                            {row.isPinned ? <PinnedIcon className="w-5 h-5" /> : <UnpinnedIcon className="w-5 h-5" />}
+                        </button>
+                    )}
                     <span className="text-[13px] font-normal text-[#064771] bg-[#EDF8FF] px-2 py-0.5 rounded-[3px]">
                         {row.projectCode}
                     </span>
@@ -563,7 +567,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
             width: 130,
             minWidth: 80,
         }
-    ], [pipelineStages, selectedCurrency, t]);
+    ], [pipelineStages, selectedCurrency, t, isPartner]);
 
     const filteredColumns = useMemo(() => {
         const visible = columns.filter(col => visibleColumns.includes(col.id));
@@ -705,15 +709,17 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     >
                         <div className="w-full flex flex-col gap-1">
                             {/* Pin / Unpin */}
-                            <button
-                                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
-                                onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
-                            >
-                                <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? pinActiveIcon : pinInactiveIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">
-                                    {data.find(r => r.id === contextMenu.rowId)?.isPinned ? t('prospects.table.unpin') : t('prospects.table.pinToTop')}
-                                </span>
-                            </button>
+                            {!isPartner && (
+                                <button
+                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                                    onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
+                                >
+                                    <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? pinActiveIcon : pinInactiveIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                    <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">
+                                        {data.find(r => r.id === contextMenu.rowId)?.isPinned ? t('prospects.table.unpin') : t('prospects.table.pinToTop')}
+                                    </span>
+                                </button>
+                            )}
                             {/* View Profile */}
                             <button
                                 className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"

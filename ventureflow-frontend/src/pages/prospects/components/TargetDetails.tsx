@@ -46,7 +46,7 @@ const TargetDetails: React.FC = () => {
     const [seller, setSeller] = useState<any>(null);
     const [allowedFields, setAllowedFields] = useState<any>(null);
     const [notes, setNotes] = useState<Note[]>([]);
-    const [currencies, setCurrencies] = useState<{ id: number; currency_code: string }[]>([]);
+    const [currencies, setCurrencies] = useState<{ id: number; currency_code: string; exchange_rate?: string }[]>([]);
 
     // Avatar upload
     const avatarInputRef = useRef<HTMLInputElement>(null);
