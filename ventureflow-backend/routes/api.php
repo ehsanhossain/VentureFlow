@@ -308,6 +308,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/countries',             [CountryController::class, 'index']);
     Route::get('/countries/{id}',        [CountryController::class, 'show']);
 
+    // Industries (read-only — for filter dropdowns, all roles need this)
+    Route::get('/industries',            [IndustryController::class, 'index']);
+
     // Global Search — accessible to all authenticated users (controller handles role-based filtering)
     Route::get('/search',                [SearchController::class, 'index']);
 
