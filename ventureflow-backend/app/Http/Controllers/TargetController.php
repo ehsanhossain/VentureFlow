@@ -448,11 +448,16 @@ class TargetController extends Controller
                 return $val === true;
             }));
 
+            // Field alias mapping: config names that don't match actual DB column names
+            $fieldAliases = [
+                'niche_tags' => 'niche_industry',
+            ];
+
             foreach ($enabledFields as $field) {
                 if (str_contains($field, '.')) {
                     $parts = explode('.', $field);
                     $relation = \Illuminate\Support\Str::camel($parts[0]);
-                    $attribute = $parts[1];
+                    $attribute = $fieldAliases[$parts[1]] ?? $parts[1];
 
                     if (!isset($parsed['relationships'][$relation])) {
                         $parsed['relationships'][$relation] = ['id'];
@@ -460,7 +465,7 @@ class TargetController extends Controller
                     
                     $parsed['relationships'][$relation][] = $attribute;
                 } else {
-                    $parsed['root'][] = $field;
+                    $parsed['root'][] = $fieldAliases[$field] ?? $field;
                 }
             }
 

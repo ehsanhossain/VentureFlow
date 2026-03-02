@@ -455,12 +455,17 @@ class InvestorController extends Controller
                 return $val === true;
             }));
 
+            // Field alias mapping: config names that don't match actual DB column names
+            $fieldAliases = [
+                'niche_tags' => 'niche_industry',
+            ];
+
             foreach ($enabledFields as $field) {
                 if (str_contains($field, '.')) {
                     // Nested field (e.g., company_overview.hq_country)
                     $parts = explode('.', $field);
                     $relation = \Illuminate\Support\Str::camel($parts[0]); // Convert to camelCase
-                    $attribute = $parts[1];
+                    $attribute = $fieldAliases[$parts[1]] ?? $parts[1];
 
                     if (!isset($parsed['relationships'][$relation])) {
                         $parsed['relationships'][$relation] = ['id'];
@@ -469,7 +474,7 @@ class InvestorController extends Controller
                     $parsed['relationships'][$relation][] = $attribute;
                 } else {
                     // Root field (e.g., buyer_id, seller_id)
-                    $parsed['root'][] = $field;
+                    $parsed['root'][] = $fieldAliases[$field] ?? $field;
                 }
             }
 
