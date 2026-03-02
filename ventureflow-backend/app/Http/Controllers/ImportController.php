@@ -576,11 +576,14 @@ class ImportController extends Controller
             if ($id) {
                 $resolved[] = ['id' => $id, 'name' => $name];
             } else {
-                // Auto-create as ad-hoc industry (status = 'Ad-hoc')
+                // Auto-create as ad-hoc industry (status = 0 = inactive)
+                // The industries.status column is a boolean (tinyInteger):
+                //   1 = active/primary (seeded industries)
+                //   0 = inactive/ad-hoc (auto-created during import)
                 // Can be promoted to primary or merged later in Industry Settings
                 $industry = Industry::firstOrCreate(
                     ['name' => trim($name)],
-                    ['status' => 'Ad-hoc']
+                    ['status' => 0]
                 );
                 $resolved[] = ['id' => $industry->id, 'name' => $industry->name];
             }

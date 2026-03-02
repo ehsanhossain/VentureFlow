@@ -1,0 +1,17 @@
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\ProspectsPortal.tsx
+   319:8   warning  React Hook useEffect has a missing dependency: 'flushSave'. Either include it or remove the dependency array                                                                react-hooks/exhaustive-deps
+   361:8   warning  React Hook useEffect has missing dependencies: 'activeTab', 'clearCachePrefs', 'loadCachedPrefs', and 'saveCachePrefs'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   371:8   warning  React Hook useEffect has a missing dependency: 'initPrefs'. Either include it or remove the dependency array                                                                react-hooks/exhaustive-deps
+   386:8   warning  React Hook useEffect has missing dependencies: 'activeTab' and 'scheduleSave'. Either include them or remove the dependency array                                           react-hooks/exhaustive-deps
+  1058:8   warning  React Hook useEffect has a missing dependency: 'globalSettings.default_currency'. Either include it or remove the dependency array                                          react-hooks/exhaustive-deps
+  1358:89  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                             react/no-unescaped-entities
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\InvestorDetails.tsx
+  151:6  warning  React Hook useEffect has a missing dependency: 'fetchBuyer'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Code Projects\VentureFlow\VentureFlow Codes\ventureflow-frontend\src\pages\prospects\components\TargetDetails.tsx
+  120:8  warning  React Hook useEffect has a missing dependency: 'fetchSeller'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 8 problems (1 error, 7 warnings)
+

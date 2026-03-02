@@ -1355,7 +1355,7 @@ const ProspectsPortal: React.FC = () => {
                                             </>
                                         ) : (
                                             <>
-                                                <option value="Owner's Retirement">Owner's Retirement</option>
+                                                <option value="Owner's Retirement">Owner&apos;s Retirement</option>
                                                 <option value="Business Succession">Business Succession</option>
                                                 <option value="Full Exit">Full Exit</option>
                                                 <option value="Partial Exit">Partial Exit</option>
@@ -1703,17 +1703,15 @@ const ProspectsPortal: React.FC = () => {
                             )}
                         </button>
 
-                        {!isPartner && (
-                            <div ref={toolsDropdownRef}>
-                                <button
-                                    onClick={() => setIsToolsOpen(!isToolsOpen)}
-                                    className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
-                                >
-                                    <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
-                                    {t('prospects.portal.tools', 'Tools')}
-                                </button>
-                            </div>
-                        )}
+                        <div ref={toolsDropdownRef}>
+                            <button
+                                onClick={() => setIsToolsOpen(!isToolsOpen)}
+                                className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-[3px] border border-gray-200 text-sm font-medium transition-all active:scale-95"
+                            >
+                                <img src={toolsIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                {t('prospects.portal.tools', 'Tools')}
+                            </button>
+                        </div>
 
                         {/* Tools Flyover Drawer - Right Side */}
                         {isToolsOpen && (
@@ -1757,76 +1755,80 @@ const ProspectsPortal: React.FC = () => {
                                         </div>
 
                                         {/* Visible Columns Section */}
-                                        <div className="px-6 pt-5 pb-4">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <label className="text-[13px] font-medium text-gray-700">
-                                                    {t('prospects.customizeColumns')}
-                                                </label>
-                                                <span className="text-[11px] font-medium text-gray-400">
-                                                    {visibleColumns.length} / {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length}
-                                                </span>
+                                        {!isPartner && (
+                                            <div className="px-6 pt-5 pb-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <label className="text-[13px] font-medium text-gray-700">
+                                                        {t('prospects.customizeColumns')}
+                                                    </label>
+                                                    <span className="text-[11px] font-medium text-gray-400">
+                                                        {visibleColumns.length} / {(activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).filter(col => isFieldAllowed(col.id, serverAllowedFields, activeTab)).length}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {/* Iterate in columnOrder sequence so toggle list matches table header */}
+                                                    {columnOrder
+                                                        .map(colId => (activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).find(c => c.id === colId))
+                                                        .filter((col): col is { id: string; labelKey: string } => !!col && isFieldAllowed(col.id, serverAllowedFields, activeTab))
+                                                        .map(col => {
+                                                            const isActive = visibleColumns.includes(col.id);
+                                                            return (
+                                                                <button
+                                                                    key={col.id}
+                                                                    onClick={() => toggleColumn(col.id)}
+                                                                    className={`flex items-center justify-between w-full px-4 py-3 rounded-[3px] transition-all duration-200 group ${isActive
+                                                                        ? 'bg-[#F1FBFF] text-[#064771]'
+                                                                        : 'text-gray-500 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        {isActive
+                                                                            ? <Eye className="w-4 h-4 text-[#064771]" />
+                                                                            : <EyeOff className="w-4 h-4 text-gray-400 group-hover:text-gray-400" />
+                                                                        }
+                                                                        <span className={`text-sm ${isActive ? 'font-medium' : 'font-normal'}`}>
+                                                                            {t(col.labelKey)}
+                                                                        </span>
+                                                                    </div>
+                                                                    {/* Toggle Switch */}
+                                                                    <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isActive ? 'bg-[#064771]' : 'bg-gray-200'
+                                                                        }`}>
+                                                                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'
+                                                                            }`} />
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                </div>
                                             </div>
-                                            <div className="space-y-1">
-                                                {/* Iterate in columnOrder sequence so toggle list matches table header */}
-                                                {columnOrder
-                                                    .map(colId => (activeTab === 'investors' ? ALL_INVESTOR_COLUMNS : ALL_TARGET_COLUMNS).find(c => c.id === colId))
-                                                    .filter((col): col is { id: string; labelKey: string } => !!col && isFieldAllowed(col.id, serverAllowedFields, activeTab))
-                                                    .map(col => {
-                                                        const isActive = visibleColumns.includes(col.id);
-                                                        return (
-                                                            <button
-                                                                key={col.id}
-                                                                onClick={() => toggleColumn(col.id)}
-                                                                className={`flex items-center justify-between w-full px-4 py-3 rounded-[3px] transition-all duration-200 group ${isActive
-                                                                    ? 'bg-[#F1FBFF] text-[#064771]'
-                                                                    : 'text-gray-500 hover:bg-gray-50'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    {isActive
-                                                                        ? <Eye className="w-4 h-4 text-[#064771]" />
-                                                                        : <EyeOff className="w-4 h-4 text-gray-400 group-hover:text-gray-400" />
-                                                                    }
-                                                                    <span className={`text-sm ${isActive ? 'font-medium' : 'font-normal'}`}>
-                                                                        {t(col.labelKey)}
-                                                                    </span>
-                                                                </div>
-                                                                {/* Toggle Switch */}
-                                                                <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${isActive ? 'bg-[#064771]' : 'bg-gray-200'
-                                                                    }`}>
-                                                                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${isActive ? 'translate-x-[18px]' : 'translate-x-0.5'
-                                                                        }`} />
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
-                                    {/* Footer — matches Filter's Reset style */}
-                                    <div className="px-6 py-4 border-t border-gray-100">
-                                        <button
-                                            onClick={() => {
-                                                // Cancel any pending debounced save
-                                                cancelPendingSave();
-                                                // Reset to system defaults
-                                                const defaultVisible = getDefaultVisible(activeTab);
-                                                const defaultOrder = getDefaultOrder(activeTab);
-                                                setVisibleColumns(defaultVisible);
-                                                setColumnOrder(defaultOrder);
-                                                // Clear local cache
-                                                clearCachePrefs(activeTab);
-                                                // Delete server preference
-                                                const tableType = activeTab === 'investors' ? 'investor' : 'target';
-                                                api.delete(`/api/user/table-preferences/${tableType}`).catch(() => { });
-                                            }}
-                                            className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
-                                        >
-                                            <RotateCcw className="w-3.5 h-3.5" />
-                                            {t('prospects.resetColumns')}
-                                        </button>
-                                    </div>
+                                    {/* Footer — matches Filter's Reset style (admin only) */}
+                                    {!isPartner && (
+                                        <div className="px-6 py-4 border-t border-gray-100">
+                                            <button
+                                                onClick={() => {
+                                                    // Cancel any pending debounced save
+                                                    cancelPendingSave();
+                                                    // Reset to system defaults
+                                                    const defaultVisible = getDefaultVisible(activeTab);
+                                                    const defaultOrder = getDefaultOrder(activeTab);
+                                                    setVisibleColumns(defaultVisible);
+                                                    setColumnOrder(defaultOrder);
+                                                    // Clear local cache
+                                                    clearCachePrefs(activeTab);
+                                                    // Delete server preference
+                                                    const tableType = activeTab === 'investors' ? 'investor' : 'target';
+                                                    api.delete(`/api/user/table-preferences/${tableType}`).catch(() => { });
+                                                }}
+                                                className="w-full py-2.5 bg-white border border-gray-200 text-gray-600 rounded-[3px] text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 hover:text-gray-900 active:scale-[0.98] transition-all duration-200"
+                                            >
+                                                <RotateCcw className="w-3.5 h-3.5" />
+                                                {t('prospects.resetColumns')}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         )}

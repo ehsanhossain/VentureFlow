@@ -18,7 +18,8 @@ import { NotesSection, Note, parseActivityLogs } from '../../../components/Notes
 import introducedProjectsIcon from '../../../assets/icons/introduced-projects.svg';
 import dealsPipelineIcon from '../../../assets/icons/deals-pipeline.svg';
 
-const RestrictedField: React.FC<{ allowed: any, section: string | 'root', item: string, children: React.ReactNode }> = ({ allowed, section, item, children }) => {
+const RestrictedField: React.FC<{ allowed: any, section: string | 'root', item: string, bypass?: boolean, children: React.ReactNode }> = ({ allowed, section, item, bypass, children }) => {
+  if (bypass) return <>{children}</>;
   if (!isBackendPropertyAllowed(allowed, section, item)) return null;
   return <>{children}</>;
 };
@@ -445,7 +446,7 @@ const InvestorDetails: React.FC = () => {
 
               {/* Overview Stats Row */}
               <div className="flex items-start gap-20">
-                <RestrictedField allowed={allowedFields} section="companyOverview" item="hq_country">
+                <RestrictedField allowed={allowedFields} section="companyOverview" item="hq_country" bypass={isPartner}>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-medium text-gray-400 uppercase">Origin Country</span>
                     <div className="flex items-center gap-2">
@@ -457,7 +458,7 @@ const InvestorDetails: React.FC = () => {
                   </div>
                 </RestrictedField>
 
-                <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma">
+                <RestrictedField allowed={allowedFields} section="companyOverview" item="reason_ma" bypass={isPartner}>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-medium text-gray-400 uppercase">Purpose of M&A</span>
                     {purposeMNA.length > 1 ? (
@@ -472,45 +473,47 @@ const InvestorDetails: React.FC = () => {
                   </div>
                 </RestrictedField>
 
-                <RestrictedField allowed={allowedFields} section="companyOverview" item="website">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-medium text-gray-400 uppercase">Website</span>
-                    {website ? (
-                      <div className="flex items-center gap-1.5">
-                        <a
-                          href={website.startsWith('http') ? website : `https://${website}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                          {website.replace('https://', '').replace('http://', '').replace('www.', '')}
-                        </a>
-                        <button
-                          type="button"
-                          title="Copy website URL"
-                          className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
-                          onClick={() => {
-                            navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
-                            setCopiedField('website');
-                            setTimeout(() => setCopiedField(null), 2000);
-                          }}
-                        >
-                          {copiedField === 'website' ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
-                          )}
-                          {copiedField === 'website' && (
-                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
-                          )}
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-400">Not specified</span>
-                    )}
-                  </div>
-                </RestrictedField>
+                {!isPartner && (
+                  <RestrictedField allowed={allowedFields} section="companyOverview" item="website">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[11px] font-medium text-gray-400 uppercase">Website</span>
+                      {website ? (
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={website.startsWith('http') ? website : `https://${website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm font-medium text-[#064771] underline hover:no-underline"
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                            {website.replace('https://', '').replace('http://', '').replace('www.', '')}
+                          </a>
+                          <button
+                            type="button"
+                            title="Copy website URL"
+                            className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
+                            onClick={() => {
+                              navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
+                              setCopiedField('website');
+                              setTimeout(() => setCopiedField(null), 2000);
+                            }}
+                          >
+                            {copiedField === 'website' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
+                            )}
+                            {copiedField === 'website' && (
+                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not specified</span>
+                      )}
+                    </div>
+                  </RestrictedField>
+                )}
 
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[11px] font-medium text-gray-400 uppercase">Rank</span>
@@ -563,7 +566,7 @@ const InvestorDetails: React.FC = () => {
             <section className="space-y-7">
               <h2 className="text-base font-medium text-gray-500 capitalize">Project Details</h2>
               <div className="h-px bg-[#E5E7EB]" />
-              <RestrictedField allowed={allowedFields} section="companyOverview" item="details">
+              <RestrictedField allowed={allowedFields} section="companyOverview" item="details" bypass={isPartner}>
                 <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
                   {projectDetails}
                 </p>
@@ -578,7 +581,7 @@ const InvestorDetails: React.FC = () => {
 
             <div className="flex flex-wrap items-start gap-x-24 gap-y-6">
               {/* Target Countries */}
-              <RestrictedField allowed={allowedFields} section="targetPreference" item="target_countries">
+              <RestrictedField allowed={allowedFields} section="targetPreference" item="target_countries" bypass={isPartner}>
                 <div className="w-[400px] flex flex-col gap-3">
                   <span className="text-[11px] font-medium text-gray-400 uppercase">Target Countries</span>
                   <div className="flex flex-wrap gap-1.5">
