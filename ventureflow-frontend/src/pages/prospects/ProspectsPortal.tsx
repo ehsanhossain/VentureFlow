@@ -469,6 +469,9 @@ const ProspectsPortal: React.FC = () => {
             const activeApiEndpoint = activeTab === 'investors' ? '/api/buyer' : '/api/seller';
             const inactiveApiEndpoint = activeTab === 'investors' ? '/api/seller' : '/api/buyer';
 
+            // Fetch active tab data (critical) and inactive tab count (non-critical) separately.
+            // The inactive tab count is wrapped in a catch so a failing API (e.g. seller 500)
+            // doesn't block the entire page from rendering the active tab's data.
             const [activeRes, inactiveCountRes] = await Promise.all([
                 api.get(activeApiEndpoint, {
                     params: {
@@ -478,13 +481,18 @@ const ProspectsPortal: React.FC = () => {
                     },
                     signal
                 }),
-                // Lightweight count-only request for the inactive tab — no filters from active tab
+                // Lightweight count-only request for the inactive tab — fail gracefully
                 api.get(inactiveApiEndpoint, {
                     params: {
                         search: searchTerm,
                         per_page: 1
                     },
                     signal
+                }).catch((err) => {
+                    // Don't let inactive tab errors crash the whole page
+                    if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') throw err;
+                    console.warn(`Inactive tab count failed (${inactiveApiEndpoint}):`, err?.message);
+                    return { data: { data: [], meta: { total: 0 } } };
                 })
             ]);
 
@@ -944,8 +952,8 @@ const ProspectsPortal: React.FC = () => {
                     getCachedCurrencies(),
                     getCachedIndustries(),
                     getCachedPipelineStages(),
-                    api.get('/api/buyer', { params: { status: 'Draft', per_page: 1 } }),
-                    api.get('/api/seller', { params: { status: 'Draft', per_page: 1 } }),
+                    api.get('/api/buyer', { params: { status: 'Draft', per_page: 1 } }).catch(() => ({ data: { meta: { total: 0 } } })),
+                    api.get('/api/seller', { params: { status: 'Draft', per_page: 1 } }).catch(() => ({ data: { meta: { total: 0 } } })),
                 ]);
 
                 if (countryData) {
