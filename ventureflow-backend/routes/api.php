@@ -130,46 +130,13 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Partner read-only routes — prospect detail views + listing data
-// Partners ONLY get read access. Controllers further filter by sharing config.
-// SECURITY: No write, delete, deals, dashboard, MatchIQ, or import access.
+// Shared READ routes — Admin + Staff + Partner
+// Each URI is registered ONCE here. Partners get read access to prospect
+// listings/details; controllers handle data filtering per role.
 // ─────────────────────────────────────────────────────────────────────────────
-Route::middleware(['auth:sanctum', 'role:partner'])->group(function () {
-    // Prospect detail views (controllers strip pipeline_status, deals, reg_name)
-    Route::get('/seller/{seller}',   [TargetController::class, 'show']);
-    Route::get('/buyer/{buyer}',     [InvestorController::class, 'show']);
+Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(function () {
 
-    // Listing data — pinned/unpinned tabs (controllers already filter by partner sharing)
-    Route::get('/seller/pinned',     [TargetController::class, 'pinnedData']);
-    Route::get('/seller/unpinned',   [TargetController::class, 'unpinnedData']);
-    Route::get('/seller/fetch',      [TargetController::class, 'fetchAll']);
-    Route::get('/target/pinned',     [TargetController::class, 'pinnedData']);
-    Route::get('/target/unpinned',   [TargetController::class, 'unpinnedData']);
-    Route::get('/target/fetch',      [TargetController::class, 'fetchAll']);
-    Route::get('/buyer/fetch',       [InvestorController::class, 'fetchAll']);
-    Route::get('/investor/pinned',   [InvestorController::class, 'pinnedData']);
-    Route::get('/investor/unpinned', [InvestorController::class, 'unpinnedData']);
-    Route::get('/investor/fetch',    [InvestorController::class, 'fetchAll']);
-
-    // Table preferences (partners can customize their own column visibility)
-    Route::get('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'show']);
-    Route::put('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'update']);
-    Route::delete('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'destroy']);
-
-    // Pipeline Stages (read-only — needed for filter dropdowns)
-    Route::get('/pipeline-stages', [PipelineStageController::class, 'index']);
-
-    // Fee Tiers (read-only)
-    Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Staff + Admin routes — full CRUD access to prospects, deals, MatchIQ, etc.
-// SECURITY: Partners CANNOT reach these endpoints.
-// ─────────────────────────────────────────────────────────────────────────────
-Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function () {
-
-    // User Table Preferences
+    // User Table Preferences (all roles can customize their own columns)
     Route::get('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'show']);
     Route::put('/user/table-preferences/{tableType}',    [UserTablePreferenceController::class, 'update']);
     Route::delete('/user/table-preferences/{tableType}', [UserTablePreferenceController::class, 'destroy']);
@@ -178,43 +145,72 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::get('/countries',        [CountryController::class, 'index']);
     Route::get('/countries/{id}',   [CountryController::class, 'show']);
 
-    // Target (Seller) Routes
-    Route::get('/target/fetch',                 [TargetController::class, 'fetchAll']);
+    // Target (Seller) — READ routes (listings, detail, filter ranges)
+    // CRITICAL: specific /target/* and /seller/* routes MUST come before wildcard {seller}
+    Route::get('/target/fetch',             [TargetController::class, 'fetchAll']);
+    Route::get('/target/pinned',            [TargetController::class, 'pinnedData']);
+    Route::get('/target/unpinned',          [TargetController::class, 'unpinnedData']);
+    Route::get('/target/investment-range',  [TargetController::class, 'investmentRange']);
+    Route::get('/target/ebitda-range',      [TargetController::class, 'ebitdaRange']);
+    Route::get('/seller/fetch',             [TargetController::class, 'fetchAll']);
+    Route::get('/seller/pinned',            [TargetController::class, 'pinnedData']);
+    Route::get('/seller/unpinned',          [TargetController::class, 'unpinnedData']);
+    Route::get('/seller/investment-range',  [TargetController::class, 'investmentRange']);
+    Route::get('/seller/ebitda-range',      [TargetController::class, 'ebitdaRange']);
+    // Detail view — controllers strip pipeline_status, deals, reg_name for partners
+    Route::get('/seller/{seller}',          [TargetController::class, 'show']);
+
+    // Investor (Buyer) — READ routes (listings, detail, filter ranges)
+    Route::get('/investor/fetch',           [InvestorController::class, 'fetchAll']);
+    Route::get('/investor/pinned',          [InvestorController::class, 'pinnedData']);
+    Route::get('/investor/unpinned',        [InvestorController::class, 'unpinnedData']);
+    Route::get('/investor/budget-range',    [InvestorController::class, 'budgetRange']);
+    Route::get('/buyer/fetch',              [InvestorController::class, 'fetchAll']);
+    Route::get('/buyer/budget-range',       [InvestorController::class, 'budgetRange']);
+    // Detail view — controllers strip pipeline_status, deals, reg_name for partners
+    Route::get('/buyer/{buyer}',            [InvestorController::class, 'show']);
+
+    // Pipeline Stages (read — needed for filter dropdowns)
+    Route::get('/pipeline-stages', [PipelineStageController::class, 'index']);
+
+    // Fee Tiers (read)
+    Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Staff + Admin WRITE routes — partners CANNOT access these.
+// Includes: prospect CRUD, deals, dashboard, MatchIQ, import, activity logs.
+// NOTE: Read routes already registered in shared group above are NOT repeated.
+// ─────────────────────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function () {
+
+    // Target (Seller) — admin/staff-only GET routes (sequences, drafts, admin tools)
     Route::get('/target/get-last-sequence',     [TargetController::class, 'getLastSequence']);
     Route::get('/target/check-id',              [TargetController::class, 'checkId']);
-    Route::get('/target/pinned',                [TargetController::class, 'pinnedData']);
-    Route::get('/target/unpinned',              [TargetController::class, 'unpinnedData']);
     Route::get('/target/closed',                [TargetController::class, 'closedDeals']);
     Route::get('/target/drafts',                [TargetController::class, 'drafts']);
     Route::get('/target/partnerships',          [TargetController::class, 'partnerships']);
     Route::get('/target/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
-    Route::get('/target/investment-range',      [TargetController::class, 'investmentRange']);
-    Route::get('/target/ebitda-range',          [TargetController::class, 'ebitdaRange']);
     Route::delete('/targets',                   [TargetController::class, 'destroy']);
-    // Alias routes using /seller/ prefix (used by registration form + edit pages)
-    // CRITICAL: ALL specific /seller/* routes MUST be before apiResource('seller')
-    // Otherwise apiResource registers GET /seller/{seller} which swallows them as wildcard params
-    Route::get('/seller/get-last-sequence',          [TargetController::class, 'getLastSequence']);
-    Route::get('/seller/check-id',                   [TargetController::class, 'checkId']);
-    Route::get('/seller/fetch',                      [TargetController::class, 'fetchAll']);
-    Route::get('/seller/drafts',                     [TargetController::class, 'drafts']);
-    Route::get('/seller/investment-range',           [TargetController::class, 'investmentRange']);
-    Route::get('/seller/ebitda-range',               [TargetController::class, 'ebitdaRange']);
-    Route::get('/seller/delete-analyze',             [TargetController::class, 'getDeleteImpact']);
-    Route::get('/seller/pinned',                     [TargetController::class, 'pinnedData']);
-    Route::get('/seller/unpinned',                   [TargetController::class, 'unpinnedData']);
-    Route::get('/seller/closed',                     [TargetController::class, 'closedDeals']);
-    Route::get('/seller/partnerships',               [TargetController::class, 'partnerships']);
-    // POST alias routes - must ALSO be before apiResource
+
+    // Seller alias — admin/staff-only routes
+    Route::get('/seller/get-last-sequence',     [TargetController::class, 'getLastSequence']);
+    Route::get('/seller/check-id',              [TargetController::class, 'checkId']);
+    Route::get('/seller/drafts',                [TargetController::class, 'drafts']);
+    Route::get('/seller/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
+    Route::get('/seller/closed',                [TargetController::class, 'closedDeals']);
+    Route::get('/seller/partnerships',          [TargetController::class, 'partnerships']);
+    // Seller WRITE routes (POST, DELETE) — must be before apiResource
     Route::post('/seller/company-overviews',         [TargetController::class, 'sellerCompanyOverviewstore']);
     Route::post('/seller/financial-details',         [TargetController::class, 'sellerFinancialDetailsstore']);
     Route::post('/seller/teaser-center',             [TargetController::class, 'sellerTeaserCenterstore']);
     Route::post('/seller/partnership-details',       [TargetController::class, 'sellerPartnershipDetailsstore']);
-    Route::post('/seller/{seller}/pinned',               [TargetController::class, 'pinned']);
-    Route::post('/seller/{seller}/avatar',               [TargetController::class, 'uploadAvatar']);
-    Route::delete('/seller',                             [TargetController::class, 'destroy']);
-    Route::apiResource('seller', TargetController::class);
-    // Legacy /target/* routes (kept for backward compat)
+    Route::post('/seller/{seller}/pinned',           [TargetController::class, 'pinned']);
+    Route::post('/seller/{seller}/avatar',           [TargetController::class, 'uploadAvatar']);
+    Route::delete('/seller',                         [TargetController::class, 'destroy']);
+    // apiResource ONLY for write methods — index/show already in shared group, must NOT be overwritten
+    Route::apiResource('seller', TargetController::class)->only(['store', 'update', 'destroy']);
+    // Legacy /target/* WRITE routes
     Route::post('/target/company-overviews',         [TargetController::class, 'sellerCompanyOverviewstore']);
     Route::post('/target/financial-details',         [TargetController::class, 'sellerFinancialDetailsstore']);
     Route::post('/target/teaser-center',             [TargetController::class, 'sellerTeaserCenterstore']);
@@ -222,27 +218,23 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::post('/target/{seller}/pinned',           [TargetController::class, 'pinned']);
 
 
-    // Investor (Buyer) Routes
-    Route::get('/investor/fetch',               [InvestorController::class, 'fetchAll']);
+    // Investor (Buyer) — admin/staff-only GET routes
     Route::get('/investor/get-last-sequence',   [InvestorController::class, 'getLastSequence']);
     Route::get('/investor/check-id',            [InvestorController::class, 'checkId']);
-    Route::get('/investor/pinned',              [InvestorController::class, 'pinnedData']);
-    Route::get('/investor/unpinned',            [InvestorController::class, 'unpinnedData']);
     Route::get('/investor/closed-deals',        [InvestorController::class, 'closedDeals']);
     Route::get('/investor/drafts',              [InvestorController::class, 'drafts']);
     Route::get('/investor/from-partners',       [InvestorController::class, 'fromPartners']);
     Route::get('/investor/delete-analyze',      [InvestorController::class, 'getDeleteImpact']);
-    Route::get('/investor/budget-range',        [InvestorController::class, 'budgetRange']);
     Route::delete('/investors',                 [InvestorController::class, 'destroy']);
-    // Alias routes using /buyer/ prefix (used by registration form)
+    // Buyer alias — admin/staff-only routes
     Route::get('/buyer/get-last-sequence',      [InvestorController::class, 'getLastSequence']);
     Route::get('/buyer/check-id',               [InvestorController::class, 'checkId']);
-    Route::get('/buyer/fetch',                  [InvestorController::class, 'fetchAll']);
     Route::get('/buyer/drafts',                 [InvestorController::class, 'drafts']);
-    Route::get('/buyer/budget-range',           [InvestorController::class, 'budgetRange']);
     Route::delete('/buyer',                     [InvestorController::class, 'destroy']);
     Route::delete('/investor',                  [InvestorController::class, 'destroy']);
-    Route::apiResource('buyer', InvestorController::class);
+    // Buyer WRITE routes
+    // apiResource ONLY for write methods — index/show already in shared group
+    Route::apiResource('buyer', InvestorController::class)->only(['store', 'update', 'destroy']);
     Route::post('/investor/company-overviews',  [InvestorController::class, 'companyOverviewStore']);
     Route::post('/investor/financial-details',  [InvestorController::class, 'financialDetailsStore']);
     Route::post('/investor/target-preferences', [InvestorController::class, 'targetPreferencesStore']);
@@ -305,12 +297,6 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
         Route::post('/{id}/approve',     [MatchController::class, 'approve']);
         Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
     });
-
-    // Pipeline Stages (read — staff can view, admin can write via admin group)
-    Route::get('/pipeline-stages', [PipelineStageController::class, 'index']);
-
-    // Fee Tiers (read)
-    Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
