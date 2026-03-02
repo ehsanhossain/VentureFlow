@@ -6,10 +6,33 @@ header('Content-Type: text/plain');
 
 $root = dirname(__DIR__);
 chdir($root);
+$php = '/opt/plesk/php/8.3/bin/php';
 echo "Working in: $root\n\n";
 
-// Step 0: Clear ALL cached config
-echo "=== Step 0: Clearing ALL caches ===\n";
+// ──────────────────────────────────────────────────────────
+// Step 0: Git pull from deploy branch (fetch latest code)
+// ──────────────────────────────────────────────────────────
+echo "=== Step 0: Git pull (deploy branch) ===\n";
+$gitOut = [];
+// Check if this is a git repo
+if (is_dir("$root/.git")) {
+    // Reset any local changes and pull latest
+    exec("cd $root && git fetch origin 2>&1", $gitOut);
+    exec("cd $root && git reset --hard origin/deploy 2>&1", $gitOut);
+    echo implode("\n", $gitOut) . "\n";
+    
+    // Show current commit
+    $commitOut = [];
+    exec("cd $root && git log --oneline -1 2>&1", $commitOut);
+    echo "Current commit: " . implode('', $commitOut) . "\n";
+} else {
+    echo "⚠️ Not a git repo — skipping pull\n";
+    echo "Plesk should be managing git pulls automatically.\n";
+}
+echo "\n";
+
+// Step 1: Clear ALL cached config
+echo "=== Step 1: Clearing ALL caches ===\n";
 foreach (glob("$root/bootstrap/cache/*.php") as $cacheFile) {
     unlink($cacheFile);
     echo "Deleted: " . basename($cacheFile) . "\n";
@@ -21,8 +44,8 @@ if (file_exists($sqliteDb)) {
 }
 echo "\n";
 
-// Step 1: Create required storage directories
-echo "=== Step 1: Creating storage directories ===\n";
+// Step 2: Create required storage directories
+echo "=== Step 2: Creating storage directories ===\n";
 $dirs = [
     "$root/storage/app/public",
     "$root/storage/app/public/employees",
@@ -46,15 +69,15 @@ foreach ($dirs as $dir) {
 }
 echo "\n";
 
-// Step 2: Fix ALL permissions
-echo "=== Step 2: Fixing permissions ===\n";
+// Step 3: Fix ALL permissions
+echo "=== Step 3: Fixing permissions ===\n";
 exec("chmod -R 775 $root/storage 2>&1", $permOut1);
 exec("chmod -R 775 $root/bootstrap/cache 2>&1", $permOut2);
 echo implode("\n", array_merge($permOut1, $permOut2)) . "\n";
 echo "storage writable: " . (is_writable("$root/storage/app/public") ? 'YES ✅' : 'NO ❌') . "\n\n";
 
-// Step 3: Verify .env
-echo "=== Step 3: Checking .env ===\n";
+// Step 4: Verify .env
+echo "=== Step 4: Checking .env ===\n";
 if (file_exists("$root/.env")) {
     $lines = explode("\n", file_get_contents("$root/.env"));
     foreach ($lines as $line) {
@@ -69,11 +92,11 @@ if (file_exists("$root/.env")) {
 }
 echo "\n";
 
-// Step 4: Composer install
+// Step 5: Composer install
 if (!file_exists("$root/composer.phar")) {
     echo "Downloading Composer...\n";
     copy('https://getcomposer.org/installer', "$root/composer-setup.php");
-    exec("/opt/plesk/php/8.3/bin/php $root/composer-setup.php --install-dir=$root 2>&1", $out);
+    exec("$php $root/composer-setup.php --install-dir=$root 2>&1", $out);
     echo implode("\n", $out) . "\n";
     unlink("$root/composer-setup.php");
 } else {
@@ -81,36 +104,36 @@ if (!file_exists("$root/composer.phar")) {
 }
 echo "Running composer install...\n";
 $out2 = [];
-exec("/opt/plesk/php/8.3/bin/php $root/composer.phar install --no-dev --optimize-autoloader --no-interaction 2>&1", $out2, $exitCode);
+exec("$php $root/composer.phar install --no-dev --optimize-autoloader --no-interaction 2>&1", $out2, $exitCode);
 // Only show last 5 lines to keep output clean
-$lines = explode("\n", implode("\n", $out2));
-echo implode("\n", array_slice($lines, -5)) . "\n";
+$lines2 = explode("\n", implode("\n", $out2));
+echo implode("\n", array_slice($lines2, -5)) . "\n";
 echo "Composer exit code: $exitCode\n\n";
 
-// Step 5: Clear caches before migration
-echo "=== Step 5: Clearing artisan caches ===\n";
-exec("/opt/plesk/php/8.3/bin/php $root/artisan config:clear 2>&1", $c1);
-exec("/opt/plesk/php/8.3/bin/php $root/artisan cache:clear 2>&1", $c2);
-exec("/opt/plesk/php/8.3/bin/php $root/artisan route:clear 2>&1", $c3);
-exec("/opt/plesk/php/8.3/bin/php $root/artisan view:clear 2>&1", $c4);
+// Step 6: Clear caches before migration
+echo "=== Step 6: Clearing artisan caches ===\n";
+exec("$php $root/artisan config:clear 2>&1", $c1);
+exec("$php $root/artisan cache:clear 2>&1", $c2);
+exec("$php $root/artisan route:clear 2>&1", $c3);
+exec("$php $root/artisan view:clear 2>&1", $c4);
 echo "Caches cleared.\n\n";
 
-// Step 6: Run migrations
-echo "=== Step 6: Running migrations ===\n";
+// Step 7: Run migrations
+echo "=== Step 7: Running migrations ===\n";
 $out_mig = [];
-exec("/opt/plesk/php/8.3/bin/php $root/artisan migrate --force 2>&1", $out_mig, $migExit);
+exec("$php $root/artisan migrate --force 2>&1", $out_mig, $migExit);
 echo implode("\n", $out_mig) . "\n";
 echo "Migration exit code: $migExit\n\n";
 
-// Step 7: Storage link
-echo "=== Step 7: Storage link ===\n";
-exec("/opt/plesk/php/8.3/bin/php $root/artisan storage:link 2>&1", $sl);
+// Step 8: Storage link
+echo "=== Step 8: Storage link ===\n";
+exec("$php $root/artisan storage:link 2>&1", $sl);
 echo implode("\n", $sl) . "\n\n";
 
-// Step 8: Final cache clear
-echo "=== Step 8: Final cache clear ===\n";
-exec("/opt/plesk/php/8.3/bin/php $root/artisan config:clear 2>&1", $f1);
-exec("/opt/plesk/php/8.3/bin/php $root/artisan cache:clear 2>&1", $f2);
+// Step 9: Final cache clear
+echo "=== Step 9: Final cache clear ===\n";
+exec("$php $root/artisan config:clear 2>&1", $f1);
+exec("$php $root/artisan cache:clear 2>&1", $f2);
 echo "Done.\n\n";
 
 // Verification

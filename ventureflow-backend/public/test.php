@@ -9,8 +9,31 @@ chdir($root);
 $php = '/opt/plesk/php/8.3/bin/php';
 echo "Working in: $root\n\n";
 
-// Step 0: Clear ALL cached config
-echo "=== Step 0: Clearing ALL caches ===\n";
+// ──────────────────────────────────────────────────────────
+// Step 0: Git pull from deploy branch (fetch latest code)
+// ──────────────────────────────────────────────────────────
+echo "=== Step 0: Git pull (deploy branch) ===\n";
+$gitOut = [];
+// Check if this is a git repo
+if (is_dir("$root/.git")) {
+    // Reset any local changes and pull latest
+    exec("cd $root && git fetch origin 2>&1", $gitOut);
+    exec("cd $root && git reset --hard origin/deploy 2>&1", $gitOut);
+    echo implode("\n", $gitOut) . "\n";
+    
+    // Show current commit
+    $commitOut = [];
+    exec("cd $root && git log --oneline -1 2>&1", $commitOut);
+    echo "Current commit: " . implode('', $commitOut) . "\n";
+} else {
+    echo "⚠️ Not a git repo — skipping pull\n";
+    echo "Plesk should be managing git pulls automatically.\n";
+}
+echo "\n";
+
+
+// Step 0.5: Clear ALL cached config
+echo "=== Step 0.5: Clearing ALL caches ===\n";
 foreach (glob("$root/bootstrap/cache/*.php") as $cacheFile) {
     unlink($cacheFile);
     echo "Deleted: " . basename($cacheFile) . "\n";
