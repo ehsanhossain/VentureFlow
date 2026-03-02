@@ -3,14 +3,14 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { BrowserRouter as Router, useLocation, Navigate } from "react-router-dom";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import AppRoutes from "./routes/AppRoutes";
 import "@fontsource/poppins/500.css";
 import "@fontsource/roboto";
-import { AuthProvider } from "./routes/AuthContext";
+import { AuthProvider, AuthContext } from "./routes/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { GeneralSettingsProvider } from "./context/GeneralSettingsContext";
 
@@ -71,8 +71,15 @@ const Content: React.FC<ContentProps> = ({
   toggleMobileMenu,
 }) => {
   const location = useLocation();
+  const auth = useContext(AuthContext);
+  const isPartner = auth?.isPartner ?? false;
+  const user = auth?.user;
+
   const authPaths = ["/login", "/change-password", "/forgot-password", "/reset-password"];
   const hideLayout = authPaths.includes(location.pathname);
+
+  // If partner lands on admin routes, redirect to partner-portal
+  const isPartnerOnAdminRoute = isPartner && user && !location.pathname.startsWith('/partner-portal') && !hideLayout && !location.pathname.startsWith('/change-password');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -86,22 +93,30 @@ const Content: React.FC<ContentProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [sidebarExpanded, setSidebarExpanded]);
 
+  // Redirect partner away from admin routes
+  if (isPartnerOnAdminRoute) {
+    return <Navigate to="/partner-portal" replace />;
+  }
+
+  // Partner portal uses its own PartnerLayout (rendered inside AppRoutes)
+  const isPartnerPortal = location.pathname.startsWith('/partner-portal');
+
   return (
     <div className={hideLayout ? "h-screen w-full overflow-hidden" : "min-h-screen bg-white"}>
-      {!hideLayout && mobileMenuOpen && (
+      {!hideLayout && mobileMenuOpen && !isPartnerPortal && (
         <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
           onClick={() => toggleMobileMenu()}
         />
       )}
-      {!hideLayout && (
+      {!hideLayout && !isPartnerPortal && (
         <Header
           mobileMenuOpen={mobileMenuOpen}
           toggleMobileMenu={toggleMobileMenu}
           sidebarExpanded={sidebarExpanded}
         />
       )}
-      {!hideLayout && (
+      {!hideLayout && !isPartnerPortal && (
         <Sidebar
           sidebarExpanded={sidebarExpanded}
           setSidebarExpanded={setSidebarExpanded}
@@ -115,8 +130,9 @@ const Content: React.FC<ContentProps> = ({
             : "min-h-screen bg-white"
           }
     ${!hideLayout ? "pt-16" : ""}
-    ${!hideLayout && sidebarExpanded ? "md:pl-64" : ""}
-    ${!hideLayout && !sidebarExpanded ? "md:pl-16" : ""}
+    ${!hideLayout && sidebarExpanded && !isPartnerPortal ? "md:pl-64" : ""}
+    ${!hideLayout && !sidebarExpanded && !isPartnerPortal ? "md:pl-16" : ""}
+    ${isPartnerPortal ? "!pt-0 !pl-0" : ""}
     ${mobileMenuOpen ? "overflow-hidden" : ""}`}
       >
         <AppRoutes />

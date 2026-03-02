@@ -38,6 +38,13 @@ import ResetPassword from "../pages/auth/ResetPassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
 import MatchIQ from '../pages/matching/MatchIQ';
 
+// Partner Portal
+import PartnerLayout from "../layouts/PartnerLayout";
+import PartnerDashboard from "../pages/partner-portal/PartnerDashboard";
+import SharedInvestorsPage from "../pages/partner-portal/SharedInvestorsPage";
+import SharedTargetsPage from "../pages/partner-portal/SharedTargetsPage";
+import PartnerProfile from "../pages/settings/components/PartnerProfile";
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -45,6 +52,23 @@ const AppRoutes = () => {
       <Route path="/change-password" element={<ChangePassword />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* ═══════ Partner Portal Routes ═══════ */}
+      <Route
+        path="/partner-portal"
+        element={
+          <ProtectedRoute>
+            <PartnerLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<PartnerDashboard />} />
+        <Route path="investors" element={<SharedInvestorsPage />} />
+        <Route path="targets" element={<SharedTargetsPage />} />
+        <Route path="settings" element={<PartnerProfile />} />
+      </Route>
+
+      {/* ═══════ Admin/Staff Routes ═══════ */}
 
       {/* Dashboard */}
       <Route

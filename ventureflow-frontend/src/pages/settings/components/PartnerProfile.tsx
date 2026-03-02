@@ -7,7 +7,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Loader2, User } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../../routes/AuthContext';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -28,8 +28,10 @@ interface PartnerData {
 const PartnerProfile: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const auth = useContext(AuthContext);
     const user = auth?.user;
+    const isPartnerPortalContext = location.pathname.startsWith('/partner-portal');
     const [partner, setPartner] = useState<PartnerData | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -51,6 +53,32 @@ const PartnerProfile: React.FC = () => {
 
     useEffect(() => {
         const fetchPartner = async () => {
+            // In partner portal context, use partner-portal API
+            if (isPartnerPortalContext) {
+                try {
+                    const response = await api.get('/api/partner-portal/profile');
+                    const data = response.data.data || response.data;
+                    setPartner(data);
+                    setFormData({
+                        company_name: data.company_name || '',
+                        company_address: data.company_address || '',
+                        contact_person: data.contact_person || '',
+                        contact_email: data.contact_email || '',
+                        contact_phone: data.contact_phone || '',
+                    });
+                    if (data.image) {
+                        setImagePreview(`${baseURL}/api/files/${data.image}`);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch partner data', error);
+                    showAlert({ type: 'error', message: t('profile.fetchError', 'Failed to load profile data') });
+                } finally {
+                    setLoading(false);
+                }
+                return;
+            }
+
+            // Admin context — use admin partner API
             if (!partnerId) {
                 setLoading(false);
                 return;
@@ -79,7 +107,7 @@ const PartnerProfile: React.FC = () => {
         };
 
         fetchPartner();
-    }, [partnerId, baseURL, t]);
+    }, [partnerId, baseURL, t, isPartnerPortalContext]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -104,21 +132,27 @@ const PartnerProfile: React.FC = () => {
 
         setSaving(true);
         try {
-            const data = new FormData();
-            data.append('company_name', formData.company_name);
-            data.append('company_address', formData.company_address);
-            data.append('contact_person', formData.contact_person);
-            data.append('contact_email', formData.contact_email);
-            data.append('contact_phone', formData.contact_phone);
-            data.append('_method', 'PUT');
+            if (isPartnerPortalContext) {
+                // Partner portal: use partner-portal API
+                await api.put('/api/partner-portal/profile', formData);
+            } else {
+                // Admin context: use admin partner API
+                const data = new FormData();
+                data.append('company_name', formData.company_name);
+                data.append('company_address', formData.company_address);
+                data.append('contact_person', formData.contact_person);
+                data.append('contact_email', formData.contact_email);
+                data.append('contact_phone', formData.contact_phone);
+                data.append('_method', 'PUT');
 
-            if (imageFile) {
-                data.append('image', imageFile);
+                if (imageFile) {
+                    data.append('image', imageFile);
+                }
+
+                await api.post(`/api/partners/${partnerId}`, data, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
             }
-
-            await api.post(`/api/partners/${partnerId}`, data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
 
             showAlert({ type: 'success', message: t('profile.updateSuccess', 'Profile updated successfully') });
         } catch (error) {
