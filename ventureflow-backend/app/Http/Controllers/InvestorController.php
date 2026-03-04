@@ -1002,7 +1002,7 @@ class InvestorController extends Controller
         $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         if ($isPartner) {
-            $allowedFields = $this->getParsedAllowedFields('investor');
+            $allowedFields = $this->getParsedAllowedFields('buyer');
             $query = Investor::where('id', $buyer->id);
 
             // SECURITY: Never expose pipeline_status to partners

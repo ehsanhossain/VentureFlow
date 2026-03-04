@@ -157,10 +157,6 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::get('/seller/unpinned',          [TargetController::class, 'unpinnedData']);
     Route::get('/seller/investment-range',  [TargetController::class, 'investmentRange']);
     Route::get('/seller/ebitda-range',      [TargetController::class, 'ebitdaRange']);
-    // Index route — used by frontend for ?status=Draft checks + main table listing
-    Route::get('/seller',                   [TargetController::class, 'index']);
-    // Detail view — controllers strip pipeline_status, deals, reg_name for partners
-    Route::get('/seller/{seller}',          [TargetController::class, 'show']);
 
     // Investor (Buyer) — READ routes (listings, detail, filter ranges)
     Route::get('/investor/fetch',           [InvestorController::class, 'fetchAll']);
@@ -169,9 +165,42 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
     Route::get('/investor/budget-range',    [InvestorController::class, 'budgetRange']);
     Route::get('/buyer/fetch',              [InvestorController::class, 'fetchAll']);
     Route::get('/buyer/budget-range',       [InvestorController::class, 'budgetRange']);
-    // Index route — used by frontend for ?status=Draft checks + main table listing
+
+    // ── Admin/Staff-only GET routes that MUST be registered BEFORE wildcard {seller}/{buyer} ──
+    // These are placed here to prevent the wildcard routes below from intercepting
+    // requests like /seller/get-last-sequence (which would be treated as {seller}="get-last-sequence")
+    Route::middleware(['role:System Admin|Staff'])->group(function () {
+        // Target (Seller) — admin/staff-only named GET routes
+        Route::get('/target/get-last-sequence',     [TargetController::class, 'getLastSequence']);
+        Route::get('/target/check-id',              [TargetController::class, 'checkId']);
+        Route::get('/target/closed',                [TargetController::class, 'closedDeals']);
+        Route::get('/target/drafts',                [TargetController::class, 'drafts']);
+        Route::get('/target/partnerships',          [TargetController::class, 'partnerships']);
+        Route::get('/target/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
+        Route::get('/seller/get-last-sequence',     [TargetController::class, 'getLastSequence']);
+        Route::get('/seller/check-id',              [TargetController::class, 'checkId']);
+        Route::get('/seller/drafts',                [TargetController::class, 'drafts']);
+        Route::get('/seller/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
+        Route::get('/seller/closed',                [TargetController::class, 'closedDeals']);
+        Route::get('/seller/partnerships',          [TargetController::class, 'partnerships']);
+
+        // Investor (Buyer) — admin/staff-only named GET routes
+        Route::get('/investor/get-last-sequence',   [InvestorController::class, 'getLastSequence']);
+        Route::get('/investor/check-id',            [InvestorController::class, 'checkId']);
+        Route::get('/investor/closed-deals',        [InvestorController::class, 'closedDeals']);
+        Route::get('/investor/drafts',              [InvestorController::class, 'drafts']);
+        Route::get('/investor/from-partners',       [InvestorController::class, 'fromPartners']);
+        Route::get('/investor/delete-analyze',      [InvestorController::class, 'getDeleteImpact']);
+        Route::get('/buyer/get-last-sequence',      [InvestorController::class, 'getLastSequence']);
+        Route::get('/buyer/check-id',               [InvestorController::class, 'checkId']);
+        Route::get('/buyer/drafts',                 [InvestorController::class, 'drafts']);
+    });
+
+    // Index routes — used by frontend for ?status=Draft checks + main table listing
+    Route::get('/seller',                   [TargetController::class, 'index']);
     Route::get('/buyer',                    [InvestorController::class, 'index']);
-    // Detail view — controllers strip pipeline_status, deals, reg_name for partners
+    // Detail view (wildcard) — MUST come AFTER all specific /seller/* and /buyer/* routes
+    Route::get('/seller/{seller}',          [TargetController::class, 'show']);
     Route::get('/buyer/{buyer}',            [InvestorController::class, 'show']);
 
     // Pipeline Stages (read — needed for filter dropdowns)
@@ -188,22 +217,8 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff|partner'])->group(fu
 // ─────────────────────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function () {
 
-    // Target (Seller) — admin/staff-only GET routes (sequences, drafts, admin tools)
-    Route::get('/target/get-last-sequence',     [TargetController::class, 'getLastSequence']);
-    Route::get('/target/check-id',              [TargetController::class, 'checkId']);
-    Route::get('/target/closed',                [TargetController::class, 'closedDeals']);
-    Route::get('/target/drafts',                [TargetController::class, 'drafts']);
-    Route::get('/target/partnerships',          [TargetController::class, 'partnerships']);
-    Route::get('/target/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
+    // Target (Seller) — admin/staff-only WRITE routes (GET routes moved to shared group above)
     Route::delete('/targets',                   [TargetController::class, 'destroy']);
-
-    // Seller alias — admin/staff-only routes
-    Route::get('/seller/get-last-sequence',     [TargetController::class, 'getLastSequence']);
-    Route::get('/seller/check-id',              [TargetController::class, 'checkId']);
-    Route::get('/seller/drafts',                [TargetController::class, 'drafts']);
-    Route::get('/seller/delete-analyze',        [TargetController::class, 'getDeleteImpact']);
-    Route::get('/seller/closed',                [TargetController::class, 'closedDeals']);
-    Route::get('/seller/partnerships',          [TargetController::class, 'partnerships']);
     // Seller WRITE routes (POST, DELETE) — must be before apiResource
     Route::post('/seller/company-overviews',         [TargetController::class, 'sellerCompanyOverviewstore']);
     Route::post('/seller/financial-details',         [TargetController::class, 'sellerFinancialDetailsstore']);
@@ -222,18 +237,8 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::post('/target/{seller}/pinned',           [TargetController::class, 'pinned']);
 
 
-    // Investor (Buyer) — admin/staff-only GET routes
-    Route::get('/investor/get-last-sequence',   [InvestorController::class, 'getLastSequence']);
-    Route::get('/investor/check-id',            [InvestorController::class, 'checkId']);
-    Route::get('/investor/closed-deals',        [InvestorController::class, 'closedDeals']);
-    Route::get('/investor/drafts',              [InvestorController::class, 'drafts']);
-    Route::get('/investor/from-partners',       [InvestorController::class, 'fromPartners']);
-    Route::get('/investor/delete-analyze',      [InvestorController::class, 'getDeleteImpact']);
+    // Investor (Buyer) — admin/staff-only WRITE routes (GET routes moved to shared group above)
     Route::delete('/investors',                 [InvestorController::class, 'destroy']);
-    // Buyer alias — admin/staff-only routes
-    Route::get('/buyer/get-last-sequence',      [InvestorController::class, 'getLastSequence']);
-    Route::get('/buyer/check-id',               [InvestorController::class, 'checkId']);
-    Route::get('/buyer/drafts',                 [InvestorController::class, 'drafts']);
     Route::delete('/buyer',                     [InvestorController::class, 'destroy']);
     Route::delete('/investor',                  [InvestorController::class, 'destroy']);
     // Buyer WRITE routes

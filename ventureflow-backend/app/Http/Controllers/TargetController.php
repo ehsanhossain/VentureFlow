@@ -895,7 +895,7 @@ class TargetController extends Controller
         $isPartner = $user && ($user->hasRole('partner') || $user->is_partner);
 
         if ($isPartner) {
-            $allowedFields = $this->getParsedAllowedFields('target');
+            $allowedFields = $this->getParsedAllowedFields('seller');
             $query = Target::where('id', $seller->id);
 
             // SECURITY: Strip pipeline_status — never expose to partners
