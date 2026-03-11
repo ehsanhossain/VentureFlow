@@ -160,13 +160,32 @@ try {
 
 // Step 8.5: Build Frontend
 echo "\n=== Step 8.5: Building Frontend ===\n";
-$frontendDir = dirname($root) . '/ventureflow-frontend';
-if (!is_dir($frontendDir)) {
-    // Try monorepo layout (frontend is sibling of backend in httpdocs)
-    $frontendDir = $root . '/../ventureflow-frontend';
+
+// Search multiple possible locations for the frontend directory
+$possiblePaths = [
+    dirname($root) . '/ventureflow-frontend',                     // sibling to httpdocs
+    $root . '/ventureflow-frontend',                               // inside httpdocs (full monorepo deploy)
+    '/var/www/vhosts/ventureflow.app/ventureflow-frontend',        // vhost root level
+    '/var/www/vhosts/ventureflow.app/git/ventureflow-frontend',    // Plesk git repo directory
+    dirname($root) . '/git/ventureflow-frontend',                  // sibling git dir
+];
+
+$frontendDir = '';
+foreach ($possiblePaths as $path) {
+    $resolved = realpath($path);
+    if ($resolved && is_dir($resolved)) {
+        $frontendDir = $resolved;
+        break;
+    }
 }
-// Normalize path for safety
-$frontendDir = realpath($frontendDir) ?: $frontendDir;
+
+// If still not found, try to find it with find command (exclude .trash)
+if (!$frontendDir) {
+    $findResult = trim(shell_exec("find /var/www/vhosts/ventureflow.app -maxdepth 4 -type d -name 'ventureflow-frontend' -not -path '*/.trash/*' 2>/dev/null | head -1") ?? '');
+    if ($findResult && is_dir($findResult) && strpos($findResult, '.trash') === false) {
+        $frontendDir = $findResult;
+    }
+}
 
 echo "Frontend dir: $frontendDir\n";
 
@@ -241,7 +260,13 @@ if (is_dir($frontendDir)) {
         }
     }
 } else {
-    echo "⚠️ Frontend directory not found at: $frontendDir\n";
+    echo "⚠️ Frontend directory not found!\n";
+    echo "Checked paths:\n";
+    foreach ($possiblePaths as $p) {
+        echo "  - $p " . (is_dir($p) ? '✅' : '❌') . "\n";
+    }
+    echo "Also tried: find command\n";
+    echo "You may need to set the path manually or build locally and commit dist/.\n";
 }
 echo "\n";
 

@@ -100,6 +100,11 @@ class DriveFile extends Model
             'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
             'video/mp4', 'video/webm',
             'text/plain', 'text/html', 'text/csv',
+            // Excel
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+            // Word
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
         ];
         return in_array($this->mime_type, $previewable);
     }

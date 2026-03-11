@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Download, Lock, Folder, AlertCircle, Loader2 } from 'lucide-react';
@@ -22,6 +22,15 @@ import { formatFileSize, getFileIconSrc } from './driveUtils';
 // Normalize API base for public (unauthenticated) axios calls
 const rawBase = import.meta.env.VITE_API_BASE_URL || '';
 const apiBase = rawBase === '/' ? '' : rawBase;
+
+/* ── MIME helpers ── */
+const EXCEL_MIMES = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+];
+const WORD_MIMES = [
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 
 interface SharedFile {
     id: string;
@@ -73,10 +82,17 @@ function normalizeSharedResponse(data: any): SharedItem {
     return { ...data, allow_download: data.allow_download !== false } as SharedItem;
 }
 
-/** Check if a mime type is previewable inline */
+/** Check if a mime type supports full-viewport inline preview */
 function isInlinePreviewable(mime?: string): boolean {
     if (!mime) return false;
-    return mime.startsWith('image/') || mime === 'application/pdf' || mime.startsWith('video/');
+    return (
+        mime.startsWith('image/') ||
+        mime === 'application/pdf' ||
+        mime.startsWith('video/') ||
+        mime.startsWith('text/') ||
+        EXCEL_MIMES.includes(mime) ||
+        WORD_MIMES.includes(mime)
+    );
 }
 
 const DrivePublicView: React.FC = () => {
@@ -94,30 +110,46 @@ const DrivePublicView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [passwordError, setPasswordError] = useState<string | null>(null);
 
-    // Inline preview state
+    // Generic preview state
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+    const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
+
+    // Text content state
+    const [textContent, setTextContent] = useState<string | null>(null);
+
+    // Excel state
+    const [excelHtml, setExcelHtml] = useState<string>('');
+    const [sheetNames, setSheetNames] = useState<string[]>([]);
+    const [activeSheet, setActiveSheet] = useState(0);
+    const xlsxRef = useRef<any>(null);
+    const workbookRef = useRef<any>(null);
+
+    // Word state
+    const docxContainerRef = useRef<HTMLDivElement>(null);
+
+    const renderSheet = useCallback((wb: any, idx: number, XLSX: any) => {
+        const name = wb.SheetNames[idx];
+        const ws = wb.Sheets[name];
+        if (!ws) return;
+        setExcelHtml(XLSX.utils.sheet_to_html(ws, { id: 'excel-preview-table' }));
+        setActiveSheet(idx);
+    }, []);
 
     // Auth-aware: if user is logged in, try to resolve and redirect
     useEffect(() => {
-        if (auth?.loading) return; // Wait for auth check to finish
+        if (auth?.loading) return;
         if (!token) { setError(t('flowdrive.publicView.invalidShareLink')); setLoading(false); return; }
 
         if (auth?.user) {
-            // Logged-in → try to resolve the share to an in-app location
             api.get(`/api/drive/shared/${token}/resolve`)
                 .then(res => {
                     const d = res.data;
                     const prospectType = d.prospect_type === 'App\\Models\\Target' || d.prospect_type === 'target' ? 'target' : 'investor';
-                    // Navigate to the drive explorer with the correct folder
                     navigate(`/drive/${prospectType}/${d.prospect_id}`, { replace: true });
                 })
-                .catch(() => {
-                    // Resolve failed — fall back to public view
-                    fetchSharedPublic();
-                });
+                .catch(() => { fetchSharedPublic(); });
         } else {
-            // Not logged in — show public view
             fetchSharedPublic();
         }
     }, [auth?.loading, auth?.user, token]);
@@ -132,9 +164,8 @@ const DrivePublicView: React.FC = () => {
                 const normalized = normalizeSharedResponse(res.data);
                 setItem(normalized);
                 document.title = normalized.name + ' — CloudFlow';
-                // Auto-load preview if file is previewable
                 if (normalized.type === 'file' && normalized.is_previewable && normalized.preview_url) {
-                    loadPreview(normalized.preview_url);
+                    loadPreview(normalized);
                 }
             }
         } catch (err: any) {
@@ -144,18 +175,70 @@ const DrivePublicView: React.FC = () => {
         }
     };
 
-    const loadPreview = async (previewUrl: string) => {
+    const loadPreview = async (sharedItem: SharedItem) => {
+        if (!sharedItem.preview_url) return;
         setPreviewLoading(true);
         try {
-            const res = await axios.get(previewUrl, { responseType: 'blob' });
-            const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/octet-stream' });
-            setPreviewBlobUrl(URL.createObjectURL(blob));
+            const mime = sharedItem.mime_type || '';
+
+            // For Excel/Word, load blob for specialized rendering
+            if (EXCEL_MIMES.includes(mime) || WORD_MIMES.includes(mime)) {
+                const res = await axios.get(sharedItem.preview_url, { responseType: 'blob' });
+                const blob = new Blob([res.data], { type: res.headers['content-type'] || mime });
+                setPreviewBlob(blob);
+
+                if (EXCEL_MIMES.includes(mime)) {
+                    const XLSX = await import('xlsx');
+                    xlsxRef.current = XLSX;
+                    const buf = await blob.arrayBuffer();
+                    const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+                    workbookRef.current = wb;
+                    setSheetNames(wb.SheetNames);
+                    renderSheet(wb, 0, XLSX);
+                }
+
+                if (WORD_MIMES.includes(mime)) {
+                    // Will be rendered in useEffect when container is ready
+                    setPreviewBlobUrl('docx-ready');
+                }
+            } else if (mime.startsWith('text/')) {
+                // Text: fetch as string
+                const res = await axios.get(sharedItem.preview_url, { responseType: 'text' });
+                setTextContent(res.data);
+                setPreviewBlobUrl('text-ready');
+            } else {
+                // Images, PDFs, Videos: blob URL
+                const res = await axios.get(sharedItem.preview_url, { responseType: 'blob' });
+                const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/octet-stream' });
+                setPreviewBlobUrl(URL.createObjectURL(blob));
+            }
         } catch {
             setPreviewBlobUrl(null);
         } finally {
             setPreviewLoading(false);
         }
     };
+
+    // Render Word doc when container and blob are ready
+    useEffect(() => {
+        if (!previewBlob || !item?.mime_type || !WORD_MIMES.includes(item.mime_type)) return;
+        if (!docxContainerRef.current) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { renderAsync } = await import('docx-preview');
+                if (cancelled || !docxContainerRef.current) return;
+                docxContainerRef.current.innerHTML = '';
+                await renderAsync(previewBlob, docxContainerRef.current, undefined, {
+                    className: 'docx-preview-wrapper',
+                    inWrapper: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false,
+                });
+            } catch { /* silently fail */ }
+        })();
+        return () => { cancelled = true; };
+    }, [previewBlob, item?.mime_type, previewLoading]);
 
     const handlePasswordSubmit = async () => {
         setVerifying(true);
@@ -166,9 +249,8 @@ const DrivePublicView: React.FC = () => {
             setItem(normalized);
             setNeedsPassword(false);
             document.title = normalized.name + ' — CloudFlow';
-            // Auto-load preview after password success
             if (normalized.type === 'file' && normalized.is_previewable && normalized.preview_url) {
-                loadPreview(normalized.preview_url);
+                loadPreview(normalized);
             }
         } catch (err: any) {
             setPasswordError(err?.response?.data?.message || t('flowdrive.publicView.incorrectPassword'));
@@ -184,7 +266,7 @@ const DrivePublicView: React.FC = () => {
     // Clean up blob URL on unmount
     useEffect(() => {
         return () => {
-            if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+            if (previewBlobUrl && previewBlobUrl.startsWith('blob:')) URL.revokeObjectURL(previewBlobUrl);
         };
     }, [previewBlobUrl]);
 
@@ -248,61 +330,126 @@ const DrivePublicView: React.FC = () => {
 
     if (!item) return null;
 
-    const showPreview = item.type === 'file' && isInlinePreviewable(item.mime_type);
-    const isImage = item.mime_type?.startsWith('image/');
-    const isPdf = item.mime_type === 'application/pdf';
-    const isVideo = item.mime_type?.startsWith('video/');
+    const mime = item.mime_type || '';
+    const showPreview = item.type === 'file' && isInlinePreviewable(mime);
+    const isImage = mime.startsWith('image/');
+    const isPdf = mime === 'application/pdf';
+    const isVideo = mime.startsWith('video/');
+    const isText = mime.startsWith('text/');
+    const isExcel = EXCEL_MIMES.includes(mime);
+    const isWord = WORD_MIMES.includes(mime);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-            <div className="bg-white rounded-[3px] shadow-lg w-full max-w-2xl overflow-hidden">
-                {/* Inline preview area */}
-                {showPreview && (
-                    <div className="bg-gray-100 flex items-center justify-center" style={{ minHeight: 300, maxHeight: '60vh' }}>
-                        {previewLoading && (
-                            <div className="flex flex-col items-center gap-3 py-12">
-                                <Loader2 className="w-8 h-8 text-[#064771] animate-spin" />
-                                <p className="text-sm text-gray-500">Loading preview...</p>
-                            </div>
-                        )}
-                        {!previewLoading && previewBlobUrl && isImage && (
+        <div className="min-h-screen flex flex-col bg-gray-50">
+            {/* Full-viewport preview area */}
+            {showPreview && (
+                <div className="flex-1 flex flex-col" style={{ minHeight: '70vh' }}>
+                    {previewLoading && (
+                        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
+                            <Loader2 className="w-8 h-8 text-[#064771] animate-spin" />
+                            <p className="text-sm text-gray-500">Loading preview...</p>
+                        </div>
+                    )}
+
+                    {/* Image */}
+                    {!previewLoading && previewBlobUrl && isImage && (
+                        <div className="flex-1 flex items-center justify-center bg-gray-100 p-4">
                             <img
                                 src={previewBlobUrl}
                                 alt={item.name}
-                                className="max-w-full max-h-[60vh] object-contain"
+                                className="max-w-full max-h-[80vh] object-contain"
                                 style={{ imageRendering: 'auto' }}
                             />
-                        )}
-                        {!previewLoading && previewBlobUrl && isPdf && (
-                            <iframe
-                                src={previewBlobUrl}
-                                title={item.name}
-                                className="w-full border-0"
-                                style={{ height: '60vh' }}
-                            />
-                        )}
-                        {!previewLoading && previewBlobUrl && isVideo && (
+                        </div>
+                    )}
+
+                    {/* PDF — full viewport */}
+                    {!previewLoading && previewBlobUrl && isPdf && (
+                        <iframe
+                            src={previewBlobUrl}
+                            title={item.name}
+                            className="flex-1 w-full border-0"
+                            style={{ minHeight: '80vh' }}
+                        />
+                    )}
+
+                    {/* Video */}
+                    {!previewLoading && previewBlobUrl && isVideo && (
+                        <div className="flex-1 flex items-center justify-center bg-black p-4">
                             <video
                                 src={previewBlobUrl}
                                 controls
-                                className="max-w-full max-h-[60vh]"
+                                className="max-w-full max-h-[80vh]"
                             >
                                 Your browser does not support video playback.
                             </video>
-                        )}
-                        {!previewLoading && !previewBlobUrl && (
+                        </div>
+                    )}
+
+                    {/* Text — white bg, dark text */}
+                    {!previewLoading && isText && textContent !== null && (
+                        <div className="flex-1 overflow-auto bg-white p-6 mx-auto w-full max-w-4xl">
+                            <pre className="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 leading-relaxed">
+                                {textContent}
+                            </pre>
+                        </div>
+                    )}
+
+                    {/* Excel spreadsheet */}
+                    {!previewLoading && isExcel && excelHtml && (
+                        <div className="flex-1 flex flex-col overflow-hidden bg-white mx-auto w-full">
+                            <div
+                                className="flex-1 overflow-auto p-2 excel-public-container"
+                                dangerouslySetInnerHTML={{ __html: excelHtml }}
+                            />
+                            {sheetNames.length > 1 && (
+                                <div className="shrink-0 flex items-center gap-0.5 px-3 py-2 border-t border-gray-200 bg-gray-100 overflow-x-auto">
+                                    {sheetNames.map((name, idx) => (
+                                        <button
+                                            key={name}
+                                            onClick={() => xlsxRef.current && workbookRef.current && renderSheet(workbookRef.current, idx, xlsxRef.current)}
+                                            className={`px-3 py-1 text-xs font-medium rounded transition-colors whitespace-nowrap ${
+                                                idx === activeSheet
+                                                    ? 'bg-white text-[#064771] shadow-sm border border-gray-200'
+                                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Word document */}
+                    {!previewLoading && isWord && (
+                        <div className="flex-1 overflow-auto bg-gray-100 p-4">
+                            <div
+                                ref={docxContainerRef}
+                                className="docx-public-root bg-white mx-auto shadow-sm rounded"
+                                style={{ maxWidth: 816 }}
+                            />
+                        </div>
+                    )}
+
+                    {/* Preview failed */}
+                    {!previewLoading && !previewBlobUrl && !excelHtml && textContent === null && !isWord && (
+                        <div className="flex-1 flex items-center justify-center">
                             <div className="text-center py-12">
                                 <img src={getFileIconSrc(item.name || '')} alt="" className="w-14 h-14 mx-auto mb-3" draggable={false} />
                                 <p className="text-sm text-gray-400">Preview unavailable</p>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                {/* File/folder info */}
-                <div className="p-6">
+            {/* File/folder info bar */}
+            <div className={`bg-white ${showPreview ? 'border-t border-gray-200' : ''}`}>
+                <div className="max-w-2xl mx-auto p-6">
                     <div className="text-center">
-                        {/* Icon — only show when there's no inline preview */}
+                        {/* Icon — only when no inline preview */}
                         {!showPreview && (
                             <>
                                 {item.type === 'folder' ? (
@@ -358,15 +505,55 @@ const DrivePublicView: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Branding footer */}
-                <div className="px-6 pb-6">
-                    <div className="pt-4 border-t border-gray-100 text-center">
+                    {/* Branding footer */}
+                    <div className="pt-4 mt-4 border-t border-gray-100 text-center">
                         <p className="text-[11px] text-gray-400">{t('flowdrive.publicView.sharedVia')}</p>
                     </div>
                 </div>
             </div>
+
+            {/* Shared styles */}
+            <style>{`
+                .excel-public-container table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    font-size: 13px;
+                    background: white;
+                }
+                .excel-public-container th,
+                .excel-public-container td {
+                    border: 1px solid #e5e7eb;
+                    padding: 6px 10px;
+                    text-align: left;
+                    white-space: nowrap;
+                    max-width: 300px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .excel-public-container th {
+                    background: #f3f4f6;
+                    font-weight: 600;
+                    color: #374151;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                }
+                .excel-public-container tr:nth-child(even) td {
+                    background: #f9fafb;
+                }
+                .excel-public-container tr:hover td {
+                    background: #eef2ff;
+                }
+                .docx-public-root .docx-wrapper {
+                    background: white !important;
+                    padding: 20px 30px !important;
+                }
+                .docx-public-root .docx-wrapper > section {
+                    box-shadow: none !important;
+                    margin-bottom: 0 !important;
+                }
+            `}</style>
         </div>
     );
 };

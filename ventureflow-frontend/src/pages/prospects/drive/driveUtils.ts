@@ -123,7 +123,12 @@ export function isPreviewable(mime: string): boolean {
         mime.startsWith('image/') ||
         mime === 'application/pdf' ||
         mime.startsWith('video/') ||
-        mime.startsWith('text/')
+        mime.startsWith('text/') ||
+        // Excel
+        mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        mime === 'application/vnd.ms-excel' ||
+        // Word
+        mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     );
 }
 
