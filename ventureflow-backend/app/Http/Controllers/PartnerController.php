@@ -68,16 +68,10 @@ class PartnerController extends Controller
                     }
                 });
             })
-            ->paginate(10);
+            ->get();
 
         return response()->json([
-            'data' => $partners->items(),
-            'meta' => [
-                'total' => $partners->total(),
-                'current_page' => $partners->currentPage(),
-                'last_page' => $partners->lastPage(),
-                'per_page' => $partners->perPage(),
-            ],
+            'data' => $partners,
         ]);
     }
 

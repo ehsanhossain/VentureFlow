@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Edit2, Trash2, Eye, MoreVertical, Mail } from 'lucide-react';
 import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import api from '../../../config/api';
@@ -37,7 +37,8 @@ interface PartnerUser {
     };
 }
 
-const ITEMS_PER_PAGE = 9;
+const ROW_HEIGHT = 65;
+const TABLE_OVERHEAD = 280; // header + toolbar + padding + pagination bar
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const isNewEntry = (date?: string) => date ? (Date.now() - new Date(date).getTime()) < SEVEN_DAYS_MS : false;
 
@@ -48,6 +49,17 @@ const PartnerManagement: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
+
+    // Viewport-based items per page
+    const calcItemsPerPage = useCallback(() => {
+        return Math.max(5, Math.min(50, Math.floor((window.innerHeight - TABLE_OVERHEAD) / ROW_HEIGHT)));
+    }, []);
+    const [itemsPerPage, setItemsPerPage] = useState(calcItemsPerPage);
+    useEffect(() => {
+        const onResize = () => { setItemsPerPage(calcItemsPerPage()); setCurrentPage(1); };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [calcItemsPerPage]);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
         key: 'name',
         direction: 'asc'
@@ -319,7 +331,7 @@ const PartnerManagement: React.FC = () => {
                     <div className="flex-1 px-8 pb-8 overflow-hidden">
                         <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
                             <DataTable
-                                data={filteredPartners.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
+                                data={filteredPartners.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
                                 columns={columns}
                                 isLoading={loading}
                                 emptyMessage={t('settings.partners.noPartners')}
@@ -331,9 +343,9 @@ const PartnerManagement: React.FC = () => {
                                 onRowClick={(row) => navigate(`/settings/partners/${row.id}`)}
                                 pagination={{
                                     currentPage,
-                                    totalPages: Math.ceil(filteredPartners.length / ITEMS_PER_PAGE),
+                                    totalPages: Math.ceil(filteredPartners.length / itemsPerPage),
                                     totalItems: filteredPartners.length,
-                                    itemsPerPage: ITEMS_PER_PAGE,
+                                    itemsPerPage: itemsPerPage,
                                     onPageChange: setCurrentPage,
                                 }}
                             />

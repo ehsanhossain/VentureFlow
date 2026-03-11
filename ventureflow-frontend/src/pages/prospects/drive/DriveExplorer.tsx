@@ -50,7 +50,7 @@ const DriveExplorer: React.FC = () => {
         folders, files, breadcrumbs, loading, uploadAggregate,
         fetchRoot, fetchFolder, searchAll,
         createFolder, renameFolder, deleteFolder,
-        renameFile, deleteFile, downloadFile, getPreviewUrl,
+        renameFile, deleteFile, downloadFile, fetchPreviewBlob,
         uploadFiles, clearUploads,
         replaceFile, bulkDelete, bulkDownload, bulkMove,
     } = useProspectDrive(driveType, prospectId || '');
@@ -73,9 +73,25 @@ const DriveExplorer: React.FC = () => {
     const [commentFileId, setCommentFileId] = useState<string | null>(null);
     const [versionFileId, setVersionFileId] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<DriveFile | null>(null);
+    const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+
+    /** Open file preview — fetches blob via authenticated API */
+    const handleOpenPreview = async (file: DriveFile) => {
+        setPreviewFile(file);
+        setPreviewLoading(true);
+        try {
+            const blobUrl = await fetchPreviewBlob(file.id);
+            setPreviewBlobUrl(blobUrl);
+        } catch {
+            setPreviewBlobUrl(null);
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
 
     // Inline editing
-    const [renamingItem, setRenamingItem] = useState<{ id: string; type: 'file' | 'folder'; name: string } | null>(null);
+    const [renamingItem, setRenamingItem] = useState<{ id: string; type: 'file' | 'folder'; name: string; ext?: string } | null>(null);
     const [newFolderMode, setNewFolderMode] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const renameInputRef = useRef<HTMLInputElement>(null);
@@ -340,8 +356,16 @@ const DriveExplorer: React.FC = () => {
     /* ── Rename (optimistic — closes instantly) ── */
     const handleRename = async () => {
         if (!renamingItem) return;
-        const name = renamingItem.name.trim();
+        let name = renamingItem.name.trim();
         if (!name) { setRenamingItem(null); return; }
+
+        // For files, always re-append the original extension
+        if (renamingItem.type === 'file' && renamingItem.ext) {
+            // Strip any extension the user might have typed
+            const dotIdx = name.lastIndexOf('.');
+            if (dotIdx > 0) name = name.substring(0, dotIdx);
+            name = name + '.' + renamingItem.ext;
+        }
 
         // Close the input immediately for instant feedback
         const item = { ...renamingItem };
@@ -430,7 +454,7 @@ const DriveExplorer: React.FC = () => {
                     <div className="w-full flex flex-col gap-1.5">
                         {/* Preview */}
                         {itemType === 'file' && isPreviewable(item.mime_type) && (
-                            <button onClick={() => { setPreviewFile(item); setContextMenu(null); }}
+                            <button onClick={() => { handleOpenPreview(item); setContextMenu(null); }}
                                 className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors">
                                 <Eye className="w-[18px] h-[18px] shrink-0 text-gray-500" />
                                 <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('flowdrive.contextMenu.preview')}</span>
@@ -445,7 +469,18 @@ const DriveExplorer: React.FC = () => {
                             </button>
                         )}
                         {/* Rename */}
-                        <button onClick={() => { setRenamingItem({ id: item.id, type: itemType, name: itemType === 'file' ? item.original_name : item.name }); setContextMenu(null); }}
+                        <button onClick={() => {
+                            if (itemType === 'file') {
+                                const fullName = item.original_name || '';
+                                const dotIdx = fullName.lastIndexOf('.');
+                                const baseName = dotIdx > 0 ? fullName.substring(0, dotIdx) : fullName;
+                                const ext = dotIdx > 0 ? fullName.substring(dotIdx + 1) : '';
+                                setRenamingItem({ id: item.id, type: itemType, name: baseName, ext });
+                            } else {
+                                setRenamingItem({ id: item.id, type: itemType, name: item.name });
+                            }
+                            setContextMenu(null);
+                        }}
                             className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors">
                             <Edit3 className="w-[18px] h-[18px] shrink-0 text-gray-500" />
                             <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('flowdrive.contextMenu.rename')}</span>
@@ -785,21 +820,24 @@ const DriveExplorer: React.FC = () => {
                                                         data-drive-item-type="file"
                                                         className={`group relative bg-white rounded-[3px] p-3 hover:shadow-sm transition-all cursor-pointer ${selectedFiles.has(file.id) ? 'border-[3px] border-[#064771]' : 'border border-gray-200 hover:border-[#064771]/30'}`}
                                                         onClick={() => toggleFileSelect(file.id)}
-                                                        onDoubleClick={() => isPreviewable(file.mime_type) ? setPreviewFile(file) : downloadFile(file.id, file.original_name)}
+                                                        onDoubleClick={() => isPreviewable(file.mime_type) ? handleOpenPreview(file) : downloadFile(file.id, file.original_name)}
                                                         onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item: file, itemType: 'file' }); }}
                                                     >
                                                         <div className="flex items-center gap-2.5 mb-1.5 min-w-0">
                                                             <img src={getFileIconSrc(file.original_name)} alt="" className="w-8 h-8 shrink-0" draggable={false} />
                                                             {renamingItem?.id === file.id ? (
-                                                                <input
-                                                                    ref={renameInputRef}
-                                                                    value={renamingItem.name}
-                                                                    onChange={e => setRenamingItem({ ...renamingItem, name: e.target.value })}
-                                                                    onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null); }}
-                                                                    onBlur={handleRename}
-                                                                    onClick={e => e.stopPropagation()}
-                                                                    className="flex-1 text-sm font-medium text-gray-800 border border-[#064771] rounded-[3px] px-1.5 py-0.5 focus:outline-none max-w-full min-w-0"
-                                                                />
+                                                                <span className="flex items-center gap-0 min-w-0">
+                                                                    <input
+                                                                        ref={renameInputRef}
+                                                                        value={renamingItem.name}
+                                                                        onChange={e => setRenamingItem({ ...renamingItem, name: e.target.value })}
+                                                                        onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null); }}
+                                                                        onBlur={handleRename}
+                                                                        onClick={e => e.stopPropagation()}
+                                                                        className="flex-1 text-sm font-medium text-gray-800 border border-[#064771] rounded-[3px] px-1.5 py-0.5 focus:outline-none max-w-full min-w-0"
+                                                                    />
+                                                                    {renamingItem.ext && <span className="text-sm text-gray-400 shrink-0">.{renamingItem.ext}</span>}
+                                                                </span>
                                                             ) : (
                                                                 <span className="text-sm font-medium text-gray-800 truncate" title={file.original_name}>{file.original_name}</span>
                                                             )}
@@ -913,7 +951,7 @@ const DriveExplorer: React.FC = () => {
                                                         key={file.id}
                                                         className={`group h-14 transition-colors duration-150 cursor-pointer border-b border-[#f1f5f9] ${selectedFiles.has(file.id) ? 'bg-[#EDF8FF]' : 'hover:bg-[#f8fafc]'}`}
                                                         onClick={() => toggleFileSelect(file.id)}
-                                                        onDoubleClick={() => isPreviewable(file.mime_type) ? setPreviewFile(file) : downloadFile(file.id, file.original_name)}
+                                                        onDoubleClick={() => isPreviewable(file.mime_type) ? handleOpenPreview(file) : downloadFile(file.id, file.original_name)}
                                                         onContextMenu={e => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, item: file, itemType: 'file' }); }}
                                                     >
                                                         <td className="px-2 py-3 border-b border-[#f1f5f9] align-middle text-center" style={{ width: 40 }} onClick={e => e.stopPropagation()}>
@@ -926,15 +964,18 @@ const DriveExplorer: React.FC = () => {
                                                                 <div className="flex items-center gap-2.5">
                                                                     <img src={getFileIconSrc(file.original_name)} alt="" className="w-5 h-5 shrink-0" draggable={false} />
                                                                     {renamingItem?.id === file.id ? (
-                                                                        <input
-                                                                            ref={renameInputRef}
-                                                                            value={renamingItem.name}
-                                                                            onChange={e => setRenamingItem({ ...renamingItem, name: e.target.value })}
-                                                                            onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null); }}
-                                                                            onBlur={handleRename}
-                                                                            onClick={e => e.stopPropagation()}
-                                                                            className="text-[14px] font-normal text-gray-900 border border-[#064771] rounded px-1.5 py-0.5 focus:outline-none min-w-0"
-                                                                        />
+                                                                        <span className="flex items-center gap-0 min-w-0">
+                                                                            <input
+                                                                                ref={renameInputRef}
+                                                                                value={renamingItem.name}
+                                                                                onChange={e => setRenamingItem({ ...renamingItem, name: e.target.value })}
+                                                                                onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingItem(null); }}
+                                                                                onBlur={handleRename}
+                                                                                onClick={e => e.stopPropagation()}
+                                                                                className="text-[14px] font-normal text-gray-900 border border-[#064771] rounded px-1.5 py-0.5 focus:outline-none min-w-0"
+                                                                            />
+                                                                            {renamingItem.ext && <span className="text-[14px] text-gray-400 shrink-0">.{renamingItem.ext}</span>}
+                                                                        </span>
                                                                     ) : (
                                                                         <span className="text-[14px] font-normal text-gray-900 truncate tracking-tight" title={file.original_name}>{file.original_name}</span>
                                                                     )}
@@ -1013,12 +1054,13 @@ const DriveExplorer: React.FC = () => {
                         onReplace={() => handleReplaceFile(versionFileId)}
                     />
                 )}
-                {previewFile && (
+                {(previewFile || previewLoading) && (
                     <DriveFilePreview
                         file={previewFile}
-                        previewUrl={getPreviewUrl(previewFile.id)}
-                        onClose={() => setPreviewFile(null)}
-                        onDownload={() => downloadFile(previewFile.id, previewFile.original_name)}
+                        previewUrl={previewBlobUrl}
+                        loading={previewLoading}
+                        onClose={() => { setPreviewFile(null); if (previewBlobUrl) { URL.revokeObjectURL(previewBlobUrl); setPreviewBlobUrl(null); } }}
+                        onDownload={() => previewFile && downloadFile(previewFile.id, previewFile.original_name)}
                     />
                 )}
                 {deleteModal && (

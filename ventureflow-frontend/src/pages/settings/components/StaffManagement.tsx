@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mail, MoreVertical, Eye, Edit2, Trash2, AlertTriangle, X, Briefcase, Users, Target } from 'lucide-react';
 import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
@@ -35,7 +35,8 @@ interface StaffMember {
     designation?: { title: string };
 }
 
-const ITEMS_PER_PAGE = 9;
+const ROW_HEIGHT = 65;
+const TABLE_OVERHEAD = 280; // header + toolbar + padding + pagination bar
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const isNewEntry = (date?: string) => date ? (Date.now() - new Date(date).getTime()) < SEVEN_DAYS_MS : false;
 
@@ -64,6 +65,17 @@ const StaffManagement: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
     const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
+
+    // Viewport-based items per page
+    const calcItemsPerPage = useCallback(() => {
+        return Math.max(5, Math.min(50, Math.floor((window.innerHeight - TABLE_OVERHEAD) / ROW_HEIGHT)));
+    }, []);
+    const [itemsPerPage, setItemsPerPage] = useState(calcItemsPerPage);
+    useEffect(() => {
+        const onResize = () => { setItemsPerPage(calcItemsPerPage()); setCurrentPage(1); };
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [calcItemsPerPage]);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
         key: 'name',
         direction: 'asc'
@@ -307,7 +319,7 @@ const StaffManagement: React.FC = () => {
         impact.target_profiles.length;
 
     return (
-        <div className="h-full flex flex-col bg-white overflow-hidden ">
+        <div className="h-full flex flex-col bg-[#f9fafb] overflow-hidden ">
             <div className="px-8 py-6">
                 {/* Header & Search */}
                 <div className="flex items-center justify-between gap-6">
@@ -343,10 +355,12 @@ const StaffManagement: React.FC = () => {
             </div>
 
             {/* Table Area */}
-            <div className="flex-1 px-8 pb-8 overflow-hidden">
-                <div className="h-full bg-white rounded-[3px] overflow-hidden">
+            <div className="flex-1 overflow-hidden flex flex-col mt-6">
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-1 px-8 pb-8 overflow-hidden">
+                        <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
                     <DataTable
-                        data={filteredStaff.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
+                        data={filteredStaff.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
                         columns={columns}
                         isLoading={isLoading}
                         emptyMessage="No staff members found"
@@ -361,12 +375,14 @@ const StaffManagement: React.FC = () => {
                         onRowClick={(row) => navigate(`/settings/staff/view/${row.id}`)}
                         pagination={{
                             currentPage,
-                            totalPages: Math.ceil(filteredStaff.length / ITEMS_PER_PAGE),
+                            totalPages: Math.ceil(filteredStaff.length / itemsPerPage),
                             totalItems: filteredStaff.length,
-                            itemsPerPage: ITEMS_PER_PAGE,
+                            itemsPerPage: itemsPerPage,
                             onPageChange: setCurrentPage,
                         }}
                     />
+                        </div>
+                    </div>
                 </div>
             </div>
 

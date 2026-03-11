@@ -55,16 +55,10 @@ class EmployeeController extends Controller
                         ->orWhere('employee_id', 'like', "%{$search}%");
                 });
             })
-            ->paginate(10);
+            ->get();
 
         return response()->json([
-            'data' => $employees->items(),
-            'meta' => [
-                'total' => $employees->total(),
-                'current_page' => $employees->currentPage(),
-                'last_page' => $employees->lastPage(),
-                'per_page' => $employees->perPage(),
-            ]
+            'data' => $employees,
         ]);
     }
 

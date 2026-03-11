@@ -49,8 +49,8 @@ class DriveController extends Controller
             ->orderBy('original_name');
 
         if ($search !== '') {
-            $foldersQuery->where('name', 'ILIKE', "%{$search}%");
-            $filesQuery->where('original_name', 'ILIKE', "%{$search}%");
+            $foldersQuery->where('name', 'LIKE', "%{$search}%");
+            $filesQuery->where('original_name', 'LIKE', "%{$search}%");
         }
 
         return response()->json([
@@ -82,8 +82,8 @@ class DriveController extends Controller
             ->orderBy('original_name');
 
         if ($search !== '') {
-            $subfoldersQuery->where('name', 'ILIKE', "%{$search}%");
-            $filesQuery->where('original_name', 'ILIKE', "%{$search}%");
+            $subfoldersQuery->where('name', 'LIKE', "%{$search}%");
+            $filesQuery->where('original_name', 'LIKE', "%{$search}%");
         }
 
         // Build breadcrumb trail
@@ -112,14 +112,14 @@ class DriveController extends Controller
         }
 
         $folders = DriveFolder::forProspect($type, $prospectId)
-            ->where('name', 'ILIKE', "%{$q}%")
+            ->where('name', 'LIKE', "%{$q}%")
             ->with('creator:id,name')
             ->orderBy('name')
             ->limit(50)
             ->get();
 
         $files = DriveFile::forProspect($type, $prospectId)
-            ->where('original_name', 'ILIKE', "%{$q}%")
+            ->where('original_name', 'LIKE', "%{$q}%")
             ->with('uploader:id,name')
             ->orderBy('original_name')
             ->limit(50)

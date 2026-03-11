@@ -202,9 +202,10 @@ export function useProspectDrive(type: 'investor' | 'target', prospectId: string
         }
     }, []);
 
-    const getPreviewUrl = useCallback((fileId: string) => {
-        const token = localStorage.getItem('auth_token');
-        return `${api.defaults.baseURL}/api/drive/file/${fileId}/preview${token ? `?token=${token}` : ''}`;
+    const fetchPreviewBlob = useCallback(async (fileId: string): Promise<string> => {
+        const res = await api.get(`/api/drive/file/${fileId}/preview`, { responseType: 'blob' });
+        const blob = new Blob([res.data], { type: res.headers['content-type'] || 'application/octet-stream' });
+        return URL.createObjectURL(blob);
     }, []);
 
     /* ── Upload (standard for small files, chunked for large) ── */
@@ -409,7 +410,7 @@ export function useProspectDrive(type: 'investor' | 'target', prospectId: string
         folders, files, breadcrumbs, loading, uploads, uploadAggregate,
         fetchRoot, fetchFolder, searchAll,
         createFolder, renameFolder, deleteFolder,
-        renameFile, deleteFile, downloadFile, getPreviewUrl,
+        renameFile, deleteFile, downloadFile, fetchPreviewBlob,
         uploadFiles, clearUploads,
         replaceFile, fetchVersions, downloadVersion,
         fetchComments, addComment, deleteComment,

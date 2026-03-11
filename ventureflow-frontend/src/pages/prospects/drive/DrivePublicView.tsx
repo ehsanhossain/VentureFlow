@@ -15,7 +15,9 @@ import { formatFileSize, getFileIconSrc } from './driveUtils';
  * Uses plain axios (not the auth-configured instance) for public endpoints.
  */
 
-const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+// Normalize API base: if it's just "/" (production), use "" to avoid "//api/..." double-slash
+const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+const apiBase = rawBase === '/' ? '' : rawBase;
 
 interface SharedItem {
     type: 'file' | 'folder';
@@ -23,6 +25,27 @@ interface SharedItem {
     size?: number;
     mime_type?: string;
     files?: { id: string; original_name: string; size: number; mime_type: string }[];
+}
+
+/** Normalize the nested API response into a flat SharedItem */
+function normalizeSharedResponse(data: any): SharedItem {
+    if (data.type === 'file' && data.file) {
+        return {
+            type: 'file',
+            name: data.file.name || data.file.original_name || 'File',
+            size: data.file.size,
+            mime_type: data.file.mime_type,
+        };
+    }
+    if (data.type === 'folder' && data.folder) {
+        return {
+            type: 'folder',
+            name: data.folder.name || 'Folder',
+            files: (data.files || []).map((f: any) => ({ id: f.id, original_name: f.original_name, size: f.size, mime_type: f.mime_type })),
+        };
+    }
+    // Fallback — if the response already has a flat shape
+    return data as SharedItem;
 }
 
 const DrivePublicView: React.FC = () => {
@@ -43,7 +66,9 @@ const DrivePublicView: React.FC = () => {
                 if (res.data.requires_password) {
                     setNeedsPassword(true);
                 } else {
-                    setItem(res.data);
+                    const normalized = normalizeSharedResponse(res.data);
+                    setItem(normalized);
+                    document.title = normalized.name + ' — CloudFlow';
                 }
             } catch (err: any) {
                 setError(err?.response?.data?.message || t('flowdrive.publicView.linkNoLongerAvailable'));
@@ -60,8 +85,10 @@ const DrivePublicView: React.FC = () => {
         setPasswordError(null);
         try {
             const res = await axios.post(`${apiBase}/api/drive/shared/${token}/verify`, { password });
-            setItem(res.data);
+            const normalized = normalizeSharedResponse(res.data);
+            setItem(normalized);
             setNeedsPassword(false);
+            document.title = normalized.name + ' — CloudFlow';
         } catch (err: any) {
             setPasswordError(err?.response?.data?.message || t('flowdrive.publicView.incorrectPassword'));
         } finally {
