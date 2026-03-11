@@ -6,7 +6,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, ArrowLeft, Copy, CheckCircle } from 'lucide-react';
+import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, Copy, CheckCircle } from 'lucide-react';
+import BackButton from '../../../components/BackButton';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { Country, Dropdown } from '../../prospects/components/Dropdown';
@@ -57,6 +58,7 @@ const CreatePartner: React.FC = () => {
         email: '',
         password: '',
         partner_id: 'XX-P-XXX',
+        details: '',
     });
 
     useEffect(() => {
@@ -114,6 +116,7 @@ const CreatePartner: React.FC = () => {
                 email: user?.email || '',
                 password: '',
                 partner_id: partner.partner_id || '',
+                details: overview?.details || '',
             });
 
             // Find and set the country
@@ -197,6 +200,7 @@ const CreatePartner: React.FC = () => {
                 name: formData.name,
                 email: formData.email,
                 country: countryCode,
+                details: formData.details,
             };
 
             if (formData.password) {
@@ -251,14 +255,7 @@ const CreatePartner: React.FC = () => {
         return (
             <div className="flex flex-col h-full min-h-screen bg-white ">
                 <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
-                    <button
-                        type="button"
-                        className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
-                        onClick={() => navigate('/settings/partners')}
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back</span>
-                    </button>
+                    <BackButton to="/settings/partners" />
                     <h1 className="text-xl md:text-2xl font-medium text-gray-900">
                         {isEditing ? 'Edit Partner' : 'Create Partner'}
                     </h1>
@@ -297,14 +294,7 @@ const CreatePartner: React.FC = () => {
         <div className="flex flex-col h-full min-h-screen bg-white ">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
-                <button
-                    type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
-                    onClick={() => navigate('/settings/partners')}
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                </button>
+                <BackButton to="/settings/partners" />
                 <h1 className="text-xl md:text-2xl font-medium text-gray-900">
                     {isEditing ? 'Edit Partner' : 'Create Partner'}
                 </h1>
@@ -426,6 +416,23 @@ const CreatePartner: React.FC = () => {
                                         </div>
                                         <p className="text-xs text-gray-400 mt-1">Auto-generated secure password</p>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ═══ Section 3: Project Details ═══ */}
+                        <div>
+                            <SectionHeader title="Project Details" />
+                            <div className="flex flex-col gap-6">
+                                <div>
+                                    <FieldLabel text="Details" />
+                                    <textarea
+                                        value={formData.details}
+                                        onChange={(e) => handleChange('details', e.target.value)}
+                                        rows={5}
+                                        className={`${inputClass} h-auto resize-y min-h-[120px]`}
+                                        placeholder="Enter project details, notes, or description about this partner..."
+                                    />
                                 </div>
                             </div>
                         </div>

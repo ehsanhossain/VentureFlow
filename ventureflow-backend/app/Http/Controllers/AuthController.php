@@ -31,8 +31,10 @@ class AuthController extends Controller
         } else {
             // Attempt to resolve Partner ID to User Email
             $partner = \App\Models\Partner::where('partner_id', $input)->first();
-            if ($partner && $partner->user_id) {
-                $user = \App\Models\User::find($partner->user_id);
+            if ($partner) {
+                // Try pivot table first (primary user), fallback to legacy user_id
+                $primaryUser = $partner->primaryUser()->first();
+                $user = $primaryUser ?? ($partner->user_id ? \App\Models\User::find($partner->user_id) : null);
                 if ($user) {
                     $credentials['email'] = $user->email;
                 } else {
@@ -84,7 +86,13 @@ class AuthController extends Controller
     public function user(Request $request) {
         $user = $request->user();
         $employee = \App\Models\Employee::where('user_id', $user->id)->first();
-        $partner = \App\Models\Partner::with('partnerOverview.country')->where('user_id', $user->id)->first();
+
+        // Look up partner via pivot table first, fallback to legacy user_id column
+        $partner = \App\Models\Partner::with('partnerOverview.country')
+            ->whereHas('users', fn($q) => $q->where('users.id', $user->id))
+            ->first()
+            ?? \App\Models\Partner::with('partnerOverview.country')->where('user_id', $user->id)->first();
+
         $role = $user->getRoleNames()->first();
         $isPartner = $role === 'partner' || $user->is_partner === true;
         

@@ -21,6 +21,7 @@ export interface AuthContextType {
   user: User | null;
   loading: boolean;
   isPartner: boolean;
+  isStaff: boolean;
   role: string | null;
   partner: any | null;
   employee: any | null;
@@ -37,9 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [employee, setEmployee] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Derived state for partner check
+  // Derived state for role checks
   const isPartner = Boolean(user?.role === 'partner' || user?.is_partner);
   const role = user?.role || null;
+  const isStaff = Boolean(user && role !== 'System Admin' && !isPartner);
 
   const refreshUser = async () => {
     const token = localStorage.getItem("auth_token");
@@ -133,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isPartner, role, partner, employee, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, isPartner, isStaff, role, partner, employee, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

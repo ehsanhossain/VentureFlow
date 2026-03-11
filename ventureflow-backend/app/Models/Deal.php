@@ -160,4 +160,34 @@ class Deal extends Model
     {
         return $this->morphMany(ActivityLog::class, 'loggable');
     }
+
+    public function stageDeadlines(): HasMany
+    {
+        return $this->hasMany(DealStageDeadline::class)->orderBy('start_date');
+    }
+
+    /**
+     * Get the deadline record for the deal's current stage.
+     */
+    public function getCurrentStageDeadlineAttribute()
+    {
+        return $this->stageDeadlines()
+            ->where('stage_code', $this->stage_code)
+            ->where('pipeline_type', $this->pipeline_type ?? 'buyer')
+            ->first();
+    }
+
+    /**
+     * Auto-sync target_close_date from the last stage's end_date.
+     */
+    public function syncTargetCloseDate(): void
+    {
+        $lastDeadline = $this->stageDeadlines()
+            ->orderBy('end_date', 'desc')
+            ->first();
+
+        if ($lastDeadline) {
+            $this->update(['target_close_date' => $lastDeadline->end_date]);
+        }
+    }
 }

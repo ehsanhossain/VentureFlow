@@ -83,4 +83,16 @@ class Investor extends Model
     {
         return $this->morphMany(ActivityLog::class, 'loggable');
     }
+
+    /**
+     * Resolve route binding: support both numeric ID and project code (buyer_id).
+     * Allows URLs like /prospects/investor/JP-B-03 and /prospects/investor/869.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+        return $this->where('buyer_id', $value)->firstOrFail();
+    }
 }

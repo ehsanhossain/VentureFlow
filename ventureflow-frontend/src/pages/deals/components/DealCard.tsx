@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download, Pencil } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
@@ -18,10 +18,11 @@ interface DealCardProps {
     onMove?: (deal: Deal, direction: 'forward' | 'backward') => void;
     onMarkLost?: (deal: Deal) => void;
     onDelete?: (deal: Deal) => void;
+    onEdit?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
 }
 
-const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, onDelete, pipelineView = 'buyer' }: DealCardProps) => {
+const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer' }: DealCardProps) => {
     const { attributes, listeners, setNodeRef, isDragging: isBeingDragged } = useDraggable({
         id: deal.id,
     });
@@ -204,6 +205,13 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                         </button>
                         {showMenu && (
                             <div className="absolute right-0 mt-1 w-32 bg-white border rounded shadow-lg z-50 py-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onEdit?.(deal); setShowMenu(false); }}
+                                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 flex items-center gap-2"
+                                >
+                                    <Pencil className="w-3 h-3 text-gray-400" />
+                                    Edit Deal
+                                </button>
                                 {deal.status === 'active' && (
                                     <>
                                         <button
@@ -295,7 +303,34 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                         )}
                         <span className="text-sm font-medium text-[#111827] leading-5">{dealValue}</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                        {/* Stage Deadline Badge */}
+                        {(() => {
+                            const currentDl = deal.stage_deadlines?.find(
+                                dl => dl.stage_code === deal.stage_code && !dl.is_completed
+                            );
+                            if (!currentDl?.end_date) return null;
+                            const now = new Date();
+                            now.setHours(0, 0, 0, 0);
+                            const end = new Date(currentDl.end_date);
+                            end.setHours(0, 0, 0, 0);
+                            const daysUntil = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            if (daysUntil < 0) {
+                                return (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700">
+                                        Overdue
+                                    </span>
+                                );
+                            }
+                            if (daysUntil <= 3) {
+                                return (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
+                                        Due Soon
+                                    </span>
+                                );
+                            }
+                            return null;
+                        })()}
                         <Download className="w-4 h-4" style={{ color: priorityInfo.color }} />
                         <span
                             className="text-xs font-medium"

@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import Breadcrumb from '../../../assets/breadcrumb';
 import Frame from './svg/Frame_1000000921.svg';
 import ArrowIcon from '../../../assets/svg/ArrowIcon';
+import BackButton from '../../../components/BackButton';
 import { useNavigate, useParams } from 'react-router-dom';
 import Pagination from '../../../components/Pagination';
 import clsx from 'clsx';
@@ -214,38 +215,7 @@ const EmployeeDetails: React.FC = () => {
         </div>
         <div className="flex items-center self-stretch">
           <div className="flex flex-col md:flex-row items-center gap-2.5 w-full md:w-[447px]">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="flex flex-col flex-shrink-0 justify-center items-center gap-1 py-1 px-3 rounded bg-[#064771]"
-            >
-              <div className="flex items-center gap-1">
-                <svg
-                  width={14}
-                  height={11}
-                  viewBox="0 0 14 11"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M3.66681 9.85943H9.28387C11.2247 9.85943 12.8003 8.2839 12.8003 6.34304C12.8003 4.40217 11.2247 2.82666 9.28387 2.82666H1.55469"
-                    stroke="white"
-                    strokeWidth="1.56031"
-                    strokeMiterlimit={10}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M3.17526 4.59629L1.38281 2.79245L3.17526 1"
-                    stroke="white"
-                    strokeWidth="1.56031"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span className="text-white text-[.8125rem] font-semibold">Back</span>
-              </div>
-            </button>
+            <BackButton />
             <div className="flex items-start w-full">
               <Breadcrumb links={breadcrumbLinks} />
             </div>

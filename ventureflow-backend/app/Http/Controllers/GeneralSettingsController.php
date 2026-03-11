@@ -29,10 +29,12 @@ class GeneralSettingsController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'default_currency' => 'nullable|string|max:10',
-            'timezone'         => 'nullable|string|max:255',
-            'date_format'      => 'nullable|string|max:20',
-            'language'         => 'nullable|string|max:10',
+            'default_currency'  => 'nullable|string|max:10',
+            'timezone'          => 'nullable|string|max:255',
+            'date_format'       => 'nullable|string|max:20',
+            'language'          => 'nullable|string|max:10',
+            'calendar_country'  => 'nullable|string|max:5',
+            'weekend_days'      => 'nullable|string|max:50',
         ]);
 
         foreach ($validated as $key => $value) {

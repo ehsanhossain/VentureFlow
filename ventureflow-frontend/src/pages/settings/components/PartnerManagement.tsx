@@ -20,6 +20,7 @@ interface PartnerUser {
     id: number;
     partner_id: string;
     status: string;
+    created_at?: string;
     user?: {
         name: string;
         email: string;
@@ -36,11 +37,16 @@ interface PartnerUser {
     };
 }
 
+const ITEMS_PER_PAGE = 9;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const isNewEntry = (date?: string) => date ? (Date.now() - new Date(date).getTime()) < SEVEN_DAYS_MS : false;
+
 const PartnerManagement: React.FC = () => {
     const { t } = useTranslation();
     const [partners, setPartners] = useState<PartnerUser[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
     const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
         key: 'name',
@@ -163,6 +169,9 @@ const PartnerManagement: React.FC = () => {
                             {row.user?.name || row.partner_overview?.reg_name || t('common.unnamed')}
                         </div>
                     </div>
+                    {isNewEntry(row.created_at) && (
+                        <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', flexShrink: 0 }}>New</span>
+                    )}
                 </div>
             ),
             width: 250,
@@ -286,7 +295,7 @@ const PartnerManagement: React.FC = () => {
                         </h1>
                         <DataTableSearch
                             value={searchQuery}
-                            onChange={setSearchQuery}
+                            onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
                             placeholder={t('settings.partners.searchPlaceholder')}
                         />
                     </div>
@@ -310,7 +319,7 @@ const PartnerManagement: React.FC = () => {
                     <div className="flex-1 px-8 pb-8 overflow-hidden">
                         <div className="h-full bg-white rounded-[3px] border border-gray-100 overflow-hidden">
                             <DataTable
-                                data={filteredPartners}
+                                data={filteredPartners.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
                                 columns={columns}
                                 isLoading={loading}
                                 emptyMessage={t('settings.partners.noPartners')}
@@ -320,6 +329,13 @@ const PartnerManagement: React.FC = () => {
                                 actionsColumn={actionsColumn}
                                 actionsColumnWidth={60}
                                 onRowClick={(row) => navigate(`/settings/partners/${row.id}`)}
+                                pagination={{
+                                    currentPage,
+                                    totalPages: Math.ceil(filteredPartners.length / ITEMS_PER_PAGE),
+                                    totalItems: filteredPartners.length,
+                                    itemsPerPage: ITEMS_PER_PAGE,
+                                    onPageChange: setCurrentPage,
+                                }}
                             />
                         </div>
                     </div>

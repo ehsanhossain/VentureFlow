@@ -38,7 +38,33 @@ const Settings: React.FC = () => {
       ];
     }
 
-    // Admin/Staff see full menu
+    if (!isAdmin) {
+      // Staff see: General, My Profile, Currency (view-only), Industries
+      return [
+        {
+          label: t('navigation.general', 'General'),
+          path: '/settings/general',
+          icon: SettingsIcon,
+        },
+        {
+          label: t('profile.myProfile', 'My Profile'),
+          path: '/settings/profile',
+          icon: User,
+        },
+        {
+          label: t('navigation.currency', 'Currency'),
+          path: '/settings/currency',
+          icon: CurrencyIcon,
+        },
+        {
+          label: t('navigation.industries', 'Industries'),
+          path: '/settings/industries',
+          icon: Factory,
+        },
+      ];
+    }
+
+    // Admin sees full menu
     return [
       {
         label: t('navigation.general', 'General'),
@@ -75,12 +101,11 @@ const Settings: React.FC = () => {
         path: '/settings/fee-structure',
         icon: DollarSign,
       },
-      // Audit Log - only visible to admins
-      ...(isAdmin ? [{
+      {
         label: t('navigation.auditLog', 'Audit Log'),
         path: '/settings/audit-log',
         icon: History,
-      }] : []),
+      },
     ];
   };
 

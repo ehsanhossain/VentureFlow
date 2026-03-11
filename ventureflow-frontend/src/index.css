@@ -305,6 +305,7 @@ body {
 
 /* ============================================
    REACT-DATE-RANGE CUSTOM STYLING
+   Pill-shaped edges · Weekend/Holiday aware
    Matches VentureFlow design system
    ============================================ */
 .ventureflow-date-range {
@@ -335,9 +336,10 @@ body {
   padding: 4px 2px;
 }
 
+/* Nav buttons — pill shape */
 .ventureflow-date-range .rdrNextPrevButton {
   background: #f3f4f6;
-  border-radius: 3px;
+  border-radius: 9999px;
   width: 28px;
   height: 28px;
 }
@@ -368,6 +370,7 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* Uniform day cell height */
 .ventureflow-date-range .rdrDay {
   height: 36px;
   line-height: 36px;
@@ -384,29 +387,154 @@ body {
   color: #d1d5db;
 }
 
+/* ── Weekend days — always light gray text (outside and inside range) ── */
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrDayNumber [data-weekend] {
+  color: #c0c4ca !important;
+}
+
 .ventureflow-date-range .rdrDayToday .rdrDayNumber span::after {
   background: #064771;
 }
 
-.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrInRange~.rdrDayNumber span,
+/* ── Today indicator lighter when selected as start/end edge ── */
+.ventureflow-date-range .rdrDayToday .rdrStartEdge~.rdrDayNumber span::after,
+.ventureflow-date-range .rdrDayToday .rdrEndEdge~.rdrDayNumber span::after {
+  background: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── Pill-shaped start/end edges ── */
+.ventureflow-date-range .rdrStartEdge {
+  border-radius: 9999px 0 0 9999px !important;
+}
+
+.ventureflow-date-range .rdrEndEdge {
+  border-radius: 0 9999px 9999px 0 !important;
+}
+
+.ventureflow-date-range .rdrStartEdge.rdrEndEdge {
+  border-radius: 9999px !important;
+}
+
+/* ── In-range: light blue bg, brand-color workday text ── */
+.ventureflow-date-range .rdrInRange {
+  background: #E1F7FF;
+}
+
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrInRange~.rdrDayNumber span {
+  color: #064771;
+}
+
 .ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrStartEdge~.rdrDayNumber span,
 .ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrEndEdge~.rdrDayNumber span {
   color: #fff;
 }
 
-.ventureflow-date-range .rdrStartEdge,
-.ventureflow-date-range .rdrEndEdge {
-  border-radius: 3px;
+/* ── Weekend text in range — lighter gray (inherited from standalone rule above) ── */
+/* NOTE: standalone rule already handles all weekends, this is kept for specificity */
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrInRange~.rdrDayNumber [data-weekend] {
+  color: #c0c4ca !important;
 }
 
-.ventureflow-date-range .rdrInRange {
-  background: rgba(6, 71, 113, 0.12);
+/* ── Holiday dot indicator ── */
+.ventureflow-date-range .rdrDayNumber [data-holiday] {
+  position: relative;
 }
 
+.ventureflow-date-range .rdrDayNumber [data-holiday]::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #ef4444;
+  border-radius: 50%;
+}
+
+/* ── Holiday text in range — lighter gray ── */
+.ventureflow-date-range .rdrDay:not(.rdrDayPassive) .rdrInRange~.rdrDayNumber [data-holiday] {
+  color: #c0c4ca !important;
+}
+
+/* Hover ring */
 .ventureflow-date-range .rdrDayHovered .rdrDayNumber::after {
   border-color: #064771;
 }
 
+/* Hide default date display */
 .ventureflow-date-range .rdrDateDisplayWrapper {
   display: none;
+}
+
+/* ── Compact variant for stage timeline rows ── */
+.ventureflow-date-range-compact {
+  min-width: 260px;
+}
+
+.ventureflow-date-range-compact .rdrCalendarWrapper {
+  font-size: 12px;
+}
+
+.ventureflow-date-range-compact .rdrMonth {
+  width: 260px;
+  padding: 0 6px 6px;
+}
+
+.ventureflow-date-range-compact .rdrDay {
+  height: 30px;
+  line-height: 30px;
+}
+
+.ventureflow-date-range-compact .rdrDayNumber span {
+  font-size: 12px;
+}
+
+.ventureflow-date-range-compact .rdrMonthAndYearWrapper {
+  padding: 6px 4px 2px;
+}
+
+.ventureflow-date-range-compact .rdrWeekDay {
+  font-size: 10px;
+}
+
+.ventureflow-date-range-compact .rdrNextPrevButton {
+  width: 24px;
+  height: 24px;
+}
+
+/* ── Quick-duration shortcut panel ── */
+.vf-date-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-right: 1px solid #e5e7eb;
+  min-width: 110px;
+  background: #fafbfc;
+}
+
+.vf-date-shortcuts button {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: #4b5563;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.vf-date-shortcuts button:hover {
+  background: #E1F7FF;
+  color: #064771;
+}
+
+.vf-date-shortcuts button.active {
+  background: #064771;
+  color: #fff;
 }

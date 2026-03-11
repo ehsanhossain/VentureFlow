@@ -27,6 +27,7 @@ import {
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
+import EditDealModal from './components/EditDealModal';
 import DealExpandedPreview from './components/DealExpandedPreview';
 import MonetizationConfirmModal from './components/MonetizationConfirmModal';
 import FinalSettlementModal from './components/FinalSettlementModal';
@@ -69,6 +70,16 @@ export interface Deal {
     investment_condition?: string;
     updated_at: string;
     has_new_activity?: boolean;
+    stage_deadlines?: Array<{
+        id: number;
+        deal_id: number;
+        stage_code: string;
+        pipeline_type: 'buyer' | 'seller';
+        start_date: string;
+        end_date: string;
+        is_completed: boolean;
+        completed_at: string | null;
+    }>;
     onChatClick?: (deal: Deal) => void;
     unread_comment_count?: number;
     buyer?: {
@@ -149,6 +160,9 @@ const DealPipeline = () => {
 
     // Delete deal modal state
     const [deleteDeal, setDeleteDeal] = useState<Deal | null>(null);
+
+    // Edit deal modal state
+    const [editDeal, setEditDeal] = useState<Deal | null>(null);
 
     // Derive current user name from auth context
     const getCurrentUserName = () => {
@@ -836,6 +850,7 @@ const DealPipeline = () => {
                                                     onMove={handleMove}
                                                     onMarkLost={setLostDeal}
                                                     onDelete={setDeleteDeal}
+                                                    onEdit={setEditDeal}
                                                     pipelineView={pipelineView}
                                                 />
                                             ))}
@@ -933,9 +948,33 @@ const DealPipeline = () => {
                                 handleMove(selectedDeal, direction);
                                 setSelectedDeal(null);
                             }}
+                            onEdit={(deal) => {
+                                setSelectedDeal(null);
+                                setEditDeal(deal);
+                            }}
+                            onMarkLost={(deal) => {
+                                setSelectedDeal(null);
+                                setLostDeal(deal);
+                            }}
+                            onDelete={(deal) => {
+                                setSelectedDeal(null);
+                                setDeleteDeal(deal);
+                            }}
                         />
                     </div>
                 </div>
+            )}
+
+            {editDeal && (
+                <EditDealModal
+                    deal={editDeal}
+                    onClose={() => setEditDeal(null)}
+                    onUpdated={() => {
+                        setEditDeal(null);
+                        fetchDeals();
+                    }}
+                    pipelineView={pipelineView}
+                />
             )}
 
             {/* Lost Remarks Modal */}

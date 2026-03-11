@@ -630,8 +630,8 @@ export const InvestorRegistration: React.FC = () => {
             showAlert({ type: 'success', message: `Investor ${isDraft ? 'draft ' : ''}saved successfully` });
 
             if (id) {
-                // Editing an existing investor → go to detail
-                navigate(`/prospects/investor/${id}`);
+                // Editing an existing investor → go to detail using project code
+                navigate(`/prospects/investor/${data.projectCode || id}`);
             } else {
                 // New investor created → go to the investor table
                 navigate('/prospects?tab=investors');

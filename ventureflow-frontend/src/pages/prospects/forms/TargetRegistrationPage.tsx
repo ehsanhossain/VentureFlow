@@ -4,12 +4,11 @@
  */
 
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import BackButton from '../../../components/BackButton';
 import { TargetRegistration } from './TargetRegistration';
 
 const TargetRegistrationPage: React.FC = () => {
-    const navigate = useNavigate();
     const { id } = useParams();
     const isEdit = !!id;
 
@@ -17,14 +16,7 @@ const TargetRegistrationPage: React.FC = () => {
         <div className="flex flex-col h-full min-h-screen bg-white">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
-                <button
-                    type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
-                    onClick={() => navigate('/prospects?tab=targets')}
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                </button>
+                <BackButton to="/prospects?tab=targets" />
                 <h1 className="text-xl md:text-2xl font-medium text-gray-900">
                     {isEdit ? 'Edit Target' : 'Add Target'}
                 </h1>

@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, CheckCircle } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import loginImage from '../../assets/image/ventureflow_login.png';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from '../../components/Alert';
@@ -164,21 +165,7 @@ const ForgotPassword = () => {
                                 </button>
 
                                 {/* Back */}
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/login')}
-                                    className="flex items-center justify-center gap-2 border-none bg-transparent cursor-pointer"
-                                    style={{
-                                        color: '#064771',
-                                        fontSize: 14,
-                                        fontWeight: 500,
-                                        fontFamily: 'Inter, sans-serif',
-                                        transition: 'opacity 0.2s',
-                                    }}
-                                >
-                                    <ArrowLeft size={16} />
-                                    Back to Sign In
-                                </button>
+                                <BackButton to="/login" label="Back to Sign In" />
                             </form>
                         ) : (
                             /* Email sent success state */

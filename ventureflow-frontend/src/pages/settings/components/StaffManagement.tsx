@@ -22,6 +22,7 @@ interface StaffMember {
     work_email: string;
     contact_number?: string;
     joining_date?: string;
+    created_at?: string;
     image?: string;
     employee_status?: string;
     user?: {
@@ -33,6 +34,10 @@ interface StaffMember {
     department?: { name: string };
     designation?: { title: string };
 }
+
+const ITEMS_PER_PAGE = 9;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const isNewEntry = (date?: string) => date ? (Date.now() - new Date(date).getTime()) < SEVEN_DAYS_MS : false;
 
 interface DeletionImpact {
     employee_id: number;
@@ -56,6 +61,7 @@ const StaffManagement: React.FC = () => {
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
     const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
     const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' | null }>({
@@ -210,6 +216,9 @@ const StaffManagement: React.FC = () => {
                     <div className="overflow-hidden">
                         <div className="font-medium text-gray-900 truncate">{row.first_name} {row.last_name}</div>
                     </div>
+                    {isNewEntry(row.created_at || row.joining_date) && (
+                        <span style={{ background: '#064771', color: 'white', fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', lineHeight: '16px', flexShrink: 0 }}>New</span>
+                    )}
                 </div>
             ),
             width: 280,
@@ -308,7 +317,7 @@ const StaffManagement: React.FC = () => {
                         </h1>
                         <DataTableSearch
                             value={searchQuery}
-                            onChange={setSearchQuery}
+                            onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
                             placeholder="Search staff members..."
                         />
                     </div>
@@ -337,7 +346,7 @@ const StaffManagement: React.FC = () => {
             <div className="flex-1 px-8 pb-8 overflow-hidden">
                 <div className="h-full bg-white rounded-[3px] overflow-hidden">
                     <DataTable
-                        data={filteredStaff}
+                        data={filteredStaff.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)}
                         columns={columns}
                         isLoading={isLoading}
                         emptyMessage="No staff members found"
@@ -350,6 +359,13 @@ const StaffManagement: React.FC = () => {
                         actionsColumn={actionsColumn}
                         actionsColumnWidth={60}
                         onRowClick={(row) => navigate(`/settings/staff/view/${row.id}`)}
+                        pagination={{
+                            currentPage,
+                            totalPages: Math.ceil(filteredStaff.length / ITEMS_PER_PAGE),
+                            totalItems: filteredStaff.length,
+                            itemsPerPage: ITEMS_PER_PAGE,
+                            onPageChange: setCurrentPage,
+                        }}
                     />
                 </div>
             </div>

@@ -9,7 +9,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink, Copy, Check, Camera, Loader } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, Copy, Check, Camera, Loader, FolderClosed, FileText } from 'lucide-react';
+import cloudflowBrandIcon from '../../../assets/icons/cloudflow-brand.svg';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { formatCurrency } from '../../../utils/formatters';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
@@ -82,6 +83,7 @@ const InvestorDetails: React.FC = () => {
   const [allowedFields, setAllowedFields] = useState<any>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
+  const [driveStats, setDriveStats] = useState<{ folder_count: number; file_count: number } | null>(null);
 
   // Avatar upload
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +144,14 @@ const InvestorDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
+
+    // Fetch drive stats (non-blocking)
+    try {
+      const statsRes = await api.get(`/api/drive/investor/${id}/stats`);
+      setDriveStats(statsRes.data);
+    } catch {
+      // Drive stats are optional — fail silently
+    }
   };
 
   useEffect(() => {
@@ -176,7 +186,7 @@ const InvestorDetails: React.FC = () => {
         <p className="text-gray-500 text-lg">Unable to load investor details. Please go back and try again.</p>
         <button
           onClick={() => navigate('/prospects?tab=investors')}
-          className="px-4 py-2 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+          className="px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
         >
           Back to Investors
         </button>
@@ -357,7 +367,7 @@ const InvestorDetails: React.FC = () => {
             {/* Back Button */}
             <button
               onClick={() => navigate('/prospects?tab=investors')}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
@@ -374,7 +384,7 @@ const InvestorDetails: React.FC = () => {
           {!isPartner && (
             <button
               onClick={() => navigate(`/prospects/edit-investor/${id}`)}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded-[3px] text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -436,7 +446,7 @@ const InvestorDetails: React.FC = () => {
                 <div className="flex flex-col justify-between">
                   <div className="flex items-center gap-3">
                     {!isPartner && <span className="text-2xl font-medium text-black capitalize">{companyName}</span>}
-                    <span className={`px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] ${isPartner ? 'text-2xl' : 'text-base'} font-medium`}>
+                    <span className={`px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-[#064771] ${isPartner ? 'text-2xl' : 'text-base'} font-medium`}>
                       {projectCode}
                     </span>
                   </div>
@@ -491,7 +501,7 @@ const InvestorDetails: React.FC = () => {
                           <button
                             type="button"
                             title="Copy website URL"
-                            className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
+                            className="relative p-0.5 rounded-[3px] hover:bg-gray-100 transition-colors"
                             onClick={() => {
                               navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
                               setCopiedField('website');
@@ -504,7 +514,7 @@ const InvestorDetails: React.FC = () => {
                               <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
                             )}
                             {copiedField === 'website' && (
-                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded-[3px] shadow whitespace-nowrap">Copied!</span>
                             )}
                           </button>
                         </div>
@@ -531,7 +541,7 @@ const InvestorDetails: React.FC = () => {
                       {companyIndustries.map((ind, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1.5 bg-[#F3F4F6] rounded text-sm font-medium text-gray-700"
+                          className="px-3 py-1.5 bg-[#F3F4F6] rounded-[3px] text-sm font-medium text-gray-700"
                         >
                           {ind.name}
                         </span>
@@ -567,7 +577,7 @@ const InvestorDetails: React.FC = () => {
               <h2 className="text-base font-medium text-gray-500 capitalize">Project Details</h2>
               <div className="h-px bg-[#E5E7EB]" />
               <RestrictedField allowed={allowedFields} section="companyOverview" item="details" bypass={isPartner}>
-                <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
+                <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded-[3px] border border-[#F3F4F6] whitespace-pre-wrap">
                   {projectDetails}
                 </p>
               </RestrictedField>
@@ -588,10 +598,12 @@ const InvestorDetails: React.FC = () => {
                     {targetCountries.length > 0 ? targetCountries.map((country, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-2 h-7 px-1 bg-[#F3F4F6] rounded"
+                        className="flex items-center gap-2 h-7 px-2 bg-[#F3F4F6] rounded-[3px]"
                       >
-                        {(country.flagSrc || country.svg_icon_url) && (
+                        {(country.flagSrc || country.svg_icon_url) ? (
                           <img src={country.flagSrc || country.svg_icon_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                        ) : (
+                          <Globe className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         )}
                         <span className="text-sm font-medium text-gray-700">{country.name}</span>
                       </div>
@@ -634,7 +646,7 @@ const InvestorDetails: React.FC = () => {
                     {industries.length > 0 ? industries.map((ind, idx) => (
                       <div
                         key={idx}
-                        className="h-8 px-1 bg-[#F3F4F6] rounded flex items-center"
+                        className="h-8 px-1 bg-[#F3F4F6] rounded-[3px] flex items-center"
                       >
                         <span className="text-sm font-normal text-gray-700">{ind.name}</span>
                       </div>
@@ -675,7 +687,7 @@ const InvestorDetails: React.FC = () => {
                   {contacts.length > 0 ? contacts.map((contact, idx) => (
                     <div
                       key={idx}
-                      className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded"
+                      className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded-[3px]"
                     >
                       <div className="flex flex-col gap-4">
                         {/* Contact Header */}
@@ -690,7 +702,7 @@ const InvestorDetails: React.FC = () => {
                             </div>
                           </div>
                           {contact.isPrimary && (
-                            <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-xs font-medium text-[#064771]">
+                            <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-xs font-medium text-[#064771]">
                               Primary
                             </span>
                           )}
@@ -735,31 +747,88 @@ const InvestorDetails: React.FC = () => {
         <div className="w-[287px] shrink-0 space-y-10">
           {/* 1. Open Investor Profile Button */}
           {investorProfileLink && (
-            <a
-              href={investorProfileLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between w-full p-2 bg-[#064771] rounded text-white hover:bg-[#053a5c] transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g clipPath="url(#clip0_inv_profile)">
-                    <path d="M20.25 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V16.5C3 16.9142 3.33579 17.25 3.75 17.25H20.25C20.6642 17.25 21 16.9142 21 16.5V5.25C21 4.83579 20.6642 4.5 20.25 4.5Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M15 17.25L18 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M9 17.25L6 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12 4.5V2.25" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </g>
-                  <defs>
-                    <clipPath id="clip0_inv_profile">
-                      <rect width="24" height="24" fill="white" />
-                    </clipPath>
-                  </defs>
-                </svg>
-                <span className="text-sm font-medium">Open Investor Profile</span>
-              </div>
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            <div className="flex items-stretch gap-1.5">
+              <a
+                href={investorProfileLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between flex-1 p-2 bg-[#064771] rounded-[3px] text-white hover:bg-[#053a5c] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g clipPath="url(#clip0_inv_profile)">
+                      <path d="M20.25 4.5H3.75C3.33579 4.5 3 4.83579 3 5.25V16.5C3 16.9142 3.33579 17.25 3.75 17.25H20.25C20.6642 17.25 21 16.9142 21 16.5V5.25C21 4.83579 20.6642 4.5 20.25 4.5Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M15 17.25L18 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 17.25L6 21" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M12 4.5V2.25" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                    <defs>
+                      <clipPath id="clip0_inv_profile">
+                        <rect width="24" height="24" fill="white" />
+                      </clipPath>
+                    </defs>
+                  </svg>
+                  <span className="text-sm font-medium">Open Investor Profile</span>
+                </div>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              <button
+                type="button"
+                title="Copy investor profile link"
+                className="relative flex items-center px-3 rounded-[3px] border border-gray-200 hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(investorProfileLink);
+                  setCopiedField('profile');
+                  setTimeout(() => setCopiedField(null), 2000);
+                }}
+              >
+                {copiedField === 'profile' ? (
+                  <Check className="w-4 h-4 text-emerald-500" />
+                ) : (
+                  <Copy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                )}
+                {copiedField === 'profile' && (
+                  <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded-[3px] shadow whitespace-nowrap">Copied!</span>
+                )}
+              </button>
+            </div>
           )}
+
+          {/* CloudFlow Drive Card */}
+          <div
+            className="flex items-center gap-3 p-3 rounded-[3px] border border-gray-200 cursor-pointer hover:bg-[#f7faff] hover:border-[#c4dff0] transition-all group"
+            onClick={() => navigate(`/drive/investor/${id}`)}
+          >
+            <img src={cloudflowBrandIcon} alt="" className="w-7 h-7 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="block text-sm font-semibold text-gray-800">CloudFlow Drive</span>
+              {driveStats ? (
+                (driveStats.folder_count > 0 || driveStats.file_count > 0) ? (
+                  <div className="flex items-center gap-3 mt-0.5">
+                    {driveStats.folder_count > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                        <FolderClosed className="w-3 h-3" />
+                        {driveStats.folder_count} {driveStats.folder_count === 1 ? 'Folder' : 'Folders'}
+                      </span>
+                    )}
+                    {driveStats.file_count > 0 && (
+                      <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                        <FileText className="w-3 h-3" />
+                        {driveStats.file_count} {driveStats.file_count === 1 ? 'File' : 'Files'}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="block text-[11px] text-gray-400">Empty</span>
+                )
+              ) : (
+                <span className="block text-[11px] text-gray-400">Manage files & documents</span>
+              )}
+            </div>
+            <svg className="w-4 h-4 text-gray-300 group-hover:text-[#064771] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
 
           {/* 2. Introduced Projects (admin only) */}
           {!isPartner && (
@@ -772,10 +841,10 @@ const InvestorDetails: React.FC = () => {
                 {introducedProjects.length > 0 ? introducedProjects.map((project, idx) => (
                   <div
                     key={project.id || idx}
-                    className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
-                    onClick={() => navigate(`/prospects/target/${project.id}`)}
+                    className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded-[3px] transition-colors"
+                    onClick={() => navigate(`/prospects/target/${project.code || project.id}`)}
                   >
-                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
+                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-base font-medium text-[#064771]">
                       {project.code}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -820,11 +889,11 @@ const InvestorDetails: React.FC = () => {
                       <div className="flex flex-col gap-1.5">
                         <span className="text-[11px] font-medium text-gray-400 uppercase">Paired Target</span>
                         <div
-                          className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded border border-gray-100 transition-colors"
-                          onClick={() => navigate(`/prospects/${pipeInfo.pairedType}/${pipeInfo.pairedId}`)}
+                          className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-[3px] border border-gray-100 transition-colors"
+                          onClick={() => navigate(`/prospects/${pipeInfo.pairedType}/${pipeInfo.pairedCode || pipeInfo.pairedId}`)}
                         >
                           <ExternalLink className="w-4 h-4 text-[#064771] shrink-0" />
-                          <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                          <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-sm font-medium text-[#064771]">
                             {pipeInfo.pairedCode}
                           </span>
                           <span className="text-sm font-medium text-[#064771] truncate">

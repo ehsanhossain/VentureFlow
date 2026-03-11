@@ -14,6 +14,7 @@ use App\Models\Deal;
 use App\Models\Partner;
 use App\Models\ActivityLog;
 use App\Models\PipelineStage;
+use App\Models\DealStageDeadline;
 use App\Models\Country;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -131,6 +132,61 @@ class DashboardController extends Controller
 
         $dealVelocityDays = $transitionCount > 0 ? round($totalDays / $transitionCount, 1) : 0;
 
+        // === UPCOMING DEADLINES (next 30 days) ===
+        $upcomingDeadlines = DealStageDeadline::with('deal')
+            ->where('is_completed', false)
+            ->where('end_date', '>=', Carbon::today())
+            ->where('end_date', '<=', Carbon::today()->addDays(30))
+            ->orderBy('end_date')
+            ->limit(15)
+            ->get()
+            ->map(function ($d) {
+                $stageName = PipelineStage::where('code', $d->stage_code)
+                    ->where('pipeline_type', $d->pipeline_type)
+                    ->value('name') ?? $d->stage_code;
+
+                $daysLeft = Carbon::today()->diffInDays($d->end_date, false);
+                $status = 'on_track';
+                if ($daysLeft <= 0) $status = 'overdue';
+                elseif ($daysLeft <= 3) $status = 'due_soon';
+
+                return [
+                    'deal_id'     => $d->deal_id,
+                    'deal_name'   => $d->deal?->name ?? 'Unknown',
+                    'stage_code'  => $d->stage_code,
+                    'stage_name'  => $stageName,
+                    'pipeline_type' => $d->pipeline_type,
+                    'start_date'  => $d->start_date->format('Y-m-d'),
+                    'end_date'    => $d->end_date->format('Y-m-d'),
+                    'days_left'   => max(0, $daysLeft),
+                    'status'      => $status,
+                ];
+            });
+
+        // Also get overdue deadlines
+        $overdueDeadlines = DealStageDeadline::with('deal')
+            ->overdue()
+            ->orderBy('end_date')
+            ->limit(10)
+            ->get()
+            ->map(function ($d) {
+                $stageName = PipelineStage::where('code', $d->stage_code)
+                    ->where('pipeline_type', $d->pipeline_type)
+                    ->value('name') ?? $d->stage_code;
+
+                return [
+                    'deal_id'     => $d->deal_id,
+                    'deal_name'   => $d->deal?->name ?? 'Unknown',
+                    'stage_code'  => $d->stage_code,
+                    'stage_name'  => $stageName,
+                    'pipeline_type' => $d->pipeline_type,
+                    'start_date'  => $d->start_date->format('Y-m-d'),
+                    'end_date'    => $d->end_date->format('Y-m-d'),
+                    'days_left'   => 0,
+                    'status'      => 'overdue',
+                ];
+            });
+
         return response()->json([
             'stats' => [
                 'active_deals' => $activeDeals,
@@ -153,6 +209,8 @@ class DashboardController extends Controller
             'activities' => $activities,
             'recent_investors' => $recentInvestors,
             'recent_targets' => $recentTargets,
+            'upcoming_deadlines' => $upcomingDeadlines,
+            'overdue_deadlines' => $overdueDeadlines,
         ]);
     }
 

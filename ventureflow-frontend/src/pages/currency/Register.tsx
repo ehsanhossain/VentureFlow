@@ -4,8 +4,9 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Breadcrumb from '../../assets/breadcrumb';
+import BackButton from '../../components/BackButton';
 import { Input } from '../../components/Input';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Country, Dropdown } from './components/Dropdown';
@@ -14,6 +15,8 @@ import axios from 'axios';
 import { showAlert } from '../../components/Alert';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AuthContext } from '../../routes/AuthContext';
+import NotFoundPage from '../../components/NotFoundPage';
 
 const getBreadcrumbLinks = (t: any) => [
   { label: t('common.home'), url: '/', isCurrentPage: false },
@@ -48,6 +51,12 @@ const Register: React.FC = () => {
   const breadcrumbLinks = getBreadcrumbLinks(t);
   const [selectedOption, setSelectedOption] = useState('api');
   const navigate = useNavigate();
+  const auth = useContext(AuthContext);
+
+  // Staff cannot add/edit currencies — show 404
+  if (auth?.isStaff) {
+    return <NotFoundPage />;
+  }
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,40 +222,7 @@ const Register: React.FC = () => {
                 </div>
                 <div className="flex items-center self-stretch">
                   <div className="flex items-center gap-2.5 w-[447px]">
-                    <button
-                      onClick={() => navigate(-1)}
-                      className="flex flex-col flex-shrink-0 justify-center items-center gap-1 py-1 px-3 w-[4.125rem] rounded bg-[#064771]"
-                      aria-label={t('common.back', 'Back')}
-                    >
-                      <div className="flex items-center gap-1">
-                        <svg
-                          width={14}
-                          height={11}
-                          viewBox="0 0 14 11"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            d="M3.66681 9.85943H9.28387C11.2247 9.85943 12.8003 8.2839 12.8003 6.34304C12.8003 4.40217 11.2247 2.82666 9.28387 2.82666H1.55469"
-                            stroke="white"
-                            strokeWidth="1.56031"
-                            strokeMiterlimit={10}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M3.17526 4.59629L1.38281 2.79245L3.17526 1"
-                            stroke="white"
-                            strokeWidth="1.56031"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <span>
-                          <span className="text-white text-[.8125rem] font-semibold">{t('common.back', 'Back')}</span>
-                        </span>
-                      </div>
-                    </button>
+                    <BackButton label={t('common.back', 'Back')} />
                     <div className="flex items-start">
                       <Breadcrumb links={breadcrumbLinks} />
                     </div>

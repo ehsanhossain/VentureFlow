@@ -7,7 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, Shield, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Check, AlertCircle, Loader2, Eye, EyeOff, RefreshCw, Shield, ShieldCheck } from 'lucide-react';
+import BackButton from '../../../components/BackButton';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -264,14 +265,7 @@ const CreateStaff: React.FC = () => {
         return (
             <div className="flex flex-col h-full min-h-screen bg-white ">
                 <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
-                    <button
-                        type="button"
-                        className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
-                        onClick={() => navigate('/settings/staff')}
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back</span>
-                    </button>
+                    <BackButton to="/settings/staff" />
                     <h1 className="text-xl md:text-2xl font-medium text-gray-900">
                         {id ? 'Edit Staff Member' : 'Create Staff Member'}
                     </h1>
@@ -311,14 +305,7 @@ const CreateStaff: React.FC = () => {
         <div className="flex flex-col h-full min-h-screen bg-white ">
             {/* Header */}
             <div className="flex items-center gap-4 px-4 md:px-6 py-4 bg-white border-b">
-                <button
-                    type="button"
-                    className="flex items-center gap-2 px-4 py-2 rounded-[3px] bg-[#064771] hover:bg-[#053a5c] text-white text-sm font-medium transition-all active:scale-95"
-                    onClick={() => navigate('/settings/staff')}
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                </button>
+                <BackButton to="/settings/staff" />
                 <h1 className="text-xl md:text-2xl font-medium text-gray-900">
                     {id ? 'Edit Staff Member' : 'Create Staff Member'}
                 </h1>

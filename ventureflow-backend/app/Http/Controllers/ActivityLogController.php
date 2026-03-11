@@ -22,13 +22,14 @@ class ActivityLogController extends Controller
     {
         $request->validate([
             'entity_id' => 'required',
-            'entity_type' => 'required|in:buyer,seller,deal',
+            'entity_type' => 'required|in:buyer,seller,deal,partner',
         ]);
 
         $typeMap = [
             'buyer' => \App\Models\Investor::class,
             'seller' => \App\Models\Target::class,
             'deal' => \App\Models\Deal::class,
+            'partner' => \App\Models\Partner::class,
         ];
 
         $logs = ActivityLog::with(['user.employee'])
@@ -63,7 +64,7 @@ class ActivityLogController extends Controller
     {
         $validated = $request->validate([
             'entity_id' => 'required',
-            'entity_type' => 'required|in:buyer,seller,deal',
+            'entity_type' => 'required|in:buyer,seller,deal,partner',
             'content' => 'required|string',
             'type' => 'nullable|in:comment,system',
         ]);
@@ -72,6 +73,7 @@ class ActivityLogController extends Controller
             'buyer' => \App\Models\Investor::class,
             'seller' => \App\Models\Target::class,
             'deal' => \App\Models\Deal::class,
+            'partner' => \App\Models\Partner::class,
         ];
 
         $log = ActivityLog::create([

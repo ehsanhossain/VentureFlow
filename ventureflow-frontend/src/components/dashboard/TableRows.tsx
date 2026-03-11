@@ -14,6 +14,7 @@ type RowProps = {
   statusColor: string;
   textColor: string;
   image?: string;
+  projectCode?: string;
 };
 
 const Row: React.FC<RowProps> = ({
@@ -24,6 +25,7 @@ const Row: React.FC<RowProps> = ({
   image,
   statusColor,
   textColor,
+  projectCode,
 }) => {
   const navigate = useNavigate();
 
@@ -142,8 +144,8 @@ const Row: React.FC<RowProps> = ({
           <span
             onClick={() =>
               type === 1
-                ? navigate(`/prospects/target/${id}`)
-                : navigate(`/prospects/investor/${id}`)
+                ? navigate(`/prospects/target/${projectCode || id}`)
+                : navigate(`/prospects/investor/${projectCode || id}`)
             }
             className="text-gray-900 text-sm font-medium leading-[32px] truncate cursor-pointer hover:underline"
           >

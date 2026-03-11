@@ -10,6 +10,8 @@ interface GeneralSettings {
     default_currency: string;
     timezone: string;
     date_format: string;
+    calendar_country: string;
+    weekend_days: number[];
 }
 
 interface GeneralSettingsContextType {
@@ -22,6 +24,8 @@ const defaultSettings: GeneralSettings = {
     default_currency: 'USD',
     timezone: '(GMT+07:00) Bangkok, Hanoi, Jakarta',
     date_format: 'DD/MM/YYYY',
+    calendar_country: 'US',
+    weekend_days: [0, 6],
 };
 
 const GeneralSettingsContext = createContext<GeneralSettingsContextType>({
@@ -44,10 +48,21 @@ export const GeneralSettingsProvider: React.FC<{ children: ReactNode }> = ({ chi
         }
         try {
             const res = await api.get('/api/general-settings');
+            // Parse weekend_days from JSON string if present
+            let weekendDays = defaultSettings.weekend_days;
+            if (res.data.weekend_days) {
+                try {
+                    weekendDays = JSON.parse(res.data.weekend_days);
+                } catch {
+                    weekendDays = defaultSettings.weekend_days;
+                }
+            }
             setSettings({
                 default_currency: res.data.default_currency || 'USD',
                 timezone: res.data.timezone || defaultSettings.timezone,
                 date_format: res.data.date_format || defaultSettings.date_format,
+                calendar_country: res.data.calendar_country || defaultSettings.calendar_country,
+                weekend_days: weekendDays,
             });
         } catch {
             // Silently handle — use default settings

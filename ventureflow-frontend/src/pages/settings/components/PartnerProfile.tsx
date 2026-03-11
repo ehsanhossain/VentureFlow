@@ -5,7 +5,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useContext, useEffect, useState } from 'react';
-import { ArrowLeft, Save, Loader2, User } from 'lucide-react';
+import { Save, Loader2, User } from 'lucide-react';
+import BackButton from '../../../components/BackButton';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../../routes/AuthContext';
@@ -162,13 +163,7 @@ const PartnerProfile: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Go back"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                    </button>
+                    <BackButton />
                     <div>
                         <h1 className="text-2xl font-medium text-gray-900">{t('profile.myProfile', 'My Profile')}</h1>
                         <p className="text-sm text-gray-500">Partner ID: {partner.partner_id}</p>

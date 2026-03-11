@@ -3,12 +3,13 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
 import { Dropdown } from '../../prospects/components/Dropdown';
+import VFDateRangePicker from '../../../components/VFDateRangePicker';
 
 interface CreateDealModalProps {
     onClose: () => void;
@@ -98,6 +99,10 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
     const [searchBuyer, setSearchBuyer] = useState('');
     const [searchSeller, setSearchSeller] = useState('');
 
+    // Stage deadlines: map of stage_code -> { start_date, end_date, is_parallel }
+    const [stageDeadlines, setStageDeadlines] = useState<Record<string, { start_date: string; end_date: string; is_parallel: boolean }>>({}); 
+    const [showStageTimeline, setShowStageTimeline] = useState(false);
+
     const [formData, setFormData] = useState({
         buyer_id: 0,
         seller_id: 0,
@@ -113,7 +118,6 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         ebitda_target_value: '',
         ebitda_target_times: '',
         internal_pic: [] as User[],
-        target_close_date: '',
         stage_code: '',
     });
 
@@ -333,6 +337,90 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         } catch { return 'None'; }
     };
 
+    // Compute which stages to show in timeline (from current stage through last)
+    const timelineStages = useMemo(() => {
+        if (!formData.stage_code || stages.length === 0) return stages;
+        const currentIdx = stages.findIndex(s => s.code === formData.stage_code);
+        if (currentIdx === -1) return stages;
+        return stages.slice(currentIdx);
+    }, [formData.stage_code, stages]);
+
+    /** Update a single stage deadline and auto-cascade to next stage */
+    const updateStageDeadline = (stageCode: string, field: 'start_date' | 'end_date', value: string) => {
+        setStageDeadlines(prev => {
+            const updated = { ...prev };
+            if (!updated[stageCode]) updated[stageCode] = { start_date: '', end_date: '', is_parallel: false };
+            updated[stageCode] = { ...updated[stageCode], [field]: value };
+
+            // Auto-cascade: if end_date changed, set next sequential stage's start_date to end_date + 1 day
+            if (field === 'end_date' && value) {
+                const idx = timelineStages.findIndex(s => s.code === stageCode);
+                if (idx >= 0 && idx < timelineStages.length - 1) {
+                    const nextStage = timelineStages[idx + 1];
+                    const nextDay = new Date(value);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    const nextDayStr = nextDay.toISOString().split('T')[0];
+                    if (!updated[nextStage.code]) updated[nextStage.code] = { start_date: '', end_date: '', is_parallel: false };
+                    // Auto-fill if not parallel and (empty or was auto-filled)
+                    const nextIsParallel = updated[nextStage.code].is_parallel;
+                    if (!nextIsParallel && (!updated[nextStage.code].start_date || updated[nextStage.code].start_date < nextDayStr)) {
+                        updated[nextStage.code] = { ...updated[nextStage.code], start_date: nextDayStr };
+                    }
+                }
+            }
+
+            return updated;
+        });
+    };
+
+    /** Toggle is_parallel for a stage and fix its start_date if needed */
+    const toggleStageParallel = (stageCode: string) => {
+        setStageDeadlines(prev => {
+            const updated = { ...prev };
+            if (!updated[stageCode]) updated[stageCode] = { start_date: '', end_date: '', is_parallel: false };
+            const wasParallel = updated[stageCode].is_parallel;
+            updated[stageCode] = { ...updated[stageCode], is_parallel: !wasParallel };
+
+            // If turning off parallel, auto-enforce: set start_date to previous stage end + 1
+            if (wasParallel) {
+                const idx = timelineStages.findIndex(s => s.code === stageCode);
+                if (idx > 0) {
+                    const prevStage = timelineStages[idx - 1];
+                    const prevEnd = updated[prevStage.code]?.end_date;
+                    if (prevEnd) {
+                        const nextDay = new Date(prevEnd);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        const nextDayStr = nextDay.toISOString().split('T')[0];
+                        updated[stageCode] = { ...updated[stageCode], start_date: nextDayStr };
+                        // Also clear end_date if it's now before start_date
+                        if (updated[stageCode].end_date && updated[stageCode].end_date < nextDayStr) {
+                            updated[stageCode] = { ...updated[stageCode], end_date: '' };
+                        }
+                    }
+                }
+            }
+
+            return updated;
+        });
+    };
+
+    /** Get the minDate for a stage based on previous non-parallel stage's end_date */
+    const getStageMinDate = (idx: number): string | undefined => {
+        if (idx === 0) return undefined;
+        const currentDl = stageDeadlines[timelineStages[idx].code];
+        if (currentDl?.is_parallel) return undefined; // parallel = no constraint
+        // Walk backwards to find the last stage with an end_date
+        for (let i = idx - 1; i >= 0; i--) {
+            const prevDl = stageDeadlines[timelineStages[i].code];
+            if (prevDl?.end_date) {
+                const nextDay = new Date(prevDl.end_date);
+                nextDay.setDate(nextDay.getDate() + 1);
+                return nextDay.toISOString().split('T')[0];
+            }
+        }
+        return undefined;
+    };
+
     const handleSubmit = async () => {
         // Allow 1-sided: at least one party required
         if (!formData.buyer_id && !formData.seller_id) {
@@ -343,6 +431,16 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
             showAlert({ type: 'error', message: 'Please enter a deal name' });
             return;
         }
+
+        // Build stage_deadlines array from stageDeadlines state
+        const deadlinesPayload = Object.entries(stageDeadlines)
+            .filter(([, v]) => v.start_date && v.end_date)
+            .map(([code, v]) => ({
+                stage_code: code,
+                start_date: v.start_date,
+                end_date: v.end_date,
+                is_parallel: v.is_parallel || false,
+            }));
 
         setLoading(true);
         try {
@@ -357,6 +455,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 ebitda_target_times: formData.ebitda_target_times || null,
                 investment_condition: formData.investment_condition || null,
                 pipeline_type: defaultView,
+                stage_deadlines: deadlinesPayload.length > 0 ? deadlinesPayload : undefined,
             });
             showAlert({ type: 'success', message: 'Deal created successfully!' });
             onCreated();
@@ -749,15 +848,18 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             className={`flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
                                             placeholder="Amount"
                                         />
-                                        <select
-                                            id="deal-currency"
-                                            aria-label="Currency"
-                                            value={formData.estimated_ev_currency}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
-                                            className="w-24 px-2 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                        >
-                                            {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                id="deal-currency"
+                                                aria-label="Currency"
+                                                value={formData.estimated_ev_currency}
+                                                onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
+                                                className="w-[88px] appearance-none px-2 pr-7 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cursor-pointer"
+                                            >
+                                                {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
+                                            </select>
+                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
@@ -791,14 +893,93 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Close Date</label>
-                                    <input
-                                        type="date"
-                                        value={formData.target_close_date}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, target_close_date: e.target.value }))}
-                                        className={inputClass}
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 text-gray-400">Target Close Date</label>
+                                    <p className="text-xs text-gray-400 italic">Auto-calculated from stage deadlines</p>
                                 </div>
+                            </div>
+
+                            {/* ── Stage Timeline ── */}
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStageTimeline(!showStageTimeline)}
+                                    className="flex items-center gap-2 text-sm font-medium text-[#064771] hover:text-[#053a5c] transition-colors"
+                                >
+                                    <svg className={`w-4 h-4 transition-transform duration-200 ${showStageTimeline ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    Stage Timeline — Set Deadlines
+                                    {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length > 0 && (
+                                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1.5 text-[10px] font-medium text-white">
+                                            {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {showStageTimeline && (
+                                    <div className="mt-3 space-y-0 border border-gray-200 rounded-[3px] overflow-hidden">
+                                        {timelineStages.map((stage, idx) => {
+                                            const dl = stageDeadlines[stage.code] || { start_date: '', end_date: '', is_parallel: false };
+                                            const isFirst = idx === 0;
+                                            const stageMinDate = getStageMinDate(idx);
+                                            return (
+                                                <div key={stage.code} className={`flex items-center gap-3 px-4 py-3 ${!isFirst ? 'border-t border-gray-100' : ''} ${dl.start_date && dl.end_date ? 'bg-blue-50/30' : ''}`}>
+                                                    {/* Stage indicator */}
+                                                    <div className="flex flex-col items-center gap-0.5 min-w-[32px]">
+                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${dl.start_date && dl.end_date
+                                                            ? 'bg-[#064771] text-white'
+                                                            : 'bg-gray-200 text-gray-500'
+                                                            }`}>
+                                                            {stage.code}
+                                                        </div>
+                                                        {idx < timelineStages.length - 1 && (
+                                                            <div className="w-px h-3 bg-gray-300" />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Stage name + parallel toggle */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
+                                                            {dl.is_parallel && (
+                                                                <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">∥ Parallel</span>
+                                                            )}
+                                                        </div>
+                                                        {!isFirst && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleStageParallel(stage.code)}
+                                                                className={`mt-0.5 text-[10px] font-medium transition-colors ${dl.is_parallel ? 'text-amber-600 hover:text-amber-700' : 'text-gray-400 hover:text-gray-600'}`}
+                                                            >
+                                                                {dl.is_parallel ? '⇄ Sequential' : '⇄ Parallel'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Date range picker */}
+                                                    <div className="shrink-0">
+                                                        <VFDateRangePicker
+                                                            startDate={dl.start_date}
+                                                            endDate={dl.end_date}
+                                                            onRangeChange={(start, end) => {
+                                                                updateStageDeadline(stage.code, 'start_date', start);
+                                                                updateStageDeadline(stage.code, 'end_date', end);
+                                                            }}
+                                                            minDate={stageMinDate}
+                                                            title={`${stage.name} date range`}
+                                                            compact
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {showStageTimeline && (
+                                    <p className="mt-2 text-[11px] text-gray-400">
+                                        Stages are sequential by default — each stage starts after the previous one ends. Toggle "⇄ Parallel" to allow overlapping dates.
+                                    </p>
+                                )}
                             </div>
 
                             {/* EBITDA Fields (non-mandatory) */}

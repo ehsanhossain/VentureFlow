@@ -15,10 +15,11 @@ interface StageColumnProps {
     onMove?: (deal: Deal, direction: 'forward' | 'backward') => void;
     onMarkLost?: (deal: Deal) => void;
     onDelete?: (deal: Deal) => void;
+    onEdit?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
 }
 
-const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDelete, pipelineView = 'buyer' }: StageColumnProps) => {
+const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer' }: StageColumnProps) => {
     const { setNodeRef, isOver } = useDroppable({
         id: code,
     });
@@ -59,6 +60,7 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
                             onMove={onMove}
                             onMarkLost={onMarkLost}
                             onDelete={onDelete}
+                            onEdit={onEdit}
                             pipelineView={pipelineView}
                         />
                     ))

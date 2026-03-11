@@ -12,6 +12,7 @@ use App\Models\Deal;
 use App\Models\Currency;
 use App\Models\DealFee;
 use App\Models\DealStageHistory;
+use App\Models\DealStageDeadline;
 use App\Models\FeeTier;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -30,7 +31,7 @@ class DealController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'seller.financialDetails', 'pic']);
+        $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'seller.financialDetails', 'pic', 'stageDeadlines']);
         $view = $request->query('view', 'buyer');
         
         // Ensure view is valid
@@ -233,6 +234,12 @@ class DealController extends Controller
             'ebitda_investor_times' => 'nullable|numeric',
             'ebitda_target_value' => 'nullable|numeric',
             'ebitda_target_times' => 'nullable|numeric',
+            // Stage deadlines
+            'stage_deadlines' => 'nullable|array',
+            'stage_deadlines.*.stage_code' => 'required_with:stage_deadlines|string|max:2',
+            'stage_deadlines.*.start_date' => 'required_with:stage_deadlines|date',
+            'stage_deadlines.*.end_date' => 'required_with:stage_deadlines|date|after_or_equal:stage_deadlines.*.start_date',
+            'stage_deadlines.*.is_parallel' => 'nullable|boolean',
         ]);
 
         // At least one party (buyer or seller) must be selected
@@ -295,9 +302,25 @@ class DealController extends Controller
             Notification::send($recipients, new DealStatusNotification($deal, 'created', [], Auth::user()));
         } catch (\Exception $e) { /* Ignore */ }
 
+        // Save stage deadlines if provided
+        if (!empty($validated['stage_deadlines'])) {
+            foreach ($validated['stage_deadlines'] as $deadline) {
+                DealStageDeadline::create([
+                    'deal_id' => $deal->id,
+                    'stage_code' => $deadline['stage_code'],
+                    'pipeline_type' => $pipelineType,
+                    'start_date' => $deadline['start_date'],
+                    'end_date' => $deadline['end_date'],
+                    'is_parallel' => $deadline['is_parallel'] ?? false,
+                ]);
+            }
+            // Auto-sync target_close_date from last stage end_date
+            $deal->syncTargetCloseDate();
+        }
+
         return response()->json([
             'message' => 'Deal created successfully',
-            'deal' => $deal->load(['buyer.companyOverview', 'seller.companyOverview', 'pic']),
+            'deal' => $deal->load(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'stageDeadlines']),
         ], 201);
     }
 
@@ -316,6 +339,7 @@ class DealController extends Controller
                 'stageHistory.changedBy.employee',
                 'activityLogs.user.employee',
                 'documents',
+                'stageDeadlines',
             ]),
         ]);
     }
@@ -365,13 +389,44 @@ class DealController extends Controller
             'ebitda_investor_times' => 'nullable|numeric',
             'ebitda_target_value' => 'nullable|numeric',
             'ebitda_target_times' => 'nullable|numeric',
+            // Stage deadlines
+            'stage_deadlines' => 'nullable|array',
+            'stage_deadlines.*.stage_code' => 'required_with:stage_deadlines|string|max:2',
+            'stage_deadlines.*.start_date' => 'required_with:stage_deadlines|date',
+            'stage_deadlines.*.end_date' => 'required_with:stage_deadlines|date|after_or_equal:stage_deadlines.*.start_date',
+            'stage_deadlines.*.is_parallel' => 'nullable|boolean',
         ]);
+
+        // Separate stage_deadlines from the main deal data
+        $stageDeadlinesData = $validated['stage_deadlines'] ?? null;
+        unset($validated['stage_deadlines']);
 
         $deal->update($validated);
 
+        // Upsert stage deadlines if provided
+        if ($stageDeadlinesData !== null) {
+            $pipelineType = $deal->pipeline_type ?? 'buyer';
+            foreach ($stageDeadlinesData as $deadline) {
+                DealStageDeadline::updateOrCreate(
+                    [
+                        'deal_id' => $deal->id,
+                        'stage_code' => $deadline['stage_code'],
+                        'pipeline_type' => $pipelineType,
+                    ],
+                    [
+                        'start_date' => $deadline['start_date'],
+                        'end_date' => $deadline['end_date'],
+                        'is_parallel' => $deadline['is_parallel'] ?? false,
+                    ]
+                );
+            }
+            // Auto-sync target_close_date from last stage end_date
+            $deal->syncTargetCloseDate();
+        }
+
         return response()->json([
             'message' => 'Deal updated successfully',
-            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic']),
+            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'stageDeadlines']),
         ]);
     }
 
@@ -637,6 +692,13 @@ class DealController extends Controller
                 }
             }
 
+            // Mark old stage deadline as completed
+            DealStageDeadline::where('deal_id', $deal->id)
+                ->where('stage_code', $fromStage)
+                ->where('pipeline_type', $pipelineType)
+                ->where('is_completed', false)
+                ->update(['is_completed' => true, 'completed_at' => now()]);
+
             // Update deal
             $deal->update([
                 'stage_code' => $toStage,
@@ -703,7 +765,7 @@ class DealController extends Controller
 
         return response()->json([
             'message' => 'Stage updated successfully',
-            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'fees']),
+            'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'fees', 'stageDeadlines']),
         ]);
     }
 

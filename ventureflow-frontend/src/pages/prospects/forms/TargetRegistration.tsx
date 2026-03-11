@@ -631,8 +631,8 @@ export const TargetRegistration: React.FC = () => {
             showAlert({ type: 'success', message: isDraft ? t('prospects.registration.targetDraftSaved') : t('prospects.registration.targetSavedSuccess') });
 
             if (id) {
-                // Editing existing target → go to detail
-                navigate(`/prospects/target/${id}`);
+                // Editing existing target → go to detail using project code
+                navigate(`/prospects/target/${data.projectCode || id}`);
             } else {
                 // New target created → go to the targets table
                 navigate('/prospects?tab=targets');

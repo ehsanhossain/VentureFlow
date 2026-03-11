@@ -32,7 +32,7 @@ export interface NotesSectionProps {
     /** Entity primary key (buyer.id or seller.id) */
     entityId: string;
     /** Entity type for the activity-logs API */
-    entityType: 'buyer' | 'seller' | 'deal';
+    entityType: 'buyer' | 'seller' | 'deal' | 'partner';
     /** Display name of the current user — used to set isSelf on new notes */
     currentUserName: string;
 }

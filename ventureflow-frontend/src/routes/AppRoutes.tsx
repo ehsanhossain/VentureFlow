@@ -4,7 +4,10 @@
  */
 
 import { Routes, Route } from "react-router-dom";
+import { useContext } from "react";
 import ProtectedRoute from "./ProtectedRoute";
+import { AuthContext } from "./AuthContext";
+import NotFoundPage from "../components/NotFoundPage";
 import MyProfile from "../pages/auth/MyProfile";
 import NotificationsPage from "../pages/notifications/NotificationsPage";
 import Login from "../pages/auth/Login";
@@ -37,6 +40,15 @@ import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 import CreatePartner from '../pages/settings/components/CreatePartner';
 import MatchIQ from '../pages/matching/MatchIQ';
+import DriveExplorer from '../pages/prospects/drive/DriveExplorer';
+import DrivePublicView from '../pages/prospects/drive/DrivePublicView';
+
+/** Route guard: shows 404 for staff users */
+const AdminOnlyRoute = ({ children }: { children: React.ReactNode }) => {
+  const auth = useContext(AuthContext);
+  if (auth?.isStaff) return <NotFoundPage />;
+  return <>{children}</>;
+};
 
 const AppRoutes = () => {
   return (
@@ -45,6 +57,9 @@ const AppRoutes = () => {
       <Route path="/change-password" element={<ChangePassword />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* CloudFlow — public share page (no auth) */}
+      <Route path="/shared/:token" element={<DrivePublicView />} />
 
       {/* Dashboard */}
       <Route
@@ -89,6 +104,17 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* CloudFlow */}
+      <Route
+        path="/drive/:type/:id"
+        element={
+          <ProtectedRoute>
+            <DriveExplorer />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/prospects/add-target"
         element={
@@ -149,21 +175,21 @@ const AppRoutes = () => {
         }
       >
         <Route path="general" element={<GeneralSettings />} />
-        <Route path="staff" element={<StaffManagement />} />
-        <Route path="staff/create" element={<CreateStaff />} />
-        <Route path="staff/edit/:id" element={<CreateStaff />} />
-        <Route path="staff/view/:id" element={<StaffDetails />} />
+        <Route path="staff" element={<AdminOnlyRoute><StaffManagement /></AdminOnlyRoute>} />
+        <Route path="staff/create" element={<AdminOnlyRoute><CreateStaff /></AdminOnlyRoute>} />
+        <Route path="staff/edit/:id" element={<AdminOnlyRoute><CreateStaff /></AdminOnlyRoute>} />
+        <Route path="staff/view/:id" element={<AdminOnlyRoute><StaffDetails /></AdminOnlyRoute>} />
         <Route path="currency" element={<CurrencyTable />} />
-        <Route path="currency/add" element={<Register />} />
-        <Route path="currency/edit/:id" element={<Register />} />
-        <Route path="partners" element={<PartnerManagement />} />
-        <Route path="partners/:id" element={<PartnerDetails />} />
-        <Route path="partners/create" element={<CreatePartner />} />
-        <Route path="partners/edit/:id" element={<CreatePartner />} />
-        <Route path="pipeline" element={<PipelineSettings />} />
+        <Route path="currency/add" element={<AdminOnlyRoute><Register /></AdminOnlyRoute>} />
+        <Route path="currency/edit/:id" element={<AdminOnlyRoute><Register /></AdminOnlyRoute>} />
+        <Route path="partners" element={<AdminOnlyRoute><PartnerManagement /></AdminOnlyRoute>} />
+        <Route path="partners/:id" element={<AdminOnlyRoute><PartnerDetails /></AdminOnlyRoute>} />
+        <Route path="partners/create" element={<AdminOnlyRoute><CreatePartner /></AdminOnlyRoute>} />
+        <Route path="partners/edit/:id" element={<AdminOnlyRoute><CreatePartner /></AdminOnlyRoute>} />
+        <Route path="pipeline" element={<AdminOnlyRoute><PipelineSettings /></AdminOnlyRoute>} />
         <Route path="industries" element={<IndustrySettings />} />
-        <Route path="fee-structure" element={<FeeStructureSettings />} />
-        <Route path="audit-log" element={<AuditLog />} />
+        <Route path="fee-structure" element={<AdminOnlyRoute><FeeStructureSettings /></AdminOnlyRoute>} />
+        <Route path="audit-log" element={<AdminOnlyRoute><AuditLog /></AdminOnlyRoute>} />
         <Route path="profile" element={<MyProfile />} />
       </Route>
 

@@ -62,15 +62,29 @@ export function Sidebar({
     return item.roles.includes(userRole);
   });
 
-  // Filter sub-items based on partner visibility
+  // Filter sub-items based on role visibility
+  const isStaff = context?.isStaff;
   const getFilteredSubItems = (subItems: SubMenuItem[] | undefined) => {
     if (!subItems) return [];
     if (context?.isPartner) {
       // Partners only see sub-items marked as partnerVisible
       return subItems.filter((sub: SubMenuItem) => sub.partnerVisible);
     }
-    // Non-partners: hide partnerOnly items
-    return subItems.filter((sub: SubMenuItem) => !sub.partnerOnly);
+    // Staff: hide staffHidden items, show staffVisible items, respect roles
+    if (isStaff) {
+      return subItems.filter((sub: SubMenuItem) => {
+        if (sub.staffHidden) return false;
+        if (sub.partnerOnly && !sub.staffVisible) return false;
+        if (sub.roles && !sub.roles.includes(userRole)) return false;
+        return true;
+      });
+    }
+    // Admin: hide partnerOnly items, respect roles
+    return subItems.filter((sub: SubMenuItem) => {
+      if (sub.partnerOnly) return false;
+      if (sub.roles && !sub.roles.includes(userRole)) return false;
+      return true;
+    });
   };
 
   const isSubItemActive = (subItems: SubMenuItem[]) => {

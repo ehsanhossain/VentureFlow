@@ -9,7 +9,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink, FileText, Copy, Check, Camera, Loader } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, FileText, Copy, Check, Camera, Loader, FolderClosed } from 'lucide-react';
+import cloudflowBrandIcon from '../../../assets/icons/cloudflow-brand.svg';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
 import { AuthContext } from '../../../routes/AuthContext';
@@ -48,6 +49,7 @@ const TargetDetails: React.FC = () => {
     const [allowedFields, setAllowedFields] = useState<any>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [currencies, setCurrencies] = useState<{ id: number; currency_code: string; exchange_rate?: string }[]>([]);
+    const [driveStats, setDriveStats] = useState<{ folder_count: number; file_count: number } | null>(null);
 
     // Avatar upload
     const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -110,6 +112,14 @@ const TargetDetails: React.FC = () => {
             showAlert({ type: "error", message: "Failed to fetch target details" });
         } finally {
             setLoading(false);
+        }
+
+        // Fetch drive stats (non-blocking)
+        try {
+            const statsRes = await api.get(`/api/drive/target/${id}/stats`);
+            setDriveStats(statsRes.data);
+        } catch {
+            // Drive stats are optional — fail silently
         }
     };
 
@@ -320,7 +330,7 @@ const TargetDetails: React.FC = () => {
                         {/* Back Button */}
                         <button
                             onClick={() => navigate('/prospects?tab=targets')}
-                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+                            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M5.57501 13.4297H11.1921C13.1329 13.4297 14.7085 11.8542 14.7085 9.91335C14.7085 7.97249 13.1329 6.39697 11.1921 6.39697H3.46289" stroke="white" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
@@ -337,7 +347,7 @@ const TargetDetails: React.FC = () => {
                     {!isPartner && (
                         <button
                             onClick={() => navigate(`/prospects/edit-target/${id}`)}
-                            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E5E7EB] rounded-[3px] text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -399,7 +409,7 @@ const TargetDetails: React.FC = () => {
                                 <div className="flex flex-col justify-between">
                                     <div className="flex items-center gap-3">
                                         {!isPartner && <span className="text-2xl font-medium text-black capitalize">{companyName}</span>}
-                                        <span className={`px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-[#064771] ${isPartner ? 'text-2xl' : 'text-base'} font-medium`}>
+                                        <span className={`px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-[#064771] ${isPartner ? 'text-2xl' : 'text-base'} font-medium`}>
                                             {projectCode}
                                         </span>
                                     </div>
@@ -454,7 +464,7 @@ const TargetDetails: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         title="Copy website URL"
-                                                        className="relative p-0.5 rounded hover:bg-gray-100 transition-colors"
+                                                        className="relative p-0.5 rounded-[3px] hover:bg-gray-100 transition-colors"
                                                         onClick={() => {
                                                             navigator.clipboard.writeText(website.startsWith('http') ? website : `https://${website}`);
                                                             setCopiedField('website');
@@ -467,7 +477,7 @@ const TargetDetails: React.FC = () => {
                                                             <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
                                                         )}
                                                         {copiedField === 'website' && (
-                                                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                                                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded-[3px] shadow whitespace-nowrap">Copied!</span>
                                                         )}
                                                     </button>
                                                 </div>
@@ -492,7 +502,7 @@ const TargetDetails: React.FC = () => {
                                         {industries.length > 0 ? industries.map((ind: any, idx: number) => (
                                             <div
                                                 key={idx}
-                                                className="h-8 px-3 bg-[#F3F4F6] rounded flex items-center"
+                                                className="h-8 px-3 bg-[#F3F4F6] rounded-[3px] flex items-center"
                                             >
                                                 <span className="text-sm font-normal text-gray-700">{ind.name || (typeof ind === 'string' ? ind : String(ind.id || JSON.stringify(ind)))}</span>
                                             </div>
@@ -526,7 +536,7 @@ const TargetDetails: React.FC = () => {
                             <h2 className="text-base font-medium text-gray-500 capitalize">Project Details</h2>
                             <div className="h-px bg-[#E5E7EB]" />
                             <RestrictedField allowed={allowedFields} section="companyOverview" item="details" bypass={isPartner}>
-                                <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
+                                <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded-[3px] border border-[#F3F4F6] whitespace-pre-wrap">
                                     {projectDetails}
                                 </p>
                             </RestrictedField>
@@ -586,7 +596,7 @@ const TargetDetails: React.FC = () => {
                                     {getEbitdaDisplay()}
                                     {defaultCurrencyCode && getEbitdaDisplay() !== 'N/A' && <span className="text-sm font-medium text-gray-400 ml-1">{defaultCurrencyCode}</span>}
                                     {financial.ebitda_times && (
-                                        <span className="ml-2 px-2 py-0.5 rounded bg-[#f0f7ff] text-[#064771] text-xs font-semibold">
+                                        <span className="ml-2 px-2 py-0.5 rounded-[3px] bg-[#f0f7ff] text-[#064771] text-xs font-semibold">
                                             {financial.ebitda_times}x
                                         </span>
                                     )}
@@ -615,7 +625,7 @@ const TargetDetails: React.FC = () => {
                         <section className="space-y-7">
                             <h2 className="text-base font-medium text-gray-500 capitalize">EBITDA Details</h2>
                             <div className="h-px bg-[#E5E7EB]" />
-                            <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded border border-[#F3F4F6] whitespace-pre-wrap">
+                            <p className="text-sm text-gray-600 leading-relaxed bg-[#F9FAFB] p-4 rounded-[3px] border border-[#F3F4F6] whitespace-pre-wrap">
                                 {financial.ebitda_details}
                             </p>
                         </section>
@@ -632,7 +642,7 @@ const TargetDetails: React.FC = () => {
 
                             <RestrictedField allowed={allowedFields} section="companyOverview" item="seller_contact_name">
                                 <div className="flex gap-4">
-                                    <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded">
+                                    <div className="flex-1 max-w-[403px] p-3 bg-[rgba(249,250,251,0.5)] border border-[#F3F4F6] rounded-[3px]">
                                         <div className="flex flex-col gap-4">
                                             {/* Contact Header */}
                                             <div className="flex items-start justify-between">
@@ -645,7 +655,7 @@ const TargetDetails: React.FC = () => {
                                                         <span className="text-xs font-medium text-[#064771]">{overview.seller_designation || 'Representative'}</span>
                                                     </div>
                                                 </div>
-                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-xs font-medium text-[#064771]">
+                                                <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-xs font-medium text-[#064771]">
                                                     Primary
                                                 </span>
                                             </div>
@@ -697,7 +707,7 @@ const TargetDetails: React.FC = () => {
                                     href={teaserLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-between flex-1 p-3 bg-[#064771] rounded text-white hover:bg-[#053a5c] transition-colors"
+                                    className="flex items-center justify-between flex-1 p-3 bg-[#064771] rounded-[3px] text-white hover:bg-[#053a5c] transition-colors"
                                 >
                                     <div className="flex items-center gap-2">
                                         <FileText className="w-5 h-5" />
@@ -708,7 +718,7 @@ const TargetDetails: React.FC = () => {
                                 <button
                                     type="button"
                                     title="Copy teaser link"
-                                    className="relative flex items-center px-3 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
+                                    className="relative flex items-center px-3 rounded-[3px] border border-gray-200 hover:bg-gray-50 transition-colors"
                                     onClick={() => {
                                         navigator.clipboard.writeText(teaserLink);
                                         setCopiedField('teaser');
@@ -721,15 +731,51 @@ const TargetDetails: React.FC = () => {
                                         <Copy className="w-4 h-4 text-gray-400 hover:text-gray-600" />
                                     )}
                                     {copiedField === 'teaser' && (
-                                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded shadow whitespace-nowrap">Copied!</span>
+                                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] font-medium text-white bg-gray-800 px-2 py-0.5 rounded-[3px] shadow whitespace-nowrap">Copied!</span>
                                     )}
                                 </button>
                             </div>
                         ) : (
-                            <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded">
+                            <div className="py-8 text-center border-2 border-dashed border-gray-200 rounded-[3px]">
                                 <span className="text-xs text-gray-400">No teaser uploaded</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* CloudFlow Drive Card */}
+                    <div
+                        className="flex items-center gap-3 p-3 rounded-[3px] border border-gray-200 cursor-pointer hover:bg-[#f7faff] hover:border-[#c4dff0] transition-all group"
+                        onClick={() => navigate(`/drive/target/${id}`)}
+                    >
+                        <img src={cloudflowBrandIcon} alt="" className="w-7 h-7 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <span className="block text-sm font-semibold text-gray-800">CloudFlow Drive</span>
+                            {driveStats ? (
+                                (driveStats.folder_count > 0 || driveStats.file_count > 0) ? (
+                                    <div className="flex items-center gap-3 mt-0.5">
+                                        {driveStats.folder_count > 0 && (
+                                            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                                                <FolderClosed className="w-3 h-3" />
+                                                {driveStats.folder_count} {driveStats.folder_count === 1 ? 'Folder' : 'Folders'}
+                                            </span>
+                                        )}
+                                        {driveStats.file_count > 0 && (
+                                            <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                                                <FileText className="w-3 h-3" />
+                                                {driveStats.file_count} {driveStats.file_count === 1 ? 'File' : 'Files'}
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="block text-[11px] text-gray-400">Empty</span>
+                                )
+                            ) : (
+                                <span className="block text-[11px] text-gray-400">Manage files & documents</span>
+                            )}
+                        </div>
+                        <svg className="w-4 h-4 text-gray-300 group-hover:text-[#064771] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
                     </div>
 
                     {/* 2. Introduced Projects (admin only) */}
@@ -743,10 +789,10 @@ const TargetDetails: React.FC = () => {
                                 {introducedProjects && introducedProjects.length > 0 ? introducedProjects.map((project: any, idx: number) => (
                                     <div
                                         key={project.id || idx}
-                                        className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded transition-colors"
-                                        onClick={() => navigate(`/prospects/investor/${project.id}`)}
+                                        className="flex items-center gap-3.5 cursor-pointer hover:bg-gray-50 p-1.5 rounded-[3px] transition-colors"
+                                        onClick={() => navigate(`/prospects/investor/${project.code || project.id}`)}
                                     >
-                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-base font-medium text-[#064771]">
+                                        <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-base font-medium text-[#064771]">
                                             {project.code}
                                         </span>
                                         <div className="flex-1 min-w-0">
@@ -791,11 +837,11 @@ const TargetDetails: React.FC = () => {
                                             <div className="flex flex-col gap-1.5">
                                                 <span className="text-[11px] font-medium text-gray-400 uppercase">Paired Investor</span>
                                                 <div
-                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded border border-gray-100 transition-colors"
-                                                    onClick={() => navigate(`/prospects/investor/${pipeInfo.pairedId}`)}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1.5 rounded-[3px] border border-gray-100 transition-colors"
+                                                    onClick={() => navigate(`/prospects/investor/${pipeInfo.pairedCode || pipeInfo.pairedId}`)}
                                                 >
                                                     <ExternalLink className="w-4 h-4 text-[#064771] shrink-0" />
-                                                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded text-sm font-medium text-[#064771]">
+                                                    <span className="px-2 py-1 bg-[#F7FAFF] border border-[#E8F6FF] rounded-[3px] text-sm font-medium text-[#064771]">
                                                         {pipeInfo.pairedCode}
                                                     </span>
                                                     <span className="text-sm font-medium text-[#064771] truncate">

@@ -57,9 +57,24 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Legacy 1:1 relationship.
+     * Kept for backward compatibility.
+     */
     public function partner()
     {
         return $this->hasOne(Partner::class);
+    }
+
+    /**
+     * All partners this user has login access to (via pivot).
+     */
+    public function partners()
+    {
+        return $this->belongsToMany(Partner::class, 'partner_users')
+                    ->using(PartnerUser::class)
+                    ->withPivot('label', 'is_primary')
+                    ->withTimestamps();
     }
 
     public function employee()

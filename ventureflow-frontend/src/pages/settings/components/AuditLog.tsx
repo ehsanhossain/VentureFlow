@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, Filter, Calendar, User, Search, ChevronDown, LogIn, LogOut, Key, UserPlus, Trash2, RefreshCw, X } from 'lucide-react';
+import { History, Filter, User, Search, ChevronDown, LogIn, LogOut, Key, UserPlus, Trash2, RefreshCw, X } from 'lucide-react';
+import VFCalendarPicker from '../../../components/VFCalendarPicker';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { AuthContext } from '../../../routes/AuthContext';
@@ -311,33 +312,24 @@ const AuditLog: React.FC = () => {
 
                             {/* Date Range */}
                             <div>
-                                <label htmlFor="audit-start-date" className="block text-xs font-medium text-gray-500 mb-1.5">Start Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        id="audit-start-date"
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        title="Start date filter"
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
-                                    />
-                                </div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">Start Date</label>
+                                <VFCalendarPicker
+                                    value={startDate}
+                                    onChange={(dateStr) => setStartDate(dateStr)}
+                                    placeholder="Select start date"
+                                    title="Start date filter"
+                                />
                             </div>
 
                             <div>
-                                <label htmlFor="audit-end-date" className="block text-xs font-medium text-gray-500 mb-1.5">End Date</label>
-                                <div className="relative">
-                                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        id="audit-end-date"
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        title="End date filter"
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771]"
-                                    />
-                                </div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1.5">End Date</label>
+                                <VFCalendarPicker
+                                    value={endDate}
+                                    onChange={(dateStr) => setEndDate(dateStr)}
+                                    placeholder="Select end date"
+                                    minDate={startDate || undefined}
+                                    title="End date filter"
+                                />
                             </div>
 
                             {/* User Type */}

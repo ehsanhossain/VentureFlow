@@ -14,8 +14,9 @@ import {
     MoreVertical,
     Trash2,
     Copy,
-    Download
+    Download,
 } from 'lucide-react';
+import cloudflowIcon from '../../../assets/icons/cloudflow.svg';
 import globalAddButtonIcon from '../../../assets/icons/global-add-button.svg';
 import { ProfileViewIcon, WebsiteIcon, PinnedIcon, UnpinnedIcon } from '../../../components/table/TableIcons';
 import pinActiveIcon from '../../../assets/icons/prospects/pin-active.svg';
@@ -632,7 +633,7 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                 hasLoadedOnce={hasLoadedOnce}
                 columnOrder={columnOrder}
                 onColumnOrderChange={onColumnOrderChange}
-                onRowClick={(row) => navigate(`/prospects/investor/${row.id}`)}
+                onRowClick={(row) => navigate(`/prospects/investor/${row.projectCode || row.id}`)}
                 onRowContextMenu={(e, row) => {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id });
@@ -700,18 +701,18 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                     <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} />
                     <div
                         ref={contextMenuRef}
-                        className="fixed z-[100] w-36 p-2 bg-white rounded-[3px] border border-[#E5E7EB] overflow-hidden backdrop-blur-[2px] flex flex-col items-start gap-0 animate-in fade-in zoom-in-95 duration-150"
+                        className="fixed z-[100] w-40 p-2 bg-white rounded-[3px] border border-[#E5E7EB] overflow-hidden backdrop-blur-[2px] flex flex-col items-start animate-in fade-in zoom-in-95 duration-150"
                         style={{
-                            top: Math.min(contextMenu.y, window.innerHeight - 200),
-                            left: Math.min(contextMenu.x, window.innerWidth - 160),
+                            top: Math.min(contextMenu.y, window.innerHeight - 260),
+                            left: Math.min(contextMenu.x, window.innerWidth - 180),
                             boxShadow: '0px 1px 4px rgba(0,0,0,0.06), 0px 2px 8px rgba(0,0,0,0.04)'
                         }}
                     >
-                        <div className="w-full flex flex-col gap-1">
+                        <div className="w-full flex flex-col gap-1.5">
                             {/* Pin / Unpin */}
                             {!isPartner && (
                                 <button
-                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
+                                    className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors"
                                     onClick={() => { onTogglePin(contextMenu.rowId); setContextMenu(null); }}
                                 >
                                     <img src={data.find(r => r.id === contextMenu.rowId)?.isPinned ? pinActiveIcon : pinInactiveIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
@@ -722,8 +723,8 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             )}
                             {/* View Profile */}
                             <button
-                                className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
-                                onClick={() => { navigate(`/prospects/investor/${contextMenu.rowId}`); setContextMenu(null); }}
+                                className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors"
+                                onClick={() => { const code = data.find(r => r.id === contextMenu.rowId)?.projectCode || contextMenu.rowId; navigate(`/prospects/investor/${code}`); setContextMenu(null); }}
                             >
                                 <img src={viewProfileIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                 <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('prospects.table.viewProfile')}</span>
@@ -731,19 +732,27 @@ export const InvestorTable: React.FC<InvestorTableProps> = ({
                             {/* Edit */}
                             {!isRestricted && (
                                 <button
-                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-gray-50 rounded transition-colors"
-                                    onClick={() => { navigate(`/prospects/edit-investor/${contextMenu.rowId}`); setContextMenu(null); }}
+                                    className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors"
+                                    onClick={() => { const code = data.find(r => r.id === contextMenu.rowId)?.projectCode || contextMenu.rowId; navigate(`/prospects/edit-investor/${code}`); setContextMenu(null); }}
                                 >
                                     <img src={editIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
                                     <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">{t('prospects.table.edit')}</span>
                                 </button>
                             )}
+                            {/* CloudFlow */}
+                            <button
+                                className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-gray-50 rounded-[3px] transition-colors"
+                                onClick={() => { const code = data.find(r => r.id === contextMenu.rowId)?.projectCode || contextMenu.rowId; navigate(`/drive/investor/${code}`); setContextMenu(null); }}
+                            >
+                                <img src={cloudflowIcon} alt="" className="w-[18px] h-[18px] shrink-0" />
+                                <span className="flex-1 text-left text-xs font-normal text-black leading-[18px] tracking-[-0.24px] truncate">CloudFlow</span>
+                            </button>
                             {/* Separator */}
-                            {!isRestricted && <div className="w-full h-0 border-t border-[#E5E7EB]" />}
+                            {!isRestricted && <div className="w-full h-0 border-t border-[#E5E7EB] my-0.5" />}
                             {/* Delete */}
                             {!isRestricted && (
                                 <button
-                                    className="w-full text-left px-1 py-0.5 flex items-center gap-2 hover:bg-red-50 rounded transition-colors"
+                                    className="w-full text-left px-1.5 py-1 flex items-center gap-2 hover:bg-red-50 rounded-[3px] transition-colors"
                                     onClick={() => {
                                         setSelectedIds(new Set([contextMenu.rowId]));
                                         setIsDeleteModalOpen(true);

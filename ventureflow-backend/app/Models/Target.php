@@ -96,4 +96,16 @@ class Target extends Model
     {
         return $this->morphMany(ActivityLog::class, 'loggable');
     }
+
+    /**
+     * Resolve route binding: support both numeric ID and project code (seller_id).
+     * Allows URLs like /prospects/target/JP-S-01 and /prospects/target/32.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if (is_numeric($value)) {
+            return $this->where('id', $value)->firstOrFail();
+        }
+        return $this->where('seller_id', $value)->firstOrFail();
+    }
 }

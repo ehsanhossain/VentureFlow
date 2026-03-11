@@ -36,8 +36,31 @@ class Partner extends Model
         return $this->belongsTo(PartnersPartnerOverview::class, 'partner_overview_id');
     }
 
+    /**
+     * Legacy 1:1 relationship — points to the primary user.
+     * Kept for backward compatibility.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * All login accounts associated with this partner.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'partner_users')
+                    ->using(PartnerUser::class)
+                    ->withPivot('label', 'is_primary')
+                    ->withTimestamps();
+    }
+
+    /**
+     * The primary login account for this partner.
+     */
+    public function primaryUser()
+    {
+        return $this->users()->wherePivot('is_primary', true);
     }
 }

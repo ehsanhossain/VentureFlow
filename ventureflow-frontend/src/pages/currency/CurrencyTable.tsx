@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useContext } from 'react';
 import { RefreshCw, Globe, User, MoreVertical } from 'lucide-react';
 import globalAddButtonIcon from '../../assets/icons/global-add-button.svg';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import DataTable, { DataTableColumn } from "../../components/table/DataTable";
 import DataTableSearch from "../../components/table/DataTableSearch";
 import editIcon from '../../assets/icons/prospects/edit.svg';
 import deleteIcon from '../../assets/icons/prospects/delete.svg';
+import { AuthContext } from '../../routes/AuthContext';
 
 type Currency = {
   id: string | number;
@@ -44,6 +45,8 @@ interface ApiCurrency {
 const CurrencyTable = (): JSX.Element => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const auth = useContext(AuthContext);
+  const isStaff = auth?.isStaff;
 
   const [currencyData, setCurrencyData] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(true);
@@ -266,7 +269,7 @@ const CurrencyTable = (): JSX.Element => {
           </div>
 
           <div className="flex items-center gap-3">
-            {selectedIds.size > 0 && (
+            {!isStaff && selectedIds.size > 0 && (
               <button
                 onClick={() => handleDelete(Array.from(selectedIds))}
                 className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-[3px] text-sm font-medium transition-all"
@@ -274,22 +277,26 @@ const CurrencyTable = (): JSX.Element => {
                 Delete Selected ({selectedIds.size})
               </button>
             )}
-            <button
-              onClick={handleRefreshRates}
-              className={`flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-[#064771] border border-gray-200 rounded-[3px] text-sm font-medium transition-all hover:border-[#064771]/30 hover:bg-gray-50 shadow-sm active:scale-95 ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={refreshing}
-              title="Refresh exchange rates from API"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <button
-              onClick={() => navigate('/settings/currency/add')}
-              className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
-            >
-              <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
-              {t('settings.currency.add')}
-            </button>
+            {!isStaff && (
+              <button
+                onClick={handleRefreshRates}
+                className={`flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-[#064771] border border-gray-200 rounded-[3px] text-sm font-medium transition-all hover:border-[#064771]/30 hover:bg-gray-50 shadow-sm active:scale-95 ${refreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={refreshing}
+                title="Refresh exchange rates from API"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+            )}
+            {!isStaff && (
+              <button
+                onClick={() => navigate('/settings/currency/add')}
+                className="flex items-center gap-2 bg-[#064771] hover:bg-[#053a5e] text-white px-5 py-2 rounded-[3px] text-sm font-medium transition-all shadow-sm active:scale-95"
+              >
+                <img src={globalAddButtonIcon} alt="" className="w-5 h-5" />
+                {t('settings.currency.add')}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -303,14 +310,14 @@ const CurrencyTable = (): JSX.Element => {
             isLoading={loading}
             emptyMessage={t('settings.currency.noCurrencies')}
             getRowId={(row) => row.id}
-            selectable
+            selectable={!isStaff}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             sortConfig={sortConfig}
             onSortChange={(key, direction) => setSortConfig({ key, direction })}
-            actionsColumn={ActionsColumn}
-            actionsColumnWidth={60}
-            onRowContextMenu={(e, row) => {
+            actionsColumn={isStaff ? undefined : ActionsColumn}
+            actionsColumnWidth={isStaff ? 0 : 60}
+            onRowContextMenu={isStaff ? undefined : (e, row) => {
               e.preventDefault();
               setContextMenu({ x: e.clientX, y: e.clientY, rowId: row.id });
             }}
@@ -318,8 +325,8 @@ const CurrencyTable = (): JSX.Element => {
         </div>
       </div>
 
-      {/* Context Menu */}
-      {contextMenu && (
+      {/* Context Menu — hidden for staff */}
+      {!isStaff && contextMenu && (
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setContextMenu(null)} />
           <div

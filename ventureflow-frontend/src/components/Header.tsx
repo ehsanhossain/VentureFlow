@@ -3,11 +3,14 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, lazy, Suspense } from "react";
 import { Menu, X, Check, Search, Command, Loader2, FileText, Home, Plus, ChevronDown } from "lucide-react";
+
+const CreateDealModal = lazy(() => import('../pages/deals/components/CreateDealModal'));
 import { useContext } from "react";
 import { AuthContext } from "../routes/AuthContext";
 import ProfileDropdown from "../components/dashboard/ProfileDropdown";
+import { useDriveBreadcrumbs } from "../context/DriveBreadcrumbContext";
 import { useNotifications } from "../context/NotificationContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -86,13 +89,217 @@ const SearchAvatar: React.FC<{ name?: string; firstName?: string; lastName?: str
     </div>
   );
 };
+
+/* ── Breadcrumb item types ── */
+interface BreadcrumbAction {
+  type: 'link' | 'callback';
+  url?: string;
+  fn?: () => void;
+}
+
+interface BreadcrumbItem {
+  label: string;
+  action: BreadcrumbAction;
+}
+
+const segmentTranslationMap: Record<string, string> = {
+  'prospects': 'navigation.companies',
+  'deal-pipeline': 'navigation.dealPipeline',
+  'dashboard': 'navigation.dashboard',
+  'settings': 'navigation.settings',
+  'employee': 'navigation.employees',
+  'general': 'navigation.general',
+  'currency': 'navigation.currency',
+  'partner-management': 'navigation.partnerManagement',
+  'staff-accounts': 'navigation.staffAndAccounts',
+  'notifications': 'navigation.notifications',
+  'profile': 'navigation.profile',
+};
+
+const getSegmentLabel = (segment: string, t: (key: string) => string) => {
+  const translationKey = segmentTranslationMap[segment];
+  if (translationKey) return t(translationKey);
+  // Preserve project codes like JP-B-433, IN-S-019 as-is (don't strip hyphens)
+  if (/^[A-Z]{2,3}-[A-Z]-\d+$/i.test(segment)) return segment.toUpperCase();
+  const rawName = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
+  return rawName === 'Employee' ? 'HRVC' : rawName;
+};
+
+/**
+ * Combined breadcrumb trail.
+ * On drive pages: Investors → JP-B-789 → CloudFlow → folder → subfolder
+ * On other pages: URL-based segments
+ * Collapse: Home (icon) + /.../ + last 3 visible items
+ */
+const BreadcrumbTrail: React.FC<{
+  pathSegments: string[];
+  driveBreadcrumbs: { id: string | null; name: string }[];
+  onNavigateFolder: ((folderId: string | null) => void) | null;
+  prospectInfo: { type: 'investor' | 'target'; code: string; id: string } | null;
+  t: (key: string) => string;
+}> = ({ pathSegments, driveBreadcrumbs, onNavigateFolder, prospectInfo, t }) => {
+  const navigate = useNavigate();
+  const [collapseOpen, setCollapseOpen] = useState(false);
+  const collapseRef = useRef<HTMLDivElement>(null);
+
+  // Close collapse dropdown on click outside
+  useEffect(() => {
+    if (!collapseOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (collapseRef.current && !collapseRef.current.contains(e.target as Node)) {
+        setCollapseOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [collapseOpen]);
+
+  // Build the breadcrumb items array
+  const allItems: BreadcrumbItem[] = [];
+  const isDrivePage = pathSegments[0] === 'drive';
+
+  if (isDrivePage && prospectInfo) {
+    // ── Drive page: build logical navigation path ──
+    // 1. Type label (Investors / Targets)
+    const typeLabel = prospectInfo.type === 'investor' ? 'Investors' : 'Targets';
+    allItems.push({
+      label: typeLabel,
+      action: { type: 'link', url: '/prospects' },
+    });
+
+    // 2. Prospect code (e.g. JP-B-789)
+    allItems.push({
+      label: prospectInfo.code,
+      action: { type: 'link', url: `/prospects/${prospectInfo.type}/${prospectInfo.id}` },
+    });
+
+    // 3. CloudFlow (navigates to drive root)
+    allItems.push({
+      label: 'CloudFlow',
+      action: { type: 'callback', fn: () => onNavigateFolder?.(null) },
+    });
+
+    // 4. Folder breadcrumbs (skip "Root" — that's the CloudFlow root itself)
+    driveBreadcrumbs
+      .filter(bc => bc.name !== 'Root')
+      .forEach(bc => {
+        allItems.push({
+          label: bc.name,
+          action: { type: 'callback', fn: () => onNavigateFolder?.(bc.id ?? null) },
+        });
+      });
+  } else if (isDrivePage && !prospectInfo) {
+    // Drive page but prospect info not loaded yet — show minimal fallback
+    allItems.push({
+      label: 'CloudFlow',
+      action: { type: 'link', url: location.pathname },
+    });
+  } else {
+    // ── Non-drive page: URL-based breadcrumbs ──
+    pathSegments.forEach((segment, i) => {
+      const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
+      allItems.push({
+        label: getSegmentLabel(segment, t),
+        action: { type: 'link', url },
+      });
+    });
+  }
+
+  if (allItems.length === 0) return null;
+
+  // ── Collapse logic ──
+  // Always show last MAX_VISIBLE items. Everything before that goes into /.../
+  const MAX_VISIBLE = 3;
+  const shouldCollapse = allItems.length > MAX_VISIBLE;
+  const collapsed = shouldCollapse ? allItems.slice(0, allItems.length - MAX_VISIBLE) : [];
+  const visible = shouldCollapse ? allItems.slice(allItems.length - MAX_VISIBLE) : allItems;
+
+  // Handle click on a breadcrumb item
+  const handleItemClick = (item: BreadcrumbItem) => {
+    if (item.action.type === 'link' && item.action.url) {
+      navigate(item.action.url);
+    } else if (item.action.fn) {
+      item.action.fn();
+    }
+  };
+
+  // Render a breadcrumb item (visible in the main trail)
+  const renderItem = (item: BreadcrumbItem, isLast: boolean) => {
+    const className = `px-2 py-1 rounded transition-all whitespace-nowrap ${isLast
+      ? 'text-[#064771] bg-blue-50/50 font-medium'
+      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+      }`;
+
+    if (item.action.type === 'link' && item.action.url) {
+      return (
+        <Link to={item.action.url} className={className} title={item.label}>
+          {item.label}
+        </Link>
+      );
+    }
+    return (
+      <button onClick={() => item.action.fn?.()} className={className} title={item.label}>
+        {item.label}
+      </button>
+    );
+  };
+
+  return (
+    <div className="flex items-center overflow-visible">
+      {/* /.../  collapse button — always right after Home icon */}
+      {shouldCollapse && (
+        <div className="relative" ref={collapseRef}>
+          <button
+            onClick={() => setCollapseOpen(v => !v)}
+            className="flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+            title="Show full path"
+          >
+            <span className="mx-1.5 text-gray-300">/</span>
+            <span className="text-sm text-gray-400 hover:text-gray-600 px-1 py-0.5 rounded hover:bg-gray-100 transition-colors">...</span>
+          </button>
+          {collapseOpen && (
+            <div className="absolute left-0 top-full mt-1 min-w-[200px] bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-[100]">
+              {[...collapsed].reverse().map((item, i) => (
+                <button
+                  key={`collapsed-${i}`}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors truncate"
+                  onClick={() => {
+                    handleItemClick(item);
+                    setCollapseOpen(false);
+                  }}
+                >
+                  / {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Visible tail items (last 3) */}
+      {visible.map((item, i) => {
+        const isLast = i === visible.length - 1;
+        return (
+          <span key={`visible-${i}`} className="flex items-center">
+            <span className="mx-1.5 text-gray-300">/</span>
+            {renderItem(item, isLast)}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
 export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: HeaderProps) {
   const { t } = useTranslation();
   const auth = useContext(AuthContext);
   const isPartner = auth?.isPartner;
+  const isStaff = auth?.isStaff;
   const { unreadCount, notifications, markAsRead, markAllAsRead } = useNotifications();
+  const { driveBreadcrumbs, onNavigateFolder, prospectInfo } = useDriveBreadcrumbs();
   const [isOpen, setIsOpen] = useState(false);
   const [createDropdownOpen, setCreateDropdownOpen] = useState(false);
+  const [showCreateDealModal, setShowCreateDealModal] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const createDropdownRef = useRef<HTMLDivElement>(null);
@@ -133,12 +340,38 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
           setSearchOpen(false);
           return; // Prevent any further ESC handling
         }
-        navigate(-1);
+        // On drive pages, Escape navigates to parent folder via the context callback
+        const isDrivePage = location.pathname.startsWith('/drive');
+        if (isDrivePage && onNavigateFolder && driveBreadcrumbs.length > 0) {
+          e.preventDefault();
+          // The DriveExplorer's goToParentFolder handles the logic;
+          // But from here we can only call onNavigateFolder directly.
+          // Navigate to the second-to-last breadcrumb (parent).
+          // driveBreadcrumbs includes [Root, Folder1, Folder2, ...]
+          const nonRootCrumbs = driveBreadcrumbs.filter(bc => bc.name !== 'Root');
+          if (nonRootCrumbs.length > 0) {
+            // Go up to parent
+            if (driveBreadcrumbs.length >= 2) {
+              onNavigateFolder(driveBreadcrumbs[driveBreadcrumbs.length - 2].id ?? null);
+            } else {
+              onNavigateFolder(null);
+            }
+          } else {
+            // At drive root — go back to prospect page
+            if (prospectInfo) {
+              navigate(`/prospects/${prospectInfo.type}/${prospectInfo.id}`);
+            } else {
+              navigate(-1);
+            }
+          }
+        } else {
+          navigate(-1);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [searchOpen, navigate]);
+  }, [searchOpen, navigate, location.pathname, onNavigateFolder, driveBreadcrumbs, prospectInfo]);
 
   // Search Logic
   useEffect(() => {
@@ -214,55 +447,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 <Home className="w-4 h-4" />
               </Link>
 
-              <div className="flex items-center overflow-hidden max-w-[400px]">
-                {pathSegments.length > 3 && (
-                  <span className="flex items-center text-gray-400 px-1">
-                    <span className="mx-1 text-gray-400">/</span>
-                    <span className="text-xs">...</span>
-                  </span>
-                )}
-
-                {pathSegments.slice(-3).map((segment, index) => {
-                  const url = `/${pathSegments.slice(0, pathSegments.length - 3 + index + 1).join('/')}`;
-                  const rawName = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ');
-                  // Map URL segments to translation keys for breadcrumb titles
-                  const segmentTranslationMap: Record<string, string> = {
-                    'prospects': 'navigation.companies',
-                    'deal-pipeline': 'navigation.dealPipeline',
-                    'dashboard': 'navigation.dashboard',
-                    'settings': 'navigation.settings',
-                    'employee': 'navigation.employees',
-                    'general': 'navigation.general',
-                    'currency': 'navigation.currency',
-                    'partner-management': 'navigation.partnerManagement',
-                    'staff-accounts': 'navigation.staffAndAccounts',
-                    'notifications': 'navigation.notifications',
-                    'profile': 'navigation.profile',
-                  };
-                  const translationKey = segmentTranslationMap[segment];
-                  const name = translationKey ? t(translationKey) : (rawName === 'Employee' ? 'HRVC' : rawName);
-                  const isLast = (pathSegments.length - 3 + index) === pathSegments.length - 1;
-
-                  return (
-                    <span key={segment} className="flex items-center group">
-                      <span className="mx-1 text-gray-400">/</span>
-                      <Link
-                        to={url}
-                        className={`
-                        px-2 py-1 rounded transition-all whitespace-nowrap
-                        ${isLast
-                            ? 'text-[#064771] bg-blue-50/50 font-medium'
-                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                          }
-                      `}
-                        title={name}
-                      >
-                        {name}
-                      </Link>
-                    </span>
-                  );
-                })}
-              </div>
+              <BreadcrumbTrail pathSegments={pathSegments} driveBreadcrumbs={driveBreadcrumbs} onNavigateFolder={onNavigateFolder} prospectInfo={prospectInfo} t={t} />
             </div>
 
             {/* Global Search Bar — hidden for partners */}
@@ -300,7 +485,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 {createDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-lg">
                     <button
-                      onClick={() => { navigate('/deal-pipeline'); setCreateDropdownOpen(false); }}
+                      onClick={() => { setShowCreateDealModal(true); setCreateDropdownOpen(false); }}
                       className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
                     >
                       <CatalystIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
@@ -320,27 +505,33 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                       <ProspectsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
                       Add Target
                     </button>
-                    <button
-                      onClick={() => { navigate('/settings/staff'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
-                    >
-                      <StaffAccountsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
-                      Add Staff
-                    </button>
-                    <button
-                      onClick={() => { navigate('/settings/partners'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
-                    >
-                      <PartnerIconCustom className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
-                      Add Partner
-                    </button>
-                    <button
-                      onClick={() => { navigate('/settings/currency'); setCreateDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
-                    >
-                      <CurrencyIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
-                      Add Currency
-                    </button>
+                    {!isStaff && (
+                      <button
+                        onClick={() => { navigate('/settings/staff'); setCreateDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                      >
+                        <StaffAccountsIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                        Add Staff
+                      </button>
+                    )}
+                    {!isStaff && (
+                      <button
+                        onClick={() => { navigate('/settings/partners'); setCreateDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                      >
+                        <PartnerIconCustom className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                        Add Partner
+                      </button>
+                    )}
+                    {!isStaff && (
+                      <button
+                        onClick={() => { navigate('/settings/currency'); setCreateDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#064771] flex items-center gap-3 transition-colors"
+                      >
+                        <CurrencyIcon className="w-5 h-5 text-gray-400 group-hover:text-[#064771]" />
+                        Add Currency
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -505,7 +696,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.investors.map((investor) => (
                         <li key={`investor-${investor.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
-                          onClick={() => { navigate(`/prospects/investor/${investor.id}`); closeSearch(); }}>
+                          onClick={() => { navigate(`/prospects/investor/${investor.project_code || investor.id}`); closeSearch(); }}>
                           <SearchAvatar name={investor.name} avatarUrl={investor.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{isPartner ? investor.project_code : investor.name}</span>
                           {investor.project_code && !isPartner && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{investor.project_code}</span>}
@@ -522,7 +713,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                     <ul className="py-2 text-sm text-gray-700">
                       {results.targets.map((target) => (
                         <li key={`target-${target.id}`} className="group flex cursor-pointer select-none items-center px-4 py-2.5 hover:bg-gray-100"
-                          onClick={() => { navigate(`/prospects/target/${target.id}`); closeSearch(); }}>
+                          onClick={() => { navigate(`/prospects/target/${target.project_code || target.id}`); closeSearch(); }}>
                           <SearchAvatar name={target.name} avatarUrl={target.avatar_url as string | undefined} />
                           <span className="ml-3 flex-auto truncate">{isPartner ? target.project_code : target.name}</span>
                           {target.project_code && !isPartner && <span className="ml-3 flex-none text-[11px] font-medium text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-[3px]">{target.project_code}</span>}
@@ -533,7 +724,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 )}
 
                 {/* Staff — hidden for partners */}
-                {!isPartner && results.staff.length > 0 && (
+                {!isPartner && !isStaff && results.staff.length > 0 && (
                   <div key="staff-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Staff</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -550,7 +741,7 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
                 )}
 
                 {/* Partners — hidden for partners */}
-                {!isPartner && results.partners.length > 0 && (
+                {!isPartner && !isStaff && results.partners.length > 0 && (
                   <div key="partners-section">
                     <div className="px-4 py-2 text-xs font-medium text-gray-500 bg-gray-50">Partners</div>
                     <ul className="py-2 text-sm text-gray-700">
@@ -601,6 +792,19 @@ export function Header({ mobileMenuOpen, toggleMobileMenu, sidebarExpanded }: He
             )}
           </div>
         </div>
+      )}
+
+      {/* Create Deal Modal — opened from Add button */}
+      {showCreateDealModal && (
+        <Suspense fallback={null}>
+          <CreateDealModal
+            onClose={() => setShowCreateDealModal(false)}
+            onCreated={() => {
+              setShowCreateDealModal(false);
+              navigate('/deal-pipeline');
+            }}
+          />
+        </Suspense>
       )}
     </>
   );

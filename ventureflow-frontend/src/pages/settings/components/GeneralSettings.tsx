@@ -4,13 +4,15 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef, useMemo } from 'react';
 import LanguageSelect from '../../../components/dashboard/LanguageSelect';
 import { useTranslation } from 'react-i18next';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { useGeneralSettings } from '../../../context/GeneralSettingsContext';
 import { AuthContext } from '../../../routes/AuthContext';
+import Holidays from 'date-holidays';
+import { Search, ChevronDown } from 'lucide-react';
 
 interface Currency {
     id: string | number;
@@ -55,6 +57,23 @@ const timezones = [
 
 const dateFormats = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD'];
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Build the supported country list from date-holidays once */
+const buildCountryList = (): { code: string; name: string }[] => {
+    try {
+        const hd = new Holidays();
+        const countries = hd.getCountries();
+        return Object.entries(countries)
+            .map(([code, name]) => ({ code, name: String(name) }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+        return [];
+    }
+};
+
+const SUPPORTED_COUNTRIES = buildCountryList();
+
 const GeneralSettings: React.FC = () => {
     const { t, i18n } = useTranslation();
     const { refreshSettings: refreshGlobalSettings } = useGeneralSettings();
@@ -72,6 +91,14 @@ const GeneralSettings: React.FC = () => {
     const [timezone, setTimezone] = useState('(GMT+07:00) Bangkok, Hanoi, Jakarta');
     const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
     const [language, setLanguage] = useState(i18n.language || 'en');
+    const [calendarCountry, setCalendarCountry] = useState('US');
+    const [weekendDays, setWeekendDays] = useState<number[]>([0, 6]);
+
+    // Country dropdown state
+    const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+    const [countrySearch, setCountrySearch] = useState('');
+    const countryDropdownRef = useRef<HTMLDivElement>(null);
+    const countrySearchRef = useRef<HTMLInputElement>(null);
 
     // Track initial values for dirty checking
     const [initialSettings, setInitialSettings] = useState({
@@ -79,6 +106,8 @@ const GeneralSettings: React.FC = () => {
         timezone: '(GMT+07:00) Bangkok, Hanoi, Jakarta',
         dateFormat: 'DD/MM/YYYY',
         language: i18n.language || 'en',
+        calendarCountry: 'US',
+        weekendDays: [0, 6] as number[],
     });
 
     useEffect(() => {
@@ -117,13 +146,33 @@ const GeneralSettings: React.FC = () => {
                     i18n.changeLanguage(settings.language);
                 }
             }
+            if (settings.calendar_country) setCalendarCountry(settings.calendar_country);
+            if (settings.weekend_days) {
+                try {
+                    const parsed = typeof settings.weekend_days === 'string'
+                        ? JSON.parse(settings.weekend_days)
+                        : settings.weekend_days;
+                    if (Array.isArray(parsed)) setWeekendDays(parsed);
+                } catch { /* use default */ }
+            }
 
             const currentLang = settings.language || i18n.language || 'en';
+            const savedCountry = settings.calendar_country || 'US';
+            let savedWeekendDays: number[] = [0, 6];
+            try {
+                const w = typeof settings.weekend_days === 'string'
+                    ? JSON.parse(settings.weekend_days)
+                    : settings.weekend_days;
+                if (Array.isArray(w)) savedWeekendDays = w;
+            } catch { /* use default */ }
+
             setInitialSettings({
                 defaultCurrency: settings.default_currency || 'USD',
                 timezone: settings.timezone || '(GMT+07:00) Bangkok, Hanoi, Jakarta',
                 dateFormat: settings.date_format || 'DD/MM/YYYY',
                 language: currentLang,
+                calendarCountry: savedCountry,
+                weekendDays: savedWeekendDays,
             });
         } catch (error) {
             console.error('Failed to fetch settings:', error);
@@ -140,6 +189,8 @@ const GeneralSettings: React.FC = () => {
                 timezone: timezone,
                 date_format: dateFormat,
                 language: language,
+                calendar_country: calendarCountry,
+                weekend_days: JSON.stringify(weekendDays),
             });
 
             // Apply language change via i18next
@@ -152,6 +203,8 @@ const GeneralSettings: React.FC = () => {
                 timezone,
                 dateFormat,
                 language,
+                calendarCountry,
+                weekendDays,
             });
 
             showAlert({ type: 'success', message: 'Settings saved successfully' });
@@ -171,6 +224,8 @@ const GeneralSettings: React.FC = () => {
         setTimezone(initialSettings.timezone);
         setDateFormat(initialSettings.dateFormat);
         setLanguage(initialSettings.language);
+        setCalendarCountry(initialSettings.calendarCountry);
+        setWeekendDays(initialSettings.weekendDays);
         // Revert i18next language as well
         if (i18n.language !== initialSettings.language) {
             i18n.changeLanguage(initialSettings.language);
@@ -184,11 +239,61 @@ const GeneralSettings: React.FC = () => {
         i18n.changeLanguage(langCode);
     }, [i18n]);
 
+    // Toggle a weekend day on/off
+    const toggleWeekendDay = useCallback((dayNum: number) => {
+        setWeekendDays(prev =>
+            prev.includes(dayNum) ? prev.filter(d => d !== dayNum) : [...prev, dayNum]
+        );
+    }, []);
+
+    // Filtered country list for search
+    const filteredCountries = useMemo(() => {
+        if (!countrySearch.trim()) return SUPPORTED_COUNTRIES;
+        const q = countrySearch.toLowerCase();
+        return SUPPORTED_COUNTRIES.filter(
+            c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+        );
+    }, [countrySearch]);
+
+    // Close country dropdown on outside click
+    useEffect(() => {
+        if (!countryDropdownOpen) return;
+        const handleClick = (e: MouseEvent) => {
+            if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
+                setCountryDropdownOpen(false);
+                setCountrySearch('');
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [countryDropdownOpen]);
+
+    // Focus search when dropdown opens
+    useEffect(() => {
+        if (countryDropdownOpen && countrySearchRef.current) {
+            countrySearchRef.current.focus();
+        }
+    }, [countryDropdownOpen]);
+
+    // Resolve selected country name
+    const selectedCountryName = SUPPORTED_COUNTRIES.find(c => c.code === calendarCountry)?.name || calendarCountry;
+
+    // Flag SVG path helper
+    const getFlagSrc = (code: string) => {
+        try {
+            return new URL(`../../../assets/flags/${code.toLowerCase()}.svg`, import.meta.url).href;
+        } catch {
+            return '';
+        }
+    };
+
     const isDirty =
         defaultCurrency !== initialSettings.defaultCurrency ||
         timezone !== initialSettings.timezone ||
         dateFormat !== initialSettings.dateFormat ||
-        language !== initialSettings.language;
+        language !== initialSettings.language ||
+        calendarCountry !== initialSettings.calendarCountry ||
+        JSON.stringify(weekendDays.sort()) !== JSON.stringify(initialSettings.weekendDays.sort());
 
     const handleBrowserNotificationToggle = async () => {
         if (!("Notification" in window)) {
@@ -279,6 +384,109 @@ const GeneralSettings: React.FC = () => {
                                         <option key={fmt} value={fmt}>{fmt}</option>
                                     ))}
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Calendar & Working Days */}
+                    <div className="bg-white rounded-[3px] border border-gray-200 p-8 shadow-sm">
+                        <h3 className="text-lg font-medium mb-2 text-gray-900">Calendar & Working Days</h3>
+                        <p className="text-xs text-gray-500 mb-6">Controls holiday recognition and working-day calculations across all calendars.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Country Selector */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">Calendar Country</label>
+                                <div ref={countryDropdownRef} className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setCountryDropdownOpen(!countryDropdownOpen); setCountrySearch(''); }}
+                                        disabled={isReadOnly || isLoadingSettings}
+                                        className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer hover:border-gray-300"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <img
+                                                src={getFlagSrc(calendarCountry)}
+                                                alt=""
+                                                className="w-5 h-3.5 object-cover rounded-[1px]"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            />
+                                            <span className="text-gray-900">{selectedCountryName}</span>
+                                            <span className="text-gray-400 text-xs">({calendarCountry})</span>
+                                        </span>
+                                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${countryDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {countryDropdownOpen && (
+                                        <div className="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                            {/* Search */}
+                                            <div className="p-2 border-b border-gray-100">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                                                    <input
+                                                        ref={countrySearchRef}
+                                                        type="text"
+                                                        value={countrySearch}
+                                                        onChange={(e) => setCountrySearch(e.target.value)}
+                                                        placeholder="Search countries..."
+                                                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-[#064771]"
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Country List */}
+                                            <div className="max-h-52 overflow-auto scrollbar-premium">
+                                                {filteredCountries.length === 0 ? (
+                                                    <div className="px-4 py-3 text-sm text-gray-400">No countries found</div>
+                                                ) : (
+                                                    filteredCountries.map(c => (
+                                                        <button
+                                                            key={c.code}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCalendarCountry(c.code);
+                                                                setCountryDropdownOpen(false);
+                                                                setCountrySearch('');
+                                                            }}
+                                                            className={`w-full flex items-center gap-2.5 px-4 py-2 text-sm text-left hover:bg-[#E1F7FF] transition-colors ${calendarCountry === c.code ? 'bg-[#E1F7FF] text-[#064771] font-medium' : 'text-gray-700'
+                                                                }`}
+                                                        >
+                                                            <img
+                                                                src={getFlagSrc(c.code)}
+                                                                alt=""
+                                                                className="w-5 h-3.5 object-cover rounded-[1px] shrink-0"
+                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                            />
+                                                            <span className="truncate">{c.name}</span>
+                                                            <span className="text-gray-400 text-xs shrink-0">({c.code})</span>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-[11px] text-gray-400 mt-1">Determines public holidays shown in calendars.</p>
+                            </div>
+
+                            {/* Weekend Days Toggles */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">Weekend Days</label>
+                                <div className="flex gap-1.5 flex-wrap">
+                                    {DAY_LABELS.map((label, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => toggleWeekendDay(idx)}
+                                            disabled={isReadOnly || isLoadingSettings}
+                                            className={`px-3.5 py-2 rounded-full text-sm font-medium transition-all border ${weekendDays.includes(idx)
+                                                    ? 'bg-[#064771] text-white border-[#064771] shadow-sm'
+                                                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[11px] text-gray-400 mt-1">Selected days are treated as non-working days.</p>
                             </div>
                         </div>
                     </div>

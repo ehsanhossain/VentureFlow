@@ -30,6 +30,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserTablePreferenceController;
 use App\Http\Controllers\MatchController;
 use App\Http\Controllers\FileServeController;
+use App\Http\Controllers\DriveController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 
@@ -43,6 +44,13 @@ Route::post('/reset-password', [NewPasswordController::class, 'store']);
 Route::get('/deals/seller', [ApiController::class, 'getSellerDealInfo']);
 Route::post('/ai/extract', [\App\Http\Controllers\AIController::class, 'extract']);
 
+// Flowdrive — Public shared links (no auth required)
+Route::prefix('drive/shared')->group(function () {
+    Route::get('/{token}',          [DriveController::class, 'accessShared']);
+    Route::post('/{token}/verify',  [DriveController::class, 'verifySharePassword']);
+    Route::get('/{token}/download', [DriveController::class, 'downloadShared']);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Partner Portal — partner role only
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,6 +61,19 @@ Route::middleware(['auth:sanctum', 'role:partner'])->prefix('partner-portal')->g
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Routes registered EARLY (before admin group) for correct wildcard priority.
+// All authenticated users (admin, staff, partner where applicable).
+// ─────────────────────────────────────────────────────────────────────────────
+Route::middleware('auth:sanctum')->group(function () {
+    // Industries stats & adhoc — before admin apiResource wildcard captures them
+    Route::get('/industries/stats', [IndustryController::class, 'stats']);
+    Route::get('/industries/adhoc', [IndustryController::class, 'adhoc']);
+
+    // Employee list for PIC picker — staff needs this for Create Deal modal
+    Route::get('/employees/fetch', [EmployeeController::class, 'fetchAllEmployees']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Admin-only routes (System Admin role required)
 // ─────────────────────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
@@ -60,8 +81,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
     // Roles
     Route::get('/roles', [RoleController::class, 'index']);
 
-    // Employee / HR
-    Route::get('/employees/fetch', [EmployeeController::class, 'fetchAllEmployees']);
+    // Employee / HR  (employees/fetch is in the early auth:sanctum group for all users)
     Route::get('/employees/assigned-projects/{employeeId}', [EmployeeController::class, 'assigned_projects']);
     Route::post('/employees/deletion-impact', [EmployeeController::class, 'deletionImpact']);
     Route::delete('/employees', [EmployeeController::class, 'destroy']);
@@ -95,13 +115,10 @@ Route::middleware(['auth:sanctum', 'role:System Admin'])->group(function () {
     Route::get('/fee-tiers', [\App\Http\Controllers\FeeTierController::class, 'index']);
     Route::post('/fee-tiers/bulk', [\App\Http\Controllers\FeeTierController::class, 'updateBulk']);
 
-    // Industries (write/admin actions + stats reads)
+    // Industries (write/admin actions only)
     Route::post('industries/promote', [IndustryController::class, 'promote']);
     Route::post('industries/merge', [IndustryController::class, 'merge']);
     Route::post('industries/rename-adhoc', [IndustryController::class, 'renameAdhoc']);
-    // These MUST be registered before apiResource, otherwise {industry} wildcard captures them first
-    Route::get('industries/stats', [IndustryController::class, 'stats']);
-    Route::get('industries/adhoc', [IndustryController::class, 'adhoc']);
     Route::apiResource('industries', IndustryController::class);
 
     // Partner Portal Configuration (admin config, not partner-read)
@@ -265,6 +282,12 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::get('/partner-structure/{id}',                 [PartnerController::class, 'partnerStructureShow']);
     Route::post('/partner-partnership-structures',        [PartnerController::class, 'partnerPartnershipStructuresStore']);
 
+    // Partner Account Management (multi-account)
+    Route::post('/partners/{id}/accounts',               [PartnerController::class, 'addAccount']);
+    Route::delete('/partners/{id}/accounts/{userId}',    [PartnerController::class, 'removeAccount']);
+    Route::put('/partners/{id}/accounts/{userId}',       [PartnerController::class, 'updateAccount']);
+    Route::put('/partners/{id}/accounts/{userId}/primary', [PartnerController::class, 'setPrimaryAccount']);
+
     // Deals — admin/staff only
     Route::get('/deals/dashboard',                    [\App\Http\Controllers\DealController::class, 'dashboard']);
     Route::get('/deals/{deal}/stage-check',           [\App\Http\Controllers\DealController::class, 'stageCheck']);
@@ -306,6 +329,55 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
         Route::post('/{id}/approve',     [MatchController::class, 'approve']);
         Route::post('/{id}/create-deal', [MatchController::class, 'createDeal']);
     });
+
+    // ── Flowdrive — file & folder management for prospects ──
+    Route::prefix('drive')->group(function () {
+        // Search (must come before wildcard listing routes)
+        Route::get('/{type}/{prospectId}/search',                  [DriveController::class, 'search']);
+
+        // Stats (lightweight counts — for CloudFlow card previews)
+        Route::get('/{type}/{prospectId}/stats',                   [DriveController::class, 'stats']);
+
+        // Listing
+        Route::get('/{type}/{prospectId}',                          [DriveController::class, 'index']);
+        Route::get('/{type}/{prospectId}/folder/{folderId}',       [DriveController::class, 'folderContents']);
+
+        // Folder operations
+        Route::post('/{type}/{prospectId}/folder',                 [DriveController::class, 'createFolder']);
+        Route::put('/folder/{folderId}',                           [DriveController::class, 'renameFolder']);
+        Route::delete('/folder/{folderId}',                        [DriveController::class, 'deleteFolder']);
+
+        // Bulk operations
+        Route::post('/{type}/{prospectId}/bulk-download',          [DriveController::class, 'bulkDownload']);
+        Route::post('/{type}/{prospectId}/move',                   [DriveController::class, 'bulkMove']);
+        Route::get('/{type}/{prospectId}/folder-tree',             [DriveController::class, 'folderTree']);
+
+        // File upload
+        Route::post('/{type}/{prospectId}/upload',                 [DriveController::class, 'upload']);
+        Route::post('/{type}/{prospectId}/upload-chunk',           [DriveController::class, 'uploadChunk']);
+        Route::post('/{type}/{prospectId}/upload-complete',        [DriveController::class, 'uploadComplete']);
+
+        // File operations
+        Route::put('/file/{fileId}',                               [DriveController::class, 'renameFile']);
+        Route::delete('/file/{fileId}',                            [DriveController::class, 'deleteFile']);
+        Route::get('/file/{fileId}/download',                      [DriveController::class, 'downloadFile']);
+        Route::get('/file/{fileId}/preview',                       [DriveController::class, 'previewFile']);
+
+        // Version control
+        Route::post('/file/{fileId}/replace',                      [DriveController::class, 'replaceFile']);
+        Route::get('/file/{fileId}/versions',                      [DriveController::class, 'listVersions']);
+        Route::get('/file/{fileId}/versions/{versionId}/download', [DriveController::class, 'downloadVersion']);
+
+        // Comments
+        Route::post('/file/{fileId}/comment',                      [DriveController::class, 'addComment']);
+        Route::get('/file/{fileId}/comments',                      [DriveController::class, 'listComments']);
+        Route::delete('/comment/{commentId}',                      [DriveController::class, 'deleteComment']);
+
+        // Sharing
+        Route::post('/share',                                      [DriveController::class, 'createShare']);
+        Route::delete('/share/{shareId}',                          [DriveController::class, 'revokeShare']);
+        Route::get('/file/{fileId}/shares',                        [DriveController::class, 'listShares']);
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -323,8 +395,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/countries',             [CountryController::class, 'index']);
     Route::get('/countries/{id}',        [CountryController::class, 'show']);
 
-    // Industries (read-only — for filter dropdowns, all roles need this)
-    Route::get('/industries',            [IndustryController::class, 'index']);
+    // Industries (read-only — for filter dropdowns + settings pages; all roles need this)
+    // stats & adhoc are also registered above (before admin group) for route priority
+    Route::get('/industries',        [IndustryController::class, 'index']);
 
     // Global Search — accessible to all authenticated users (controller handles role-based filtering)
     Route::get('/search',                [SearchController::class, 'index']);

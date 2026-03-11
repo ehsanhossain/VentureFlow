@@ -24,6 +24,8 @@ export interface SubMenuItem {
   roles?: string[]; // If specified, only these roles can see this item
   partnerVisible?: boolean; // If true, partners can see this
   partnerOnly?: boolean; // If true, ONLY partners can see this (hidden from admin/staff)
+  staffHidden?: boolean; // If true, staff cannot see this item
+  staffVisible?: boolean; // If true, staff can see this (overrides partnerOnly)
 }
 
 export interface MenuItem {
@@ -53,13 +55,13 @@ export const menuItems: MenuItem[] = [
     // Settings is now visible to all, but has different sub-items based on role
     subItems: [
       { label: "General", path: "/settings/general", icon: GeneralSettingsSubIcon, partnerVisible: true },
-      { label: "My Profile", path: "/settings/profile", icon: StaffAccountsIcon, partnerVisible: true, partnerOnly: true },
-      { label: "Staff & Accounts", path: "/settings/staff", icon: StaffAccountsIcon },
+      { label: "My Profile", path: "/settings/profile", icon: StaffAccountsIcon, partnerVisible: true, partnerOnly: true, staffVisible: true },
+      { label: "Staff & Accounts", path: "/settings/staff", icon: StaffAccountsIcon, staffHidden: true },
       { label: "Currency", path: "/settings/currency", icon: CurrencyIcon },
-      { label: "Partner Management", path: "/settings/partners", icon: PartnerIconCustom },
-      { label: "Pipeline Workflow", path: "/settings/pipeline", icon: CatalystIcon },
+      { label: "Partner Management", path: "/settings/partners", icon: PartnerIconCustom, staffHidden: true },
+      { label: "Pipeline Workflow", path: "/settings/pipeline", icon: CatalystIcon, staffHidden: true },
       { label: "Industries", path: "/settings/industries", icon: Factory },
-      { label: "Fee Structure", path: "/settings/fee-structure", icon: DollarSign },
+      { label: "Fee Structure", path: "/settings/fee-structure", icon: DollarSign, staffHidden: true },
       { label: "Audit Log", path: "/settings/audit-log", icon: History, roles: ["System Admin"] },
     ],
   },

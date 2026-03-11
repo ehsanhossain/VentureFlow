@@ -40,6 +40,7 @@ class PartnerController extends Controller
         }
 
         $partners = Partner::with(['partnerOverview.country', 'partnershipStructure', 'user'])
+            ->withCount('users')
             ->when($search, function ($query) use ($search) {
                 $query->whereHas('partnerOverview', function ($q) use ($search) {
                     $q->where('reg_name', 'like', "%{$search}%");
@@ -182,6 +183,15 @@ class PartnerController extends Controller
                 'user_id' => $user->id,
                 'status' => 'active',
                 'partner_overview_id' => $overview->id,
+            ]);
+
+            // Insert into partner_users pivot table
+            DB::table('partner_users')->insert([
+                'partner_id' => $partner->id,
+                'user_id'    => $user->id,
+                'is_primary' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
             DB::commit();
@@ -365,11 +375,19 @@ class PartnerController extends Controller
 
     public function show(Partner $partner)
     {
-        $partner->load(['partnerOverview', 'partnershipStructure', 'user']);
+        $partner->load(['partnerOverview.country', 'partnershipStructure', 'user', 'users']);
+        $partner->loadCount('users');
 
-        // Expose is_active on the user object for the admin panel
+        // Expose is_active on the primary user for the admin panel
         if ($partner->user) {
             $partner->user->makeVisible('is_active');
+        }
+
+        // Expose is_active on all pivot users
+        if ($partner->relationLoaded('users')) {
+            $partner->users->each(function ($u) {
+                $u->makeVisible('is_active');
+            });
         }
 
         return response()->json([
@@ -413,9 +431,11 @@ class PartnerController extends Controller
             ]);
 
             if ($partner->partnerOverview) {
-                $partner->partnerOverview->update([
-                    'reg_name' => $request->name,
-                ]);
+                $updateData = ['reg_name' => $request->name];
+                if ($request->has('details')) {
+                    $updateData['details'] = $request->details;
+                }
+                $partner->partnerOverview->update($updateData);
             }
 
             DB::commit();
@@ -448,12 +468,22 @@ class PartnerController extends Controller
 
             DB::transaction(function () use ($idsToDelete, &$deletedCount) {
                 $partners = Partner::whereIn('id', $idsToDelete)->get();
-                $userIds = $partners->pluck('user_id')->filter()->toArray();
 
-                // FileFolder was removed in Phase 2 — no cleanup needed here
+                // Collect ALL user IDs: from legacy column + pivot table
+                $legacyUserIds = $partners->pluck('user_id')->filter()->toArray();
+                $pivotUserIds = DB::table('partner_users')
+                    ->whereIn('partner_id', $idsToDelete)
+                    ->pluck('user_id')
+                    ->toArray();
+                $allUserIds = array_unique(array_merge($legacyUserIds, $pivotUserIds));
+
+                // Clean up pivot table first
+                DB::table('partner_users')->whereIn('partner_id', $idsToDelete)->delete();
 
                 $deletedCount = Partner::whereIn('id', $idsToDelete)->delete();
-                User::whereIn('id', $userIds)->delete();
+                if (!empty($allUserIds)) {
+                    User::whereIn('id', $allUserIds)->delete();
+                }
             });
 
             if ($deletedCount > 0) {
@@ -621,5 +651,219 @@ class PartnerController extends Controller
             'message'   => 'Avatar updated successfully.',
             'image_url' => url('/api/files/' . $path),
         ]);
+    }
+
+    // ── Multi-Account Management ──
+
+    /**
+     * Add a new login account to an existing partner.
+     * POST /api/partners/{id}/accounts
+     */
+    public function addAccount(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'label'    => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $partner = Partner::findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'name'                 => $request->name,
+                'email'                => $request->email,
+                'password'             => Hash::make($request->password),
+                'must_change_password' => true,
+            ]);
+
+            // Assign partner role
+            try {
+                $user->assignRole('partner');
+            } catch (\Exception $e) {
+                Log::warning('Role assignment failed for new account: ' . $e->getMessage());
+            }
+
+            // Insert into pivot
+            DB::table('partner_users')->insert([
+                'partner_id' => $partner->id,
+                'user_id'    => $user->id,
+                'label'      => $request->label,
+                'is_primary' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Account added successfully',
+                'user'    => $user->makeVisible('is_active'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Add account failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to add account.', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Remove a login account from a partner.
+     * DELETE /api/partners/{id}/accounts/{userId}
+     */
+    public function removeAccount($id, $userId)
+    {
+        $partner = Partner::findOrFail($id);
+
+        // Prevent removing the last account
+        $accountCount = DB::table('partner_users')->where('partner_id', $partner->id)->count();
+        if ($accountCount <= 1) {
+            return response()->json(['error' => 'Cannot remove the last account.'], 422);
+        }
+
+        // Prevent removing the primary account
+        $pivot = DB::table('partner_users')
+            ->where('partner_id', $partner->id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$pivot) {
+            return response()->json(['error' => 'Account not found for this partner.'], 404);
+        }
+
+        if ($pivot->is_primary) {
+            return response()->json(['error' => 'Cannot remove the primary account. Set another account as primary first.'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            DB::table('partner_users')
+                ->where('partner_id', $partner->id)
+                ->where('user_id', $userId)
+                ->delete();
+
+            User::where('id', $userId)->delete();
+
+            DB::commit();
+            return response()->json(['message' => 'Account removed successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to remove account.'], 500);
+        }
+    }
+
+    /**
+     * Update an existing account (name, email, label, password reset).
+     * PUT /api/partners/{id}/accounts/{userId}
+     */
+    public function updateAccount(Request $request, $id, $userId)
+    {
+        $partner = Partner::findOrFail($id);
+
+        $pivot = DB::table('partner_users')
+            ->where('partner_id', $partner->id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$pivot) {
+            return response()->json(['error' => 'Account not found for this partner.'], 404);
+        }
+
+        $user = User::findOrFail($userId);
+
+        $validator = Validator::make($request->all(), [
+            'name'     => 'sometimes|string',
+            'email'    => 'sometimes|email|unique:users,email,' . $userId,
+            'password' => 'sometimes|string|min:8',
+            'label'    => 'sometimes|nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $userData = [];
+            if ($request->has('name'))  $userData['name']  = $request->name;
+            if ($request->has('email')) $userData['email'] = $request->email;
+            if ($request->has('password')) {
+                $userData['password'] = Hash::make($request->password);
+                $userData['must_change_password'] = true;
+            }
+
+            if (!empty($userData)) {
+                $user->update($userData);
+            }
+
+            // Update pivot label
+            if ($request->has('label')) {
+                DB::table('partner_users')
+                    ->where('partner_id', $partner->id)
+                    ->where('user_id', $userId)
+                    ->update(['label' => $request->label, 'updated_at' => now()]);
+            }
+
+            // Sync primary user's name to overview if this is the primary account
+            if ($pivot->is_primary && $request->has('name') && $partner->partnerOverview) {
+                $partner->partnerOverview->update(['reg_name' => $request->name]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Account updated successfully',
+                'user'    => $user->fresh()->makeVisible('is_active'),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to update account.'], 500);
+        }
+    }
+
+    /**
+     * Set a specific account as the primary account for a partner.
+     * PUT /api/partners/{id}/accounts/{userId}/primary
+     */
+    public function setPrimaryAccount($id, $userId)
+    {
+        $partner = Partner::findOrFail($id);
+
+        $pivot = DB::table('partner_users')
+            ->where('partner_id', $partner->id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$pivot) {
+            return response()->json(['error' => 'Account not found for this partner.'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Unset all as primary
+            DB::table('partner_users')
+                ->where('partner_id', $partner->id)
+                ->update(['is_primary' => false, 'updated_at' => now()]);
+
+            // Set the chosen one as primary
+            DB::table('partner_users')
+                ->where('partner_id', $partner->id)
+                ->where('user_id', $userId)
+                ->update(['is_primary' => true, 'updated_at' => now()]);
+
+            // Also update legacy partners.user_id for backward compat
+            $partner->update(['user_id' => $userId]);
+
+            DB::commit();
+            return response()->json(['message' => 'Primary account updated successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Failed to update primary account.'], 500);
+        }
     }
 }

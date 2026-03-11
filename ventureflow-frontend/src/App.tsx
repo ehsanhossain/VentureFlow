@@ -13,6 +13,7 @@ import "@fontsource/roboto";
 import { AuthProvider } from "./routes/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { GeneralSettingsProvider } from "./context/GeneralSettingsContext";
+import { DriveBreadcrumbProvider } from "./context/DriveBreadcrumbContext";
 
 function App() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
@@ -44,12 +45,14 @@ function App() {
       <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <NotificationProvider>
           <GeneralSettingsProvider>
-            <Content
-              sidebarExpanded={sidebarExpanded}
-              setSidebarExpanded={setSidebarExpanded}
-              mobileMenuOpen={mobileMenuOpen}
-              toggleMobileMenu={toggleMobileMenu}
-            />
+            <DriveBreadcrumbProvider>
+              <Content
+                sidebarExpanded={sidebarExpanded}
+                setSidebarExpanded={setSidebarExpanded}
+                mobileMenuOpen={mobileMenuOpen}
+                toggleMobileMenu={toggleMobileMenu}
+              />
+            </DriveBreadcrumbProvider>
           </GeneralSettingsProvider>
         </NotificationProvider>
       </Router>

@@ -3,8 +3,8 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import React from 'react';
-import { X, MessageSquare, Clock, SkipBack, SkipForward } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, MessageSquare, Clock, SkipBack, SkipForward, MoreVertical, Pencil, ArrowRight, ArrowLeft, XCircle, Trash2, CalendarDays } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber, formatCompactBudget } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
 
@@ -12,9 +12,27 @@ interface DealExpandedPreviewProps {
     deal: Deal;
     onClose: () => void;
     onMove?: (direction: 'forward' | 'backward') => void;
+    onEdit?: (deal: Deal) => void;
+    onMarkLost?: (deal: Deal) => void;
+    onDelete?: (deal: Deal) => void;
 }
 
-const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose, onMove }) => {
+const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose, onMove, onEdit, onMarkLost, onDelete }) => {
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenu]);
     // Format currency value
     const formatValue = (value: number | string | null | undefined, currency: string) => {
         if (!value) return 'N/A';
@@ -41,9 +59,6 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
         ? formatCompactBudget(investmentBudget as any, getCurrencySymbol('USD'))
         : formatValue(deal.ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
     const targetCountries = deal.buyer?.investment_critera?.target_countries || [];
-    const targetIndustries = deal.buyer?.investment_critera?.target_industries || [];
-    const displayIndustries = targetIndustries.slice(0, 3).map((i: { name: string }) => i.name).join(', ') || 'Not Specified';
-    const additionalIndustries = targetIndustries.length > 3 ? targetIndustries.length - 3 : 0;
 
     // Seller details
     const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'To be declared' : 'Undefined');
@@ -59,7 +74,7 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
         : 'N/A';
 
     // Acquiring info
-    const acquiringRatio = deal.shareholding_ratio || deal.share_ratio || 'Majority ~70%';
+    const acquiringRatio = deal.shareholding_ratio || deal.share_ratio || 'Majority (51–99%)';
 
     // Dynamic deal type label
     const getDealTypeLabel = (): string => {
@@ -166,18 +181,109 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                             </div>
                         </div>
 
-                        {/* Close Button */}
-                        <button
-                            onClick={onClose}
-                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full flex-shrink-0 transition-colors"
-                            aria-label="Close preview"
-                        >
-                            <X className="w-5 h-5 text-gray-400" />
-                        </button>
+                        {/* Actions: 3-dot menu + Close */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            {/* 3-Dot Menu */}
+                            <div className="relative" ref={menuRef}>
+                                <button
+                                    onClick={() => setShowMenu(!showMenu)}
+                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                                    aria-label="Deal actions"
+                                >
+                                    <MoreVertical className="w-5 h-5 text-gray-400" />
+                                </button>
+                                {showMenu && (
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-[3px] shadow-lg border border-gray-200 py-1 z-50">
+                                        <button
+                                            onClick={() => { setShowMenu(false); onEdit?.(deal); }}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <Pencil className="w-4 h-4 text-gray-400" />
+                                            Edit Deal
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowMenu(false); onMove?.('forward'); }}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <ArrowRight className="w-4 h-4 text-gray-400" />
+                                            Move Forward
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowMenu(false); onMove?.('backward'); }}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <ArrowLeft className="w-4 h-4 text-gray-400" />
+                                            Move Backward
+                                        </button>
+                                        <div className="h-px bg-gray-100 my-1" />
+                                        <button
+                                            onClick={() => { setShowMenu(false); onMarkLost?.(deal); }}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4 text-red-400" />
+                                            Mark as Lost
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowMenu(false); onDelete?.(deal); }}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-400" />
+                                            Delete
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Close Button */}
+                            <button
+                                onClick={onClose}
+                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Close preview"
+                            >
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Divider */}
                     <div className="w-full h-px bg-gray-100" />
+
+                    {/* Current Stage Deadline Display */}
+                    {(() => {
+                        const currentDl = deal.stage_deadlines?.find(
+                            dl => dl.stage_code === deal.stage_code && !dl.is_completed
+                        );
+                        if (!currentDl?.end_date) return null;
+                        const now = new Date();
+                        now.setHours(0, 0, 0, 0);
+                        const end = new Date(currentDl.end_date);
+                        end.setHours(0, 0, 0, 0);
+                        const start = currentDl.start_date ? new Date(currentDl.start_date) : null;
+                        const daysUntil = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                        const fmtOpts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+                        const startStr = start ? start.toLocaleDateString('en-US', fmtOpts) : '';
+                        const endStr = end.toLocaleDateString('en-US', fmtOpts);
+
+                        let statusBadge;
+                        if (daysUntil < 0) {
+                            statusBadge = <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-red-100 text-red-700">Overdue</span>;
+                        } else if (daysUntil <= 3) {
+                            statusBadge = <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-700">Due Soon</span>;
+                        } else {
+                            statusBadge = <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-700">On Track</span>;
+                        }
+
+                        return (
+                            <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-[3px]">
+                                <CalendarDays className="w-4 h-4 text-gray-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-[13px]">
+                                    <span className="font-medium text-gray-700">Stage {deal.stage_code}</span>
+                                    <span className="text-gray-400">·</span>
+                                    <span className="text-gray-600">{startStr}{startStr ? ' – ' : ''}{endStr}</span>
+                                </div>
+                                {statusBadge}
+                            </div>
+                        );
+                    })()}
 
                     {/* Details Section - Two Columns */}
                     <div className="flex justify-between gap-10">
