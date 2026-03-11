@@ -146,7 +146,14 @@ const DrivePublicView: React.FC = () => {
                 .then(res => {
                     const d = res.data;
                     const prospectType = d.prospect_type === 'App\\Models\\Target' || d.prospect_type === 'target' ? 'target' : 'investor';
-                    navigate(`/drive/${prospectType}/${d.prospect_id}`, { replace: true });
+                    // Use project code if available, fall back to numeric ID
+                    const prospectIdentifier = d.prospect_code || d.prospect_id;
+                    // Build query params to navigate directly to the shared file/folder
+                    const params = new URLSearchParams();
+                    if (d.folder_id) params.set('folder', d.folder_id);
+                    if (d.file_id) params.set('file', d.file_id);
+                    const qs = params.toString();
+                    navigate(`/drive/${prospectType}/${prospectIdentifier}${qs ? `?${qs}` : ''}`, { replace: true });
                 })
                 .catch(() => { fetchSharedPublic(); });
         } else {
@@ -340,12 +347,44 @@ const DrivePublicView: React.FC = () => {
     const isWord = WORD_MIMES.includes(mime);
 
     return (
-        <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Full-viewport preview area */}
-            {showPreview && (
-                <div className="flex-1 flex flex-col" style={{ minHeight: '70vh' }}>
+        <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
+            {/* ── Top header bar ── */}
+            <div className="shrink-0 bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    {item.type === 'folder' ? (
+                        <Folder className="w-6 h-6 text-[#064771] fill-[#064771]/10 shrink-0" />
+                    ) : (
+                        <img src={getFileIconSrc(item.name || '')} alt="" className="w-6 h-6 shrink-0" draggable={false} />
+                    )}
+                    <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate" title={item.name}>{item.name}</p>
+                        {item.size != null && item.size > 0 && (
+                            <p className="text-[11px] text-gray-400">{formatFileSize(item.size)}</p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {item.type === 'file' && item.allow_download && (
+                        <button
+                            onClick={handleDownload}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#064771] text-white rounded-[3px] text-xs font-medium hover:bg-[#053a5c] transition-colors"
+                        >
+                            <Download className="w-3.5 h-3.5" /> {t('flowdrive.publicView.download')}
+                        </button>
+                    )}
+                    {item.type === 'file' && !item.allow_download && (
+                        <span className="text-[11px] text-gray-400 italic px-2">{t('flowdrive.publicView.viewOnly', 'View only')}</span>
+                    )}
+                    <span className="text-[10px] text-gray-300 border-l border-gray-200 pl-2 hidden sm:block">{t('flowdrive.publicView.sharedVia')}</span>
+                </div>
+            </div>
+
+            {/* ── Content area ── */}
+            {showPreview ? (
+                /* ── Previewable file — fills remaining viewport ── */
+                <div className="flex-1 flex flex-col overflow-hidden">
                     {previewLoading && (
-                        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
+                        <div className="flex-1 flex flex-col items-center justify-center gap-3">
                             <Loader2 className="w-8 h-8 text-[#064771] animate-spin" />
                             <p className="text-sm text-gray-500">Loading preview...</p>
                         </div>
@@ -353,57 +392,54 @@ const DrivePublicView: React.FC = () => {
 
                     {/* Image */}
                     {!previewLoading && previewBlobUrl && isImage && (
-                        <div className="flex-1 flex items-center justify-center bg-gray-100 p-4">
+                        <div className="flex-1 flex items-center justify-center bg-gray-100 p-4 overflow-auto">
                             <img
                                 src={previewBlobUrl}
                                 alt={item.name}
-                                className="max-w-full max-h-[80vh] object-contain"
+                                className="max-w-full max-h-full object-contain"
                                 style={{ imageRendering: 'auto' }}
                             />
                         </div>
                     )}
 
-                    {/* PDF — full viewport */}
+                    {/* PDF — full remaining viewport */}
                     {!previewLoading && previewBlobUrl && isPdf && (
                         <iframe
                             src={previewBlobUrl}
                             title={item.name}
                             className="flex-1 w-full border-0"
-                            style={{ minHeight: '80vh' }}
                         />
                     )}
 
                     {/* Video */}
                     {!previewLoading && previewBlobUrl && isVideo && (
-                        <div className="flex-1 flex items-center justify-center bg-black p-4">
-                            <video
-                                src={previewBlobUrl}
-                                controls
-                                className="max-w-full max-h-[80vh]"
-                            >
+                        <div className="flex-1 flex items-center justify-center bg-black">
+                            <video src={previewBlobUrl} controls className="max-w-full max-h-full">
                                 Your browser does not support video playback.
                             </video>
                         </div>
                     )}
 
-                    {/* Text — white bg, dark text */}
+                    {/* Text */}
                     {!previewLoading && isText && textContent !== null && (
-                        <div className="flex-1 overflow-auto bg-white p-6 mx-auto w-full max-w-4xl">
-                            <pre className="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 leading-relaxed">
-                                {textContent}
-                            </pre>
+                        <div className="flex-1 overflow-auto bg-white">
+                            <div className="max-w-4xl mx-auto p-6">
+                                <pre className="whitespace-pre-wrap break-words font-mono text-sm text-gray-800 leading-relaxed">
+                                    {textContent}
+                                </pre>
+                            </div>
                         </div>
                     )}
 
-                    {/* Excel spreadsheet */}
+                    {/* Excel */}
                     {!previewLoading && isExcel && excelHtml && (
-                        <div className="flex-1 flex flex-col overflow-hidden bg-white mx-auto w-full">
+                        <div className="flex-1 flex flex-col overflow-hidden bg-white">
                             <div
                                 className="flex-1 overflow-auto p-2 excel-public-container"
                                 dangerouslySetInnerHTML={{ __html: excelHtml }}
                             />
                             {sheetNames.length > 1 && (
-                                <div className="shrink-0 flex items-center gap-0.5 px-3 py-2 border-t border-gray-200 bg-gray-100 overflow-x-auto">
+                                <div className="shrink-0 flex items-center gap-0.5 px-3 py-1.5 border-t border-gray-200 bg-gray-50 overflow-x-auto">
                                     {sheetNames.map((name, idx) => (
                                         <button
                                             key={name}
@@ -436,47 +472,38 @@ const DrivePublicView: React.FC = () => {
                     {/* Preview failed */}
                     {!previewLoading && !previewBlobUrl && !excelHtml && textContent === null && !isWord && (
                         <div className="flex-1 flex items-center justify-center">
-                            <div className="text-center py-12">
+                            <div className="text-center">
                                 <img src={getFileIconSrc(item.name || '')} alt="" className="w-14 h-14 mx-auto mb-3" draggable={false} />
                                 <p className="text-sm text-gray-400">Preview unavailable</p>
                             </div>
                         </div>
                     )}
                 </div>
-            )}
-
-            {/* File/folder info bar */}
-            <div className={`bg-white ${showPreview ? 'border-t border-gray-200' : ''}`}>
-                <div className="max-w-2xl mx-auto p-6">
-                    <div className="text-center">
-                        {/* Icon — only when no inline preview */}
-                        {!showPreview && (
-                            <>
-                                {item.type === 'folder' ? (
-                                    <Folder className="w-14 h-14 text-[#064771] fill-[#064771]/10 mx-auto mb-3" />
-                                ) : (
-                                    <img src={getFileIconSrc(item.name || '')} alt="" className="w-14 h-14 mx-auto mb-3" draggable={false} />
-                                )}
-                            </>
+            ) : (
+                /* ── Non-previewable file / Folder — centered card layout ── */
+                <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+                    <div className="bg-white rounded-[3px] shadow-sm p-8 w-full max-w-lg text-center">
+                        {item.type === 'folder' ? (
+                            <Folder className="w-14 h-14 text-[#064771] fill-[#064771]/10 mx-auto mb-4" />
+                        ) : (
+                            <img src={getFileIconSrc(item.name || '')} alt="" className="w-14 h-14 mx-auto mb-4" draggable={false} />
                         )}
 
-                        <h2 className="text-lg font-medium text-gray-900 mb-1 truncate max-w-[500px] mx-auto" title={item.name}>
+                        <h2 className="text-lg font-medium text-gray-900 mb-1 truncate" title={item.name}>
                             {item.name}
                         </h2>
                         {item.size != null && item.size > 0 && (
                             <p className="text-sm text-gray-400 mb-4">{formatFileSize(item.size)}</p>
                         )}
 
-                        {/* Single file download */}
                         {item.type === 'file' && item.allow_download && (
                             <button
                                 onClick={handleDownload}
-                                className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
+                                className="flex items-center gap-2 mx-auto px-5 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
                             >
                                 <Download className="w-4 h-4" /> {t('flowdrive.publicView.download')}
                             </button>
                         )}
-
                         {item.type === 'file' && !item.allow_download && (
                             <p className="text-xs text-gray-400 italic">{t('flowdrive.publicView.viewOnly', 'View only — download disabled')}</p>
                         )}
@@ -497,7 +524,7 @@ const DrivePublicView: React.FC = () => {
                                 {item.allow_download && (
                                     <button
                                         onClick={handleDownload}
-                                        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
+                                        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
                                     >
                                         <Download className="w-4 h-4" /> {t('flowdrive.publicView.downloadAll')}
                                     </button>
@@ -505,13 +532,8 @@ const DrivePublicView: React.FC = () => {
                             </div>
                         )}
                     </div>
-
-                    {/* Branding footer */}
-                    <div className="pt-4 mt-4 border-t border-gray-100 text-center">
-                        <p className="text-[11px] text-gray-400">{t('flowdrive.publicView.sharedVia')}</p>
-                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Shared styles */}
             <style>{`

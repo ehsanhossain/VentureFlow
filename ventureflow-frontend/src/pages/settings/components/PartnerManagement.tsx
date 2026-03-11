@@ -37,8 +37,8 @@ interface PartnerUser {
     };
 }
 
-const ROW_HEIGHT = 65;
-const TABLE_OVERHEAD = 280; // header + toolbar + padding + pagination bar
+const ROW_HEIGHT = 52;
+const TABLE_OVERHEAD = 240; // header + toolbar + padding + pagination bar
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const isNewEntry = (date?: string) => date ? (Date.now() - new Date(date).getTime()) < SEVEN_DAYS_MS : false;
 

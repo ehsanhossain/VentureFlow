@@ -194,6 +194,7 @@ export const TargetRegistration: React.FC = () => {
     // ─── Unsaved Changes Protection ───
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const hasInteractedRef = useRef(false);
     const isSubmittingRef = useRef(false);
 
@@ -565,6 +566,8 @@ export const TargetRegistration: React.FC = () => {
 
 
     const onSubmit = async (data: FormValues, isDraft: boolean = false) => {
+        if (isSaving) return; // Prevent double-click
+        setIsSaving(true);
         try {
             const overviewFormData = new FormData();
             if (id) overviewFormData.append('seller_id', id);
@@ -644,6 +647,8 @@ export const TargetRegistration: React.FC = () => {
             if (errorMsg.toLowerCase().includes('project code') || errorMsg.toLowerCase().includes('id')) {
                 setIsIdAvailable(false);
             }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -1299,17 +1304,17 @@ export const TargetRegistration: React.FC = () => {
                         const data = control._formValues as FormValues;
                         onSubmit(data, true);
                     }}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isSaving}
                     className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium  hover:bg-sky-50 transition-colors"
                 >
                     {t('prospects.registration.saveAsDraft')}
                 </button>
                 <button
                     type="submit"
-                    disabled={isSubmitting || (isIdAvailable === false)}
+                    disabled={isSubmitting || isSaving || (isIdAvailable === false)}
                     className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium  hover:bg-[#042d48] transition-colors disabled:opacity-50"
                 >
-                    {isSubmitting ? t('prospects.registration.saving') : id ? t('prospects.registration.updateTarget') : t('prospects.registration.saveTarget')}
+                    {(isSubmitting || isSaving) ? t('prospects.registration.saving') : id ? t('prospects.registration.updateTarget') : t('prospects.registration.saveTarget')}
                 </button>
             </div>
 

@@ -124,6 +124,7 @@ export const InvestorRegistration: React.FC = () => {
     const [initialProfileImage, setInitialProfileImage] = useState<string | undefined>(undefined);
     const [isCheckingId, setIsCheckingId] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(!!id); // true if in edit mode
+    const [isSaving, setIsSaving] = useState(false);
     const [staffList, setStaffList] = useState<any[]>([]);
     const [partnerList, setPartnerList] = useState<any[]>([]);
     const [targetList, setTargetList] = useState<any[]>([]); // registered sellers for Introduced Projects
@@ -576,6 +577,8 @@ export const InvestorRegistration: React.FC = () => {
     }, [id, setValue, countries.length, industries.length]);
 
     const onSubmit = async (data: FormValues, isDraft: boolean = false) => {
+        if (isSaving) return; // Prevent double-click
+        setIsSaving(true);
         try {
             const payload = new FormData();
 
@@ -643,6 +646,8 @@ export const InvestorRegistration: React.FC = () => {
             if (errorMsg.toLowerCase().includes('project code') || errorMsg.toLowerCase().includes('id')) {
                 setIsIdAvailable(false);
             }
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -1279,17 +1284,17 @@ export const InvestorRegistration: React.FC = () => {
                         const data = control._formValues as FormValues;
                         onSubmit(data, true);
                     }}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isSaving}
                     className="h-9 px-5 bg-white rounded-[3px] border border-sky-950 text-sky-950 text-sm font-medium  hover:bg-sky-50 transition-colors"
                 >
                     {t('prospects.registration.saveAsDraft')}
                 </button>
                 <button
                     type="submit"
-                    disabled={isSubmitting || (isIdAvailable === false)}
+                    disabled={isSubmitting || isSaving || (isIdAvailable === false)}
                     className="h-9 px-6 bg-sky-950 rounded-[3px] text-white text-sm font-medium  hover:bg-[#042d48] transition-colors disabled:opacity-50"
                 >
-                    {isSubmitting ? t('prospects.registration.saving') : id ? t('prospects.registration.updateInvestor') : t('prospects.registration.saveInvestor')}
+                    {(isSubmitting || isSaving) ? t('prospects.registration.saving') : id ? t('prospects.registration.updateInvestor') : t('prospects.registration.saveInvestor')}
                 </button>
             </div>
 

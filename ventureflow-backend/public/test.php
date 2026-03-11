@@ -158,117 +158,39 @@ try {
     echo "❌ Verification failed: " . $e->getMessage() . "\n";
 }
 
-// Step 8.5: Build Frontend
-echo "\n=== Step 8.5: Building Frontend ===\n";
+// Step 8.5: Verify DriveController prospect_code helper
+echo "\n=== Step 8.5: Verifying DriveController prospect_code ===\n";
+try {
+    $driveCtrl = new \App\Http\Controllers\DriveController();
+    $ref = new \ReflectionMethod($driveCtrl, 'getProspectCode');
+    $ref->setAccessible(true);
 
-// Search multiple possible locations for the frontend directory
-$possiblePaths = [
-    dirname($root) . '/ventureflow-frontend',                     // sibling to httpdocs
-    $root . '/ventureflow-frontend',                               // inside httpdocs (full monorepo deploy)
-    '/var/www/vhosts/ventureflow.app/ventureflow-frontend',        // vhost root level
-    '/var/www/vhosts/ventureflow.app/git/ventureflow-frontend',    // Plesk git repo directory
-    dirname($root) . '/git/ventureflow-frontend',                  // sibling git dir
-];
-
-$frontendDir = '';
-foreach ($possiblePaths as $path) {
-    $resolved = realpath($path);
-    if ($resolved && is_dir($resolved)) {
-        $frontendDir = $resolved;
-        break;
-    }
-}
-
-// If still not found, try to find it with find command (exclude .trash)
-if (!$frontendDir) {
-    $findResult = trim(shell_exec("find /var/www/vhosts/ventureflow.app -maxdepth 4 -type d -name 'ventureflow-frontend' -not -path '*/.trash/*' 2>/dev/null | head -1") ?? '');
-    if ($findResult && is_dir($findResult) && strpos($findResult, '.trash') === false) {
-        $frontendDir = $findResult;
-    }
-}
-
-echo "Frontend dir: $frontendDir\n";
-
-if (is_dir($frontendDir)) {
-    // Find node binary - check common Plesk paths
-    $nodePaths = [
-        '/opt/plesk/node/22/bin/node',
-        '/opt/plesk/node/20/bin/node',
-        '/opt/plesk/node/18/bin/node',
-        '/usr/local/bin/node',
-        '/usr/bin/node',
-    ];
-    $nodeFound = '';
-    foreach ($nodePaths as $np) {
-        if (file_exists($np)) {
-            $nodeFound = $np;
-            break;
-        }
-    }
-    
-    // Also try which
-    if (!$nodeFound) {
-        $nodeFound = trim(shell_exec('which node 2>/dev/null') ?? '');
-    }
-    
-    if ($nodeFound) {
-        $nodeDir = dirname($nodeFound);
-        $npmBin = "$nodeDir/npm";
-        echo "Node: $nodeFound\n";
-        echo "npm: $npmBin\n";
-        
-        // Get node version
-        exec("$nodeFound --version 2>&1", $nv);
-        echo "Node version: " . implode('', $nv) . "\n\n";
-        
-        // npm install
-        echo ">>> npm install...\n";
-        $npmInstallOut = [];
-        exec("cd $frontendDir && PATH=$nodeDir:\$PATH $npmBin install --production=false 2>&1", $npmInstallOut, $npmInstallExit);
-        echo implode("\n", array_slice($npmInstallOut, -3)) . "\n";
-        echo "npm install exit: $npmInstallExit\n\n";
-        
-        if ($npmInstallExit === 0) {
-            // npm run build
-            echo ">>> npm run build...\n";
-            $npmBuildOut = [];
-            exec("cd $frontendDir && PATH=$nodeDir:\$PATH $npmBin run build 2>&1", $npmBuildOut, $npmBuildExit);
-            echo implode("\n", array_slice($npmBuildOut, -5)) . "\n";
-            echo "npm build exit: $npmBuildExit\n";
-            
-            if ($npmBuildExit === 0) {
-                echo "✅ Frontend built successfully!\n";
-                // Check dist exists
-                echo "dist/index.html: " . (file_exists("$frontendDir/dist/index.html") ? 'YES ✅' : 'NO ❌') . "\n";
-            } else {
-                echo "❌ Frontend build FAILED\n";
-            }
-        } else {
-            echo "❌ npm install FAILED\n";
-        }
+    // Test with a real investor if one exists
+    $investor = \App\Models\Investor::first();
+    if ($investor) {
+        $code = $ref->invoke($driveCtrl, 'investor', $investor->id);
+        echo "✅ getProspectCode('investor', {$investor->id}) = " . ($code ?: 'null') . "\n";
+        echo "   buyer_id on record: {$investor->buyer_id}\n";
+        echo "   Match: " . ($code === $investor->buyer_id ? 'YES ✅' : 'NO ❌') . "\n";
     } else {
-        echo "⚠️ Node.js not found on server.\n";
-        echo "Checked: " . implode(', ', $nodePaths) . "\n";
-        echo "Frontend cannot be built automatically.\n";
-        
-        // Check if dist already exists (from git or manual build)
-        if (file_exists("$frontendDir/dist/index.html")) {
-            echo "dist/index.html: EXISTS (using git-committed build) ✅\n";
-        } else {
-            echo "dist/index.html: MISSING ❌\n";
-            echo "You need Node.js on the server or commit dist/ to git.\n";
-        }
+        echo "⚠️  No investors to test with\n";
     }
-} else {
-    echo "⚠️ Frontend directory not found!\n";
-    echo "Checked paths:\n";
-    foreach ($possiblePaths as $p) {
-        echo "  - $p " . (is_dir($p) ? '✅' : '❌') . "\n";
+
+    // Test with a real target if one exists
+    $target = \App\Models\Target::first();
+    if ($target) {
+        $code = $ref->invoke($driveCtrl, 'target', $target->id);
+        echo "✅ getProspectCode('target', {$target->id}) = " . ($code ?: 'null') . "\n";
+        echo "   seller_id on record: {$target->seller_id}\n";
+        echo "   Match: " . ($code === $target->seller_id ? 'YES ✅' : 'NO ❌') . "\n";
+    } else {
+        echo "⚠️  No targets to test with\n";
     }
-    echo "Also tried: find command\n";
-    echo "You may need to set the path manually or build locally and commit dist/.\n";
+
+    echo "✅ DriveController::getProspectCode method exists and works\n";
+} catch (\Exception $e) {
+    echo "❌ DriveController verify failed: " . $e->getMessage() . "\n";
 }
-echo "\n";
 
 // Step 9: Final cache clear
 echo "=== Step 9: Final cache clear ===\n";

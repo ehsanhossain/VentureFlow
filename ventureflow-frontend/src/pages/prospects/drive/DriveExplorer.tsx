@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Folder, FolderPlus, FolderInput, MoreVertical,
     Edit3, MessageSquare, History,
@@ -44,6 +44,7 @@ const DriveExplorer: React.FC = () => {
     const { t } = useTranslation();
     const { type, id: prospectId } = useParams<{ type: string; id: string }>();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const driveType = (type === 'target' ? 'target' : 'investor') as 'investor' | 'target';
 
     const {
@@ -141,6 +142,54 @@ const DriveExplorer: React.FC = () => {
             }
         }
     }, [prospectId, currentFolderId, fetchRoot, fetchFolder]);
+
+    // Auto-navigate to folder/file from share link query params
+    useEffect(() => {
+        const folderParam = searchParams.get('folder');
+        const fileParam = searchParams.get('file');
+        if (!folderParam && !fileParam) return;
+
+        // Navigate to the folder if specified
+        if (folderParam) {
+            setCurrentFolderId(folderParam);
+        }
+
+        // Auto-open file preview if specified
+        if (fileParam) {
+            (async () => {
+                try {
+                    const res = await api.get(`/api/drive/file/${fileParam}/preview`, { responseType: 'blob' });
+                    // We need the file metadata — fetch it from the files list or use a direct API call
+                    // For now, build a minimal DriveFile object and open preview
+                    const contentType = res.headers['content-type'] || 'application/octet-stream';
+                    const disposition = res.headers['content-disposition'] || '';
+                    const nameMatch = disposition.match(/filename="?([^"\n;]+)"?/i);
+                    const fileName = nameMatch?.[1] || 'Shared File';
+                    const blob = new Blob([res.data], { type: contentType });
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    setPreviewFile({
+                        id: fileParam,
+                        folder_id: folderParam,
+                        original_name: fileName,
+                        mime_type: contentType,
+                        size: blob.size,
+                        uploaded_by_name: '',
+                        current_version: 1,
+                        created_at: '',
+                        updated_at: '',
+                    } as DriveFile);
+                    setPreviewBlobUrl(blobUrl);
+                } catch {
+                    // If preview fails, just navigate to the folder
+                    console.error('Failed to auto-open shared file preview');
+                }
+            })();
+        }
+
+        // Clean up query params so they don't persist
+        setSearchParams({}, { replace: true });
+    }, []); // Run once on mount only
 
     // Fetch prospect project code for header
     useEffect(() => {

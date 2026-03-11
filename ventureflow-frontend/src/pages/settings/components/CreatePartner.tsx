@@ -61,14 +61,20 @@ const CreatePartner: React.FC = () => {
         details: '',
     });
 
+    // Fetch countries first
     useEffect(() => {
         fetchCountries();
-        if (isEditing && id) {
-            fetchPartner(id);
-        } else {
+        if (!isEditing) {
             generatePassword();
         }
-    }, [id, isEditing]);
+    }, []);
+
+    // Fetch partner data only after countries are loaded
+    useEffect(() => {
+        if (isEditing && id && countries.length > 0) {
+            fetchPartner(id);
+        }
+    }, [id, isEditing, countries.length]);
 
     // Generate Partner ID when country changes
     useEffect(() => {

@@ -115,12 +115,12 @@ const CreateStaff: React.FC = () => {
         }
     }, [id]);
 
-    // Fetch staff data for editing
+    // Fetch staff data for editing — must wait for countries to load first
     useEffect(() => {
-        if (id) {
+        if (id && countries.length > 0) {
             fetchStaff();
         }
-    }, [id]);
+    }, [id, countries.length]);
 
     const generateId = () => {
         const prefix = 'VF';

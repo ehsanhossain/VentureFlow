@@ -992,6 +992,7 @@ class DriveController extends Controller
                 'type' => 'file',
                 'prospect_type' => $file->prospect_type,
                 'prospect_id' => $file->prospect_id,
+                'prospect_code' => $this->getProspectCode($file->prospect_type, $file->prospect_id),
                 'folder_id' => $file->folder_id,
                 'file_id' => $file->id,
             ]);
@@ -1007,6 +1008,7 @@ class DriveController extends Controller
                 'type' => 'folder',
                 'prospect_type' => $folder->prospect_type,
                 'prospect_id' => $folder->prospect_id,
+                'prospect_code' => $this->getProspectCode($folder->prospect_type, $folder->prospect_id),
                 'folder_id' => $folder->id,
             ]);
         }
@@ -1162,6 +1164,25 @@ class DriveController extends Controller
         $name = trim($name);
         // Limit length
         return Str::limit($name, 255, '');
+    }
+
+    /**
+     * Look up the project code for a prospect by type and ID.
+     */
+    private function getProspectCode(string $type, int $prospectId): ?string
+    {
+        $type = strtolower($type);
+        if ($type === 'investor') {
+            $record = \App\Models\Investor::find($prospectId);
+            return $record?->buyer_id;
+        } elseif ($type === 'target') {
+            $record = \App\Models\Target::find($prospectId);
+            return $record?->seller_id;
+        } elseif ($type === 'partner') {
+            $record = \App\Models\Partner::find($prospectId);
+            return $record?->partner_id;
+        }
+        return null;
     }
 
     /**
