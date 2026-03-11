@@ -28,11 +28,13 @@ class DriveShare extends Model
         'is_active',
         'access_count',
         'max_access_count',
+        'allow_download',
         'created_by',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'allow_download' => 'boolean',
         'access_count' => 'integer',
         'max_access_count' => 'integer',
         'expires_at' => 'datetime',

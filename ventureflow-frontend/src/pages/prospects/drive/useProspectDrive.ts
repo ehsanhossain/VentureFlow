@@ -343,6 +343,7 @@ export function useProspectDrive(type: 'investor' | 'target', prospectId: string
         password?: string;
         expires_at?: string;
         max_access_count?: number;
+        allow_download?: boolean;
     }): Promise<DriveShareLink> => {
         const res = await api.post('/api/drive/share', opts);
         // Backend returns { share: { id, share_token, ... }, share_url: "..." }

@@ -751,6 +751,7 @@ class DriveController extends Controller
             'password' => 'nullable|string|min:4|max:100',
             'expires_at' => 'nullable|date|after:now',
             'max_access_count' => 'nullable|integer|min:1|max:10000',
+            'allow_download' => 'nullable|boolean',
         ]);
 
         if (!$request->file_id && !$request->folder_id) {
@@ -771,6 +772,7 @@ class DriveController extends Controller
             'password_hash' => $request->password ? Hash::make($request->password) : null,
             'expires_at' => $request->expires_at,
             'max_access_count' => $request->max_access_count,
+            'allow_download' => $request->has('allow_download') ? (bool) $request->allow_download : true,
             'created_by' => $request->user()->id,
         ]);
 
@@ -888,9 +890,13 @@ class DriveController extends Controller
             return response()->json(['message' => 'Incorrect password.'], 403);
         }
 
-        // Password correct — clear rate limiter
+        // Password correct — clear rate limiter and set verified session
         Cache::forget($rateLimitKey);
         Cache::forget($rateLimitKey . ':ttl');
+
+        // Store verified status so download/preview endpoints can check it
+        $sessionKey = 'share_verified:' . $token . ':' . $request->ip();
+        Cache::put($sessionKey, true, now()->addHours(1));
 
         $share->incrementAccessCount();
         return $this->getSharedContent($share);
@@ -908,10 +914,15 @@ class DriveController extends Controller
             return response()->json(['message' => 'Share link not found or expired.'], 404);
         }
 
+        // Check download permission
+        if (!$share->allow_download) {
+            return response()->json(['message' => 'Download is not allowed for this share.'], 403);
+        }
+
         // Check password if required
         if ($share->requiresPassword()) {
-            $sessionKey = 'share_verified:' . $token;
-            if (!Cache::get($sessionKey . ':' . $request->ip())) {
+            $sessionKey = 'share_verified:' . $token . ':' . $request->ip();
+            if (!Cache::get($sessionKey)) {
                 return response()->json(['message' => 'Password verification required.'], 403);
             }
         }
@@ -922,6 +933,85 @@ class DriveController extends Controller
         }
 
         return Storage::disk('local')->download($file->storage_path, $file->original_name);
+    }
+
+    /**
+     * Preview a shared file inline (no download).
+     * GET /api/drive/shared/{token}/preview
+     */
+    public function previewShared(Request $request, string $token): Response|JsonResponse
+    {
+        $share = DriveShare::where('share_token', $token)->first();
+
+        if (!$share || !$share->isValid() || !$share->file_id) {
+            return response()->json(['message' => 'Share link not found or expired.'], 404);
+        }
+
+        // Check password if required
+        if ($share->requiresPassword()) {
+            $sessionKey = 'share_verified:' . $token . ':' . $request->ip();
+            if (!Cache::get($sessionKey)) {
+                return response()->json(['message' => 'Password verification required.'], 403);
+            }
+        }
+
+        $file = $share->file;
+        if (!$file || !Storage::disk('local')->exists($file->storage_path)) {
+            return response()->json(['message' => 'File not found.'], 404);
+        }
+
+        $fullPath = Storage::disk('local')->path($file->storage_path);
+        $mimeType = $file->mime_type ?: 'application/octet-stream';
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . addslashes($file->original_name) . '"',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    /**
+     * Resolve share location for logged-in users.
+     * GET /api/drive/shared/{token}/resolve  (auth required)
+     */
+    public function resolveShareLocation(string $token): JsonResponse
+    {
+        $share = DriveShare::where('share_token', $token)->first();
+
+        if (!$share || !$share->isValid()) {
+            return response()->json(['message' => 'Share link not found or expired.'], 404);
+        }
+
+        if ($share->file_id) {
+            $file = $share->file;
+            if (!$file) {
+                return response()->json(['message' => 'File not found.'], 404);
+            }
+
+            return response()->json([
+                'type' => 'file',
+                'prospect_type' => $file->prospect_type,
+                'prospect_id' => $file->prospect_id,
+                'folder_id' => $file->folder_id,
+                'file_id' => $file->id,
+            ]);
+        }
+
+        if ($share->folder_id) {
+            $folder = $share->folder;
+            if (!$folder) {
+                return response()->json(['message' => 'Folder not found.'], 404);
+            }
+
+            return response()->json([
+                'type' => 'folder',
+                'prospect_type' => $folder->prospect_type,
+                'prospect_id' => $folder->prospect_id,
+                'folder_id' => $folder->id,
+            ]);
+        }
+
+        return response()->json(['message' => 'Shared content not found.'], 404);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1149,14 +1239,23 @@ class DriveController extends Controller
     {
         if ($share->file_id) {
             $file = $share->file;
+
+            // Get accurate file size — prefer storage, fallback to DB
+            $fileSize = $file->size;
+            if ($file->storage_path && Storage::disk('local')->exists($file->storage_path)) {
+                $fileSize = Storage::disk('local')->size($file->storage_path);
+            }
+
             return response()->json([
                 'type' => 'file',
+                'allow_download' => (bool) $share->allow_download,
                 'file' => [
                     'id' => $file->id,
                     'name' => $file->original_name,
                     'mime_type' => $file->mime_type,
-                    'size' => $file->size,
+                    'size' => $fileSize,
                     'is_previewable' => $file->isPreviewable(),
+                    'preview_url' => url("/api/drive/shared/{$share->share_token}/preview"),
                     'download_url' => url("/api/drive/shared/{$share->share_token}/download"),
                 ],
             ]);
@@ -1169,6 +1268,7 @@ class DriveController extends Controller
 
             return response()->json([
                 'type' => 'folder',
+                'allow_download' => (bool) $share->allow_download,
                 'folder' => [
                     'id' => $folder->id,
                     'name' => $folder->name,

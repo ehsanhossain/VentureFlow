@@ -6,7 +6,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, Link2, Copy, Check, Shield, Clock, Eye } from 'lucide-react';
+import { X, Link2, Copy, Check, Shield, Clock, Eye, Download } from 'lucide-react';
 import { showAlert } from '../../../components/Alert';
 import { useProspectDrive, DriveShareLink } from './useProspectDrive';
 
@@ -25,6 +25,7 @@ const DriveShareModal: React.FC<DriveShareModalProps> = ({ fileId, folderId, onC
     const [password, setPassword] = useState('');
     const [expiresIn, setExpiresIn] = useState<string>('7');
     const [maxAccess, setMaxAccess] = useState<string>('');
+    const [allowDownload, setAllowDownload] = useState(true);
     const [creating, setCreating] = useState(false);
     const [createdLink, setCreatedLink] = useState<DriveShareLink | null>(null);
     const [copied, setCopied] = useState(false);
@@ -54,6 +55,7 @@ const DriveShareModal: React.FC<DriveShareModalProps> = ({ fileId, folderId, onC
                 password: password || undefined,
                 expires_at: expiresAt,
                 max_access_count: maxAccess ? parseInt(maxAccess) : undefined,
+                allow_download: allowDownload,
             });
             setCreatedLink(result);
             showAlert({ type: 'success', message: t('flowdrive.alerts.shareLinkCreated') });
@@ -177,6 +179,24 @@ const DriveShareModal: React.FC<DriveShareModalProps> = ({ fileId, folderId, onC
                                     min="1"
                                     className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#064771]"
                                 />
+                            </div>
+
+                            {/* Allow download toggle */}
+                            <div>
+                                <label className="text-xs font-medium text-gray-500 uppercase mb-1 block">
+                                    <Download className="w-3.5 h-3.5 inline mr-1" /> {t('flowdrive.shareModal.allowDownload', 'Allow Download')}
+                                </label>
+                                <div className="flex items-center justify-between h-9 px-3 bg-gray-50 border border-gray-200 rounded text-sm">
+                                    <span className="text-gray-600 text-sm">{allowDownload ? t('flowdrive.shareModal.downloadEnabled', 'Recipients can download') : t('flowdrive.shareModal.downloadDisabled', 'View only — no download')}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAllowDownload(!allowDownload)}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${allowDownload ? 'bg-[#064771]' : 'bg-gray-300'}`}
+                                        aria-label="Toggle download permission"
+                                    >
+                                        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${allowDownload ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                    </button>
+                                </div>
                             </div>
 
                             <button

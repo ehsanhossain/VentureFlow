@@ -49,6 +49,7 @@ Route::prefix('drive/shared')->group(function () {
     Route::get('/{token}',          [DriveController::class, 'accessShared']);
     Route::post('/{token}/verify',  [DriveController::class, 'verifySharePassword']);
     Route::get('/{token}/download', [DriveController::class, 'downloadShared']);
+    Route::get('/{token}/preview',  [DriveController::class, 'previewShared']);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -377,6 +378,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
         Route::post('/share',                                      [DriveController::class, 'createShare']);
         Route::delete('/share/{shareId}',                          [DriveController::class, 'revokeShare']);
         Route::get('/file/{fileId}/shares',                        [DriveController::class, 'listShares']);
+        Route::get('/shared/{token}/resolve',                      [DriveController::class, 'resolveShareLocation']);
     });
 });
 
