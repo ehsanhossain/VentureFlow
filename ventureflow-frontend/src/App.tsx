@@ -75,7 +75,7 @@ const Content: React.FC<ContentProps> = ({
 }) => {
   const location = useLocation();
   const authPaths = ["/login", "/change-password", "/forgot-password", "/reset-password"];
-  const hideLayout = authPaths.includes(location.pathname);
+  const hideLayout = authPaths.includes(location.pathname) || location.pathname.startsWith('/shared/');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

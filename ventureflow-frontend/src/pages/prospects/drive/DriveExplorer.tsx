@@ -925,7 +925,7 @@ const DriveExplorer: React.FC = () => {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3 text-[13px] font-normal text-gray-600 border-b border-[#f1f5f9] align-middle">{folder.files_count} {t('flowdrive.items')}</td>
+                                                    <td className="px-4 py-3 text-[13px] font-normal text-gray-600 border-b border-[#f1f5f9] align-middle">{(folder.files_count || 0) + (folder.children_count || 0)} {t('flowdrive.items')}</td>
                                                     <td className="px-4 py-3 text-[13px] font-normal text-gray-600 border-b border-[#f1f5f9] align-middle">{timeAgo(folder.updated_at)}</td>
                                                     <td className="px-4 py-3 text-[13px] font-normal text-gray-400 border-b border-[#f1f5f9] align-middle">—</td>
                                                     <td

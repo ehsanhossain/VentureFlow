@@ -40,6 +40,7 @@ class DriveController extends Controller
 
         $foldersQuery = DriveFolder::forProspect($type, $prospectId)
             ->rootLevel()
+            ->withCount(['children', 'files'])
             ->with('creator:id,name')
             ->orderBy('name');
 
@@ -73,6 +74,7 @@ class DriveController extends Controller
         $search = trim($request->query('search', ''));
 
         $subfoldersQuery = DriveFolder::where('parent_id', $folderId)
+            ->withCount(['children', 'files'])
             ->with('creator:id,name')
             ->orderBy('name');
 
@@ -837,11 +839,14 @@ class DriveController extends Controller
             return response()->json(['message' => 'This share link has reached its access limit.'], 410);
         }
 
-        // If password required, don't expose content yet
         if ($share->requiresPassword()) {
+            $name = $share->file_id
+                ? optional($share->file)->original_name
+                : optional($share->folder)->name;
             return response()->json([
                 'requires_password' => true,
                 'type' => $share->file_id ? 'file' : 'folder',
+                'name' => $name ?? 'Shared Content',
             ]);
         }
 

@@ -86,7 +86,7 @@ const DriveShareModal: React.FC<DriveShareModalProps> = ({ fileId, folderId, onC
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md overflow-y-auto max-h-[80vh] z-[101]">
+            <div className="relative bg-white rounded-[3px] shadow-xl w-full max-w-md overflow-y-auto max-h-[80vh] z-[101]">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
                     <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">

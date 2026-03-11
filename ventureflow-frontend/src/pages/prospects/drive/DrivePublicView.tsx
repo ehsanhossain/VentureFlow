@@ -13,6 +13,7 @@ import { formatFileSize, getFileIconSrc } from './driveUtils';
 /**
  * Public share view — accessible without authentication.
  * Uses plain axios (not the auth-configured instance) for public endpoints.
+ * Renders as a fully standalone page — no navbar, no sidebar, no app chrome.
  */
 
 // Normalize API base: if it's just "/" (production), use "" to avoid "//api/..." double-slash
@@ -54,6 +55,7 @@ const DrivePublicView: React.FC = () => {
     const [item, setItem] = useState<SharedItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [needsPassword, setNeedsPassword] = useState(false);
+    const [sharedName, setSharedName] = useState<string>('');
     const [password, setPassword] = useState('');
     const [verifying, setVerifying] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -65,6 +67,8 @@ const DrivePublicView: React.FC = () => {
                 const res = await axios.get(`${apiBase}/api/drive/shared/${token}`);
                 if (res.data.requires_password) {
                     setNeedsPassword(true);
+                    // Extract name for display even in password mode
+                    if (res.data.name) setSharedName(res.data.name);
                 } else {
                     const normalized = normalizeSharedResponse(res.data);
                     setItem(normalized);
@@ -123,11 +127,16 @@ const DrivePublicView: React.FC = () => {
     if (needsPassword) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-sm">
+                <div className="bg-white rounded-[3px] shadow-lg p-8 w-full max-w-sm">
                     <div className="text-center mb-6">
                         <Lock className="w-10 h-10 text-[#064771] mx-auto mb-3" />
                         <h2 className="text-lg font-medium text-gray-900">{t('flowdrive.publicView.passwordRequired')}</h2>
-                        <p className="text-sm text-gray-500 mt-1">{t('flowdrive.publicView.enterPasswordPrompt')}</p>
+                        {sharedName && (
+                            <p className="text-sm text-gray-500 mt-1.5 truncate max-w-[280px] mx-auto" title={sharedName}>
+                                {sharedName}
+                            </p>
+                        )}
+                        <p className="text-sm text-gray-400 mt-1">{t('flowdrive.publicView.enterPasswordPrompt')}</p>
                     </div>
                     <input
                         type="password"
@@ -135,14 +144,14 @@ const DrivePublicView: React.FC = () => {
                         onChange={e => setPassword(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
                         placeholder={t('flowdrive.publicView.enterPassword')}
-                        className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-[#064771]"
+                        className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-[3px] text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-[#064771]"
                         autoFocus
                     />
                     {passwordError && <p className="text-xs text-red-500 mb-2">{passwordError}</p>}
                     <button
                         onClick={handlePasswordSubmit}
                         disabled={!password || verifying}
-                        className="w-full px-4 py-2.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] disabled:opacity-50 transition-colors"
+                        className="w-full px-4 py-2.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] disabled:opacity-50 transition-colors"
                     >
                         {verifying ? t('flowdrive.publicView.verifying') : t('flowdrive.publicView.access')}
                     </button>
@@ -155,7 +164,7 @@ const DrivePublicView: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <div className="bg-white rounded-[3px] shadow-lg p-8 w-full max-w-md">
                 <div className="text-center">
                     {/* Icon */}
                     {item.type === 'folder' ? (
@@ -164,14 +173,14 @@ const DrivePublicView: React.FC = () => {
                         <img src={getFileIconSrc(item.name || '')} alt="" className="w-14 h-14 mx-auto mb-3" draggable={false} />
                     )}
 
-                    <h2 className="text-lg font-medium text-gray-900 mb-1">{item.name}</h2>
+                    <h2 className="text-lg font-medium text-gray-900 mb-1 truncate max-w-[380px] mx-auto" title={item.name}>{item.name}</h2>
                     {item.size && <p className="text-sm text-gray-400 mb-4">{formatFileSize(item.size)}</p>}
 
                     {/* Single file download */}
                     {item.type === 'file' && (
                         <button
                             onClick={handleDownload}
-                            className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+                            className="flex items-center gap-2 mx-auto px-6 py-2.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
                         >
                             <Download className="w-4 h-4" /> {t('flowdrive.publicView.download')}
                         </button>
@@ -184,7 +193,7 @@ const DrivePublicView: React.FC = () => {
                             <div className="space-y-1.5 max-h-60 overflow-y-auto">
                                 {item.files.map(f => {
                                     return (
-                                        <div key={f.id} className="flex items-center gap-2.5 p-2 rounded border border-gray-100 hover:bg-gray-50">
+                                        <div key={f.id} className="flex items-center gap-2.5 p-2 rounded-[3px] border border-gray-100 hover:bg-gray-50">
                                             <img src={getFileIconSrc(f.original_name)} alt="" className="w-6 h-6 shrink-0" draggable={false} />
                                             <span className="text-sm text-gray-700 truncate flex-1">{f.original_name}</span>
                                             <span className="text-[11px] text-gray-400">{formatFileSize(f.size)}</span>
@@ -194,7 +203,7 @@ const DrivePublicView: React.FC = () => {
                             </div>
                             <button
                                 onClick={handleDownload}
-                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#064771] text-white rounded text-sm font-medium hover:bg-[#053a5c] transition-colors"
+                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#064771] text-white rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-colors"
                             >
                                 <Download className="w-4 h-4" /> {t('flowdrive.publicView.downloadAll')}
                             </button>
