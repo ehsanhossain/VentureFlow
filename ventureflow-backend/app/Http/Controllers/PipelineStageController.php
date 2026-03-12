@@ -19,7 +19,7 @@ class PipelineStageController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $type = $request->query('type');
+        $type = $request->query('type') ?: $request->query('pipeline_type');
         $includeInactive = $request->query('include_inactive', false);
         
         $query = PipelineStage::orderBy('order_index');
@@ -76,6 +76,18 @@ class PipelineStageController extends Controller
      */
     public function destroy(PipelineStage $pipelineStage): JsonResponse
     {
+        // Guard: prevent deletion if active deals exist at this stage
+        $activeDeals = \App\Models\Deal::where('stage_code', $pipelineStage->code)
+            ->where('pipeline_type', $pipelineStage->pipeline_type)
+            ->where('status', 'active')
+            ->count();
+
+        if ($activeDeals > 0) {
+            return response()->json([
+                'message' => "Cannot delete this stage: {$activeDeals} active deal(s) are currently at this stage. Move the deals to another stage first."
+            ], 422);
+        }
+
         $pipelineStage->delete();
         return response()->json(null, 204);
     }
@@ -106,6 +118,24 @@ class PipelineStageController extends Controller
 
         try {
             \DB::beginTransaction();
+
+            // Guard: check if any stages being removed have active deals
+            $existingCodes = PipelineStage::where('pipeline_type', $validated['type'])
+                ->pluck('code')->toArray();
+            $newCodes = array_column($validated['stages'], 'code');
+            $removedCodes = array_diff($existingCodes, $newCodes);
+
+            if (!empty($removedCodes)) {
+                $blockedCount = \App\Models\Deal::whereIn('stage_code', $removedCodes)
+                    ->where('pipeline_type', $validated['type'])
+                    ->where('status', 'active')
+                    ->count();
+                if ($blockedCount > 0) {
+                    return response()->json([
+                        'message' => "Cannot remove stages that have active deals ({$blockedCount} deal(s) affected). Move the deals first."
+                    ], 422);
+                }
+            }
 
             // Delete all existing stages for this type
             PipelineStage::where('pipeline_type', $validated['type'])->delete();

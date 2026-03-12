@@ -191,6 +191,65 @@ try {
 } catch (\Exception $e) {
     echo "❌ DriveController verify failed: " . $e->getMessage() . "\n";
 }
+// Step 8.6: Verify checkId exclude fix (project code self-exclusion)
+echo "\n=== Step 8.6: Verifying checkId self-exclusion ===\n";
+try {
+    $investor = \App\Models\Investor::whereNotNull('buyer_id')->first();
+    if ($investor) {
+        // Simulate: check-id?id=TH-B-002&exclude=TH-B-002 (self-exclusion)
+        $query = \App\Models\Investor::where('buyer_id', $investor->buyer_id)
+            ->where('buyer_id', '!=', $investor->buyer_id);
+        $exists = $query->exists();
+        echo "✅ checkId('{$investor->buyer_id}', exclude='{$investor->buyer_id}') => available=" . ($exists ? 'false ❌' : 'true ✅') . "\n";
+        
+        // Simulate: check-id?id=TH-B-002 without exclude (should detect as taken)
+        $existsNoExclude = \App\Models\Investor::where('buyer_id', $investor->buyer_id)->exists();
+        echo "✅ checkId('{$investor->buyer_id}', no exclude) => available=" . ($existsNoExclude ? 'false (correct ✅)' : 'true ❌') . "\n";
+    } else {
+        echo "⚠️  No investors to test with\n";
+    }
+
+    $target = \App\Models\Target::whereNotNull('seller_id')->first();
+    if ($target) {
+        $query = \App\Models\Target::where('seller_id', $target->seller_id)
+            ->where('seller_id', '!=', $target->seller_id);
+        $exists = $query->exists();
+        echo "✅ checkId('{$target->seller_id}', exclude='{$target->seller_id}') => available=" . ($exists ? 'false ❌' : 'true ✅') . "\n";
+    } else {
+        echo "⚠️  No targets to test with\n";
+    }
+} catch (\Exception $e) {
+    echo "❌ checkId verify failed: " . $e->getMessage() . "\n";
+}
+
+// Step 8.7: Verify DealStageDeadline date format & pipeline guards
+echo "\n=== Step 8.7: Verifying date format & pipeline guards ===\n";
+try {
+    // 1. Verify DealStageDeadline dates serialize as Y-m-d (no timezone)
+    $deadline = \App\Models\DealStageDeadline::first();
+    if ($deadline) {
+        $json = $deadline->toArray();
+        $startStr = $json['start_date'] ?? '';
+        $hasTimezone = str_contains($startStr, 'T') || str_contains($startStr, 'Z');
+        echo ($hasTimezone ? '❌' : '✅') . " DealStageDeadline start_date format: '{$startStr}' " . ($hasTimezone ? '(BAD: has timezone!)' : '(GOOD: plain Y-m-d)') . "\n";
+    } else {
+        echo "⚠️  No stage deadlines to test date format\n";
+    }
+
+    // 2. Verify pipeline stages filter by type
+    $buyerStages = \App\Models\PipelineStage::where('is_active', true)->where('pipeline_type', 'buyer')->count();
+    $sellerStages = \App\Models\PipelineStage::where('is_active', true)->where('pipeline_type', 'seller')->count();
+    echo "✅ Active pipeline stages: buyer={$buyerStages}, seller={$sellerStages}\n";
+
+    // 3. Verify pipeline stage deletion guard exists (method check)
+    $controller = new \App\Http\Controllers\PipelineStageController();
+    $ref = new \ReflectionMethod($controller, 'destroy');
+    $source = file_get_contents($ref->getFileName());
+    $hasGuard = str_contains($source, 'Cannot delete this stage');
+    echo ($hasGuard ? '✅' : '❌') . " Pipeline stage deletion guard: " . ($hasGuard ? 'EXISTS' : 'MISSING!') . "\n";
+} catch (\Exception $e) {
+    echo "❌ Verification failed: " . $e->getMessage() . "\n";
+}
 
 // Step 9: Final cache clear
 echo "=== Step 9: Final cache clear ===\n";

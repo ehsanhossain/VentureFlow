@@ -492,7 +492,7 @@ class InvestorController extends Controller
         $query = Investor::where('buyer_id', $id);
 
         if ($exclude) {
-            $query->where('id', '!=', $exclude);
+            $query->where('buyer_id', '!=', $exclude);
         }
 
         $exists = $query->exists();

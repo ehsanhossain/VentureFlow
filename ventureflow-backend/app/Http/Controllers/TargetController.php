@@ -487,7 +487,7 @@ class TargetController extends Controller
         $query = Target::where('seller_id', $id);
 
         if ($exclude) {
-            $query->where('id', '!=', $exclude);
+            $query->where('seller_id', '!=', $exclude);
         }
 
         $exists = $query->exists();

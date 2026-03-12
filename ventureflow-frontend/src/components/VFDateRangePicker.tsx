@@ -5,6 +5,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { DateRange } from 'react-date-range';
 import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css';
@@ -29,9 +30,13 @@ interface VFDateRangePickerProps {
 }
 
 /** Convert YYYY-MM-DD to Date object in local timezone */
-const toLocalDate = (iso: string): Date => new Date(iso + 'T00:00:00');
+const toLocalDate = (iso: string): Date => {
+    // Parse manually to guarantee local timezone — avoids UTC drift
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
+};
 
-/** Convert Date to YYYY-MM-DD string */
+/** Convert Date to YYYY-MM-DD string using LOCAL getters (never UTC) */
 const toISOStr = (d: Date): string => {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -80,7 +85,10 @@ const VFDateRangePicker = ({
 }: VFDateRangePickerProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const [shownDate, setShownDate] = useState<Date>(new Date());
+    const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; openUpward: boolean }>({ top: 0, left: 0, openUpward: false });
 
     // Load holidays for both the current year and the displayed calendar year
     const holidayYears = useMemo(() => {
@@ -93,11 +101,31 @@ const VFDateRangePicker = ({
 
     const { isHoliday, getHolidayName, isWeekend, countWorkingDays } = useCalendarHolidays(holidayYears);
 
+    // Calculate dropdown position when opening
+    useEffect(() => {
+        if (!isOpen || !triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const dropdownHeight = 340; // approximate calendar height
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+
+        setDropdownPos({
+            top: openUpward ? rect.top - dropdownHeight : rect.bottom + 4,
+            left: Math.max(8, rect.right - 420), // align right edge, min 8px from left
+            openUpward,
+        });
+    }, [isOpen]);
+
     // Close on outside click
     useEffect(() => {
         if (!isOpen) return;
         const handleClick = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            if (
+                containerRef.current && !containerRef.current.contains(target) &&
+                dropdownRef.current && !dropdownRef.current.contains(target)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -113,6 +141,30 @@ const VFDateRangePicker = ({
         };
         document.addEventListener('keydown', handleKey);
         return () => document.removeEventListener('keydown', handleKey);
+    }, [isOpen]);
+
+    // Reposition on scroll/resize while open
+    useEffect(() => {
+        if (!isOpen || !triggerRef.current) return;
+        const update = () => {
+            if (!triggerRef.current) return;
+            const rect = triggerRef.current.getBoundingClientRect();
+            const dropdownHeight = 340;
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - rect.bottom;
+            const openUpward = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+            setDropdownPos({
+                top: openUpward ? rect.top - dropdownHeight : rect.bottom + 4,
+                left: Math.max(8, rect.right - 420),
+                openUpward,
+            });
+        };
+        window.addEventListener('scroll', update, true);
+        window.addEventListener('resize', update);
+        return () => {
+            window.removeEventListener('scroll', update, true);
+            window.removeEventListener('resize', update);
+        };
     }, [isOpen]);
 
     const hasDates = !!(startDate && endDate);
@@ -136,7 +188,10 @@ const VFDateRangePicker = ({
 
     const handleRangeChange = (item: any) => {
         const sel = item.selection;
-        onRangeChange(toISOStr(sel.startDate), toISOStr(sel.endDate));
+        // Normalize: use local getters to prevent any UTC drift from react-date-range internals
+        const s = sel.startDate;
+        const e = sel.endDate;
+        onRangeChange(toISOStr(s), toISOStr(e));
     };
 
     const handleClear = (e: React.MouseEvent) => {
@@ -194,11 +249,58 @@ const VFDateRangePicker = ({
         );
     }, [isWeekend, isHoliday, getHolidayName]);
 
+    // Render calendar dropdown via portal to escape overflow clipping
+    const calendarDropdown = isOpen ? createPortal(
+        <div
+            ref={dropdownRef}
+            className={`fixed z-[9999] shadow-lg ${compact ? 'ventureflow-date-range ventureflow-date-range-compact' : 'ventureflow-date-range'}`}
+            style={{
+                top: `${dropdownPos.top}px`,
+                left: `${dropdownPos.left}px`,
+            }}
+        >
+            <div className="flex">
+                {/* Quick-Duration Shortcut Panel */}
+                {showShortcuts && (
+                    <div className="vf-date-shortcuts">
+                        {SHORTCUTS.map(s => (
+                            <button
+                                key={s.days}
+                                type="button"
+                                className={activeShortcut === s.days ? 'active' : ''}
+                                onClick={() => handleShortcut(s.days)}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Calendar */}
+                <DateRange
+                    ranges={ranges}
+                    onChange={handleRangeChange}
+                    onShownDateChange={(date: Date) => setShownDate(date)}
+                    moveRangeOnFirstSelection={false}
+                    months={1}
+                    direction="horizontal"
+                    rangeColors={['#064771']}
+                    color="#064771"
+                    showDateDisplay={false}
+                    minDate={minDateObj}
+                    dayContentRenderer={dayContentRenderer}
+                />
+            </div>
+        </div>,
+        document.body
+    ) : null;
+
     return (
         <div ref={containerRef} className="relative">
             {/* Trigger Button */}
             <div className="flex items-center gap-1">
                 <button
+                    ref={triggerRef}
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
                     title={title}
@@ -230,46 +332,8 @@ const VFDateRangePicker = ({
                 )}
             </div>
 
-            {/* DateRange Calendar Dropdown */}
-            {isOpen && (
-                <div
-                    className={`absolute z-[200] mt-1 shadow-lg ${compact ? 'ventureflow-date-range ventureflow-date-range-compact' : 'ventureflow-date-range'}`}
-                    style={{ right: 0 }}
-                >
-                    <div className="flex">
-                        {/* Quick-Duration Shortcut Panel */}
-                        {showShortcuts && (
-                            <div className="vf-date-shortcuts">
-                                {SHORTCUTS.map(s => (
-                                    <button
-                                        key={s.days}
-                                        type="button"
-                                        className={activeShortcut === s.days ? 'active' : ''}
-                                        onClick={() => handleShortcut(s.days)}
-                                    >
-                                        {s.label}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Calendar */}
-                        <DateRange
-                            ranges={ranges}
-                            onChange={handleRangeChange}
-                            onShownDateChange={(date: Date) => setShownDate(date)}
-                            moveRangeOnFirstSelection={false}
-                            months={1}
-                            direction="horizontal"
-                            rangeColors={['#064771']}
-                            color="#064771"
-                            showDateDisplay={false}
-                            minDate={minDateObj}
-                            dayContentRenderer={dayContentRenderer}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* DateRange Calendar Dropdown — rendered via portal */}
+            {calendarDropdown}
         </div>
     );
 };

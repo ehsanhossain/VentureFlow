@@ -135,7 +135,7 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
     useEffect(() => {
         const fetchStages = async () => {
             try {
-                const resp = await api.get('/api/pipeline-stages', { params: { pipeline_type: pipelineView } });
+                const resp = await api.get('/api/pipeline-stages', { params: { type: pipelineView } });
                 const stageData = resp.data?.stages || resp.data || [];
                 setStages(stageData.map((s: { code: string; name: string }) => ({ code: s.code, name: s.name })));
             } catch {
