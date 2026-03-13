@@ -15,6 +15,7 @@ import { showAlert } from '../../../components/Alert';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { LogoUpload } from '../../../components/LogoUpload';
 import { Country, Dropdown } from '../../prospects/components/Dropdown';
+import { VFDropdown } from '../../../components/VFDropdown';
 
 // Types
 interface FormValues {
@@ -390,17 +391,17 @@ const CreateStaff: React.FC = () => {
                                                 control={control}
                                                 name="gender"
                                                 render={({ field }) => (
-                                                    <select
-                                                        value={field.value}
-                                                        onChange={field.onChange}
-                                                        aria-label="Gender"
-                                                        className={inputClass + ' bg-white'}
-                                                    >
-                                                        <option value="">Select</option>
-                                                        <option value="Male">Male</option>
-                                                        <option value="Female">Female</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
+                                                    <VFDropdown
+                                                        options={[
+                                                            { value: 'Male', label: 'Male' },
+                                                            { value: 'Female', label: 'Female' },
+                                                            { value: 'Other', label: 'Other' },
+                                                        ]}
+                                                        value={field.value || null}
+                                                        onChange={val => field.onChange(val as string)}
+                                                        searchable={false}
+                                                        placeholder="Select"
+                                                    />
                                                 )}
                                             />
                                         </div>

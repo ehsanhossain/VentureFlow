@@ -11,6 +11,7 @@ import { IndustryDropdown, Industry as DropdownIndustry } from '../../prospects/
 import { InvestorDropdown, InvestorOption } from './InvestorDropdown';
 import filterIcon from '../../../assets/icons/prospects/filter.svg';
 import { Loader2 } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 
 interface MatchFiltersProps {
     filters: MatchFiltersState;
@@ -88,18 +89,19 @@ const MatchFilters: React.FC<MatchFiltersProps> = ({
             {/* Minimum Score */}
             <div className="pb-4 mb-4 border-b border-gray-100">
                 <label style={labelStyle}>Min Score</label>
-                <select
-                    value={filters.min_score}
-                    onChange={e => onChange({ min_score: Number(e.target.value) })}
-                    aria-label="Minimum score"
-                    className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                >
-                    <option value={90}>90+ Excellent</option>
-                    <option value={80}>80+ Strong</option>
-                    <option value={70}>70+ Good</option>
-                    <option value={60}>60+ Fair</option>
-                    <option value={50}>50+ All</option>
-                </select>
+                <VFDropdown
+                    options={[
+                        { value: '90', label: '90+ Excellent' },
+                        { value: '80', label: '80+ Strong' },
+                        { value: '70', label: '70+ Good' },
+                        { value: '60', label: '60+ Fair' },
+                        { value: '50', label: '50+ All' },
+                    ]}
+                    value={String(filters.min_score)}
+                    onChange={val => onChange({ min_score: Number(val) })}
+                    searchable={false}
+                    placeholder="Select Min Score"
+                />
             </div>
 
             {/* Industry */}
@@ -267,22 +269,13 @@ const MatchFilters: React.FC<MatchFiltersProps> = ({
                         {/* Ownership Condition */}
                         <div>
                             <label style={labelStyle}>Ownership Preference</label>
-                            <select
+                            <VFDropdown
+                                options={ownershipOptions.map(opt => ({ value: opt, label: opt || 'Any' }))}
                                 value={criteria.ownership_condition}
-                                onChange={e => setCriteria(prev => ({ ...prev, ownership_condition: e.target.value }))}
-                                aria-label="Ownership preference"
-                                style={{
-                                    width: '100%', height: '36px', padding: '0 10px',
-                                    border: '1px solid #d1d5db', borderRadius: '3px',
-                                    fontSize: '13px', outline: 'none',
-                                    background: '#fff', cursor: 'pointer',
-                                    boxSizing: 'border-box',
-                                }}
-                            >
-                                {ownershipOptions.map(opt => (
-                                    <option key={opt} value={opt}>{opt || 'Any'}</option>
-                                ))}
-                            </select>
+                                onChange={val => setCriteria(prev => ({ ...prev, ownership_condition: (val as string) || '' }))}
+                                searchable={false}
+                                placeholder="Any"
+                            />
                         </div>
 
                         {/* Score button */}

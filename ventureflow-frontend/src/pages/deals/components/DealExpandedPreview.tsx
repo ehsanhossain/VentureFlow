@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, MessageSquare, Clock, SkipBack, SkipForward, MoreVertical, Pencil, ArrowRight, ArrowLeft, XCircle, Trash2, CalendarDays } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber, formatCompactBudget } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
@@ -18,6 +19,7 @@ interface DealExpandedPreviewProps {
 }
 
 const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose, onMove, onEdit, onMarkLost, onDelete }) => {
+    const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -58,23 +60,33 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
     const budgetDisplay = investmentBudget
         ? formatCompactBudget(investmentBudget as any, getCurrencySymbol('USD'))
         : formatValue(deal.ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
-    const targetCountries = deal.buyer?.investment_critera?.target_countries || [];
+    // Target countries — try investment_critera first, then target_preference
+    const rawTargetCountries = deal.buyer?.investment_critera?.target_countries || deal.buyer?.target_preference?.target_countries || [];
+    const targetCountries = rawTargetCountries.filter((c): c is { id: number; name: string; svg_icon_url?: string } => typeof c === 'object' && 'name' in c);
+    // Investor HQ country
+    const buyerHqCountry = deal.buyer?.company_overview?.hq_country;
+    const buyerHqObj = typeof buyerHqCountry === 'object' && buyerHqCountry ? buyerHqCountry : null;
+    // Investor industry preferences (b_ind_prefs from target_preference)
+    const investorIndustryPrefs = (deal.buyer?.target_preference?.b_ind_prefs || []).filter((p): p is { id: number; name: string } => typeof p === 'object' && 'name' in p);
 
     // Seller details
     const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'To be declared' : 'Undefined');
     const sellerCode = (deal.seller as any)?.seller_id || '';
     const sellerImage = getImageUrl(deal.seller?.image);
-    const desiredInvestment = deal.seller?.financial_details?.desired_investment
-        ? formatCompactBudget(deal.seller.financial_details.desired_investment as any, getCurrencySymbol('USD'))
+    const sellerFinancials = deal.seller?.financial_details;
+    const desiredInvestment = sellerFinancials?.expected_investment_amount
+        ? formatCompactBudget(sellerFinancials.expected_investment_amount as any, getCurrencySymbol(sellerFinancials.default_currency || 'USD'))
         : 'N/A';
-    const shareRatio = deal.seller?.financial_details?.maximum_investor_shareholding_percentage ||
-        deal.shareholding_ratio || 'Not Specified';
-    const ebitda = deal.seller?.financial_details?.ebitda
-        ? formatValue(deal.seller.financial_details.ebitda, deal.estimated_ev_currency)
+    const ebitda = sellerFinancials?.ebitda_value
+        ? formatCompactBudget(sellerFinancials.ebitda_value as any, getCurrencySymbol(sellerFinancials.default_currency || 'USD'))
         : 'N/A';
+    // Target HQ country
+    const sellerHqCountry = deal.seller?.company_overview?.hq_country;
+    const sellerHqObj = typeof sellerHqCountry === 'object' && sellerHqCountry ? sellerHqCountry : null;
+    // Target industry
+    const targetIndustries = (deal.seller?.company_overview?.industry_ops || []).filter((ind): ind is { id: number; name: string } => typeof ind === 'object' && 'name' in ind);
 
-    // Acquiring info
-    const acquiringRatio = deal.shareholding_ratio || deal.share_ratio || 'Majority (51–99%)';
+
 
     // Dynamic deal type label
     const getDealTypeLabel = (): string => {
@@ -116,11 +128,18 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                 <div className="flex flex-col gap-6">
                     {/* Header Row: Buyer | Acquiring | Seller */}
                     <div className="flex items-center justify-between gap-6">
-                        {/* Buyer/Investor */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Buyer/Investor — clickable to navigate */}
+                        <div
+                            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/buyer rounded-lg px-2 py-1.5 -mx-2 -my-1.5 hover:bg-amber-50/60 transition-colors"
+                            onClick={() => {
+                                const id = buyerCode || deal.buyer?.id;
+                                if (id) navigate(`/prospects/investor/${id}`);
+                            }}
+                            title={`View ${buyerName}`}
+                        >
                             {/* Buyer Avatar */}
                             <div
-                                className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm"
+                                className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm ring-2 ring-transparent group-hover/buyer:ring-amber-300 transition-all"
                                 style={{ backgroundColor: '#F2B200' }}
                             >
                                 {buyerImage ? (
@@ -139,25 +158,31 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                                 )}
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                <p className="text-[15px] font-semibold text-gray-900 truncate leading-6">{buyerName}</p>
-                                {buyerCode && <p className="text-[11px] text-gray-400 leading-4 truncate">{buyerCode}</p>}
+                                <p className="text-[15px] font-semibold text-gray-900 truncate leading-6 group-hover/buyer:text-amber-700 transition-colors">{buyerName}</p>
+                                {(buyerCode || buyerHqObj?.name) && <p className="text-[11px] text-gray-400 leading-4 truncate">{buyerHqObj?.name ? `${buyerHqObj.name}` : ''}{buyerCode && buyerHqObj?.name ? ' · ' : ''}{buyerCode || ''}</p>}
                             </div>
                         </div>
 
                         {/* Acquiring Info */}
                         <div className="flex flex-col items-center gap-0.5 flex-shrink-0 px-4">
                             <span className="text-[13px] text-gray-400 leading-5">{relationLabel}</span>
-                            <span className="text-[13px] font-medium text-gray-600 leading-5">{acquiringRatio}</span>
                             {(deal as any).investment_condition && (
-                                <span className="text-[11px] text-gray-400 leading-4">{(deal as any).investment_condition}</span>
+                                <span className="text-[14px] font-medium text-gray-700 leading-5">{(deal as any).investment_condition}</span>
                             )}
                         </div>
 
-                        {/* Seller/Target */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {/* Seller/Target — clickable to navigate */}
+                        <div
+                            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer group/seller rounded-lg px-2 py-1.5 -mx-2 -my-1.5 hover:bg-indigo-50/60 transition-colors"
+                            onClick={() => {
+                                const id = sellerCode || deal.seller?.id;
+                                if (id) navigate(`/prospects/target/${id}`);
+                            }}
+                            title={`View ${sellerName}`}
+                        >
                             {/* Seller Avatar */}
                             <div
-                                className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm"
+                                className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm ring-2 ring-transparent group-hover/seller:ring-indigo-300 transition-all"
                                 style={{ backgroundColor: '#030042' }}
                             >
                                 {sellerImage ? (
@@ -176,8 +201,8 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                                 )}
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                <p className="text-[15px] font-semibold text-gray-900 truncate leading-6">{sellerName}</p>
-                                {sellerCode && <p className="text-[11px] text-gray-400 leading-4 truncate">{sellerCode}</p>}
+                                <p className="text-[15px] font-semibold text-gray-900 truncate leading-6 group-hover/seller:text-indigo-700 transition-colors">{sellerName}</p>
+                                {(sellerCode || sellerHqObj?.name) && <p className="text-[11px] text-gray-400 leading-4 truncate">{sellerHqObj?.name ? `${sellerHqObj.name}` : ''}{sellerCode && sellerHqObj?.name ? ' · ' : ''}{sellerCode || ''}</p>}
                             </div>
                         </div>
 
@@ -242,6 +267,12 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                                 <X className="w-5 h-5 text-gray-400" />
                             </button>
                         </div>
+                    </div>
+
+                    {/* Deal Name */}
+                    <div className="flex items-center gap-2 px-1">
+                        <span className="text-[13px] text-gray-400">Deal:</span>
+                        <span className="text-[14px] font-semibold text-gray-900 truncate">{deal.name}</span>
                     </div>
 
                     {/* Divider */}
@@ -316,6 +347,31 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                                 </div>
                             </div>
 
+                            {/* Investor HQ Country */}
+                            <div className="flex items-center gap-4">
+                                <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>HQ Country</span>
+                                <div className="flex items-center gap-2">
+                                    {buyerHqObj?.svg_icon_url ? (
+                                        <img src={buyerHqObj.svg_icon_url} alt={buyerHqObj.name} className="w-4 h-3 object-cover rounded-sm" />
+                                    ) : buyerHqObj ? (
+                                        <span className="text-xs">🏳️</span>
+                                    ) : null}
+                                    <span className="text-[14px] text-gray-900 leading-5">{buyerHqObj?.name || 'Not Specified'}</span>
+                                </div>
+                            </div>
+
+                            {/* Investor Industry Preferences */}
+                            {investorIndustryPrefs.length > 0 && (
+                                <div className="flex items-start gap-4">
+                                    <span className="text-[13px] text-gray-500 leading-5" style={{ width: 110 }}>Industry Prefs</span>
+                                    <div className="flex flex-wrap gap-1">
+                                        {investorIndustryPrefs.map((ind, i) => (
+                                            <span key={i} className="px-2 py-0.5 rounded text-[12px] font-medium bg-blue-50 text-blue-700">{ind.name}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
                         {/* Right Column - Target/Seller Details */}
@@ -328,17 +384,38 @@ const DealExpandedPreview: React.FC<DealExpandedPreviewProps> = ({ deal, onClose
                                 <span className="text-[14px] font-semibold text-gray-900 leading-5">{desiredInvestment}</span>
                             </div>
 
-                            {/* Share Ratio */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>Share Ratio</span>
-                                <span className="text-[14px] text-gray-900 leading-5">{shareRatio}</span>
-                            </div>
+
 
                             {/* EBITDA */}
                             <div className="flex items-center gap-4">
                                 <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>EBITDA</span>
                                 <span className="text-[14px] text-gray-900 leading-5">{ebitda}</span>
                             </div>
+
+                            {/* Target HQ Country */}
+                            <div className="flex items-center gap-4">
+                                <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>HQ Country</span>
+                                <div className="flex items-center gap-2">
+                                    {sellerHqObj?.svg_icon_url ? (
+                                        <img src={sellerHqObj.svg_icon_url} alt={sellerHqObj.name} className="w-4 h-3 object-cover rounded-sm" />
+                                    ) : sellerHqObj ? (
+                                        <span className="text-xs">🏳️</span>
+                                    ) : null}
+                                    <span className="text-[14px] text-gray-900 leading-5">{sellerHqObj?.name || 'Not Specified'}</span>
+                                </div>
+                            </div>
+
+                            {/* Target Industry */}
+                            {targetIndustries.length > 0 && (
+                                <div className="flex items-start gap-4">
+                                    <span className="text-[13px] text-gray-500 leading-5" style={{ width: 130 }}>Industry</span>
+                                    <div className="flex flex-wrap gap-1">
+                                        {targetIndustries.map((ind, i) => (
+                                            <span key={i} className="px-2 py-0.5 rounded text-[12px] font-medium bg-green-50 text-green-700">{ind.name}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

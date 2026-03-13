@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { VFDropdown } from './VFDropdown';
 
 // Define the shape of the filter state
 export interface FilterState {
@@ -232,25 +233,13 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                             />
                           </div>
                           <div className="relative">
-                            <select
-                              value={filters.registered}
-                              onChange={(e) => handleFilterChange('registered', e.target.value)}
-                              title="Registered Within"
-                              aria-label="Registered Within"
-                              className="w-[283px] h-10 pl-[47px] pr-5 py-2 -ml-[34px] bg-white rounded-[0px_53px_53px_0px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
-                            >
-                              <option value="">{filterFields[0].placeholder}</option>
-                              {filterFields[0].options.map((option) => (
-                                <option key={option.value} value={option.value} className="text-gray-900">
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </div>
+                            <VFDropdown
+                                options={[...filterFields[0].options]}
+                                value={filters.registered || null}
+                                onChange={val => handleFilterChange('registered', (val as string) || '')}
+                                searchable={false}
+                                placeholder={filterFields[0].placeholder}
+                            />
                           </div>
                         </div>
                       </div>
@@ -271,32 +260,13 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                         </div>
 
                         <div className="relative w-full">
-                          <select
-                            value={filters.country}
-                            onChange={(e) => handleFilterChange('country', e.target.value)}
-                            title="Partner's HQ/Origin Country"
-                            aria-label="Partner's HQ/Origin Country"
-                            className="w-full h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f] pl-[50px]"
-                          >
-                            <option value="">{filterFields[1].placeholder}</option>
-                            {filterFields[1].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                            <img
-                              className="w-[26px] h-[26px]"
-                              alt="Globe icon"
-                              src="/web.png"
-                            />
-                          </div>
-                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
+                          <VFDropdown
+                              options={[...filterFields[1].options]}
+                              value={filters.country || null}
+                              onChange={val => handleFilterChange('country', (val as string) || '')}
+                              searchable={false}
+                              placeholder={filterFields[1].placeholder}
+                          />
                         </div>
                       </div>
                     </div>
@@ -319,25 +289,13 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                         </div>
 
                         <div className="relative">
-                          <select
-                            value={filters.structure}
-                            onChange={(e) => handleFilterChange('structure', e.target.value)}
-                            title="Structure"
-                            aria-label="Structure"
-                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
-                          >
-                            <option value="">{filterFields[2].placeholder}</option>
-                            {filterFields[2].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
+                          <VFDropdown
+                              options={[...filterFields[2].options]}
+                              value={filters.structure || null}
+                              onChange={val => handleFilterChange('structure', (val as string) || '')}
+                              searchable={false}
+                              placeholder={filterFields[2].placeholder}
+                          />
                         </div>
                       </div>
 
@@ -357,25 +315,13 @@ export const PartnerFilter: React.FC<PartnerFilterProps> = ({
                         </div>
 
                         <div className="relative">
-                          <select
-                            value={filters.status}
-                            onChange={(e) => handleFilterChange('status', e.target.value)}
-                            title="Status"
-                            aria-label="Status"
-                            className="w-[301px] h-10 px-5 py-[13px] bg-white rounded-[5px] border-[0.5px] border-solid border-gray-300 text-gray-500 text-sm font-normal appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005d7f] focus:border-[#005d7f]"
-                          >
-                            <option value="">{filterFields[3].placeholder}</option>
-                            {filterFields[3].options.map((option) => (
-                              <option key={option.value} value={option.value} className="text-gray-900">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </div>
+                          <VFDropdown
+                              options={[...filterFields[3].options]}
+                              value={filters.status || null}
+                              onChange={val => handleFilterChange('status', (val as string) || '')}
+                              searchable={false}
+                              placeholder={filterFields[3].placeholder}
+                          />
                         </div>
                       </div>
                     </div>

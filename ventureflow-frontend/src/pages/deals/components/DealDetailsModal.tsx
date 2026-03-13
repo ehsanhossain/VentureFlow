@@ -4,7 +4,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, Building2, User, Calendar, DollarSign, Activity, FileText, MessageSquare, Clock, MapPin, Globe, Briefcase, TrendingUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Building2, User, Calendar, DollarSign, Activity, FileText, MessageSquare, Clock, MapPin, Globe, Briefcase, TrendingUp, ExternalLink } from 'lucide-react';
 import api from '../../../config/api';
 import { formatCompactNumber, getCurrencySymbol, formatCompactBudget } from '../../../utils/formatters';
 
@@ -72,7 +73,7 @@ interface DealDetail {
         buyer_id?: string;
         company_overview?: {
             reg_name?: string;
-            hq_country?: { name?: string };
+            hq_country?: { name?: string; svg_icon_url?: string };
             investment_budget?: string | { min?: number | string; max?: number | string; currency?: string };
         };
         investment_critera?: {
@@ -81,13 +82,16 @@ interface DealDetail {
         target_preference?: {
             target_countries?: Array<number | { id: number; name: string; svg_icon_url?: string }>;
             target_industries?: Array<number | { id: number; name: string }>;
+            b_ind_prefs?: Array<number | { id: number; name: string }>;
         };
     };
     seller?: {
         seller_id?: string;
         company_overview?: {
             reg_name?: string;
-            hq_country?: { name?: string };
+            hq_country?: { name?: string; svg_icon_url?: string };
+            industry_ops?: Array<number | { id: number; name: string }>;
+            niche_industry?: Array<number | { id: number; name: string }>;
         };
         financial_details?: {
             desired_investment?: number | string | { min?: number | string; max?: number | string; currency?: string };
@@ -101,6 +105,7 @@ interface DealDetail {
 }
 
 const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, onUpdate }) => {
+    const navigate = useNavigate();
     const [deal, setDeal] = useState<DealDetail | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -389,13 +394,21 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
 
                                 {/* Entities */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-2xl border border-gray-200/60 shadow-sm relative overflow-hidden group hover:border-[#064771]/30 transition-colors">
+                                    <div
+                                        className="bg-white p-6 rounded-2xl border border-gray-200/60 shadow-sm relative overflow-hidden group hover:border-[#064771]/30 transition-colors cursor-pointer"
+                                        onClick={() => {
+                                            const id = d!.buyer?.buyer_id || d!.buyer_id;
+                                            if (id) { onClose(); navigate(`/prospects/investor/${id}`); }
+                                        }}
+                                        title="View Investor Profile"
+                                    >
                                         <div className="absolute top-0 left-0 w-1.5 h-full bg-[#064771]" />
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-blue-50 rounded-xl transition-colors group-hover:bg-blue-100">
                                                 <Building2 className="w-5 h-5 text-[#064771]" />
                                             </div>
-                                            <h3 className="font-semibold text-gray-900 tracking-tight">Investor Details</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight flex-1">Investor Details</h3>
+                                            <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-[#064771] transition-colors" />
                                         </div>
                                         <div className="space-y-2">
                                             <p className="text-lg font-medium text-gray-900 leading-tight">{d!.buyer?.company_overview?.reg_name || (d!.buyer_id ? 'To be declared' : 'Undefined')}</p>
@@ -404,6 +417,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             )}
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                                 <MapPin className="w-3.5 h-3.5" />
+                                                {d!.buyer?.company_overview?.hq_country?.svg_icon_url ? (
+                                                    <img src={d!.buyer.company_overview.hq_country.svg_icon_url} alt={d!.buyer.company_overview.hq_country.name || ''} className="w-4 h-3 object-cover rounded-sm" />
+                                                ) : null}
                                                 {d!.buyer?.company_overview?.hq_country?.name || 'Location Not Specified'}
                                             </div>
                                             {/* Budget Range */}
@@ -443,16 +459,40 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                     </div>
                                                 );
                                             })()}
+                                            {/* Investor Industry Preferences */}
+                                            {(() => {
+                                                const prefs = d!.buyer?.target_preference?.b_ind_prefs || [];
+                                                const prefsWithNames = prefs.filter((p): p is { id: number; name: string } => typeof p === 'object' && 'name' in p);
+                                                if (prefsWithNames.length === 0) return null;
+                                                return (
+                                                    <div className="flex items-start gap-2 text-xs text-gray-500 font-medium">
+                                                        <Briefcase className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {prefsWithNames.map((p, i) => (
+                                                                <span key={i} className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700">{p.name}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
 
-                                    <div className="bg-white p-6 rounded-2xl border border-gray-200/60 shadow-sm relative overflow-hidden group hover:border-green-300 transition-colors">
+                                    <div
+                                        className="bg-white p-6 rounded-2xl border border-gray-200/60 shadow-sm relative overflow-hidden group hover:border-green-300 transition-colors cursor-pointer"
+                                        onClick={() => {
+                                            const id = d!.seller?.seller_id || d!.seller_id;
+                                            if (id) { onClose(); navigate(`/prospects/target/${id}`); }
+                                        }}
+                                        title="View Target Profile"
+                                    >
                                         <div className="absolute top-0 left-0 w-1.5 h-full bg-green-500" />
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="p-2 bg-green-50 rounded-xl transition-colors group-hover:bg-green-100">
                                                 <Briefcase className="w-5 h-5 text-green-600" />
                                             </div>
-                                            <h3 className="font-semibold text-gray-900 tracking-tight">Target Details</h3>
+                                            <h3 className="font-semibold text-gray-900 tracking-tight flex-1">Target Details</h3>
+                                            <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-green-500 transition-colors" />
                                         </div>
                                         <div className="space-y-2">
                                             <p className="text-lg font-medium text-gray-900 leading-tight">{d!.seller?.company_overview?.reg_name || (d!.seller_id ? 'To be declared' : 'Undefined')}</p>
@@ -461,6 +501,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                             )}
                                             <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                                                 <MapPin className="w-3.5 h-3.5" />
+                                                {d!.seller?.company_overview?.hq_country?.svg_icon_url ? (
+                                                    <img src={d!.seller.company_overview.hq_country.svg_icon_url} alt={d!.seller.company_overview.hq_country.name || ''} className="w-4 h-3 object-cover rounded-sm" />
+                                                ) : null}
                                                 {d!.seller?.company_overview?.hq_country?.name || 'Location Not Specified'}
                                             </div>
                                             {/* Desired Investment */}
@@ -473,6 +516,22 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ dealId, onClose, on
                                                         : 'N/A'}
                                                 </span>
                                             </div>
+                                            {/* Target Industry */}
+                                            {(() => {
+                                                const industries = d!.seller?.company_overview?.industry_ops || [];
+                                                const industryNames = industries.filter((ind): ind is { id: number; name: string } => typeof ind === 'object' && 'name' in ind);
+                                                if (industryNames.length === 0) return null;
+                                                return (
+                                                    <div className="flex items-start gap-2 text-xs text-gray-500 font-medium">
+                                                        <Building2 className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {industryNames.map((ind, i) => (
+                                                                <span key={i} className="px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 text-green-700">{ind.name}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

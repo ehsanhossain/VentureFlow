@@ -4,12 +4,12 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
-import { Globe, User, Mail, Phone, ExternalLink, FileText, Copy, Check, Camera, Loader, FolderClosed } from 'lucide-react';
+import { Globe, User, Mail, Phone, ExternalLink, FileText, Copy, Check, FolderClosed } from 'lucide-react';
 import cloudflowBrandIcon from '../../../assets/icons/cloudflow-brand.svg';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import { isBackendPropertyAllowed } from '../../../utils/permissionUtils';
@@ -51,30 +51,8 @@ const TargetDetails: React.FC = () => {
     const [currencies, setCurrencies] = useState<{ id: number; currency_code: string; exchange_rate?: string }[]>([]);
     const [driveStats, setDriveStats] = useState<{ folder_count: number; file_count: number } | null>(null);
 
-    // Avatar upload
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const [avatarUploading, setAvatarUploading] = useState(false);
+    // Avatar display
     const baseURL = ''; // deprecated — use getImageUrl
-
-    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !id) return;
-        const fd = new FormData();
-        fd.append('image', file);
-        setAvatarUploading(true);
-        try {
-            const res = await api.post(`/api/seller/${id}/avatar`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setSeller((prev: any) => prev ? { ...prev, image: res.data.image_path } : prev);
-            showAlert({ type: 'success', message: 'Avatar updated.' });
-        } catch {
-            showAlert({ type: 'error', message: 'Failed to upload avatar.' });
-        } finally {
-            setAvatarUploading(false);
-            if (avatarInputRef.current) avatarInputRef.current.value = '';
-        }
-    };
 
     const getAvatarUrl = () => {
         if (seller?.image) {
@@ -372,20 +350,11 @@ const TargetDetails: React.FC = () => {
                         {/* Company Header */}
                         <div className="space-y-7">
                             <div className="flex items-center gap-3">
-                                {/* Company Avatar - click to upload (admin only) */}
+                                {/* Company Avatar (view only) */}
                                 {!isPartner && (
                                     <div
-                                        className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
-                                        onClick={() => avatarInputRef.current?.click()}
-                                        title="Click to change photo"
+                                        className="relative w-[52px] h-[52px] shrink-0"
                                     >
-                                        <input
-                                            ref={avatarInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleAvatarChange}
-                                        />
                                         {getAvatarUrl() ? (
                                             <img
                                                 src={getAvatarUrl()}
@@ -394,14 +363,8 @@ const TargetDetails: React.FC = () => {
                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                             />
                                         ) : null}
-                                        <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
+                                        <div className={`w-[52px] h-[52px] rounded-full bg-[#030042] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
                                             {getInitials(companyName)}
-                                        </div>
-                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            {avatarUploading
-                                                ? <Loader className="w-4 h-4 text-white animate-spin" />
-                                                : <Camera className="w-4 h-4 text-white" />
-                                            }
                                         </div>
                                     </div>
                                 )}

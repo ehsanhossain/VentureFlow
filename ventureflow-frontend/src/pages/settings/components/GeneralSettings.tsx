@@ -13,6 +13,7 @@ import { useGeneralSettings } from '../../../context/GeneralSettingsContext';
 import { AuthContext } from '../../../routes/AuthContext';
 import Holidays from 'date-holidays';
 import { Search, ChevronDown } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 
 interface Currency {
     id: string | number;
@@ -334,56 +335,44 @@ const GeneralSettings: React.FC = () => {
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="default-currency" className="text-sm font-medium text-gray-700">Default Currency</label>
-                                <select
-                                    id="default-currency"
+                                <VFDropdown
+                                    options={isLoadingCurrencies
+                                        ? [{ value: '', label: 'Loading currencies...' }]
+                                        : currencies.length > 0
+                                            ? currencies.map(curr => ({ value: curr.currency_code, label: `${curr.currency_code} - ${curr.currency_name}` }))
+                                            : [{ value: '', label: 'Register a currency first' }]
+                                    }
                                     value={defaultCurrency}
-                                    onChange={(e) => setDefaultCurrency(e.target.value)}
+                                    onChange={val => setDefaultCurrency(val as string)}
+                                    searchable={true}
+                                    placeholder="Select Currency"
                                     disabled={isReadOnly || isLoadingCurrencies || isLoadingSettings}
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
-                                >
-                                    {isLoadingCurrencies ? (
-                                        <option>Loading currencies...</option>
-                                    ) : currencies.length > 0 ? (
-                                        currencies.map(curr => (
-                                            <option key={curr.id} value={curr.currency_code}>
-                                                {curr.currency_code} - {curr.currency_name}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <option value="">Register a currency first</option>
-                                    )}
-                                </select>
+                                />
                                 {!isLoadingCurrencies && currencies.length === 0 && (
                                     <p className="text-[11px] text-amber-600 mt-1">Please register a currency in Currency Settings first.</p>
                                 )}
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="preferred-timezone" className="text-sm font-medium text-gray-700">{t('settings.general.timezoneLabel', 'Preferred Timezone')}</label>
-                                <select
-                                    id="preferred-timezone"
+                                <VFDropdown
+                                    options={timezones.map(tz => ({ value: tz, label: tz }))}
                                     value={timezone}
-                                    onChange={(e) => setTimezone(e.target.value)}
+                                    onChange={val => setTimezone(val as string)}
+                                    searchable={true}
+                                    placeholder="Select Timezone"
                                     disabled={isReadOnly || isLoadingSettings}
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
-                                >
-                                    {timezones.map((tz, idx) => (
-                                        <option key={idx} value={tz}>{tz}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="date-format" className="text-sm font-medium text-gray-700">{t('settings.general.dateFormatLabel', 'Date Format')}</label>
-                                <select
-                                    id="date-format"
+                                <VFDropdown
+                                    options={dateFormats.map(fmt => ({ value: fmt, label: fmt }))}
                                     value={dateFormat}
-                                    onChange={(e) => setDateFormat(e.target.value)}
+                                    onChange={val => setDateFormat(val as string)}
+                                    searchable={false}
+                                    placeholder="Select Date Format"
                                     disabled={isReadOnly || isLoadingSettings}
-                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:border-[#064771] transition-all cursor-pointer"
-                                >
-                                    {dateFormats.map((fmt) => (
-                                        <option key={fmt} value={fmt}>{fmt}</option>
-                                    ))}
-                                </select>
+                                />
                             </div>
                         </div>
                     </div>

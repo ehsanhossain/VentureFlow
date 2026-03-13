@@ -4,7 +4,12 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Steps, ConfigProvider } from 'antd';
+import { Calendar } from 'lucide-react';
+import InvestorIcon from '../../../assets/icons/prospects/addinvestor.svg';
+import TargetIcon from '../../../assets/icons/prospects/addtarget.svg';
+import DealPipelineIcon from '../../../assets/icons/deals-pipeline.svg';
+import { VFDropdown } from '../../../components/VFDropdown';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
@@ -110,7 +115,6 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         ticket_size: '',
         estimated_ev_currency: 'USD',
         priority: 'medium',
-        possibility: 'Medium',
         deal_type: 'acquisition',
         investment_condition: '',
         ebitda_investor_value: '',
@@ -258,9 +262,17 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         const buyerName = buyer.company_overview?.reg_name || 'Buyer';
         if (selectedSeller) {
             const sellerName = selectedSeller.company_overview?.reg_name || 'Seller';
-            setFormData((prev) => ({ ...prev, name: `${buyerName} – ${sellerName}` }));
+            setFormData((prev) => {
+                const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                return { ...prev, name: `${buyerName} — ${label} → ${sellerName}` };
+            });
         } else if (sellerTBD) {
-            setFormData((prev) => ({ ...prev, name: `${buyerName} – TBD` }));
+            setFormData((prev) => {
+                const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                return { ...prev, name: `${buyerName} — ${label} → TBD` };
+            });
         }
         // Auto-fill PICs from buyer (merged with existing seller PICs)
         if (!picManuallyEdited) {
@@ -291,12 +303,17 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         const sellerName = seller.company_overview?.reg_name || 'Target';
         if (selectedBuyer) {
             const buyerName = selectedBuyer.company_overview?.reg_name || 'Investor';
-            setFormData((prev) => ({
-                ...prev,
-                name: `${buyerName} – ${sellerName}`,
-            }));
+                setFormData((prev) => {
+                    const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                    const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                    return { ...prev, name: `${buyerName} — ${label} → ${sellerName}` };
+                });
         } else if (buyerTBD) {
-            setFormData((prev) => ({ ...prev, name: `TBD – ${sellerName}` }));
+            setFormData((prev) => {
+                const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                return { ...prev, name: `TBD — ${label} → ${sellerName}` };
+            });
         }
 
         // Auto-fill PICs from seller (merged with existing buyer PICs)
@@ -314,7 +331,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         // Auto-name with TBD if seller exists
         if (selectedSeller) {
             const sellerName = selectedSeller.company_overview?.reg_name || 'Target';
-            setFormData((prev) => ({ ...prev, name: `TBD – ${sellerName}` }));
+            setFormData((prev) => {
+                const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                return { ...prev, name: `TBD — ${label} → ${sellerName}` };
+            });
         }
     };
 
@@ -325,17 +346,15 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
         // Auto-name with TBD if buyer exists
         if (selectedBuyer) {
             const buyerName = selectedBuyer.company_overview?.reg_name || 'Investor';
-            setFormData((prev) => ({ ...prev, name: `${buyerName} – TBD` }));
+            setFormData((prev) => {
+                const dt = DEAL_TYPES.find(r => r.value === prev.deal_type);
+                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                return { ...prev, name: `${buyerName} — ${label} → TBD` };
+            });
         }
     };
 
-    const getFANames = (fa: string | Record<string, string>[] | undefined) => {
-        try {
-            const parsed = typeof fa === 'string' ? JSON.parse(fa) : fa;
-            if (Array.isArray(parsed)) return parsed.map((f: Record<string, string>) => f.name || f.reg_name).join(', ');
-            return parsed?.name || parsed?.reg_name || 'None';
-        } catch { return 'None'; }
-    };
+
 
     // Compute which stages to show in timeline (from current stage through last)
     const timelineStages = useMemo(() => {
@@ -449,11 +468,12 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 buyer_id: formData.buyer_id || null,
                 seller_id: formData.seller_id || null,
                 ticket_size: removeCommas(formData.ticket_size) || null,
-                ebitda_investor_value: formData.ebitda_investor_value || null,
+                ebitda_investor_value: removeCommas(formData.ebitda_investor_value) || null,
                 ebitda_investor_times: formData.ebitda_investor_times || null,
-                ebitda_target_value: formData.ebitda_target_value || null,
+                ebitda_target_value: removeCommas(formData.ebitda_target_value) || null,
                 ebitda_target_times: formData.ebitda_target_times || null,
                 investment_condition: formData.investment_condition || null,
+                internal_pic: formData.internal_pic.map(p => ({ id: p.id, name: p.name })),
                 pipeline_type: defaultView,
                 stage_deadlines: deadlinesPayload.length > 0 ? deadlinesPayload : undefined,
             });
@@ -515,11 +535,10 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
     const hasAtLeastOneParty = !!selectedBuyer || !!selectedSeller;
 
     // Shared input/component style with 3px border-radius
-    const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
-    const selectClass = "w-full px-4 py-2 pr-10 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none bg-white";
-    const buttonItemClass = (isSelected: boolean, accentColor: string) =>
+    const inputClass = "w-full min-h-[44px] px-4 py-2.5 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
+    const buttonItemClass = (isSelected: boolean) =>
         `w-full flex items-center gap-3 px-4 py-3 rounded-[3px] border transition-colors ${isSelected
-            ? `border-${accentColor}-500 bg-${accentColor}-50`
+            ? ''
             : 'hover:bg-gray-50'
         }`;
 
@@ -537,21 +556,40 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                 </div>
 
                 {/* Steps Indicator */}
-                <div className="flex items-center px-6 py-4 border-b bg-gray-50">
-                    {[1, 2, 3].map((s) => (
-                        <div key={s} className="flex items-center">
-                            <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s ? 'bg-[#064771] text-white' : 'bg-gray-200 text-gray-500'
-                                    }`}
-                            >
-                                {s}
-                            </div>
-                            <span className={`ml-2 text-sm ${step >= s ? 'text-gray-900' : 'text-gray-500'}`}>
-                                {s === 1 ? step1Label : s === 2 ? step2Label : 'Deal Details'}
-                            </span>
-                            {s < 3 && <div className="w-12 h-0.5 mx-4 bg-gray-200" />}
-                        </div>
-                    ))}
+                <div className="px-6 py-4 border-b bg-gray-50">
+                    <ConfigProvider theme={{
+                        token: { colorPrimary: '#064771' },
+                        components: {
+                            Steps: {
+                                iconSize: 36,
+                                iconFontSize: 16,
+                            }
+                        }
+                    }}>
+                        <Steps
+                            current={step - 1}
+                            items={[
+                                {
+                                    title: step1Label,
+                                    icon: <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: step >= 1 ? '#064771' : '#e5e7eb', transition: 'background 0.3s' }}>
+                                        <img src={step1IsBuyer ? InvestorIcon : TargetIcon} alt="" style={{ width: 18, height: 18, filter: step >= 1 ? 'brightness(0) invert(1)' : 'none' }} />
+                                    </div>,
+                                },
+                                {
+                                    title: step2Label,
+                                    icon: <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: step >= 2 ? '#064771' : '#e5e7eb', transition: 'background 0.3s' }}>
+                                        <img src={step1IsBuyer ? TargetIcon : InvestorIcon} alt="" style={{ width: 18, height: 18, filter: step >= 2 ? 'brightness(0) invert(1)' : 'none' }} />
+                                    </div>,
+                                },
+                                {
+                                    title: 'Deal Details',
+                                    icon: <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: step >= 3 ? '#064771' : '#e5e7eb', transition: 'background 0.3s' }}>
+                                        <img src={DealPipelineIcon} alt="" style={{ width: 18, height: 18, filter: step >= 3 ? 'brightness(0) invert(1)' : 'none' }} />
+                                    </div>,
+                                },
+                            ]}
+                        />
+                    </ConfigProvider>
                 </div>
 
                 {/* Content */}
@@ -574,11 +612,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <button
                                                 key={buyer.id}
                                                 onClick={() => handleSelectBuyer(buyer)}
-                                                className={buttonItemClass(selectedBuyer?.id === buyer.id, 'blue')}
-                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' } : {}}
+                                                className={buttonItemClass(selectedBuyer?.id === buyer.id)}
+                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#F2B200', backgroundColor: '#FFFBEB' } : {}}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
-                                                    {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: '#F2B200', color: '#3E2C06' }}>
+                                                    {buyer.company_overview?.reg_name?.substring(0, 2).toUpperCase() || 'BU'}
                                                 </div>
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
@@ -609,11 +647,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <button
                                                 key={seller.id}
                                                 onClick={() => handleSelectSeller(seller)}
-                                                className={buttonItemClass(selectedSeller?.id === seller.id, 'green')}
-                                                style={selectedSeller?.id === seller.id ? { borderColor: '#22C55E', backgroundColor: '#F0FDF4' } : {}}
+                                                className={buttonItemClass(selectedSeller?.id === seller.id)}
+                                                style={selectedSeller?.id === seller.id ? { borderColor: '#030042', backgroundColor: '#F0F0FF' } : {}}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
-                                                    {seller.company_overview?.reg_name?.charAt(0) || 'S'}
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: '#030042', color: '#FFFFFF' }}>
+                                                    {seller.company_overview?.reg_name?.substring(0, 2).toUpperCase() || 'TA'}
                                                 </div>
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {seller.company_overview?.reg_name || `Seller #${seller.id}`}
@@ -651,11 +689,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <button
                                                 key={seller.id}
                                                 onClick={() => handleSelectSeller(seller)}
-                                                className={buttonItemClass(selectedSeller?.id === seller.id, 'green')}
-                                                style={selectedSeller?.id === seller.id ? { borderColor: '#22C55E', backgroundColor: '#F0FDF4' } : {}}
+                                                className={buttonItemClass(selectedSeller?.id === seller.id)}
+                                                style={selectedSeller?.id === seller.id ? { borderColor: '#030042', backgroundColor: '#F0F0FF' } : {}}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
-                                                    {seller.company_overview?.reg_name?.charAt(0) || 'S'}
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: '#030042', color: '#FFFFFF' }}>
+                                                    {seller.company_overview?.reg_name?.substring(0, 2).toUpperCase() || 'TA'}
                                                 </div>
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {seller.company_overview?.reg_name || `Seller #${seller.id}`}
@@ -672,10 +710,13 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     {/* Skip option */}
                                     <button
                                         onClick={handleSkipSeller}
-                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${sellerTBD
-                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
-                                            }`}
+                                        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors"
+                                        style={sellerTBD
+                                            ? { borderColor: '#030042', backgroundColor: '#F0F0FF', color: '#030042' }
+                                            : { borderColor: '#d1d5db', color: '#6b7280' }
+                                        }
+                                        onMouseEnter={(e) => { if (!sellerTBD) { e.currentTarget.style.borderColor = '#030042'; e.currentTarget.style.backgroundColor = '#F0F0FF'; e.currentTarget.style.color = '#030042'; } }}
+                                        onMouseLeave={(e) => { if (!sellerTBD) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#6b7280'; } }}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -683,7 +724,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         <span className="text-sm font-medium">Skip for now (Target TBD)</span>
                                     </button>
                                     {sellerTBD && (
-                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                        <p className="mt-2 text-xs text-center" style={{ color: '#030042' }}>
                                             Deal will be created as a <strong>Buyer Mandate</strong> — you can assign a target later.
                                         </p>
                                     )}
@@ -703,11 +744,11 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                             <button
                                                 key={buyer.id}
                                                 onClick={() => handleSelectBuyer(buyer)}
-                                                className={buttonItemClass(selectedBuyer?.id === buyer.id, 'blue')}
-                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#3B82F6', backgroundColor: '#EFF6FF' } : {}}
+                                                className={buttonItemClass(selectedBuyer?.id === buyer.id)}
+                                                style={selectedBuyer?.id === buyer.id ? { borderColor: '#F2B200', backgroundColor: '#FFFBEB' } : {}}
                                             >
-                                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#064771] font-semibold">
-                                                    {buyer.company_overview?.reg_name?.charAt(0) || 'B'}
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold" style={{ backgroundColor: '#F2B200', color: '#3E2C06' }}>
+                                                    {buyer.company_overview?.reg_name?.substring(0, 2).toUpperCase() || 'BU'}
                                                 </div>
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {buyer.company_overview?.reg_name || `Buyer #${buyer.id}`}
@@ -724,10 +765,13 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                     {/* Skip option */}
                                     <button
                                         onClick={handleSkipBuyer}
-                                        className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors ${buyerTBD
-                                            ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                            : 'border-gray-300 text-gray-500 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
-                                            }`}
+                                        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 rounded-[3px] border-2 border-dashed transition-colors"
+                                        style={buyerTBD
+                                            ? { borderColor: '#F2B200', backgroundColor: '#FFFBEB', color: '#3E2C06' }
+                                            : { borderColor: '#d1d5db', color: '#6b7280' }
+                                        }
+                                        onMouseEnter={(e) => { if (!buyerTBD) { e.currentTarget.style.borderColor = '#F2B200'; e.currentTarget.style.backgroundColor = '#FFFBEB'; e.currentTarget.style.color = '#3E2C06'; } }}
+                                        onMouseLeave={(e) => { if (!buyerTBD) { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#6b7280'; } }}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -735,7 +779,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         <span className="text-sm font-medium">Skip for now (Investor TBD)</span>
                                     </button>
                                     {buyerTBD && (
-                                        <p className="mt-2 text-xs text-amber-600 text-center">
+                                        <p className="mt-2 text-xs text-center" style={{ color: '#92700C' }}>
                                             Deal will be created as a <strong>Seller Mandate</strong> — you can assign an investor later.
                                         </p>
                                     )}
@@ -746,7 +790,7 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
                     {/* ===== STEP 3: Deal Details ===== */}
                     {step === 3 && (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {/* Mandate indicator */}
                             {(buyerTBD || sellerTBD) && (
                                 <div className="flex items-center gap-2 px-3 py-2 rounded-[3px] bg-amber-50 border border-amber-200 text-amber-800 text-xs">
@@ -759,285 +803,258 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                 </div>
                             )}
 
+                            {/* Row 1: Deal Type + Investment Condition side-by-side */}
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label htmlFor="deal-type" className="block text-sm font-medium text-gray-700 mb-2.5">Deal Type</label>
+                                    <VFDropdown
+                                        options={DEAL_TYPES.map(dt => ({ value: dt.value, label: defaultView === 'seller' ? dt.sellerLabel : dt.buyerLabel }))}
+                                        value={formData.deal_type}
+                                        onChange={(val) => {
+                                            const newDealType = val as string;
+                                            setFormData((prev) => {
+                                                const dt = DEAL_TYPES.find(r => r.value === newDealType);
+                                                const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                                                const bName = selectedBuyer?.company_overview?.reg_name || (buyerTBD ? 'TBD' : '');
+                                                const sName = selectedSeller?.company_overview?.reg_name || (sellerTBD ? 'TBD' : '');
+                                                const newName = bName && sName ? `${bName} — ${label} → ${sName}` : prev.name;
+                                                return { ...prev, deal_type: newDealType, name: newName };
+                                            });
+                                        }}
+                                        searchable={false}
+                                        placeholder="Select Deal Type"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label htmlFor="deal-investment-condition" className="block text-sm font-medium text-gray-700 mb-2.5">Investment Condition</label>
+                                    <VFDropdown
+                                        options={INVESTMENT_CONDITIONS}
+                                        value={formData.investment_condition || null}
+                                        onChange={(val) => setFormData((prev) => ({ ...prev, investment_condition: (val as string) || '' }))}
+                                        searchable={false}
+                                        placeholder="Select Condition"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Row 2: Deal Name full-width */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Deal Name</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2.5">Deal Name</label>
                                 <input
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                                     className={inputClass}
-                                    placeholder="e.g., Buyer Corp – Seller Inc"
+                                    placeholder={(() => {
+                                        const bName = selectedBuyer?.company_overview?.reg_name || '';
+                                        const sName = selectedSeller?.company_overview?.reg_name || '';
+                                        const dt = DEAL_TYPES.find(r => r.value === formData.deal_type);
+                                        const label = defaultView === 'buyer' ? dt?.buyerLabel : dt?.sellerLabel;
+                                        if (bName && sName) return `${bName} — ${label} → ${sName}`;
+                                        return 'e.g., Buyer Corp – Seller Inc';
+                                    })()}
                                 />
                             </div>
 
-                            {/* Deal Type */}
-                            <div>
-                                <label htmlFor="deal-type" className="block text-sm font-medium text-gray-700 mb-1">Deal Type</label>
-                                <div className="relative">
-                                    <select
-                                        id="deal-type"
-                                        value={formData.deal_type}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, deal_type: e.target.value }))}
-                                        className={selectClass}
-                                    >
-                                        {DEAL_TYPES.map((dt) => (
-                                            <option key={dt.value} value={dt.value}>
-                                                {defaultView === 'seller' ? dt.sellerLabel : dt.buyerLabel}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
-                                {/* Preview of how it will display */}
-                                {(selectedBuyer || selectedSeller) && (
-                                    <p className="mt-1.5 text-xs text-gray-500">
-                                        Preview: <span className="font-medium text-gray-700">
-                                            {(() => {
-                                                const dt = DEAL_TYPES.find(r => r.value === formData.deal_type);
-                                                const bName = selectedBuyer?.company_overview?.reg_name || 'Investor';
-                                                const sName = selectedSeller?.company_overview?.reg_name || 'Target';
-                                                if (defaultView === 'buyer') {
-                                                    return `${bName} — ${dt?.buyerLabel} → ${sName}`;
-                                                }
-                                                return `${sName} — ${dt?.sellerLabel} → ${bName}`;
-                                            })()}
-                                        </span>
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Investment Condition */}
-                            <div>
-                                <label htmlFor="deal-investment-condition" className="block text-sm font-medium text-gray-700 mb-1">Investment Condition</label>
-                                <div className="relative">
-                                    <select
-                                        id="deal-investment-condition"
-                                        value={formData.investment_condition}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, investment_condition: e.target.value }))}
-                                        className={selectClass}
-                                    >
-                                        <option value="">Select condition</option>
-                                        {INVESTMENT_CONDITIONS.map((ic) => (
-                                            <option key={ic.value} value={ic.value}>
-                                                {ic.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {/* Row 3: Transaction Size + Deal Stage side-by-side */}
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2.5">
                                         Transaction Size
                                         {selectedSeller && !ticketSizeManuallyEdited && formData.ticket_size && (
                                             <span className="ml-1 text-xs font-normal" style={{ color: '#064771' }}>(auto-filled from target)</span>
                                         )}
                                     </label>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-3 items-center">
                                         <input
                                             type="text"
                                             value={formData.ticket_size}
                                             onChange={(e) => {
                                                 setTicketSizeManuallyEdited(true);
-                                                // Only allow digits, commas, and decimal point
                                                 const raw = e.target.value.replace(/[^0-9.,]/g, '');
                                                 setFormData((prev) => ({ ...prev, ticket_size: formatWithCommas(removeCommas(raw)) }));
                                             }}
-                                            className={`flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm`}
-                                            placeholder="Amount"
+                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                            placeholder="80,244,360"
                                         />
-                                        <div className="relative">
-                                            <select
-                                                id="deal-currency"
-                                                aria-label="Currency"
+                                        <div className="w-[100px]">
+                                            <VFDropdown
+                                                options={systemCurrencies.map(c => ({ value: c.currency_code, label: c.currency_code }))}
                                                 value={formData.estimated_ev_currency}
-                                                onChange={(e) => setFormData((prev) => ({ ...prev, estimated_ev_currency: e.target.value }))}
-                                                className="w-[88px] appearance-none px-2 pr-7 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cursor-pointer"
-                                            >
-                                                {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
-                                            </select>
-                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                                                onChange={(val) => setFormData((prev) => ({ ...prev, estimated_ev_currency: val as string }))}
+                                                searchable={false}
+                                                placeholder="USD"
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <label htmlFor="deal-stage" className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
-                                    <select
-                                        id="deal-stage"
+                                <div className="flex-1">
+                                    <label htmlFor="deal-stage" className="block text-sm font-medium text-gray-700 mb-2.5">Deal Stage</label>
+                                    <VFDropdown
+                                        options={stages.map(s => ({ value: s.code, label: s.name }))}
                                         value={formData.stage_code}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, stage_code: e.target.value }))}
-                                        className={selectClass}
-                                    >
-                                        {stages.map((stage) => (
-                                            <option key={stage.code} value={stage.code}>
-                                                {stage.code} - {stage.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="deal-probability" className="block text-sm font-medium text-gray-700 mb-1">Probability</label>
-                                    <select
-                                        id="deal-probability"
-                                        value={formData.possibility}
-                                        onChange={(e) => setFormData((prev) => ({ ...prev, possibility: e.target.value }))}
-                                        className={selectClass}
-                                    >
-                                        <option value="Low">Low</option>
-                                        <option value="Medium">Medium</option>
-                                        <option value="High">High</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1 text-gray-400">Target Close Date</label>
-                                    <p className="text-xs text-gray-400 italic">Auto-calculated from stage deadlines</p>
+                                        onChange={(val) => setFormData((prev) => ({ ...prev, stage_code: val as string }))}
+                                        searchable={false}
+                                        placeholder="Select Stage"
+                                    />
                                 </div>
                             </div>
 
-                            {/* ── Stage Timeline ── */}
-                            <div>
+                            {/* Row 4: Target Close Date + Set Stage Timeline */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-sm font-medium text-gray-700">Target Close Date</label>
+                                    <p className="text-xs text-gray-400 italic">
+                                        {(() => {
+                                            const filledDeadlines = Object.values(stageDeadlines).filter(v => v.start_date && v.end_date);
+                                            if (filledDeadlines.length === 0) return 'Auto-calculated from stage deadlines';
+                                            const allStarts = filledDeadlines.map(v => new Date(v.start_date).getTime());
+                                            const allEnds = filledDeadlines.map(v => new Date(v.end_date).getTime());
+                                            const earliest = new Date(Math.min(...allStarts));
+                                            const latest = new Date(Math.max(...allEnds));
+                                            const diffMs = latest.getTime() - earliest.getTime();
+                                            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                                            if (diffDays < 30) return `~${diffDays} day${diffDays !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                            if (diffDays < 365) {
+                                                const months = Math.round(diffDays / 30);
+                                                return `~${months} month${months !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                            }
+                                            const years = (diffDays / 365).toFixed(1);
+                                            return `~${years} year${parseFloat(years) !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                        })()}
+                                    </p>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowStageTimeline(!showStageTimeline)}
-                                    className="flex items-center gap-2 text-sm font-medium text-[#064771] hover:text-[#053a5c] transition-colors"
+                                    className="flex items-center gap-2 px-2 py-1 rounded-[3px] bg-[#f3f4f5] text-sm font-medium text-[#064771] hover:bg-gray-200 transition-colors"
                                 >
-                                    <svg className={`w-4 h-4 transition-transform duration-200 ${showStageTimeline ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                    Stage Timeline — Set Deadlines
-                                    {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length > 0 && (
-                                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1.5 text-[10px] font-medium text-white">
-                                            {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length}
-                                        </span>
-                                    )}
+                                    <Calendar className="w-4 h-4" />
+                                    Set Stage Timeline
                                 </button>
-
-                                {showStageTimeline && (
-                                    <div className="mt-3 space-y-0 border border-gray-200 rounded-[3px] overflow-hidden">
-                                        {timelineStages.map((stage, idx) => {
-                                            const dl = stageDeadlines[stage.code] || { start_date: '', end_date: '', is_parallel: false };
-                                            const isFirst = idx === 0;
-                                            const stageMinDate = getStageMinDate(idx);
-                                            return (
-                                                <div key={stage.code} className={`flex items-center gap-3 px-4 py-3 ${!isFirst ? 'border-t border-gray-100' : ''} ${dl.start_date && dl.end_date ? 'bg-blue-50/30' : ''}`}>
-                                                    {/* Stage indicator */}
-                                                    <div className="flex flex-col items-center gap-0.5 min-w-[32px]">
-                                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${dl.start_date && dl.end_date
-                                                            ? 'bg-[#064771] text-white'
-                                                            : 'bg-gray-200 text-gray-500'
-                                                            }`}>
-                                                            {stage.code}
-                                                        </div>
-                                                        {idx < timelineStages.length - 1 && (
-                                                            <div className="w-px h-3 bg-gray-300" />
-                                                        )}
-                                                    </div>
-
-                                                    {/* Stage name + parallel toggle */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
-                                                            {dl.is_parallel && (
-                                                                <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">∥ Parallel</span>
-                                                            )}
-                                                        </div>
-                                                        {!isFirst && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => toggleStageParallel(stage.code)}
-                                                                className={`mt-0.5 text-[10px] font-medium transition-colors ${dl.is_parallel ? 'text-amber-600 hover:text-amber-700' : 'text-gray-400 hover:text-gray-600'}`}
-                                                            >
-                                                                {dl.is_parallel ? '⇄ Sequential' : '⇄ Parallel'}
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Date range picker */}
-                                                    <div className="shrink-0">
-                                                        <VFDateRangePicker
-                                                            startDate={dl.start_date}
-                                                            endDate={dl.end_date}
-                                                            onRangeChange={(start, end) => {
-                                                                updateStageDeadline(stage.code, 'start_date', start);
-                                                                updateStageDeadline(stage.code, 'end_date', end);
-                                                            }}
-                                                            minDate={stageMinDate}
-                                                            title={`${stage.name} date range`}
-                                                            compact
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                {showStageTimeline && (
-                                    <p className="mt-2 text-[11px] text-gray-400">
-                                        Stages are sequential by default — each stage starts after the previous one ends. Toggle "⇄ Parallel" to allow overlapping dates.
-                                    </p>
-                                )}
                             </div>
 
-                            {/* EBITDA Fields (non-mandatory) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">EBITDA (Optional)</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Value</label>
+                            {/* ── Stage Timeline (always visible) ── */}
+                            {showStageTimeline && (
+                                <div className="border border-gray-200 rounded-[3px] overflow-hidden">
+                                    {timelineStages.map((stage, idx) => {
+                                        const dl = stageDeadlines[stage.code] || { start_date: '', end_date: '', is_parallel: false };
+                                        const isFirst = idx === 0;
+                                        const stageMinDate = getStageMinDate(idx);
+                                        const letterCode = String.fromCharCode(65 + idx);
+                                        const hasDates = dl.start_date && dl.end_date;
+
+                                        return (
+                                            <div
+                                                key={stage.code}
+                                                className={`flex items-center gap-3 px-4 py-3 ${!isFirst ? 'border-t border-gray-100' : ''} ${hasDates ? 'bg-blue-50/30' : ''}`}
+                                            >
+                                                {/* Left: Circle + Vertical connector */}
+                                                <div className="flex flex-col items-center gap-0.5 min-w-[32px]">
+                                                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
+                                                        hasDates ? 'bg-[#064771] text-white' : 'bg-[#dae8f0] text-[#064771]'
+                                                    }`}>
+                                                        {letterCode}
+                                                    </div>
+                                                    {idx < timelineStages.length - 1 && (
+                                                        <div className="w-px h-3 bg-gray-300" />
+                                                    )}
+                                                </div>
+
+                                                {/* Center: Stage name + parallel toggle */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
+                                                        {dl.is_parallel && (
+                                                            <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">∥ Parallel</span>
+                                                        )}
+                                                    </div>
+                                                    {!isFirst && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleStageParallel(stage.code)}
+                                                            className={`mt-0.5 text-[10px] font-medium transition-colors ${dl.is_parallel ? 'text-amber-600 hover:text-amber-700' : 'text-gray-400 hover:text-gray-600'}`}
+                                                        >
+                                                            {dl.is_parallel ? 'Switch to Sequential' : 'Switch to Parallel'}
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Right: Always show date picker */}
+                                                <div className="shrink-0">
+                                                    <VFDateRangePicker
+                                                        startDate={dl.start_date}
+                                                        endDate={dl.end_date}
+                                                        onRangeChange={(start, end) => {
+                                                            updateStageDeadline(stage.code, 'start_date', start);
+                                                            updateStageDeadline(stage.code, 'end_date', end);
+                                                        }}
+                                                        minDate={stageMinDate}
+                                                        title={`${stage.name} date range`}
+                                                        compact
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* EBITDA Details with separator */}
+                            <div className="space-y-3.5">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700">EBITDA Details</p>
+                                    <div className="mt-2 border-t border-dashed border-gray-300" />
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-medium text-gray-700 w-[64px] shrink-0">Investor</span>
+                                    <div className="flex gap-3 flex-1">
                                         <input
-                                            type="number"
+                                            type="text"
                                             value={formData.ebitda_investor_value}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_investor_value: e.target.value }))}
-                                            className={inputClass}
-                                            placeholder="e.g. 5000000"
+                                            onChange={(e) => {
+                                                const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                                                setFormData((prev) => ({ ...prev, ebitda_investor_value: formatWithCommas(removeCommas(raw)) }));
+                                            }}
+                                            className={`flex-1 ${inputClass}`}
+                                            placeholder="Value (e.g. 5,000,000)"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Multiple</label>
                                         <input
-                                            type="number"
-                                            step="0.1"
+                                            type="text"
                                             value={formData.ebitda_investor_times}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_investor_times: e.target.value }))}
-                                            className={inputClass}
-                                            placeholder="e.g. 8.5x"
+                                            className={`flex-1 ${inputClass}`}
+                                            placeholder="Multiple (e.g. 8.5x)"
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Target EBITDA Value</label>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-medium text-gray-700 w-[64px] shrink-0">Target</span>
+                                    <div className="flex gap-3 flex-1">
                                         <input
-                                            type="number"
+                                            type="text"
                                             value={formData.ebitda_target_value}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_target_value: e.target.value }))}
-                                            className={inputClass}
-                                            placeholder="e.g. 3000000"
+                                            onChange={(e) => {
+                                                const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                                                setFormData((prev) => ({ ...prev, ebitda_target_value: formatWithCommas(removeCommas(raw)) }));
+                                            }}
+                                            className={`flex-1 ${inputClass}`}
+                                            placeholder="Value (e.g. 3,000,000)"
                                         />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Target EBITDA Multiple</label>
                                         <input
-                                            type="number"
-                                            step="0.1"
+                                            type="text"
                                             value={formData.ebitda_target_times}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, ebitda_target_times: e.target.value }))}
-                                            className={inputClass}
-                                            placeholder="e.g. 6.0x"
+                                            className={`flex-1 ${inputClass}`}
+                                            placeholder="Multiple (e.g. 6.5x)"
                                         />
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Internal PIC */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Internal PIC (Assigned Staff)
-                                    {!picManuallyEdited && formData.internal_pic.length > 0 && (
-                                        <span className="ml-1 text-xs font-normal" style={{ color: '#064771' }}>(auto-filled from profiles)</span>
-                                    )}
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2.5">Internal PIC</label>
                                 <Dropdown
                                     countries={users}
                                     selected={formData.internal_pic}
@@ -1046,24 +1063,65 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
                                         setFormData(prev => ({ ...prev, internal_pic: (Array.isArray(selected) ? selected : [selected]) as User[] }));
                                     }}
                                     multiSelect={true}
-                                    placeholder="Select Staff"
+                                    placeholder="Select Assigned Staff"
                                 />
                             </div>
 
-                            {/* FA Info Section */}
-                            <div className="bg-blue-50 p-4 rounded-[3px] space-y-2 text-xs text-blue-800 border border-blue-100">
-                                <p className="font-semibold flex items-center gap-1">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Financial Advisor (FA) Information
-                                </p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <span className="opacity-70">Investor FA:</span>
-                                        <p className="font-medium">{selectedBuyer ? getFANames(selectedBuyer.company_overview?.financial_advisor) : (buyerTBD ? 'TBD' : 'None')}</p>
+                            {/* Financial Advisor (FA) Section — Avatar layout */}
+                            <div>
+                                <p className="text-sm font-medium text-gray-700 mb-2.5">Financial Advisor (FA)</p>
+                                <div className="flex gap-8">
+                                    {/* Investor FA Column */}
+                                    <div className="flex-1 space-y-3">
+                                        <p className="text-xs text-gray-900/70">Investor FA</p>
+                                        {(() => {
+                                            const faRaw = selectedBuyer?.company_overview?.financial_advisor;
+                                            if (!faRaw) return <p className="text-sm text-gray-400">{buyerTBD ? 'TBD' : 'None'}</p>;
+                                            try {
+                                                const parsed = typeof faRaw === 'string' ? JSON.parse(faRaw) : faRaw;
+                                                if (!Array.isArray(parsed) || parsed.length === 0) return <p className="text-sm text-gray-400">None</p>;
+                                                return parsed.map((fa: Record<string, string>, i: number) => {
+                                                    const name = fa.name || fa.reg_name || 'Unknown';
+                                                    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                                                    return (
+                                                        <div key={i} className="flex items-center gap-2">
+                                                            <div className="w-[22px] h-[22px] rounded-full bg-[#064771] text-white flex items-center justify-center text-[9px] font-medium shrink-0">
+                                                                {initials}
+                                                            </div>
+                                                            <span className="text-sm text-gray-900">{name}</span>
+                                                        </div>
+                                                    );
+                                                });
+                                            } catch {
+                                                return <p className="text-sm text-gray-400">None</p>;
+                                            }
+                                        })()}
                                     </div>
-                                    <div>
-                                        <span className="opacity-70">Target FA:</span>
-                                        <p className="font-medium">{selectedSeller ? getFANames(selectedSeller.company_overview?.financial_advisor) : (sellerTBD ? 'TBD' : 'None')}</p>
+                                    {/* Target FA Column */}
+                                    <div className="flex-1 space-y-3">
+                                        <p className="text-xs text-gray-900/70">Target FA</p>
+                                        {(() => {
+                                            const faRaw = selectedSeller?.company_overview?.financial_advisor;
+                                            if (!faRaw) return <p className="text-sm text-gray-400">{sellerTBD ? 'TBD' : 'None'}</p>;
+                                            try {
+                                                const parsed = typeof faRaw === 'string' ? JSON.parse(faRaw) : faRaw;
+                                                if (!Array.isArray(parsed) || parsed.length === 0) return <p className="text-sm text-gray-400">None</p>;
+                                                return parsed.map((fa: Record<string, string>, i: number) => {
+                                                    const name = fa.name || fa.reg_name || 'Unknown';
+                                                    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                                                    return (
+                                                        <div key={i} className="flex items-center gap-2">
+                                                            <div className="w-[22px] h-[22px] rounded-full bg-[#064771] text-white flex items-center justify-center text-[9px] font-medium shrink-0">
+                                                                {initials}
+                                                            </div>
+                                                            <span className="text-sm text-gray-900">{name}</span>
+                                                        </div>
+                                                    );
+                                                });
+                                            } catch {
+                                                return <p className="text-sm text-gray-400">None</p>;
+                                            }
+                                        })()}
                                     </div>
                                 </div>
                             </div>
@@ -1073,37 +1131,49 @@ const CreateDealModal = ({ onClose, onCreated, defaultView = 'buyer' }: CreateDe
 
                 {/* Footer */}
                 <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
-                    <button
-                        onClick={() => (step > 1 ? setStep(step - 1) : onClose())}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-[3px] transition-colors"
-                    >
-                        {step === 1 ? 'Cancel' : 'Back'}
-                    </button>
-                    <button
-                        onClick={() => {
-                            if (step === 1 && !canProceedStep1) {
-                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'an investor' : 'a target'} to proceed` });
-                                return;
-                            }
-                            if (step === 2 && !canProceedStep2) {
-                                showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'a target' : 'an investor'} or skip for now` });
-                                return;
-                            }
-                            if (step === 2 && !hasAtLeastOneParty) {
-                                showAlert({ type: 'error', message: 'At least one party (buyer or seller) must be selected. You cannot skip both.' });
-                                return;
-                            }
-                            if (step < 3) {
-                                setStep(step + 1);
-                            } else {
-                                handleSubmit();
-                            }
-                        }}
-                        disabled={loading}
-                        className="px-6 py-2 bg-[#064771] text-white rounded-[3px] hover:bg-[#053a5c] transition-colors disabled:opacity-50"
-                    >
-                        {loading ? 'Creating...' : step < 3 ? 'Next' : 'Create Deal'}
-                    </button>
+                    <div>
+                        {step > 1 && (
+                            <button
+                                onClick={() => setStep(step - 1)}
+                                className="px-4 py-2 rounded-[3px] text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                Back
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 rounded-[3px] border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (step === 1 && !canProceedStep1) {
+                                    showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'an investor' : 'a target'} to proceed` });
+                                    return;
+                                }
+                                if (step === 2 && !canProceedStep2) {
+                                    showAlert({ type: 'error', message: `Please select ${step1IsBuyer ? 'a target' : 'an investor'} or skip for now` });
+                                    return;
+                                }
+                                if (step === 2 && !hasAtLeastOneParty) {
+                                    showAlert({ type: 'error', message: 'At least one party (buyer or seller) must be selected. You cannot skip both.' });
+                                    return;
+                                }
+                                if (step < 3) {
+                                    setStep(step + 1);
+                                } else {
+                                    handleSubmit();
+                                }
+                            }}
+                            disabled={loading}
+                            className="px-6 py-2 rounded-[3px] transition-colors disabled:opacity-50 bg-[#064771] text-white hover:bg-[#053a5c]"
+                        >
+                            {loading ? 'Creating...' : step < 3 ? 'Next' : 'Create Deal'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

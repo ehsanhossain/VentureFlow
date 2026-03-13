@@ -140,7 +140,7 @@ try {
     $kernel->bootstrap();
 
     $columns = \Illuminate\Support\Facades\Schema::getColumnListing('deals');
-    $required = ['investment_condition', 'ebitda_investor_value', 'ebitda_investor_times', 'ebitda_target_value', 'ebitda_target_times', 'deal_type', 'pipeline_type', 'ticket_size'];
+    $required = ['investment_condition', 'ebitda_investor_value', 'ebitda_investor_times', 'ebitda_target_value', 'ebitda_target_times', 'deal_type', 'pipeline_type', 'ticket_size', 'sort_order'];
     foreach ($required as $col) {
         $exists = in_array($col, $columns);
         echo ($exists ? "✅" : "❌") . " Column '$col' " . ($exists ? "exists" : "MISSING") . "\n";

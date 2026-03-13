@@ -2,6 +2,7 @@
  * Copyright (c) 2026 VentureFlow. All rights reserved.
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
+import { VFDropdown } from '../../components/VFDropdown';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from 'react';
@@ -1305,21 +1306,18 @@ const ProspectsPortal: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        id="rank-filter"
-                                        aria-label="Rank"
-                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.rank ? 'border-[#064771]/40' : 'border-gray-300'}`}
-                                        value={currentFilters.rank}
-                                        onChange={(e) => updateFilter('rank', e.target.value)}
-                                    >
-                                        <option value="">All Ranks</option>
-                                        <option value="A">A</option>
-                                        <option value="B">B</option>
-                                        <option value="C">C</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
+                                <VFDropdown
+                                    options={[
+                                        { value: '', label: 'All Ranks' },
+                                        { value: 'A', label: 'A' },
+                                        { value: 'B', label: 'B' },
+                                        { value: 'C', label: 'C' },
+                                    ]}
+                                    value={currentFilters.rank}
+                                    onChange={val => updateFilter('rank', (val as string) || '')}
+                                    searchable={false}
+                                    placeholder="All Ranks"
+                                />
                             </div>
 
                             {/* Purpose of M&A (both tabs — different options per type) */}
@@ -1334,45 +1332,41 @@ const ProspectsPortal: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        id="purpose-ma-filter"
-                                        aria-label="Purpose of M&A"
-                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.purposeMA ? 'border-[#064771]/40' : 'border-gray-300'}`}
-                                        value={currentFilters.purposeMA}
-                                        onChange={(e) => updateFilter('purposeMA', e.target.value)}
-                                    >
-                                        <option value="">All</option>
-                                        {activeTab === 'investors' ? (
-                                            <>
-                                                <option value="Strategic Expansion">Strategic Expansion</option>
-                                                <option value="Market Entry">Market Entry</option>
-                                                <option value="Talent Acquisition">Talent Acquisition</option>
-                                                <option value="Diversification">Diversification</option>
-                                                <option value="Technology Acquisition">Technology Acquisition</option>
-                                                <option value="Financial Investment">Financial Investment</option>
-                                                <option value="Other">Other</option>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <option value="Owner's Retirement">Owner&apos;s Retirement</option>
-                                                <option value="Business Succession">Business Succession</option>
-                                                <option value="Full Exit">Full Exit</option>
-                                                <option value="Partial Exit">Partial Exit</option>
-                                                <option value="Capital Raising">Capital Raising</option>
-                                                <option value="Strategic Partnership">Strategic Partnership</option>
-                                                <option value="Growth Acceleration">Growth Acceleration</option>
-                                                <option value="Debt Restructuring">Debt Restructuring</option>
-                                                <option value="Risk Mitigation">Risk Mitigation</option>
-                                                <option value="Non-Core Divestment">Non-Core Divestment</option>
-                                                <option value="Market Expansion">Market Expansion</option>
-                                                <option value="Technology Integration">Technology Integration</option>
-                                                <option value="Cross-Border Expansion">Cross-Border Expansion</option>
-                                            </>
-                                        )}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
+                                <VFDropdown
+                                    options={[
+                                        { value: '', label: 'All' },
+                                        ...(activeTab === 'investors'
+                                            ? [
+                                                { value: 'Strategic Expansion', label: 'Strategic Expansion' },
+                                                { value: 'Market Entry', label: 'Market Entry' },
+                                                { value: 'Talent Acquisition', label: 'Talent Acquisition' },
+                                                { value: 'Diversification', label: 'Diversification' },
+                                                { value: 'Technology Acquisition', label: 'Technology Acquisition' },
+                                                { value: 'Financial Investment', label: 'Financial Investment' },
+                                                { value: 'Other', label: 'Other' },
+                                            ]
+                                            : [
+                                                { value: "Owner's Retirement", label: "Owner's Retirement" },
+                                                { value: 'Business Succession', label: 'Business Succession' },
+                                                { value: 'Full Exit', label: 'Full Exit' },
+                                                { value: 'Partial Exit', label: 'Partial Exit' },
+                                                { value: 'Capital Raising', label: 'Capital Raising' },
+                                                { value: 'Strategic Partnership', label: 'Strategic Partnership' },
+                                                { value: 'Growth Acceleration', label: 'Growth Acceleration' },
+                                                { value: 'Debt Restructuring', label: 'Debt Restructuring' },
+                                                { value: 'Risk Mitigation', label: 'Risk Mitigation' },
+                                                { value: 'Non-Core Divestment', label: 'Non-Core Divestment' },
+                                                { value: 'Market Expansion', label: 'Market Expansion' },
+                                                { value: 'Technology Integration', label: 'Technology Integration' },
+                                                { value: 'Cross-Border Expansion', label: 'Cross-Border Expansion' },
+                                            ]
+                                        ),
+                                    ]}
+                                    value={currentFilters.purposeMA}
+                                    onChange={val => updateFilter('purposeMA', (val as string) || '')}
+                                    searchable={false}
+                                    placeholder="All"
+                                />
                             </div>
 
                             {/* Condition (both tabs) */}
@@ -1387,24 +1381,21 @@ const ProspectsPortal: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        id="condition-filter"
-                                        aria-label="Investment Condition"
-                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.investmentCondition ? 'border-[#064771]/40' : 'border-gray-300'}`}
-                                        value={currentFilters.investmentCondition}
-                                        onChange={(e) => updateFilter('investmentCondition', e.target.value)}
-                                    >
-                                        <option value="">All</option>
-                                        <option value="Minority (<50%)">Minority (&lt;50%)</option>
-                                        <option value="Significant minority (25–49%)">Significant minority (25–49%)</option>
-                                        <option value="Joint control (51/49)">Joint control (51/49)</option>
-                                        <option value="Majority (51–99%)">Majority (51–99%)</option>
-                                        <option value="Full acquisition (100%)">Full acquisition (100%)</option>
-                                        <option value="Flexible">Flexible</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
+                                <VFDropdown
+                                    options={[
+                                        { value: '', label: 'All' },
+                                        { value: 'Minority (<50%)', label: 'Minority (<50%)' },
+                                        { value: 'Significant minority (25–49%)', label: 'Significant minority (25–49%)' },
+                                        { value: 'Joint control (51/49)', label: 'Joint control (51/49)' },
+                                        { value: 'Majority (51–99%)', label: 'Majority (51–99%)' },
+                                        { value: 'Full acquisition (100%)', label: 'Full acquisition (100%)' },
+                                        { value: 'Flexible', label: 'Flexible' },
+                                    ]}
+                                    value={currentFilters.investmentCondition}
+                                    onChange={val => updateFilter('investmentCondition', (val as string) || '')}
+                                    searchable={false}
+                                    placeholder="All"
+                                />
                             </div>
 
                             {/* Pipeline Stage (both tabs) */}
@@ -1419,21 +1410,18 @@ const ProspectsPortal: React.FC = () => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        id="pipeline-stage-filter"
-                                        aria-label="Pipeline Stage"
-                                        className={`w-full h-10 px-3 py-2 bg-white rounded-[3px] border text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors ${currentFilters.pipelineStage ? 'border-[#064771]/40' : 'border-gray-300'}`}
-                                        value={currentFilters.pipelineStage}
-                                        onChange={(e) => updateFilter('pipelineStage', e.target.value)}
-                                    >
-                                        <option value="">All Stages</option>
-                                        {pipelineStages
+                                <VFDropdown
+                                    options={[
+                                        { value: '', label: 'All Stages' },
+                                        ...pipelineStages
                                             .filter(s => activeTab === 'investors' ? s.type === 'buyer' : s.type === 'seller')
-                                            .map(s => <option key={s.id} value={s.code}>{s.name}</option>)}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                </div>
+                                            .map(s => ({ value: s.code, label: s.name })),
+                                    ]}
+                                    value={currentFilters.pipelineStage}
+                                    onChange={val => updateFilter('pipelineStage', (val as string) || '')}
+                                    searchable={false}
+                                    placeholder="All Stages"
+                                />
                             </div>
 
                             {/* Registration Date (Range) */}
@@ -1737,21 +1725,16 @@ const ProspectsPortal: React.FC = () => {
                                             <label htmlFor="display-currency-select" className="block mb-1.5 text-[13px] font-medium text-gray-700">
                                                 {t('prospects.portal.displayCurrency', 'Display Currency')}
                                             </label>
-                                            <div className="relative">
-                                                <select
-                                                    id="display-currency-select"
-                                                    aria-label="Display Currency"
-                                                    className="w-full h-10 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                                                    value={selectedCurrency?.id}
-                                                    onChange={(e) => {
-                                                        const curr = currencies.find(c => c.id === Number(e.target.value));
-                                                        if (curr) setSelectedCurrency({ id: curr.id, code: curr.code, symbol: curr.sign, rate: parseFloat(curr.exchange_rate) });
-                                                    }}
-                                                >
-                                                    {currencies.map(c => <option key={c.id} value={c.id}>{c.sign}  {c.code}</option>)}
-                                                </select>
-                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                                            </div>
+                                            <VFDropdown
+                                                options={currencies.map(c => ({ value: String(c.id), label: `${c.sign}  ${c.code}` }))}
+                                                value={selectedCurrency?.id != null ? String(selectedCurrency.id) : null}
+                                                onChange={val => {
+                                                    const curr = currencies.find(c => c.id === Number(val));
+                                                    if (curr) setSelectedCurrency({ id: curr.id, code: curr.code, symbol: curr.sign, rate: parseFloat(curr.exchange_rate) });
+                                                }}
+                                                searchable={false}
+                                                placeholder="Select Currency"
+                                            />
                                         </div>
 
                                         {/* Visible Columns Section */}

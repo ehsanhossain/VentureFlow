@@ -4,6 +4,7 @@
  */
 
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Deal } from '../DealPipeline';
 import DealCard from './DealCard';
 
@@ -17,12 +18,16 @@ interface StageColumnProps {
     onDelete?: (deal: Deal) => void;
     onEdit?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
+    activeDealId?: number | null;
 }
 
-const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer' }: StageColumnProps) => {
+const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer', activeDealId }: StageColumnProps) => {
     const { setNodeRef, isOver } = useDroppable({
         id: code,
     });
+
+    // Deal IDs for the SortableContext — defines the sortable order
+    const dealIds = deals.map(d => d.id);
 
     return (
         <div className="flex flex-col w-72 shrink-0">
@@ -39,7 +44,7 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
                 </div>
             </div>
 
-            {/* Droppable Area */}
+            {/* Droppable Area with SortableContext */}
             <div
                 ref={setNodeRef}
                 className={`flex-1 p-2 space-y-3 rounded-b-[3px] min-h-[200px] transition-all duration-200 border-l border-r border-b ${isOver
@@ -47,24 +52,27 @@ const StageColumn = ({ code, name, deals, onDealClick, onMove, onMarkLost, onDel
                     : 'bg-[#F9FAFB] border-[#E5E7EB]'
                     }`}
             >
-                {deals.length === 0 ? (
-                    <div className="flex items-center justify-center w-full h-[196px] text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded-[3px]">
-                        No deals in this stage
-                    </div>
-                ) : (
-                    deals.map((deal) => (
-                        <DealCard
-                            key={deal.id}
-                            deal={deal}
-                            onClick={() => onDealClick?.(deal)}
-                            onMove={onMove}
-                            onMarkLost={onMarkLost}
-                            onDelete={onDelete}
-                            onEdit={onEdit}
-                            pipelineView={pipelineView}
-                        />
-                    ))
-                )}
+                <SortableContext items={dealIds} strategy={verticalListSortingStrategy}>
+                    {deals.length === 0 ? (
+                        <div className="flex items-center justify-center w-full h-[196px] text-xs text-gray-400 border-2 border-dashed border-gray-200 rounded-[3px]">
+                            No deals in this stage
+                        </div>
+                    ) : (
+                        deals.map((deal) => (
+                            <DealCard
+                                key={deal.id}
+                                deal={deal}
+                                onClick={() => onDealClick?.(deal)}
+                                onMove={onMove}
+                                onMarkLost={onMarkLost}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
+                                pipelineView={pipelineView}
+                                activeDealId={activeDealId}
+                            />
+                        ))
+                    )}
+                </SortableContext>
             </div>
         </div>
     );

@@ -580,7 +580,15 @@ class InvestorController extends Controller
                 }
             }
 
-            $investor = Investor::find($data['buyer'] ?? null);
+            // Find existing investor — support both numeric ID and project code (buyer_id)
+            $buyerKey = $data['buyer'] ?? null;
+            if ($buyerKey) {
+                $investor = is_numeric($buyerKey)
+                    ? Investor::find($buyerKey)
+                    : Investor::where('buyer_id', $buyerKey)->first();
+            } else {
+                $investor = null;
+            }
             $isNewOverview = false;
 
             // UNBREAKABLE: Final check for ID uniqueness to prevent race conditions

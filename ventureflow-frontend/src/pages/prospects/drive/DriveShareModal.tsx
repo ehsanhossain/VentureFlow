@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { X, Link2, Copy, Check, Shield, Clock, Eye, Download } from 'lucide-react';
 import { showAlert } from '../../../components/Alert';
 import { useProspectDrive, DriveShareLink } from './useProspectDrive';
+import { VFDropdown } from '../../../components/VFDropdown';
 
 interface DriveShareModalProps {
     fileId?: string;
@@ -152,18 +153,20 @@ const DriveShareModal: React.FC<DriveShareModalProps> = ({ fileId, folderId, onC
                                 <label className="text-xs font-medium text-gray-500 uppercase mb-1 block">
                                     <Clock className="w-3.5 h-3.5 inline mr-1" /> {t('flowdrive.shareModal.expiresIn')}
                                 </label>
-                                <select
+                                <VFDropdown
+                                    options={[
+                                        { value: '1', label: t('flowdrive.shareModal.day1') },
+                                        { value: '3', label: t('flowdrive.shareModal.days3') },
+                                        { value: '7', label: t('flowdrive.shareModal.days7') },
+                                        { value: '14', label: t('flowdrive.shareModal.days14') },
+                                        { value: '30', label: t('flowdrive.shareModal.days30') },
+                                        { value: '', label: t('flowdrive.shareModal.never') },
+                                    ]}
                                     value={expiresIn}
-                                    onChange={e => setExpiresIn(e.target.value)}
-                                    className="w-full h-9 px-3 bg-gray-50 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#064771]"
-                                >
-                                    <option value="1">{t('flowdrive.shareModal.day1')}</option>
-                                    <option value="3">{t('flowdrive.shareModal.days3')}</option>
-                                    <option value="7">{t('flowdrive.shareModal.days7')}</option>
-                                    <option value="14">{t('flowdrive.shareModal.days14')}</option>
-                                    <option value="30">{t('flowdrive.shareModal.days30')}</option>
-                                    <option value="">{t('flowdrive.shareModal.never')}</option>
-                                </select>
+                                    onChange={val => setExpiresIn((val as string) ?? '')}
+                                    searchable={false}
+                                    placeholder="Select expiry"
+                                />
                             </div>
 
                             {/* Access limit */}

@@ -4,18 +4,18 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Globe, Building2, KeyRound, PowerOff, Power,
-    Loader, Camera, FolderClosed, FileText, Plus, Trash2,
+    Loader, FolderClosed, FileText, Plus, Trash2,
     Star, Eye, EyeOff, Users,
 } from 'lucide-react';
 import { BrandSpinner } from '../../../components/BrandSpinner';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { AuthContext } from '../../../routes/AuthContext';
-import ImageCropperModal from '../../../components/ImageCropperModal';
+
 import cloudflowBrandIcon from '../../../assets/icons/cloudflow-brand.svg';
 
 
@@ -111,10 +111,7 @@ const PartnerDetails: React.FC = () => {
 
 
 
-    // Avatar upload
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const [avatarUploading, setAvatarUploading] = useState(false);
-    const [cropSrc, setCropSrc] = useState<string | null>(null);
+    // Avatar display (upload is handled in edit form)
 
     // Add Account form state
     const [showAddAccount, setShowAddAccount] = useState(false);
@@ -126,34 +123,6 @@ const PartnerDetails: React.FC = () => {
     const [resetPwUserId, setResetPwUserId] = useState<number | null>(null);
     const [resetPwValue, setResetPwValue] = useState('');
     const [resetPwSaving, setResetPwSaving] = useState(false);
-
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => setCropSrc(reader.result as string);
-        reader.readAsDataURL(file);
-        if (avatarInputRef.current) avatarInputRef.current.value = '';
-    };
-
-    const handleCropComplete = async (blob: Blob) => {
-        if (!id) return;
-        setCropSrc(null);
-        setAvatarUploading(true);
-        try {
-            const fd = new FormData();
-            fd.append('image', blob, 'avatar.jpg');
-            const res = await api.post(`/api/partners/${id}/avatar`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setPartner((prev) => prev ? { ...prev, image: res.data.image_path } : prev);
-            showAlert({ type: 'success', message: 'Avatar updated.' });
-        } catch {
-            showAlert({ type: 'error', message: 'Failed to upload avatar.' });
-        } finally {
-            setAvatarUploading(false);
-        }
-    };
 
     const getAvatarUrl = () => {
         const img = partner?.partner_image || partner?.image;
@@ -407,19 +376,10 @@ const PartnerDetails: React.FC = () => {
                             <div className="space-y-7">
                                 {/* Partner Header */}
                                 <div className="flex items-center gap-3">
-                                    {/* Partner Avatar — click to upload */}
+                                    {/* Partner Avatar (view only) */}
                                     <div
-                                        className="relative group cursor-pointer w-[52px] h-[52px] shrink-0"
-                                        onClick={() => avatarInputRef.current?.click()}
-                                        title="Click to change photo"
+                                        className="relative w-[52px] h-[52px] shrink-0"
                                     >
-                                        <input
-                                            ref={avatarInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleAvatarChange}
-                                        />
                                         {getAvatarUrl() ? (
                                             <img
                                                 src={getAvatarUrl()}
@@ -432,13 +392,6 @@ const PartnerDetails: React.FC = () => {
                                         ) : null}
                                         <div className={`w-[52px] h-[52px] rounded-full bg-[#064771] flex items-center justify-center text-white text-xl font-medium ${getAvatarUrl() ? 'hidden' : ''}`}>
                                             {getInitials(partnerName)}
-                                        </div>
-                                        {/* Upload overlay */}
-                                        <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                            {avatarUploading
-                                                ? <Loader className="w-4 h-4 text-white animate-spin" />
-                                                : <Camera className="w-4 h-4 text-white" />
-                                            }
                                         </div>
                                     </div>
 
@@ -963,15 +916,7 @@ const PartnerDetails: React.FC = () => {
                 </div>
             </div>
 
-            {/* Image Cropper Modal */}
-            {cropSrc && (
-                <ImageCropperModal
-                    imageSrc={cropSrc}
-                    onCropComplete={handleCropComplete}
-                    onClose={() => setCropSrc(null)}
-                    aspect={1}
-                />
-            )}
+
         </>
     );
 };

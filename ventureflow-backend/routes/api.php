@@ -295,6 +295,7 @@ Route::middleware(['auth:sanctum', 'role:System Admin|Staff'])->group(function (
     Route::patch('/deals/{deal}/stage',               [\App\Http\Controllers\DealController::class, 'updateStage']);
     Route::get('/deals/{deal}/delete-analyze',        [\App\Http\Controllers\DealController::class, 'deleteAnalyze']);
     Route::post('/deals/{deal}/mark-comments-read',   [\App\Http\Controllers\DealController::class, 'markCommentsRead']);
+    Route::post('/deals/reorder',                      [\App\Http\Controllers\DealController::class, 'reorder']);
     Route::apiResource('deals', \App\Http\Controllers\DealController::class);
 
     // Import (staff can import data)

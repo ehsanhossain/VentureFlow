@@ -44,6 +44,7 @@ class Deal extends Model
         'ebitda_investor_times',
         'ebitda_target_value',
         'ebitda_target_times',
+        'sort_order',
     ];
 
     protected $casts = [

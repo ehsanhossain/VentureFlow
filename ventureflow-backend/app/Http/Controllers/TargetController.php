@@ -592,8 +592,15 @@ class TargetController extends Controller
     public function sellerCompanyOverviewstore(Request $request)
     {
         try {
-            // Find existing seller
-            $target = Target::find($request->seller_id);
+            // Find existing seller — support both numeric ID and project code (seller_id)
+            $sellerId = $request->seller_id;
+            if ($sellerId) {
+                $target = is_numeric($sellerId)
+                    ? Target::find($sellerId)
+                    : Target::where('seller_id', $sellerId)->first();
+            } else {
+                $target = null;
+            }
 
             // Check if seller exists and has an existing company overview
             if ($target && $target->company_overview_id) {

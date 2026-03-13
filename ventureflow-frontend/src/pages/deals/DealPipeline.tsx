@@ -3,7 +3,7 @@
  * Unauthorized copying, modification, or distribution of this file is strictly prohibited.
  */
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { AuthContext } from '../../routes/AuthContext';
@@ -17,13 +17,18 @@ import { NotesSection, Note, parseActivityLogs } from '../../components/NotesSec
 import {
     DndContext,
     DragEndEvent,
+    DragOverEvent,
     DragOverlay,
     DragStartEvent,
-    closestCorners,
+    closestCenter,
+    rectIntersection,
     PointerSensor,
     useSensor,
     useSensors,
+    CollisionDetection,
+    defaultDropAnimationSideEffects,
 } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import StageColumn from './components/StageColumn';
 import DealCard from './components/DealCard';
 import CreateDealModal from './components/CreateDealModal';
@@ -68,6 +73,7 @@ export interface Deal {
     comment_count: number;
     attachment_count: number;
     investment_condition?: string;
+    created_at: string;
     updated_at: string;
     has_new_activity?: boolean;
     stage_deadlines?: Array<{
@@ -88,12 +94,17 @@ export interface Deal {
         image?: string;
         company_overview?: {
             reg_name: string;
-            hq_country?: number;
+            hq_country?: number | { id: number; name: string; alpha_2_code?: string; svg_icon_url?: string };
             investment_budget?: string | { min?: number | string; max?: number | string; currency?: string };
+            financial_advisor?: string | Array<{ name?: string; reg_name?: string }>;
         };
         investment_critera?: {
             target_countries?: Array<{ id: number; name: string; svg_icon_url?: string }>;
             target_industries?: Array<{ id: number; name: string }>;
+        };
+        target_preference?: {
+            target_countries?: Array<number | { id: number; name: string; svg_icon_url?: string }>;
+            b_ind_prefs?: Array<number | { id: number; name: string }>;
         };
     };
     seller?: {
@@ -102,12 +113,17 @@ export interface Deal {
         image?: string;
         company_overview?: {
             reg_name: string;
-            hq_country?: number;
+            hq_country?: number | { id: number; name: string; alpha_2_code?: string; svg_icon_url?: string };
+            industry_ops?: Array<number | { id: number; name: string }>;
+            niche_industry?: Array<number | { id: number; name: string }>;
+            financial_advisor?: string | Array<{ name?: string; reg_name?: string }>;
         };
         financial_details?: {
-            desired_investment?: number | string | { min?: number | string; max?: number | string; currency?: string };
+            expected_investment_amount?: number | string | { min?: number | string; max?: number | string; currency?: string };
+            default_currency?: string;
             maximum_investor_shareholding_percentage?: string;
-            ebitda?: number;
+            ebitda_value?: number | string | { min?: number | string; max?: number | string };
+            ebitda_times?: number | string;
         };
     };
     pic?: {
@@ -164,6 +180,9 @@ const DealPipeline = () => {
     // Edit deal modal state
     const [editDeal, setEditDeal] = useState<Deal | null>(null);
 
+    // Track the original stage when a drag starts (ref survives handleDragOver state changes)
+    const dragOriginStageRef = useRef<string | null>(null);
+
     // Derive current user name from auth context
     const getCurrentUserName = () => {
         const userData = auth?.user as any;
@@ -198,6 +217,60 @@ const DealPipeline = () => {
             activationConstraint: { distance: 8 },
         })
     );
+
+    /**
+     * Custom collision detection strategy:
+     * 1. First determine which stage COLUMN the pointer is over (using rectIntersection on columns)
+     * 2. Then check for card collisions ONLY within that target column (using closestCenter)
+     * 3. If no cards in target column, return the stage column as the drop target
+     * This prevents cards in the source column from "capturing" the drop when dragging across columns.
+     */
+    const customCollisionDetection: CollisionDetection = (args) => {
+        const stageCodes = new Set(stages.map(s => s.code));
+
+        // Step 1: Which stage column is the pointer currently over?
+        const stageColumnContainers = args.droppableContainers.filter(
+            container => stageCodes.has(String(container.id))
+        );
+        const columnCollisions = rectIntersection({
+            ...args,
+            droppableContainers: stageColumnContainers,
+        });
+
+        if (columnCollisions.length === 0) {
+            // Pointer is not over any column — try all cards as fallback
+            return closestCenter({
+                ...args,
+                droppableContainers: args.droppableContainers.filter(
+                    container => !stageCodes.has(String(container.id)) && container.id !== args.active.id
+                ),
+            });
+        }
+
+        const targetColumnId = String(columnCollisions[0].id);
+
+        // Step 2: Get deal IDs that belong to the target column
+        const targetColumnDeals = deals[targetColumnId]?.deals || [];
+        const targetDealIds = new Set(targetColumnDeals.map(d => d.id));
+
+        // Step 3: Check for card collisions ONLY within the target column
+        const cardsInTargetColumn = args.droppableContainers.filter(
+            container => targetDealIds.has(Number(container.id)) && container.id !== args.active.id
+        );
+
+        if (cardsInTargetColumn.length > 0) {
+            const cardCollisions = closestCenter({
+                ...args,
+                droppableContainers: cardsInTargetColumn,
+            });
+            if (cardCollisions.length > 0) {
+                return cardCollisions;
+            }
+        }
+
+        // Step 4: No cards in target column (or no collision with them) — return the column itself
+        return columnCollisions;
+    };
 
     useEffect(() => {
         const fetchCountries = async () => {
@@ -261,10 +334,11 @@ const DealPipeline = () => {
         const { active } = event;
         const dealId = Number(active.id);
 
-        for (const stageData of Object.values(deals)) {
+        for (const [stageCode, stageData] of Object.entries(deals)) {
             const found = stageData.deals.find((d) => d.id === dealId);
             if (found) {
                 setActiveDeal(found);
+                dragOriginStageRef.current = stageCode;
                 break;
             }
         }
@@ -364,6 +438,27 @@ const DealPipeline = () => {
         }
     };
 
+    /**
+     * Find which stage a deal ID belongs to.
+     */
+    const findStageForDeal = (dealId: number): string | null => {
+        for (const [stageCode, stageData] of Object.entries(deals)) {
+            if (stageData.deals.some(d => d.id === dealId)) return stageCode;
+        }
+        return null;
+    };
+
+    /**
+     * Handle drag over — SortableContext handles within-column reorder animations automatically.
+     * Cross-column visual feedback is provided by the DragOverlay component.
+     * We intentionally do NOT move cards between columns in state during drag —
+     * this prevents React crashes from stale state references during rapid dragOver firings.
+     */
+    const handleDragOver = (_event: DragOverEvent) => {
+        // No-op: SortableContext handles same-column animations.
+        // Cross-column moves are handled by handleDragEnd.
+    };
+
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveDeal(null);
@@ -371,15 +466,87 @@ const DealPipeline = () => {
         if (!over) return;
 
         const dealId = Number(active.id);
-        const newStage = String(over.id);
+        const overId = over.id;
 
+        // Find the deal that was dragged
         let currentDeal: Deal | undefined;
-        for (const stageData of Object.values(deals)) {
-            currentDeal = stageData.deals.find((d) => d.id === dealId);
-            if (currentDeal) break;
+        let currentStage: string | undefined;
+        for (const [stageCode, stageData] of Object.entries(deals)) {
+            const found = stageData.deals.find((d) => d.id === dealId);
+            if (found) {
+                currentDeal = found;
+                currentStage = stageCode;
+                break;
+            }
         }
 
-        if (!currentDeal || currentDeal.stage_code === newStage) return;
+        if (!currentDeal || !currentStage) return;
+
+        // Use the original stage from drag start (before handleDragOver modified state)
+        const originalStage = dragOriginStageRef.current;
+        dragOriginStageRef.current = null;
+
+        // ── Case 1: Same-column reorder (over.id is a deal in the same stage) ──
+        const isOverStageColumn = typeof overId === 'string' && deals[overId] !== undefined;
+        const overDealId = typeof overId === 'number' ? overId : parseInt(String(overId), 10);
+
+        if (!isOverStageColumn && !isNaN(overDealId)) {
+            // Check if the over deal is in the same stage as the active deal
+            const overDealStage = findStageForDeal(overDealId);
+
+            if (overDealStage === currentStage && dealId !== overDealId && originalStage === currentStage) {
+                // Same column reorder! (originalStage check ensures this isn't a cross-column move)
+                const stageDeals = [...deals[currentStage].deals];
+                const oldIndex = stageDeals.findIndex(d => d.id === dealId);
+                const newIndex = stageDeals.findIndex(d => d.id === overDealId);
+
+                if (oldIndex !== -1 && newIndex !== -1) {
+                    const reordered = arrayMove(stageDeals, oldIndex, newIndex);
+
+                    // Optimistic update
+                    setDeals(prev => ({
+                        ...prev,
+                        [currentStage!]: {
+                            ...prev[currentStage!],
+                            deals: reordered,
+                        },
+                    }));
+
+                    // Persist to backend (fire-and-forget with error recovery)
+                    try {
+                        await api.post('/api/deals/reorder', {
+                            deal_ids: reordered.map(d => d.id),
+                        });
+                    } catch {
+                        // Revert on failure
+                        setDeals(prev => ({
+                            ...prev,
+                            [currentStage!]: {
+                                ...prev[currentStage!],
+                                deals: stageDeals,
+                            },
+                        }));
+                        showAlert({ type: 'error', message: 'Failed to save card order' });
+                    }
+                    return;
+                }
+            }
+        }
+
+        // ── Case 2: Cross-column stage move ──
+        // Determine which stage the card was dropped into
+        let newStage: string;
+        if (isOverStageColumn) {
+            newStage = String(overId);
+        } else if (!isNaN(overDealId)) {
+            const stage = findStageForDeal(overDealId);
+            if (!stage) return;
+            newStage = stage;
+        } else {
+            return;
+        }
+
+        if (newStage === currentDeal.stage_code) return; // No actual stage change
 
         const targetStage = deals[newStage];
         if (!targetStage) {
@@ -387,8 +554,10 @@ const DealPipeline = () => {
             return;
         }
 
-        // ── Optimistic update FIRST (instant visual move) ──
+        // Save old state for reverting
         const oldDeals = { ...deals };
+
+        // ── Optimistic update: move card to new column visually ──
         const updatedDeals = { ...deals };
 
         if (updatedDeals[currentDeal.stage_code]) {
@@ -411,10 +580,10 @@ const DealPipeline = () => {
 
         setDeals(updatedDeals);
 
-        // ── Pre-flight check (gate rules + monetization) — runs AFTER visual move ──
+        // ── Pre-flight check (gate rules + monetization) ──
         const canProceed = await preflightStageCheck(currentDeal, newStage, targetStage.name);
         if (!canProceed) {
-            // Gate blocked or monetization modal shown — revert the optimistic move
+            // Gate blocked or monetization modal shown — revert
             setDeals(oldDeals);
             return;
         }
@@ -833,8 +1002,9 @@ const DealPipeline = () => {
                             ) : (
                                 <DndContext
                                     sensors={sensors}
-                                    collisionDetection={closestCorners}
+                                    collisionDetection={customCollisionDetection}
                                     onDragStart={handleDragStart}
+                                    onDragOver={handleDragOver}
                                     onDragEnd={handleDragEnd}
                                 >
                                     <div className="flex gap-4 min-w-max">
@@ -852,10 +1022,19 @@ const DealPipeline = () => {
                                                     onDelete={setDeleteDeal}
                                                     onEdit={setEditDeal}
                                                     pipelineView={pipelineView}
+                                                    activeDealId={activeDeal?.id ?? null}
                                                 />
                                             ))}
                                     </div>
-                                    <DragOverlay dropAnimation={null}>
+                                    <DragOverlay
+                                        dropAnimation={{
+                                            sideEffects: defaultDropAnimationSideEffects({
+                                                styles: { active: { opacity: '0.4' } },
+                                            }),
+                                            duration: 200,
+                                            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+                                        }}
+                                    >
                                         {activeDeal ? <DealCard deal={activeDeal} isDragging pipelineView={pipelineView} /> : null}
                                     </DragOverlay>
                                 </DndContext>

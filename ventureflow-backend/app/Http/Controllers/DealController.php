@@ -31,7 +31,7 @@ class DealController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Deal::with(['buyer.companyOverview', 'seller.companyOverview', 'seller.financialDetails', 'pic', 'stageDeadlines']);
+        $query = Deal::with(['buyer.companyOverview.hqCountry', 'buyer.targetPreference', 'seller.companyOverview.hqCountry', 'seller.financialDetails', 'pic', 'stageDeadlines']);
         $view = $request->query('view', 'buyer');
         
         // Ensure view is valid
@@ -85,7 +85,7 @@ class DealController extends Controller
 
         $deals = $query->withCount(['activityLogs as comment_count' => function($q) {
             $q->where('type', 'comment');
-        }])->orderBy('updated_at', 'desc')->get();
+        }])->orderBy('sort_order', 'asc')->orderBy('updated_at', 'desc')->get();
 
         // Compute unread comment count per deal for current user (batch query — no N+1)
         $userId = Auth::id();
@@ -331,9 +331,9 @@ class DealController extends Controller
     {
         return response()->json([
             'deal' => $deal->load([
-                'buyer.companyOverview',
+                'buyer.companyOverview.hqCountry',
                 'buyer.targetPreference',
-                'seller.companyOverview',
+                'seller.companyOverview.hqCountry',
                 'seller.financialDetails',
                 'pic',
                 'stageHistory.changedBy.employee',
@@ -767,6 +767,26 @@ class DealController extends Controller
             'message' => 'Stage updated successfully',
             'deal' => $deal->fresh(['buyer.companyOverview', 'seller.companyOverview', 'pic', 'fees', 'stageDeadlines']),
         ]);
+    }
+
+    /**
+     * Reorder deals within a stage column.
+     * Accepts an ordered array of deal IDs and sets sort_order accordingly.
+     */
+    public function reorder(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'deal_ids' => 'required|array|min:1',
+            'deal_ids.*' => 'integer|exists:deals,id',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['deal_ids'] as $index => $dealId) {
+                Deal::where('id', $dealId)->update(['sort_order' => $index]);
+            }
+        });
+
+        return response()->json(['message' => 'Order updated successfully']);
     }
 
     /**

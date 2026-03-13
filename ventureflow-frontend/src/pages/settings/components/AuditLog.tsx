@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { History, Filter, User, Search, ChevronDown, LogIn, LogOut, Key, UserPlus, Trash2, RefreshCw, X } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 import VFCalendarPicker from '../../../components/VFCalendarPicker';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
@@ -335,21 +336,18 @@ const AuditLog: React.FC = () => {
                             {/* User Type */}
                             <div>
                                 <label htmlFor="audit-user-type" className="block text-xs font-medium text-gray-500 mb-1.5">User Type</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <select
-                                        id="audit-user-type"
-                                        value={userType}
-                                        onChange={(e) => setUserType(e.target.value)}
-                                        title="Filter by user type"
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-[3px] text-sm focus:outline-none focus:ring-2 focus:ring-[#064771]/20 focus:border-[#064771] bg-white appearance-none"
-                                    >
-                                        <option value="">All Users</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="staff">Staff</option>
-                                        <option value="partner">Partner</option>
-                                    </select>
-                                </div>
+                                <VFDropdown
+                                    options={[
+                                        { value: '', label: 'All Users' },
+                                        { value: 'admin', label: 'Admin' },
+                                        { value: 'staff', label: 'Staff' },
+                                        { value: 'partner', label: 'Partner' },
+                                    ]}
+                                    value={userType}
+                                    onChange={val => setUserType((val as string) || '')}
+                                    searchable={false}
+                                    placeholder="All Users"
+                                />
                             </div>
                         </div>
 

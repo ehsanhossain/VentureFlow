@@ -4,7 +4,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 import api from '../../../config/api';
 import { getCachedCurrencies } from '../../../utils/referenceDataCache';
 import { showAlert } from '../../../components/Alert';
@@ -71,7 +72,7 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
     const [stages, setStages] = useState<{ code: string; name: string }[]>([]);
     const [showStageTimeline, setShowStageTimeline] = useState(false);
 
-    // Pre-populate stage deadlines from existing deal data
+    // Pre-populate stage deadlines from existing deal data (ALL deadlines, including completed)
     const [stageDeadlines, setStageDeadlines] = useState<Record<string, { start_date: string; end_date: string; is_parallel: boolean }>>(() => {
         const map: Record<string, { start_date: string; end_date: string; is_parallel: boolean }> = {};
         if (deal.stage_deadlines) {
@@ -86,6 +87,17 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
         return map;
     });
 
+    // Track which stage deadlines are completed (read-only past stages)
+    const completedStageCodes = useMemo(() => {
+        const set = new Set<string>();
+        if (deal.stage_deadlines) {
+            deal.stage_deadlines.forEach((dl: any) => {
+                if (dl.is_completed) set.add(dl.stage_code);
+            });
+        }
+        return set;
+    }, [deal.stage_deadlines]);
+
     // Initialize form data from the existing deal
     const [formData, setFormData] = useState({
         name: deal.name || '',
@@ -93,13 +105,13 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
         investment_condition: deal.investment_condition || '',
         ticket_size: deal.ticket_size ? formatWithCommas(String(deal.ticket_size)) : '',
         estimated_ev_currency: deal.estimated_ev_currency || 'USD',
-        priority: deal.priority || 'medium',
-        possibility: deal.possibility || 'Medium',
-        ebitda_investor_value: (deal as any).ebitda_investor_value ?? '',
+
+        ebitda_investor_value: (deal as any).ebitda_investor_value ? formatWithCommas(String((deal as any).ebitda_investor_value)) : '',
         ebitda_investor_times: (deal as any).ebitda_investor_times ?? '',
-        ebitda_target_value: (deal as any).ebitda_target_value ?? '',
+        ebitda_target_value: (deal as any).ebitda_target_value ? formatWithCommas(String((deal as any).ebitda_target_value)) : '',
         ebitda_target_times: (deal as any).ebitda_target_times ?? '',
         internal_pic: [] as User[],
+        stage_code: deal.stage_code || '',
     });
 
     // Fetch users for PIC selection
@@ -145,12 +157,15 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
         fetchStages();
     }, [pipelineView]);
 
-    // Compute which stages to show in timeline (from deal's current stage through last)
+    // Show ALL stages in timeline (past completed + current + future)
     const timelineStages = useMemo(() => {
-        if (!deal.stage_code || stages.length === 0) return stages;
-        const currentIdx = stages.findIndex(s => s.code === deal.stage_code);
-        if (currentIdx === -1) return stages;
-        return stages.slice(currentIdx);
+        return stages;
+    }, [stages]);
+
+    // Find current stage index for visual distinction
+    const currentStageIdx = useMemo(() => {
+        if (!deal.stage_code || stages.length === 0) return -1;
+        return stages.findIndex(s => s.code === deal.stage_code);
     }, [deal.stage_code, stages]);
 
     /** Update a single stage deadline and auto-cascade to next stage */
@@ -278,11 +293,11 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                 investment_condition: formData.investment_condition || null,
                 ticket_size: removeCommas(formData.ticket_size) || null,
                 estimated_ev_currency: formData.estimated_ev_currency,
-                priority: formData.priority,
-                possibility: formData.possibility,
-                ebitda_investor_value: formData.ebitda_investor_value || null,
+
+                stage_code: formData.stage_code || undefined,
+                ebitda_investor_value: removeCommas(formData.ebitda_investor_value) || null,
                 ebitda_investor_times: formData.ebitda_investor_times || null,
-                ebitda_target_value: formData.ebitda_target_value || null,
+                ebitda_target_value: removeCommas(formData.ebitda_target_value) || null,
                 ebitda_target_times: formData.ebitda_target_times || null,
                 internal_pic: formData.internal_pic.map(p => ({ id: p.id, name: p.name })),
                 stage_deadlines: deadlinesPayload.length > 0 ? deadlinesPayload : undefined,
@@ -300,8 +315,7 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
     const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'Investor' : null);
     const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'Target' : null);
 
-    const inputClass = "w-full px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
-    const selectClass = "w-full px-4 py-2 pr-10 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm appearance-none bg-white";
+    const inputClass = "w-full min-h-[44px] px-4 py-2.5 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm";
 
     return (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
@@ -310,12 +324,14 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                 <div className="flex items-center justify-between px-6 py-4 border-b">
                     <h2 className="text-lg font-medium text-gray-900">Edit Deal</h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-[3px] transition-colors" title="Close modal" aria-label="Close modal">
-                        <X className="w-5 h-5 text-gray-500" />
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[65vh] scrollbar-premium space-y-4">
+                <div className="p-6 overflow-y-auto max-h-[65vh] scrollbar-premium space-y-6">
                     {/* Read-only Parties */}
                     <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-[3px] border border-gray-200">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -341,9 +357,33 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                         </div>
                     </div>
 
-                    {/* Deal Name */}
+                    {/* Row 1: Deal Type + Investment Condition side-by-side */}
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label htmlFor="edit-deal-type" className="block text-sm font-medium text-gray-700 mb-2.5">Deal Type</label>
+                            <VFDropdown
+                                options={DEAL_TYPES.map(dt => ({ value: dt.value, label: pipelineView === 'seller' ? dt.sellerLabel : dt.buyerLabel }))}
+                                value={formData.deal_type}
+                                onChange={(val) => setFormData(prev => ({ ...prev, deal_type: val as string }))}
+                                searchable={false}
+                                placeholder="Select Deal Type"
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label htmlFor="edit-investment-condition" className="block text-sm font-medium text-gray-700 mb-2.5">Investment Condition</label>
+                            <VFDropdown
+                                options={INVESTMENT_CONDITIONS}
+                                value={formData.investment_condition || null}
+                                onChange={(val) => setFormData(prev => ({ ...prev, investment_condition: (val as string) || '' }))}
+                                searchable={false}
+                                placeholder="Select Condition"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Row 2: Deal Name full-width */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Deal Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2.5">Deal Name</label>
                         <input
                             type="text"
                             value={formData.name}
@@ -353,52 +393,11 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                         />
                     </div>
 
-                    {/* Deal Type */}
-                    <div>
-                        <label htmlFor="edit-deal-type" className="block text-sm font-medium text-gray-700 mb-1">Deal Type</label>
-                        <div className="relative">
-                            <select
-                                id="edit-deal-type"
-                                value={formData.deal_type}
-                                onChange={(e) => setFormData(prev => ({ ...prev, deal_type: e.target.value }))}
-                                className={selectClass}
-                            >
-                                {DEAL_TYPES.map((dt) => (
-                                    <option key={dt.value} value={dt.value}>
-                                        {pipelineView === 'seller' ? dt.sellerLabel : dt.buyerLabel}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        </div>
-                    </div>
-
-                    {/* Investment Condition */}
-                    <div>
-                        <label htmlFor="edit-investment-condition" className="block text-sm font-medium text-gray-700 mb-1">Investment Condition</label>
-                        <div className="relative">
-                            <select
-                                id="edit-investment-condition"
-                                value={formData.investment_condition}
-                                onChange={(e) => setFormData(prev => ({ ...prev, investment_condition: e.target.value }))}
-                                className={selectClass}
-                            >
-                                <option value="">Select condition</option>
-                                {INVESTMENT_CONDITIONS.map((ic) => (
-                                    <option key={ic.value} value={ic.value}>
-                                        {ic.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        </div>
-                    </div>
-
-                    {/* Transaction Size + Currency & Probability */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Size</label>
-                            <div className="flex gap-2">
+                    {/* Row 3: Transaction Size + Deal Stage side-by-side */}
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-2.5">Transaction Size</label>
+                            <div className="flex gap-3 items-center">
                                 <input
                                     type="text"
                                     value={formData.ticket_size}
@@ -406,125 +405,135 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                                         const raw = e.target.value.replace(/[^0-9.,]/g, '');
                                         setFormData(prev => ({ ...prev, ticket_size: formatWithCommas(removeCommas(raw)) }));
                                     }}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                    placeholder="Amount"
+                                    className="flex-1 min-h-[44px] px-4 py-2.5 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    placeholder="80,244,360"
                                 />
-                                <div className="relative">
-                                    <select
-                                        id="edit-currency"
-                                        aria-label="Currency"
+                                <div className="w-[100px]">
+                                    <VFDropdown
+                                        options={systemCurrencies.map(c => ({ value: c.currency_code, label: c.currency_code }))}
                                         value={formData.estimated_ev_currency}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, estimated_ev_currency: e.target.value }))}
-                                        className="w-[88px] appearance-none px-2 pr-7 py-2 border border-gray-300 rounded-[3px] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm cursor-pointer"
-                                    >
-                                        {systemCurrencies.map(c => <option key={c.id} value={c.currency_code}>{c.currency_code}</option>)}
-                                    </select>
-                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                                        onChange={(val) => setFormData(prev => ({ ...prev, estimated_ev_currency: val as string }))}
+                                        searchable={false}
+                                        placeholder="USD"
+                                    />
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <label htmlFor="edit-probability" className="block text-sm font-medium text-gray-700 mb-1">Probability</label>
-                            <div className="relative">
-                                <select
-                                    id="edit-probability"
-                                    value={formData.possibility}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, possibility: e.target.value }))}
-                                    className={selectClass}
-                                >
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                            </div>
+                        <div className="flex-1">
+                            <label htmlFor="edit-deal-stage" className="block text-sm font-medium text-gray-700 mb-2.5">Deal Stage</label>
+                            <VFDropdown
+                                options={stages.map(s => ({ value: s.code, label: s.name }))}
+                                value={formData.stage_code}
+                                onChange={(val) => setFormData(prev => ({ ...prev, stage_code: val as string }))}
+                                searchable={false}
+                                placeholder="Select Stage"
+                            />
                         </div>
                     </div>
 
-                    {/* Priority + Target Close Date */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label htmlFor="edit-priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                            <div className="relative">
-                                <select
-                                    id="edit-priority"
-                                    value={formData.priority}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as 'low' | 'medium' | 'high' }))}
-                                    className={selectClass}
-                                >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 text-gray-400">Target Close Date</label>
-                            <p className="text-xs text-gray-400 italic">Auto-calculated from stage deadlines</p>
-                        </div>
-                    </div>
 
-                    {/* ── Stage Timeline ── */}
-                    <div>
+                    {/* Row 5: Target Close Date + Set Stage Timeline */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-700">Target Close Date</label>
+                            <p className="text-xs text-gray-400 italic">
+                                {(() => {
+                                    const filledDeadlines = Object.values(stageDeadlines).filter(v => v.start_date && v.end_date);
+                                    if (filledDeadlines.length === 0) return 'Auto-calculated from stage deadlines';
+                                    const allStarts = filledDeadlines.map(v => new Date(v.start_date).getTime());
+                                    const allEnds = filledDeadlines.map(v => new Date(v.end_date).getTime());
+                                    const earliest = new Date(Math.min(...allStarts));
+                                    const latest = new Date(Math.max(...allEnds));
+                                    const diffMs = latest.getTime() - earliest.getTime();
+                                    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                                    if (diffDays < 30) return `~${diffDays} day${diffDays !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                    if (diffDays < 365) {
+                                        const months = Math.round(diffDays / 30);
+                                        return `~${months} month${months !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                    }
+                                    const years = (diffDays / 365).toFixed(1);
+                                    return `~${years} year${parseFloat(years) !== 1 ? 's' : ''} (${earliest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${latest.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`;
+                                })()}
+                            </p>
+                        </div>
                         <button
                             type="button"
                             onClick={() => setShowStageTimeline(!showStageTimeline)}
-                            className="flex items-center gap-2 text-sm font-medium text-[#064771] hover:text-[#053a5c] transition-colors"
+                            className="flex items-center gap-2 px-2 py-1 rounded-[3px] bg-[#f3f4f5] text-sm font-medium text-[#064771] hover:bg-gray-200 transition-colors"
                         >
-                            <svg className={`w-4 h-4 transition-transform duration-200 ${showStageTimeline ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                            Stage Timeline — Set Deadlines
-                            {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length > 0 && (
-                                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#064771] px-1.5 text-[10px] font-medium text-white">
-                                    {Object.values(stageDeadlines).filter(v => v.start_date && v.end_date).length}
-                                </span>
-                            )}
+                            <Calendar className="w-4 h-4" />
+                            Set Stage Timeline
                         </button>
+                    </div>
 
-                        {showStageTimeline && (
-                            <div className="mt-3 space-y-0 border border-gray-200 rounded-[3px] overflow-hidden">
-                                {timelineStages.map((stage, idx) => {
-                                    const dl = stageDeadlines[stage.code] || { start_date: '', end_date: '', is_parallel: false };
-                                    const isFirst = idx === 0;
-                                    const stageMinDate = getStageMinDate(idx);
-                                    return (
-                                        <div key={stage.code} className={`flex items-center gap-3 px-4 py-3 ${!isFirst ? 'border-t border-gray-100' : ''} ${dl.start_date && dl.end_date ? 'bg-blue-50/30' : ''}`}>
-                                            {/* Stage indicator */}
-                                            <div className="flex flex-col items-center gap-0.5 min-w-[32px]">
-                                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${dl.start_date && dl.end_date
-                                                    ? 'bg-[#064771] text-white'
-                                                    : 'bg-gray-200 text-gray-500'
-                                                    }`}>
-                                                    {stage.code}
-                                                </div>
-                                                {idx < timelineStages.length - 1 && (
-                                                    <div className="w-px h-3 bg-gray-300" />
+                    {/* ── Stage Timeline ── */}
+                    {showStageTimeline && (
+                        <div className="border border-gray-200 rounded-[3px] overflow-hidden">
+                            {timelineStages.map((stage, idx) => {
+                                const dl = stageDeadlines[stage.code] || { start_date: '', end_date: '', is_parallel: false };
+                                const isFirst = idx === 0;
+                                const isCompleted = completedStageCodes.has(stage.code);
+                                const isCurrent = idx === currentStageIdx;
+                                const stageMinDate = getStageMinDate(idx);
+                                const letterCode = String.fromCharCode(65 + idx);
+                                const hasDates = dl.start_date && dl.end_date;
+
+                                return (
+                                    <div key={stage.code} className={`flex items-center gap-3 px-4 py-3 ${!isFirst ? 'border-t border-gray-100' : ''} ${
+                                        isCompleted ? 'bg-gray-50/60 opacity-75' :
+                                        isCurrent ? 'bg-blue-50/40 border-l-2 border-l-[#064771]' :
+                                        hasDates ? 'bg-blue-50/30' : ''
+                                    }`}>
+                                        {/* Stage indicator */}
+                                        <div className="flex flex-col items-center gap-0.5 min-w-[32px]">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${
+                                                isCompleted ? 'bg-emerald-500 text-white' :
+                                                hasDates ? 'bg-[#064771] text-white' :
+                                                'bg-[#dae8f0] text-[#064771]'
+                                            }`}>
+                                                {isCompleted ? '✓' : letterCode}
+                                            </div>
+                                            {idx < timelineStages.length - 1 && (
+                                                <div className={`w-px h-3 ${isCompleted ? 'bg-emerald-300' : 'bg-gray-300'}`} />
+                                            )}
+                                        </div>
+
+                                        {/* Stage name + status */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <p className={`text-sm font-medium truncate ${isCompleted ? 'text-gray-500' : 'text-gray-900'}`}>{stage.name}</p>
+                                                {isCompleted && (
+                                                    <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">✓ Completed</span>
+                                                )}
+                                                {isCurrent && (
+                                                    <span className="text-[9px] font-semibold text-[#064771] bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-200 whitespace-nowrap">Current</span>
+                                                )}
+                                                {!isCompleted && dl.is_parallel && (
+                                                    <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">∥ Parallel</span>
                                                 )}
                                             </div>
+                                            {/* Show completed date range as read-only text */}
+                                            {isCompleted && dl.start_date && dl.end_date && (
+                                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                                    {new Date(dl.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(dl.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </p>
+                                            )}
+                                            {!isCompleted && !isFirst && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleStageParallel(stage.code)}
+                                                    className={`mt-0.5 text-[10px] font-medium transition-colors ${dl.is_parallel ? 'text-amber-600 hover:text-amber-700' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    {dl.is_parallel ? 'Switch to Sequential' : 'Switch to Parallel'}
+                                                </button>
+                                            )}
+                                        </div>
 
-                                            {/* Stage name + parallel toggle */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5">
-                                                    <p className="text-sm font-medium text-gray-900 truncate">{stage.name}</p>
-                                                    {dl.is_parallel && (
-                                                        <span className="text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200 whitespace-nowrap">|| Parallel</span>
-                                                    )}
-                                                </div>
-                                                {!isFirst && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleStageParallel(stage.code)}
-                                                        className={`mt-0.5 text-[10px] font-medium transition-colors ${dl.is_parallel ? 'text-amber-600 hover:text-amber-700' : 'text-gray-400 hover:text-gray-600'}`}
-                                                    >
-                                                        {dl.is_parallel ? 'Switch to Sequential' : 'Switch to Parallel'}
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Date range picker */}
-                                            <div className="shrink-0">
+                                        {/* Date range picker (only for non-completed stages) */}
+                                        <div className="shrink-0">
+                                            {isCompleted ? (
+                                                <span className="text-[10px] text-gray-400 italic">Locked</span>
+                                            ) : (
                                                 <VFDateRangePicker
                                                     startDate={dl.start_date}
                                                     endDate={dl.end_date}
@@ -536,63 +545,61 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                                                     title={`${stage.name} date range`}
                                                     compact
                                                 />
-                                            </div>
+                                            )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                        {showStageTimeline && (
-                            <p className="mt-2 text-[11px] text-gray-400">
-                                Stages are sequential by default. Toggle "Switch to Parallel" to allow overlapping dates.
-                            </p>
-                        )}
-                    </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
 
-                    {/* EBITDA Fields (optional) */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">EBITDA (Optional)</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Value</label>
+                    {/* EBITDA Details with separator */}
+                    <div className="space-y-3.5">
+                        <div>
+                            <p className="text-sm font-medium text-gray-700">EBITDA Details</p>
+                            <div className="mt-2 border-t border-dashed border-gray-300" />
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-medium text-gray-700 w-[64px] shrink-0">Investor</span>
+                            <div className="flex gap-3 flex-1">
                                 <input
-                                    type="number"
+                                    type="text"
                                     value={formData.ebitda_investor_value}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, ebitda_investor_value: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="e.g. 5000000"
+                                    onChange={(e) => {
+                                        const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                                        setFormData(prev => ({ ...prev, ebitda_investor_value: formatWithCommas(removeCommas(raw)) }));
+                                    }}
+                                    className={`flex-1 ${inputClass}`}
+                                    placeholder="Value (e.g. 5,000,000)"
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Investor EBITDA Multiple</label>
                                 <input
-                                    type="number"
-                                    step="0.1"
+                                    type="text"
                                     value={formData.ebitda_investor_times}
                                     onChange={(e) => setFormData(prev => ({ ...prev, ebitda_investor_times: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="e.g. 8.5x"
+                                    className={`flex-1 ${inputClass}`}
+                                    placeholder="Multiple (e.g. 8.5x)"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Target EBITDA Value</label>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-medium text-gray-700 w-[64px] shrink-0">Target</span>
+                            <div className="flex gap-3 flex-1">
                                 <input
-                                    type="number"
+                                    type="text"
                                     value={formData.ebitda_target_value}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, ebitda_target_value: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="e.g. 3000000"
+                                    onChange={(e) => {
+                                        const raw = e.target.value.replace(/[^0-9.,]/g, '');
+                                        setFormData(prev => ({ ...prev, ebitda_target_value: formatWithCommas(removeCommas(raw)) }));
+                                    }}
+                                    className={`flex-1 ${inputClass}`}
+                                    placeholder="Value (e.g. 3,000,000)"
                                 />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Target EBITDA Multiple</label>
                                 <input
-                                    type="number"
-                                    step="0.1"
+                                    type="text"
                                     value={formData.ebitda_target_times}
                                     onChange={(e) => setFormData(prev => ({ ...prev, ebitda_target_times: e.target.value }))}
-                                    className={inputClass}
-                                    placeholder="e.g. 6.0x"
+                                    className={`flex-1 ${inputClass}`}
+                                    placeholder="Multiple (e.g. 6.5x)"
                                 />
                             </div>
                         </div>
@@ -600,7 +607,7 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
 
                     {/* Internal PIC */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Internal PIC (Assigned Staff)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2.5">Internal PIC</label>
                         <Dropdown
                             countries={users}
                             selected={formData.internal_pic}
@@ -608,23 +615,82 @@ const EditDealModal = ({ deal, onClose, onUpdated, pipelineView }: EditDealModal
                                 setFormData(prev => ({ ...prev, internal_pic: (Array.isArray(selected) ? selected : [selected]) as User[] }));
                             }}
                             multiSelect={true}
-                            placeholder="Select Staff"
+                            placeholder="Select Assigned Staff"
                         />
+                    </div>
+
+                    {/* Financial Advisor (FA) Section — Avatar layout */}
+                    <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2.5">Financial Advisor (FA)</p>
+                        <div className="flex gap-8">
+                            {/* Investor FA Column */}
+                            <div className="flex-1 space-y-3">
+                                <p className="text-xs text-gray-900/70">Investor FA</p>
+                                {(() => {
+                                    const faRaw = deal.buyer?.company_overview?.financial_advisor;
+                                    if (!faRaw) return <p className="text-sm text-gray-400">{!deal.buyer_id ? 'TBD' : 'None'}</p>;
+                                    try {
+                                        const parsed = typeof faRaw === 'string' ? JSON.parse(faRaw) : faRaw;
+                                        if (!Array.isArray(parsed) || parsed.length === 0) return <p className="text-sm text-gray-400">None</p>;
+                                        return parsed.map((fa: Record<string, string>, i: number) => {
+                                            const name = fa.name || fa.reg_name || 'Unknown';
+                                            const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                                            return (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className="w-[22px] h-[22px] rounded-full bg-[#064771] text-white flex items-center justify-center text-[9px] font-medium shrink-0">
+                                                        {initials}
+                                                    </div>
+                                                    <span className="text-sm text-gray-900">{name}</span>
+                                                </div>
+                                            );
+                                        });
+                                    } catch {
+                                        return <p className="text-sm text-gray-400">None</p>;
+                                    }
+                                })()}
+                            </div>
+                            {/* Target FA Column */}
+                            <div className="flex-1 space-y-3">
+                                <p className="text-xs text-gray-900/70">Target FA</p>
+                                {(() => {
+                                    const faRaw = deal.seller?.company_overview?.financial_advisor;
+                                    if (!faRaw) return <p className="text-sm text-gray-400">{!deal.seller_id ? 'TBD' : 'None'}</p>;
+                                    try {
+                                        const parsed = typeof faRaw === 'string' ? JSON.parse(faRaw) : faRaw;
+                                        if (!Array.isArray(parsed) || parsed.length === 0) return <p className="text-sm text-gray-400">None</p>;
+                                        return parsed.map((fa: Record<string, string>, i: number) => {
+                                            const name = fa.name || fa.reg_name || 'Unknown';
+                                            const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+                                            return (
+                                                <div key={i} className="flex items-center gap-2">
+                                                    <div className="w-[22px] h-[22px] rounded-full bg-[#064771] text-white flex items-center justify-center text-[9px] font-medium shrink-0">
+                                                        {initials}
+                                                    </div>
+                                                    <span className="text-sm text-gray-900">{name}</span>
+                                                </div>
+                                            );
+                                        });
+                                    } catch {
+                                        return <p className="text-sm text-gray-400">None</p>;
+                                    }
+                                })()}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-[3px] transition-colors"
+                        className="px-4 py-2 rounded-[3px] border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="px-6 py-2 bg-[#064771] text-white rounded-[3px] hover:bg-[#053a5c] transition-colors disabled:opacity-50"
+                        className="px-6 py-2 bg-[#064771] text-white text-base rounded-[3px] hover:bg-[#053a5c] transition-colors disabled:opacity-50"
                     >
                         {loading ? 'Saving...' : 'Save Changes'}
                     </button>

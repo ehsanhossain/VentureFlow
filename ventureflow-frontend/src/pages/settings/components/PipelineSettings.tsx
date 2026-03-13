@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, GripVertical, Save, ChevronDown, ChevronRight, ShieldCheck, DollarSign } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 import api from '../../../config/api';
 import { showAlert } from '../../../components/Alert';
 import { BrandSpinner } from '../../../components/BrandSpinner';
@@ -103,30 +104,27 @@ const RuleRow: React.FC<{
     return (
         <div className="flex items-center gap-2 py-1.5">
             {/* Field */}
-            <select
-                value={rule.field}
-                onChange={e => handleFieldChange(e.target.value)}
-                className="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-gray-200 rounded-[3px] text-xs focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                title="Select rule field"
-            >
-                <option value="">Select criteria...</option>
-                {RULE_FIELDS.map(f => (
-                    <option key={f.key} value={f.key}>{f.label}</option>
-                ))}
-            </select>
+            <div className="flex-1 min-w-0">
+                <VFDropdown
+                    options={RULE_FIELDS.map(f => ({ value: f.key, label: f.label }))}
+                    value={rule.field || null}
+                    onChange={val => handleFieldChange((val as string) || '')}
+                    searchable={false}
+                    placeholder="Select criteria..."
+                />
+            </div>
 
             {/* Operator */}
             {operators.length > 1 ? (
-                <select
-                    value={rule.operator}
-                    onChange={e => onChange({ ...rule, operator: e.target.value })}
-                    className="w-28 px-2.5 py-1.5 bg-white border border-gray-200 rounded-[3px] text-xs focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                    title="Select operator"
-                >
-                    {operators.map(op => (
-                        <option key={op.value} value={op.value}>{op.label}</option>
-                    ))}
-                </select>
+                <div className="w-28">
+                    <VFDropdown
+                        options={operators.map(op => ({ value: op.value, label: op.label }))}
+                        value={rule.operator}
+                        onChange={val => onChange({ ...rule, operator: (val as string) || 'equals' })}
+                        searchable={false}
+                        placeholder="Operator"
+                    />
+                </div>
             ) : (
                 <span className="w-28 px-2.5 py-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-[3px] text-center">
                     {operators[0]?.label ?? '--'}
@@ -145,27 +143,29 @@ const RuleRow: React.FC<{
                 />
             )}
             {fieldDef?.valueType === 'boolean' && (
-                <select
-                    value={rule.value ? 'true' : 'false'}
-                    onChange={e => onChange({ ...rule, value: e.target.value === 'true' })}
-                    className="w-32 px-2.5 py-1.5 bg-white border border-gray-200 rounded-[3px] text-xs focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                    title="Select value"
-                >
-                    <option value="true">Required</option>
-                    <option value="false">Not required</option>
-                </select>
+                <div className="w-32">
+                    <VFDropdown
+                        options={[
+                            { value: 'true', label: 'Required' },
+                            { value: 'false', label: 'Not required' },
+                        ]}
+                        value={rule.value ? 'true' : 'false'}
+                        onChange={val => onChange({ ...rule, value: val === 'true' })}
+                        searchable={false}
+                        placeholder="Select value"
+                    />
+                </div>
             )}
             {fieldDef?.valueType === 'select' && (
-                <select
-                    value={rule.value ?? ''}
-                    onChange={e => onChange({ ...rule, value: e.target.value })}
-                    className="w-32 px-2.5 py-1.5 bg-white border border-gray-200 rounded-[3px] text-xs focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                    title="Select value"
-                >
-                    {fieldDef.selectOptions?.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
+                <div className="w-32">
+                    <VFDropdown
+                        options={fieldDef.selectOptions?.map(opt => ({ value: opt.value, label: opt.label })) ?? []}
+                        value={rule.value ?? null}
+                        onChange={val => onChange({ ...rule, value: (val as string) || '' })}
+                        searchable={false}
+                        placeholder="Select value"
+                    />
+                </div>
             )}
             {fieldDef?.valueType === 'none' && (
                 <span className="w-32 px-2.5 py-1.5 text-xs text-gray-400 italic">—</span>
@@ -557,15 +557,16 @@ const PipelineSettings: React.FC = () => {
                                                                                         {/* Payment Type */}
                                                                                         <div className="flex items-center gap-4">
                                                                                             <label className="text-xs font-medium text-gray-500 w-28">Payment Type</label>
-                                                                                            <select
+                                                                                            <VFDropdown
+                                                                                                options={[
+                                                                                                    { value: 'one_time', label: 'One-time' },
+                                                                                                    { value: 'monthly', label: 'Monthly' },
+                                                                                                ]}
                                                                                                 value={mc.type}
-                                                                                                onChange={e => setMonetization(index, { ...mc, type: e.target.value as 'one_time' | 'monthly' })}
-                                                                                                className="px-2.5 py-1.5 bg-white border border-gray-200 rounded-[3px] text-xs focus:outline-none focus:ring-2 focus:ring-[#064771]/10 focus:border-[#064771] transition-all"
-                                                                                                title="Payment type"
-                                                                                            >
-                                                                                                <option value="one_time">One-time</option>
-                                                                                                <option value="monthly">Monthly</option>
-                                                                                            </select>
+                                                                                                onChange={val => setMonetization(index, { ...mc, type: (val as 'one_time' | 'monthly') || 'one_time' })}
+                                                                                                searchable={false}
+                                                                                                placeholder="Payment type"
+                                                                                            />
                                                                                         </div>
 
 

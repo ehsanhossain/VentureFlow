@@ -5,8 +5,10 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { MoreVertical, MessageSquare, Clock, ChevronLeft, ChevronRight, Download, Pencil } from 'lucide-react';
+import { useSortable, defaultAnimateLayoutChanges } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { AnimateLayoutChanges } from '@dnd-kit/sortable';
+import { MoreVertical, MessageSquare, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { getCurrencySymbol, formatCompactNumber } from '../../../utils/formatters';
 import { Deal } from '../DealPipeline';
@@ -20,11 +22,32 @@ interface DealCardProps {
     onDelete?: (deal: Deal) => void;
     onEdit?: (deal: Deal) => void;
     pipelineView?: 'buyer' | 'seller';
+    activeDealId?: number | null;
 }
 
-const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer' }: DealCardProps) => {
-    const { attributes, listeners, setNodeRef, isDragging: isBeingDragged } = useDraggable({
+// Skip layout animation when the item is being actively dragged to prevent jitter
+const animateLayoutChanges: AnimateLayoutChanges = (args) => {
+    const { isSorting, wasDragging } = args;
+    if (isSorting || wasDragging) return defaultAnimateLayoutChanges(args);
+    return true;
+};
+
+const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, onMarkLost, onDelete, onEdit, pipelineView = 'buyer', activeDealId }: DealCardProps) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging: isBeingDragged,
+        isOver,
+    } = useSortable({
         id: deal.id,
+        animateLayoutChanges,
+        transition: {
+            duration: 250,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+        },
     });
 
     const [showMenu, setShowMenu] = useState(false);
@@ -40,11 +63,14 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // When using DragOverlay, the original card stays in place but fades.
-    // The overlay handles the cursor-following visual.
-    const style: React.CSSProperties | undefined = isBeingDragged
-        ? { opacity: 0.3, cursor: 'grabbing', transition: 'opacity 200ms ease' }
-        : { transition: 'opacity 200ms ease, transform 200ms ease' };
+    // Show indicator when another card is being dragged over this card
+    const showDropIndicator = isOver && activeDealId != null && activeDealId !== deal.id;
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition: transition || 'transform 250ms cubic-bezier(0.25, 1, 0.5, 1)',
+        cursor: isBeingDragged ? 'grabbing' : 'grab',
+    };
 
     const formatValue = (value: number | string | null, currency: string) => {
         if (!value) return 'N/A';
@@ -53,26 +79,7 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
         return `${symbol}${formatCompactNumber(num)}`;
     };
 
-    // Get shareholding ratio (majority percentage)
-    const getShareholdingRatio = (): string => {
-        const ratio = (deal as any).shareholding_ratio || (deal as any).share_ratio;
-        if (ratio) return ratio;
-        // Fallback to seller financial details if available
-        const sellerRatio = deal.seller?.financial_details?.maximum_investor_shareholding_percentage;
-        if (sellerRatio) return sellerRatio;
-        return '';
-    };
 
-    // Get priority label and color
-    const getPriorityInfo = () => {
-        const priority = deal.priority || 'medium';
-        const priorityMap: Record<string, { label: string; color: string }> = {
-            low: { label: 'Low', color: '#9CA3AF' },
-            medium: { label: 'Medium', color: '#064771' },
-            high: { label: 'High', color: '#DC2626' },
-        };
-        return priorityMap[priority] || priorityMap.medium;
-    };
 
     const buyerName = deal.buyer?.company_overview?.reg_name || (deal.buyer_id ? 'To be declared' : 'Undefined');
     const sellerName = deal.seller?.company_overview?.reg_name || (deal.seller_id ? 'To be declared' : 'Undefined');
@@ -80,6 +87,10 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const sellerCode = deal.seller?.seller_id || '';
     const buyerImage = deal.buyer?.image;
     const sellerImage = deal.seller?.image;
+    const buyerHqCountry = deal.buyer?.company_overview?.hq_country;
+    const sellerHqCountry = deal.seller?.company_overview?.hq_country;
+    const buyerCountry = typeof buyerHqCountry === 'object' && buyerHqCountry ? buyerHqCountry : undefined;
+    const sellerCountry = typeof sellerHqCountry === 'object' && sellerHqCountry ? sellerHqCountry : undefined;
 
     // For buyer view: show buyer acquiring seller
     // For seller view: show seller being acquired by buyer
@@ -89,6 +100,8 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     const secondaryCode = pipelineView === 'buyer' ? sellerCode : buyerCode;
     const primaryImage = pipelineView === 'buyer' ? buyerImage : sellerImage;
     const secondaryImage = pipelineView === 'buyer' ? sellerImage : buyerImage;
+    const primaryCountry = pipelineView === 'buyer' ? buyerCountry : sellerCountry;
+    const secondaryCountry = pipelineView === 'buyer' ? sellerCountry : buyerCountry;
 
     // Dynamic deal type label from deal data
     const getDealTypeLabel = (): string => {
@@ -112,9 +125,37 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
     };
     const relationLabel = getDealTypeLabel();
 
-    const priorityInfo = getPriorityInfo();
-    const shareholdingRatio = getShareholdingRatio();
     const dealValue = formatValue((deal as any).ticket_size || deal.estimated_ev_value, deal.estimated_ev_currency);
+
+    // Compute deal age in days
+    const getDealAge = (): string => {
+        if (!deal.created_at) return '';
+        const created = new Date(deal.created_at);
+        const now = new Date();
+        const diffMs = now.getTime() - created.getTime();
+        const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (days === 0) return 'Today';
+        if (days === 1) return '1d';
+        return `${days}d`;
+    };
+
+    // Get stage deadline info for the current stage
+    const getStageDeadlineInfo = () => {
+        const currentDl = deal.stage_deadlines?.find(
+            dl => dl.stage_code === deal.stage_code && !dl.is_completed
+        );
+        if (!currentDl?.end_date) return { endDate: null, daysUntil: null, status: 'none' as const };
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const end = new Date(currentDl.end_date);
+        end.setHours(0, 0, 0, 0);
+        const daysUntil = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const status = daysUntil < 0 ? 'overdue' as const : daysUntil <= 3 ? 'due_soon' as const : 'ok' as const;
+        return { endDate: currentDl.end_date, daysUntil, status };
+    };
+
+    const deadlineInfo = getStageDeadlineInfo();
+    const dealAge = getDealAge();
 
     // Get base URL for images
     const getImageUrl = (imagePath: string | undefined): string | null => {
@@ -144,8 +185,12 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
             style={style}
             {...listeners}
             {...attributes}
-            className={`inline-flex flex-col w-full cursor-grab active:cursor-grabbing transition-opacity duration-200 ${isDraggingProp ? 'shadow-2xl scale-[1.02]' : ''}`}
+            className={`inline-flex flex-col w-full cursor-grab active:cursor-grabbing transition-shadow duration-200 ${isDraggingProp ? 'shadow-2xl scale-[1.02] z-50' : ''} ${isBeingDragged ? 'deal-card-ghost' : ''}`}
         >
+            {/* Brand-color drop indicator line */}
+            {showDropIndicator && (
+                <div className="deal-drop-indicator" />
+            )}
             {/* Main Card Body */}
             <div
                 onClick={onClick}
@@ -184,7 +229,10 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                                 {primaryEntity}
                             </span>
                             {primaryCode && (
-                                <span className="text-[10px] text-gray-400 leading-3 truncate block">
+                                <span className="text-[10px] text-gray-400 leading-3 truncate block flex items-center gap-1">
+                                    {primaryCountry?.svg_icon_url && (
+                                        <img src={primaryCountry.svg_icon_url} alt="" className="w-3.5 h-2.5 object-cover rounded-[1px] flex-shrink-0" />
+                                    )}
                                     {primaryCode}
                                 </span>
                             )}
@@ -249,12 +297,9 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                     </div>
                 </div>
 
-                {/* Relation Label + Investment Condition */}
+                {/* Relation Label (deal type only, no investment condition) */}
                 <div className="text-xs text-[#6B7280] leading-4">
                     {relationLabel}
-                    {deal.investment_condition && (
-                        <span className="block text-[10px] text-gray-400 mt-0.5">{deal.investment_condition}</span>
-                    )}
                 </div>
 
                 {/* Secondary Entity Row */}
@@ -288,56 +333,33 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                             {secondaryEntity}
                         </span>
                         {secondaryCode && (
-                            <span className="text-[10px] text-gray-400 leading-3 truncate block">
+                            <span className="text-[10px] text-gray-400 leading-3 truncate block flex items-center gap-1">
+                                {secondaryCountry?.svg_icon_url && (
+                                    <img src={secondaryCountry.svg_icon_url} alt="" className="w-3.5 h-2.5 object-cover rounded-[1px] flex-shrink-0" />
+                                )}
                                 {secondaryCode}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Deal Value & Priority Row */}
+                {/* Deal Value & Stage Status Row */}
                 <div className="flex items-end justify-between mt-6">
                     <div className="flex flex-col gap-1">
-                        {shareholdingRatio && (
-                            <span className="text-xs text-gray-500">{shareholdingRatio}</span>
-                        )}
                         <span className="text-sm font-medium text-[#111827] leading-5">{dealValue}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Stage Deadline Badge */}
-                        {(() => {
-                            const currentDl = deal.stage_deadlines?.find(
-                                dl => dl.stage_code === deal.stage_code && !dl.is_completed
-                            );
-                            if (!currentDl?.end_date) return null;
-                            const now = new Date();
-                            now.setHours(0, 0, 0, 0);
-                            const end = new Date(currentDl.end_date);
-                            end.setHours(0, 0, 0, 0);
-                            const daysUntil = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                            if (daysUntil < 0) {
-                                return (
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700">
-                                        Overdue
-                                    </span>
-                                );
-                            }
-                            if (daysUntil <= 3) {
-                                return (
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
-                                        Due Soon
-                                    </span>
-                                );
-                            }
-                            return null;
-                        })()}
-                        <Download className="w-4 h-4" style={{ color: priorityInfo.color }} />
-                        <span
-                            className="text-xs font-medium"
-                            style={{ color: priorityInfo.color }}
-                        >
-                            {priorityInfo.label}
-                        </span>
+                        {/* Overdue / Due Soon Badge — moved here from old position */}
+                        {deadlineInfo.status === 'overdue' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-700">
+                                Overdue
+                            </span>
+                        )}
+                        {deadlineInfo.status === 'due_soon' && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">
+                                Due Soon
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -381,12 +403,23 @@ const DealCard = ({ deal, isDragging: isDraggingProp = false, onClick, onMove, o
                     </button>
                 </div>
 
-                {/* Right: Date */}
-                <div className="flex items-center gap-1 text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-xs">
-                        {new Date(deal.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
+                {/* Right: Deal age & deadline */}
+                <div className="flex items-center gap-1.5 text-gray-400">
+                    {dealAge && (
+                        <span className="text-[11px] font-medium text-gray-500">{dealAge}</span>
+                    )}
+                    {deadlineInfo.endDate && (
+                        <>
+                            <span className="text-[10px] text-gray-300">→</span>
+                            <span className={`text-[11px] font-medium ${
+                                deadlineInfo.status === 'overdue' ? 'text-red-500' :
+                                deadlineInfo.status === 'due_soon' ? 'text-amber-500' :
+                                'text-gray-400'
+                            }`}>
+                                {new Date(deadlineInfo.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

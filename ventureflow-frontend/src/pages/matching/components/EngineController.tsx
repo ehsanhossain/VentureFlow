@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, AlertTriangle } from 'lucide-react';
+import { VFDropdown } from '../../../components/VFDropdown';
 
 /* ─── Types ───────────────────────────────────────────────────────────── */
 
@@ -253,19 +254,13 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Tier
                     </label>
-                    <div className="relative">
-                        <select
-                            value={filters.tier}
-                            onChange={e => onFiltersChange({ tier: e.target.value })}
-                            title="Filter by tier"
-                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                        >
-                            {TIER_OPTIONS.map(o => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <VFDropdown
+                        options={TIER_OPTIONS}
+                        value={filters.tier}
+                        onChange={val => onFiltersChange({ tier: val as string })}
+                        searchable={false}
+                        placeholder="All Tiers"
+                    />
                 </div>
 
                 {/* Industry Filter */}
@@ -273,20 +268,13 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Industry
                     </label>
-                    <div className="relative">
-                        <select
-                            value={filters.industry}
-                            onChange={e => onFiltersChange({ industry: e.target.value })}
-                            title="Filter by industry"
-                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                        >
-                            <option value="">All Industries</option>
-                            {industries.map(i => (
-                                <option key={i.id} value={String(i.id)}>{i.name || i.label || `Industry #${i.id}`}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <VFDropdown
+                        options={[{ value: '', label: 'All Industries' }, ...industries.map(i => ({ value: String(i.id), label: i.name || i.label || `Industry #${i.id}` }))]}
+                        value={filters.industry}
+                        onChange={val => onFiltersChange({ industry: (val as string) || '' })}
+                        searchable={false}
+                        placeholder="All Industries"
+                    />
                 </div>
 
                 {/* Country Filter */}
@@ -294,20 +282,13 @@ const EngineController: React.FC<EngineControllerProps> = ({
                     <label className="text-[13px] font-medium text-gray-700" style={{ display: 'block', marginBottom: 4 }}>
                         Country
                     </label>
-                    <div className="relative">
-                        <select
-                            value={filters.country}
-                            onChange={e => onFiltersChange({ country: e.target.value })}
-                            title="Filter by country"
-                            className="w-full h-9 px-3 py-2 bg-white rounded-[3px] border border-gray-300 text-sm font-normal text-gray-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-300 appearance-none cursor-pointer transition-colors"
-                        >
-                            <option value="">All Countries</option>
-                            {countries.map(c => (
-                                <option key={c.id} value={String(c.id)}>{c.name || c.country_name || `Country #${c.id}`}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <VFDropdown
+                        options={[{ value: '', label: 'All Countries' }, ...countries.map(c => ({ value: String(c.id), label: c.name || c.country_name || `Country #${c.id}` }))]}
+                        value={filters.country}
+                        onChange={val => onFiltersChange({ country: (val as string) || '' })}
+                        searchable={false}
+                        placeholder="All Countries"
+                    />
                 </div>
             </div>
         </div>

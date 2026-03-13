@@ -275,7 +275,7 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                                     <img
                                                         src={country.flagSrc}
                                                         alt={country.name}
-                                                        className="w-5 h-5 rounded-full shrink-0 object-cover"
+                                                        className="w-6 h-6 rounded-full shrink-0 object-cover"
                                                         onError={(e) => {
                                                             const target = e.currentTarget;
                                                             target.style.display = 'none';
@@ -283,20 +283,25 @@ export const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
                                                             if (fallback) fallback.style.display = 'flex';
                                                         }}
                                                     />
-                                                    <div className="w-5 h-5 rounded-full shrink-0 bg-gray-100 items-center justify-center" style={{ display: 'none' }}>
-                                                        <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <circle cx="12" cy="12" r="10" />
-                                                            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                                        </svg>
-                                                    </div>
+                                                    {/* Fallback avatar if image fails */}
+                                                    {(() => {
+                                                        const initials = (country.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                                                        return (
+                                                            <div className="w-6 h-6 rounded-full shrink-0 items-center justify-center text-white text-[10px] font-bold" style={{ display: 'none', backgroundColor: '#064771' }}>
+                                                                {initials}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </>
                                             ) : (
-                                                <div className="w-5 h-5 rounded-full shrink-0 bg-gray-100 flex items-center justify-center">
-                                                    <svg className="w-3 h-3 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <circle cx="12" cy="12" r="10" />
-                                                        <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                                                    </svg>
-                                                </div>
+                                                (() => {
+                                                    const initials = (country.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                                                    return (
+                                                        <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: '#064771' }}>
+                                                            {initials}
+                                                        </div>
+                                                    );
+                                                })()
                                             )}
                                             <span className="text-sm text-gray-900 truncate">
                                                 {(country as any).name || 'Unknown'}
