@@ -537,7 +537,7 @@ const CreateEmployee: React.FC = () => {
             {id ? 'Update User' : `Create ${accountType === 'employee' ? 'Employee' : 'Partner'}`}
           </div>
           <div className="flex items-center self-stretch pl-[25px]">
-            <div className="flex flex-col md:flex-row items-center gap-2.5 w-full md:w-[447px]">
+            <div className="flex flex-row items-center gap-2.5 w-[447px]">
               <button
                 type="button"
                 className="flex flex-col flex-shrink-0 justify-center items-center gap-1 py-1 px-3 rounded bg-[#064771]"

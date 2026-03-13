@@ -706,11 +706,11 @@ const DealPipeline = () => {
     return (
         <div className="flex flex-col h-screen bg-white overflow-hidden">
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
-                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-                    <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">{t('navigation.dealPipeline')}</h1>
+            <div className="flex flex-row items-center justify-between px-6 py-4 bg-white border-b gap-4">
+                <div className="flex flex-row items-center gap-4">
+                    <h1 className="text-base font-medium text-gray-900 whitespace-nowrap">{t('navigation.dealPipeline')}</h1>
 
-                    <div className="w-full md:w-72">
+                    <div className="w-72">
                         <Dropdown
                             countries={countries}
                             selected={selectedCountries}
@@ -728,7 +728,7 @@ const DealPipeline = () => {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2 text-white bg-[#064771] rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95"
+                    className="flex items-center justify-center gap-2 px-5 py-2 text-white bg-[#064771] rounded-[3px] text-sm font-medium hover:bg-[#053a5c] transition-all active:scale-95 whitespace-nowrap"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -357,9 +357,9 @@ const MatchIQ: React.FC = () => {
             height: 'calc(100vh - 64px)', overflow: 'hidden',
         }}>
             {/* Page Header — matches Prospects layout exactly */}
-            <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4" style={{ flexShrink: 0 }}>
-                <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                    <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">MatchIQ</h1>
+            <div className="flex flex-row items-center justify-between px-6 py-4 bg-white border-b gap-4" style={{ flexShrink: 0 }}>
+                <div className="flex flex-row items-center gap-8">
+                    <h1 className="text-base font-medium text-gray-900 whitespace-nowrap">MatchIQ</h1>
 
                     <div className="relative flex bg-gray-100 rounded-[6px] p-1">
                         {/* Sliding pill background */}
@@ -391,7 +391,7 @@ const MatchIQ: React.FC = () => {
 
                 {/* Stats pills */}
                 {stats && (
-                    <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="flex items-center gap-2">
                         {[
                             { label: 'Best', value: stats.excellent },
                             { label: 'Strong', value: stats.strong },

@@ -377,9 +377,9 @@ const DraftsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
             {/* Header — identical layout to ProspectsPortal */}
-            <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
-                <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-row items-center justify-between px-6 py-4 bg-white border-b gap-4">
+                <div className="flex flex-row items-center gap-8">
+                    <div className="flex items-center gap-3">
                         {/* Back Button — same style as InvestorDetails / TargetDetails */}
                         <button
                             onClick={() => navigate('/prospects')}
@@ -429,7 +429,7 @@ const DraftsPage: React.FC = () => {
                         value={searchQuery}
                         onChange={setSearchQuery}
                         placeholder={`Search for ${activeTab}...`}
-                        className="w-full md:w-72"
+                        className="w-72"
                     />
                 </div>
             </div>

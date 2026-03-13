@@ -1612,9 +1612,9 @@ const ProspectsPortal: React.FC = () => {
 
             <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-4 bg-white border-b gap-4">
-                    <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                        <h1 className="text-base font-medium text-gray-900 w-full md:w-auto">{t('prospects.title')}</h1>
+                <div className="flex flex-row items-center justify-between px-6 py-4 bg-white border-b gap-4">
+                    <div className="flex flex-row items-center gap-8">
+                        <h1 className="text-base font-medium text-gray-900 whitespace-nowrap">{t('prospects.title')}</h1>
 
                         <div className="relative flex bg-gray-100 rounded-[6px] p-1">
                             {/* Sliding pill background */}
@@ -1656,12 +1656,12 @@ const ProspectsPortal: React.FC = () => {
                                 value={searchQuery}
                                 onChange={setSearchQuery}
                                 placeholder={activeTab === 'investors' ? t('prospects.searchInvestors') : t('prospects.searchTargets')}
-                                className="w-full md:w-72"
+                                className="w-72"
                             />
                         )}
                     </div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-3">
                         {!isPartner && (
                             <button
                                 onClick={() => navigate('/prospects/drafts')}

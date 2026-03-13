@@ -33,7 +33,7 @@ const PartnerPortal: React.FC = () => {
 
   return (
     <div className="flex justify-center items-center min-w-[799px] min-h-[223px] p-[13px] px-[16px] rounded-lg border border-[#a1bed1] bg-[#fafdff] ">
-      <div className="flex flex-col md:flex-row justify-between items-center w-full gap-6">
+      <div className="flex flex-row justify-between items-center w-full gap-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <svg
             xmlns="http://www.w3.org/2000/svg"

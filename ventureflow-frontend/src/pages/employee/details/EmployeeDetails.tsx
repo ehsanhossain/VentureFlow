@@ -208,13 +208,13 @@ const EmployeeDetails: React.FC = () => {
   const countryData = getCountryById(parseInt(employee?.nationality));
 
   return (
-    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-[13px] w-full ">
+    <div className="flex flex-row items-center gap-4 gap-[13px] w-full ">
       <div className="flex flex-col flex-shrink-0 justify-center items-start gap-4 w-full md:w-[682px] pl-7 pt-7">
         <div className="flex items-center self-stretch text-gray-900 text-right text-[1.75rem] font-medium leading-[normal]">
           Employee Details
         </div>
         <div className="flex items-center self-stretch">
-          <div className="flex flex-col md:flex-row items-center gap-2.5 w-full md:w-[447px]">
+          <div className="flex flex-row items-center gap-2.5 w-[447px]">
             <BackButton />
             <div className="flex items-start w-full">
               <Breadcrumb links={breadcrumbLinks} />
@@ -259,7 +259,7 @@ const EmployeeDetails: React.FC = () => {
         </div>
 
         <div className="w-full min-w-[1500px] mx-auto px-4 pt-5 ">
-          <div className="flex flex-col md:flex-row bg-white border border-[#D1D1D1] rounded-[9.17px] overflow-hidden  justify-between w-[1440px] ">
+          <div className="flex flex-row bg-white border border-[#D1D1D1] rounded-[9.17px] overflow-hidden  justify-between w-[1440px] ">
             <div className="bg-[#F9FCFF] p-6 flex flex-col items-center w-[300px] flex-shrink-0 border-r border-[#D1D1D1] ">
               <img
                 className="rounded-full w-34 h-34 object-cover"

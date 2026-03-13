@@ -208,7 +208,7 @@ export default function NotificationsPage() {
             {/* ─── Header ──────────────────────────────────────── */}
             <div className="flex-shrink-0 border-b border-gray-200 bg-white">
                 <div className="px-6 lg:px-8 py-5">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex flex-row justify-between items-center gap-4">
                         {/* Left: Title + Tabs */}
                         <div className="flex items-center gap-5 flex-wrap">
                             <h1 className="text-base font-medium text-gray-900">

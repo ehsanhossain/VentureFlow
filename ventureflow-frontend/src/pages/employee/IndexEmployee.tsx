@@ -447,7 +447,7 @@ const IndexEmployee = ({
             <span className="text-black text-2xl font-medium ">All Employees</span>
           </div>
           <div className="flex self-stretch justify-start items-center flex-row">
-            <div className="flex flex-col md:flex-row items-center gap-2.5 w-full md:w-[447px]">
+            <div className="flex flex-row items-center gap-2.5 w-[447px]">
               <BackButton />
               <div className="flex items-start w-full">
                 <Breadcrumb links={breadcrumbLinks} />
